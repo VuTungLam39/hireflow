@@ -1,0 +1,13 @@
+@import 'tailwindcss';
+
+/* Màu chủ đạo – dùng như bg-primary, text-primary, ... */
+@theme {
+  --color-primary: oklch(0.55 0.2 260);
+  --color-primary-foreground: oklch(0.98 0 0);
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+}

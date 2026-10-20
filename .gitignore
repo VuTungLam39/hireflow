@@ -1,0 +1,6 @@
+# Tài liệu (docx) giữ ở máy, không đưa lên git
+/docs/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
