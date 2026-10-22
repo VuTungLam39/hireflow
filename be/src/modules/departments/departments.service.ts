@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
 import { PaginatedResult } from '../../common/dto/paginated-result.dto.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
+import { Job } from '../jobs/entities/job.entity.js';
 import { User } from '../users/entities/user.entity.js';
 import { CreateDepartmentDto } from './dto/create-department.dto.js';
 import { QueryDepartmentDto } from './dto/query-department.dto.js';
@@ -74,23 +75,34 @@ export class DepartmentsService {
     await this.departmentsRepository.softDelete(id);
   }
 
-  async userCounts(ids: string[]): Promise<Map<string, number>> {
+  userCounts(ids: string[]): Promise<Map<string, number>> {
+    return this.countByDepartment(User, ids);
+  }
+
+  jobCounts(ids: string[]): Promise<Map<string, number>> {
+    return this.countByDepartment(Job, ids);
+  }
+
+  private async countByDepartment(
+    entity: typeof User | typeof Job,
+    ids: string[],
+  ): Promise<Map<string, number>> {
     if (!ids.length) return new Map();
     const rows = await this.departmentsRepository.manager
-      .createQueryBuilder(User, 'user')
-      .select('user.departmentId', 'departmentId')
+      .createQueryBuilder(entity, 'row')
+      .select('row.departmentId', 'departmentId')
       .addSelect('COUNT(*)::int', 'count')
-      .where('user.departmentId IN (:...ids)', { ids })
-      .groupBy('user.departmentId')
+      .where('row.departmentId IN (:...ids)', { ids })
+      .groupBy('row.departmentId')
       .getRawMany<{ departmentId: string; count: number }>();
     return new Map(rows.map((r) => [r.departmentId, r.count]));
   }
 
   private async withCounts(departments: Department[]): Promise<DepartmentView[]> {
-    const users = await this.userCounts(departments.map((d) => d.id));
-    // TODO BE-11: jobCount
+    const ids = departments.map((d) => d.id);
+    const [users, jobs] = await Promise.all([this.userCounts(ids), this.jobCounts(ids)]);
     return departments.map((d) =>
-      Object.assign(d, { userCount: users.get(d.id) ?? 0, jobCount: 0 }),
+      Object.assign(d, { userCount: users.get(d.id) ?? 0, jobCount: jobs.get(d.id) ?? 0 }),
     );
   }
 
