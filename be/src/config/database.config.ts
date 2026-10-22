@@ -19,6 +19,7 @@ export const buildDataSourceOptions = (): DataSourceOptions => ({
   namingStrategy: new SnakeNamingStrategy(),
   entities: [join(rootDir, '**', '*.entity.js')],
   migrations: [join(rootDir, 'database', 'migrations', '*.js')],
+  migrationsTransactionMode: 'each',
 });
 
 export const databaseConfig = registerAs('database', buildDataSourceOptions);

@@ -7,6 +7,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   MaxLength,
   MinLength,
@@ -37,10 +38,18 @@ export class CreateUserDto {
   @MaxLength(100)
   fullName: string;
 
-  @ApiPropertyOptional({ enum: Role, default: Role.User })
-  @IsOptional()
+  @ApiProperty({ enum: Role })
   @IsEnum(Role)
-  role?: Role;
+  role: Role;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    nullable: true,
+    description: 'Bắt buộc với hiring_manager; bỏ qua với admin, hr (BR-ACC-03)',
+  })
+  @IsOptional()
+  @IsUUID()
+  departmentId?: string | null;
 
   @ApiPropertyOptional({ default: true })
   @IsOptional()

@@ -1,9 +1,12 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import bcrypt from 'bcryptjs';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { PaginatedResult } from '../../common/dto/paginated-result.dto.js';
+import { Role } from '../../common/enums/role.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
+import type { FieldError } from '../../common/interfaces/api-response.interface.js';
+import { DepartmentsService } from '../departments/departments.service.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { QueryUserDto } from './dto/query-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
@@ -16,11 +19,12 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    private readonly departmentsService: DepartmentsService,
   ) {}
 
   async create(dto: CreateUserDto): Promise<User> {
     if (await this.usersRepository.existsBy({ email: dto.email })) {
-      // BR-ACC-02: gắn lỗi vào ô email để FE hiện đúng chỗ
+      // BR-ACC-02
       throw new BusinessException(
         ErrorCode.EmailExists,
         'Email already exists',
@@ -28,16 +32,18 @@ export class UsersService {
         [{ field: 'email', messages: ['Email đã tồn tại'] }],
       );
     }
+    const { password, ...rest } = dto;
     const user = this.usersRepository.create({
-      ...dto,
-      password: await bcrypt.hash(dto.password, SALT_ROUNDS),
+      ...rest,
+      departmentId: await this.resolveDepartment(dto.role, dto.departmentId),
+      passwordHash: await bcrypt.hash(password, SALT_ROUNDS),
     });
-    return this.usersRepository.save(user);
+    const saved = await this.usersRepository.save(user);
+    return this.findById(saved.id);
   }
 
   async findAll(query: QueryUserDto): Promise<PaginatedResult<User>> {
-    const qb = this.usersRepository
-      .createQueryBuilder('user')
+    const qb = this.withDepartment(this.usersRepository.createQueryBuilder('user'))
       .orderBy('user.createdAt', query.order)
       .skip(query.skip)
       .take(query.limit);
@@ -56,21 +62,21 @@ export class UsersService {
   }
 
   async findById(id: string): Promise<User> {
-    const user = await this.usersRepository.findOneBy({ id });
+    const user = await this.withDepartment(this.usersRepository.createQueryBuilder('user'))
+      .where('user.id = :id', { id })
+      .getOne();
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
 
-  /** Lấy user kèm password để kiểm tra đăng nhập */
   findByEmailWithPassword(email: string): Promise<User | null> {
     return this.usersRepository
       .createQueryBuilder('user')
-      .addSelect('user.password')
+      .addSelect('user.passwordHash')
       .where('user.email = :email', { email: email.toLowerCase() })
       .getOne();
   }
 
-  /** Lấy user kèm refresh token hash để kiểm tra refresh */
   findByIdWithRefreshToken(id: string): Promise<User | null> {
     return this.usersRepository
       .createQueryBuilder('user')
@@ -81,12 +87,21 @@ export class UsersService {
 
   async update(id: string, dto: UpdateUserDto): Promise<User> {
     const user = await this.findById(id);
-    const { password, ...rest } = dto;
-    Object.assign(user, rest);
+    const { password, departmentId, ...rest } = dto;
+    const role = dto.role ?? user.role;
+    Object.assign(user, rest, {
+      role,
+      departmentId: await this.resolveDepartment(
+        role,
+        departmentId !== undefined ? departmentId : user.departmentId,
+      ),
+    });
+    delete user.department;
     if (password) {
-      user.password = await bcrypt.hash(password, SALT_ROUNDS);
+      user.passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     }
-    return this.usersRepository.save(user);
+    await this.usersRepository.save(user);
+    return this.findById(id);
   }
 
   async remove(id: string): Promise<void> {
@@ -100,5 +115,34 @@ export class UsersService {
 
   async updateLastLogin(id: string): Promise<void> {
     await this.usersRepository.update(id, { lastLoginAt: new Date() });
+  }
+
+  // BR-ACC-03
+  private async resolveDepartment(
+    role: Role,
+    departmentId: string | null | undefined,
+  ): Promise<string | null> {
+    if (role !== Role.HiringManager) return null;
+    let error: FieldError | undefined;
+    if (!departmentId) {
+      error = { field: 'departmentId', messages: ['Hiring Manager phải thuộc một phòng ban'] };
+    } else if (!(await this.departmentsService.exists(departmentId))) {
+      error = { field: 'departmentId', messages: ['Phòng ban không tồn tại'] };
+    }
+    if (error) {
+      throw new BusinessException(
+        ErrorCode.ValidationFailed,
+        'Validation failed',
+        HttpStatus.BAD_REQUEST,
+        [error],
+      );
+    }
+    return departmentId!;
+  }
+
+  private withDepartment(qb: SelectQueryBuilder<User>): SelectQueryBuilder<User> {
+    return qb
+      .leftJoin('user.department', 'department')
+      .addSelect(['department.id', 'department.name']);
   }
 }
