@@ -32,10 +32,10 @@ HR thường nhận hàng trăm CV cho mỗi vị trí qua email, Zalo hay file 
 
 HireFlow xử lý ba vấn đề của cách "gửi CV cho LLM rồi nhận điểm 0–100":
 
-| Vấn đề của LLM chấm thẳng                                                                           | Cách HireFlow giải quyết                                                                                                                                                         |
-| --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Hộp đen:** không giải thích được vì sao điểm là 78                                    | Điểm là tổng các tiêu chí khớp. Mỗi tiêu chí có đoạn trích nguyên văn từ CV                                                                                       |
-| **AI bịa:** có thể nói ứng viên "có 3 năm React" dù CV không ghi                          | Code kiểm tra đoạn trích có tồn tại thật trong text CV. Không tìm thấy thì loại bằng chứng đó và gắn cờ                                                         |
+| Vấn đề của LLM chấm thẳng | Cách HireFlow giải quyết |
+| --- | --- |
+| **Hộp đen:** không giải thích được vì sao điểm là 78 | Điểm là tổng các tiêu chí khớp. Mỗi tiêu chí có đoạn trích nguyên văn từ CV |
+| **AI bịa:** có thể nói ứng viên "có 3 năm React" dù CV không ghi | Code kiểm tra đoạn trích có tồn tại thật trong text CV. Không tìm thấy thì loại bằng chứng đó và gắn cờ |
 | **Không ổn định, tốn tiền:** chấm lại ra điểm khác, đổi tiêu chí lại phải gọi LLM | LLM chỉ trích xuất dữ liệu một lần cho mỗi CV (cache theo hash file). Điểm tính bằng công thức, nên đổi trọng số thì xếp hạng lại ngay mà không tốn token |
 
 **Nguyên tắc:** AI chỉ gợi ý, người quyết định. Hệ thống không tự loại ứng viên; ứng viên thiếu tiêu chí bắt buộc chỉ bị gắn cờ để HR lọc.
@@ -81,17 +81,17 @@ Tự động loại ứng viên · lương, ký offer điện tử · SSO, mobil
 
 ## Trạng thái
 
-| Phần                                                                                                                       | Trạng thái |
-| --------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| Khung backend: config + validate env, TypeORM + migration, format response/lỗi thống nhất, Swagger, health check, Docker | Xong         |
-| Xác thực: JWT access token + refresh token xoay vòng trong cookie httpOnly                                               | Xong         |
-| Quản lý user (Admin), guard theo role                                                                                     | Xong         |
-| Khung frontend: routing lazy, TanStack Query, guard, form + Zod, bộ component UI cơ bản                                  | Xong         |
-| Màn đăng nhập, quản lý user                                                                                           | Xong         |
-| Phân quyền theo permission + phạm vi phòng ban; role HR, Hiring Manager                                                 | Tuần 1      |
-| Phòng ban, job, ứng viên, application, pipeline trạng thái                                                             | Tuần 1–2   |
-| Upload CV (MinIO), queue (BullMQ), LLM trích xuất + chấm điểm                                                          | Tuần 3      |
-| pgvector + chat RAG, bảng xếp hạng + thanh trọng số                                                                    | Tuần 4      |
+| Phần | Trạng thái |
+| --- | --- |
+| Khung backend: config + validate env, TypeORM + migration, format response/lỗi thống nhất, Swagger, health check, Docker | Xong |
+| Xác thực: JWT access token + refresh token xoay vòng trong cookie httpOnly | Xong |
+| Quản lý user (Admin), guard theo role | Xong |
+| Khung frontend: routing lazy, TanStack Query, guard, form + Zod, bộ component UI cơ bản | Xong |
+| Màn đăng nhập, quản lý user | Xong |
+| Phân quyền theo permission + phạm vi phòng ban; role HR, Hiring Manager | Tuần 1 |
+| Phòng ban, job, ứng viên, application, pipeline trạng thái | Tuần 1–2 |
+| Upload CV (MinIO), queue (BullMQ), LLM trích xuất + chấm điểm | Tuần 3 |
+| pgvector + chat RAG, bảng xếp hạng + thanh trọng số | Tuần 4 |
 
 ---
 
@@ -126,30 +126,30 @@ Chấm điểm không phụ thuộc embedding, nên embedding lỗi không chặ
 
 **Quyết định kiến trúc chính:**
 
-| Quyết định                                                    | Lý do                                                                          |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Modular monolith, không dùng microservice                      | Đủ cho một người trong 2 tháng; ranh giới module vẫn rõ để tách sau |
-| PostgreSQL thay vì MySQL                                        | pgvector + JSONB + full-text trong một DB, không cần vector DB riêng        |
-| Việc nặng (parse, LLM, embedding) chạy qua queue              | API không bị chặn, retry được                                             |
-| LLM chỉ trích xuất một lần; điểm tính bằng công thức  | Điểm ổn định, rẻ, giải thích được                                    |
-| Frontend CSR bằng Vite, không dùng Next.js                    | Ứng dụng chủ yếu sau đăng nhập; trang công khai sẽ prerender ở MVP 2  |
-| Server state (TanStack Query) tách khỏi client state (Zustand) | Tránh trùng nguồn dữ liệu, dễ cache và invalidate                        |
+| Quyết định | Lý do |
+| --- | --- |
+| Modular monolith, không dùng microservice | Đủ cho một người trong 2 tháng; ranh giới module vẫn rõ để tách sau |
+| PostgreSQL thay vì MySQL | pgvector + JSONB + full-text trong một DB, không cần vector DB riêng |
+| Việc nặng (parse, LLM, embedding) chạy qua queue | API không bị chặn, retry được |
+| LLM chỉ trích xuất một lần; điểm tính bằng công thức | Điểm ổn định, rẻ, giải thích được |
+| Frontend CSR bằng Vite, không dùng Next.js | Ứng dụng chủ yếu sau đăng nhập; trang công khai sẽ prerender ở MVP 2 |
+| Server state (TanStack Query) tách khỏi client state (Zustand) | Tránh trùng nguồn dữ liệu, dễ cache và invalidate |
 
 ---
 
 ## Công nghệ
 
-| Lớp               | Lựa chọn                                                                                                                  |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| Backend            | NestJS 12 (ESM, TypeScript strict), TypeORM, class-validator, Passport JWT, Swagger                                         |
-| Database           | PostgreSQL 17 (+ pgvector từ tuần 3)                                                                                      |
-| Queue / cache      | Redis + BullMQ (tuần 3)                                                                                                    |
-| Lưu trữ file     | MinIO (dev), S3 tương thích (prod) (tuần 3)                                                                             |
-| AI                 | Qua interface `LlmProvider`: LLM (Claude / OpenAI) và embedding đa ngôn ngữ; dự phòng Ollama                        |
-| Frontend           | React 19, Vite 8, TypeScript 7, React Router 8, TanStack Query 5, Zustand 5, React Hook Form + Zod 4, Axios, Tailwind CSS 4 |
-| Test               | Vitest, Supertest, Testing Library                                                                                          |
-| Chất lượng code | oxlint, Prettier, TypeScript strict                                                                                         |
-| Hạ tầng          | Docker Compose; MVP 2 thêm GitHub Actions, Caddy (HTTPS)                                                                   |
+| Lớp | Lựa chọn |
+| --- | --- |
+| Backend | NestJS 12 (ESM, TypeScript strict), TypeORM, class-validator, Passport JWT, Swagger |
+| Database | PostgreSQL 17 (+ pgvector từ tuần 3) |
+| Queue / cache | Redis + BullMQ (tuần 3) |
+| Lưu trữ file | MinIO (dev), S3 tương thích (prod) (tuần 3) |
+| AI | Qua interface `LlmProvider`: LLM (Claude / OpenAI) và embedding đa ngôn ngữ; dự phòng Ollama |
+| Frontend | React 19, Vite 8, TypeScript 7, React Router 8, TanStack Query 5, Zustand 5, React Hook Form + Zod 4, Axios, Tailwind CSS 4 |
+| Test | Vitest, Supertest, Testing Library |
+| Chất lượng code | oxlint, Prettier, TypeScript strict |
+| Hạ tầng | Docker Compose; MVP 2 thêm GitHub Actions, Caddy (HTTPS) |
 
 ---
 
@@ -229,20 +229,20 @@ Khi chạy dev, mọi request tới `/api/...` được Vite chuyển tiếp san
 
 Mở http://localhost:5173 và đăng nhập bằng tài khoản admin vừa seed:
 
-| Email                 | Mật khẩu    |
-| --------------------- | ------------- |
+| Email | Mật khẩu |
+| --- | --- |
 | `admin@example.com` | `Admin@123` |
 
 Đổi giá trị `SEED_ADMIN_EMAIL` và `SEED_ADMIN_PASSWORD` trong `be/.env` nếu muốn. **Không dùng tài khoản mặc định này ở môi trường thật.**
 
 ### Địa chỉ hữu ích
 
-| Địa chỉ                       | Nội dung                    |
-| -------------------------------- | ---------------------------- |
-| http://localhost:5173            | Giao diện web               |
-| http://localhost:3000/api/v1     | REST API                     |
-| http://localhost:3000/api/docs   | Swagger (tắt ở production) |
-| http://localhost:3000/api/health | Health check                 |
+| Địa chỉ | Nội dung |
+| --- | --- |
+| http://localhost:5173 | Giao diện web |
+| http://localhost:3000/api/v1 | REST API |
+| http://localhost:3000/api/docs | Swagger (tắt ở production) |
+| http://localhost:3000/api/health | Health check |
 
 ### Chạy backend bằng Docker
 
@@ -257,14 +257,14 @@ docker compose --profile app up -d --build   # PostgreSQL + API, tự chạy mig
 
 Chạy trong từng thư mục `be/` và `fe/`:
 
-| Lệnh                                         | Mô tả                                                                                    |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `npm run lint`                              | oxlint                                                                                     |
-| `npm run typecheck`                         | Kiểm tra kiểu TypeScript                                                                 |
-| `npm test`                                  | Unit test (Vitest)                                                                         |
-| `npm run format:check` / `npm run format` | Kiểm tra / tự sửa format (Prettier)                                                     |
-| `npm run test:e2e`                          | **Chỉ backend:** E2E với DB thật trong `be/.env` (cần chạy migration trước) |
-| `npm run build`                             | Build bản production                                                                      |
+| Lệnh | Mô tả |
+| --- | --- |
+| `npm run lint` | oxlint |
+| `npm run typecheck` | Kiểm tra kiểu TypeScript |
+| `npm test` | Unit test (Vitest) |
+| `npm run format:check` / `npm run format` | Kiểm tra / tự sửa format (Prettier) |
+| `npm run test:e2e` | **Chỉ backend:** E2E với DB thật trong `be/.env` (cần chạy migration trước) |
+| `npm run build` | Build bản production |
 
 Trước khi mở PR, cả bốn lệnh `lint`, `typecheck`, `test`, `build` phải chạy được ở cả hai thư mục.
 
@@ -281,10 +281,10 @@ Trước khi mở PR, cả bốn lệnh `lint`, `typecheck`, `test`, `build` ph�
 
 **Luồng đăng nhập:**
 
-| Token         | Thời hạn | Nơi lưu                                                                                                  |
-| ------------- | ---------- | ---------------------------------------------------------------------------------------------------------- |
-| Access token  | 15 phút   | Bộ nhớ của frontend (không lưu localStorage)                                                          |
-| Refresh token | 7 ngày    | Cookie `refresh_token`: httpOnly, SameSite=Strict, Secure ở production, chỉ gửi tới `/api/v1/auth` |
+| Token | Thời hạn | Nơi lưu |
+| --- | --- | --- |
+| Access token | 15 phút | Bộ nhớ của frontend (không lưu localStorage) |
+| Refresh token | 7 ngày | Cookie `refresh_token`: httpOnly, SameSite=Strict, Secure ở production, chỉ gửi tới `/api/v1/auth` |
 
 1. Đăng nhập: API trả access token trong body và đặt refresh token vào cookie.
 2. Access token hết hạn: frontend gọi `POST /auth/refresh` (cookie tự gửi kèm), nhận token mới rồi gửi lại request. Refresh token **xoay vòng** mỗi lần dùng; token cũ bị từ chối.
@@ -320,16 +320,16 @@ Prefix `/api/v1`, REST + JSON. Tài liệu đầy đủ ở Swagger: http://loca
 
 **Endpoint hiện có:**
 
-| Method             | Route              | Quyền                                      |
-| ------------------ | ------------------ | ------------------------------------------- |
-| POST               | `/auth/login`    | Công khai                                  |
-| POST               | `/auth/refresh`  | Công khai (đọc refresh token từ cookie) |
-| POST               | `/auth/logout`   | Đã đăng nhập                           |
-| GET                | `/auth/me`       | Đã đăng nhập                           |
-| POST               | `/auth/register` | Công khai (sẽ gỡ)                        |
-| GET, POST          | `/users`         | Admin                                       |
-| GET, PATCH, DELETE | `/users/:id`     | Admin (DELETE là xoá mềm)                |
-| GET                | `/api/health`    | Công khai (không có `/v1`)             |
+| Method | Route | Quyền |
+| --- | --- | --- |
+| POST | `/auth/login` | Công khai |
+| POST | `/auth/refresh` | Công khai (đọc refresh token từ cookie) |
+| POST | `/auth/logout` | Đã đăng nhập |
+| GET | `/auth/me` | Đã đăng nhập |
+| POST | `/auth/register` | Công khai (sẽ gỡ) |
+| GET, POST | `/users` | Admin |
+| GET, PATCH, DELETE | `/users/:id` | Admin (DELETE là xoá mềm) |
+| GET | `/api/health` | Công khai (không có `/v1`) |
 
 ---
 
@@ -354,22 +354,22 @@ Prefix `/api/v1`, REST + JSON. Tài liệu đầy đủ ở Swagger: http://loca
 
 ## Lộ trình
 
-| Tuần               | Nội dung                                                                                                                    | Mốc                                                      |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| 1 (19–23/10)       | Schema + migration + seed 200k application; permission + phạm vi phòng ban; CRUD phòng ban, job, ứng viên               | 3 role đăng nhập, mỗi role thấy dữ liệu khác nhau |
-| 2 (26–30/10)       | DataTable, bộ lọc trên URL, responsive; danh sách application; case study N+1 + index; pipeline trạng thái             | ATS dùng được, có báo cáo hiệu năng              |
-| 3 (2–6/11)         | MinIO + trang nộp CV; BullMQ + parse PDF/DOCX; LLM tách JD, trích xuất CV; công thức điểm + kiểm tra bằng chứng   | Nộp CV xong tự có điểm kèm bằng chứng             |
-| 4 (9–13/11)        | Bảng xếp hạng + thanh trọng số; embedding + pgvector + chat có trích dẫn; tài liệu rendering; test, Docker Compose | **Phát hành MVP 1**                               |
-| 5–8 (16/11–11/12) | Gợi ý ứng viên cũ, hybrid search, phỏng vấn, thông báo realtime, đánh giá AI, deploy + CI/CD, load test          | **Phát hành MVP 2**                               |
+| Tuần | Nội dung | Mốc |
+| --- | --- | --- |
+| 1 (19–23/10) | Schema + migration + seed 200k application; permission + phạm vi phòng ban; CRUD phòng ban, job, ứng viên | 3 role đăng nhập, mỗi role thấy dữ liệu khác nhau |
+| 2 (26–30/10) | DataTable, bộ lọc trên URL, responsive; danh sách application; case study N+1 + index; pipeline trạng thái | ATS dùng được, có báo cáo hiệu năng |
+| 3 (2–6/11) | MinIO + trang nộp CV; BullMQ + parse PDF/DOCX; LLM tách JD, trích xuất CV; công thức điểm + kiểm tra bằng chứng | Nộp CV xong tự có điểm kèm bằng chứng |
+| 4 (9–13/11) | Bảng xếp hạng + thanh trọng số; embedding + pgvector + chat có trích dẫn; tài liệu rendering; test, Docker Compose | **Phát hành MVP 1** |
+| 5–8 (16/11–11/12) | Gợi ý ứng viên cũ, hybrid search, phỏng vấn, thông báo realtime, đánh giá AI, deploy + CI/CD, load test | **Phát hành MVP 2** |
 
 ---
 
 ## Lỗi thường gặp
 
-| Lỗi                                                                                   | Cách xử lý                                                                                                                                                                              |
-| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `npm install <package>` báo `Cannot read properties of null (reading 'edgesOut')` | Lỗi của npm 10. Dùng `npx npm@11 install <package>`                                                                                                                                   |
-| Backend không chạy, báo `Invalid environment variables`                           | So `be/.env` với `be/.env.example`; JWT secret phải có tối thiểu 32 ký tự                                                                                                       |
-| `migration:run` không kết nối được DB                                          | Kiểm tra PostgreSQL đang chạy (`npm run db:up` nếu dùng Docker) và thông tin `DB_*` trong `be/.env`                                                                           |
-| Đăng nhập xong, tải lại trang thì bị đăng xuất                               | Mở frontend qua `http://localhost:5173` (dev server có proxy). Nếu frontend và API khác domain, thêm domain frontend vào `CORS_ORIGINS` và bật HTTPS để cookie hoạt động |
-| Cổng 3000 hoặc 5173 đang bị dùng                                                  | Đổi `PORT` trong `be/.env`; với frontend chạy `npm run dev -- --port 5174` (và cập nhật `CORS_ORIGINS`)                                                                     |
+| Lỗi | Cách xử lý |
+| --- | --- |
+| `npm install <package>` báo `Cannot read properties of null (reading 'edgesOut')` | Lỗi của npm 10. Dùng `npx npm@11 install <package>` |
+| Backend không chạy, báo `Invalid environment variables` | So `be/.env` với `be/.env.example`; JWT secret phải có tối thiểu 32 ký tự |
+| `migration:run` không kết nối được DB | Kiểm tra PostgreSQL đang chạy (`npm run db:up` nếu dùng Docker) và thông tin `DB_*` trong `be/.env` |
+| Đăng nhập xong, tải lại trang thì bị đăng xuất | Mở frontend qua `http://localhost:5173` (dev server có proxy). Nếu frontend và API khác domain, thêm domain frontend vào `CORS_ORIGINS` và bật HTTPS để cookie hoạt động |
+| Cổng 3000 hoặc 5173 đang bị dùng | Đổi `PORT` trong `be/.env`; với frontend chạy `npm run dev -- --port 5174` (và cập nhật `CORS_ORIGINS`) |

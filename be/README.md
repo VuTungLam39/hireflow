@@ -8,7 +8,7 @@ API backend viết bằng **NestJS 12** (ESM) + **PostgreSQL** + **TypeORM**.
 | --- | --- |
 | Cấu hình | `@nestjs/config`, validate biến môi trường khi khởi động (`src/config/env.validation.ts`) |
 | Database | TypeORM + PostgreSQL, đặt tên cột snake_case, migration, seed admin |
-| Xác thực | JWT access token + refresh token (có rotation, lưu hash trong DB), đăng ký / đăng nhập / đăng xuất |
+| Xác thực | JWT access token (trả trong body) + refresh token trong cookie httpOnly, SameSite=Strict (có rotation, lưu hash trong DB), đăng ký / đăng nhập / đăng xuất |
 | Phân quyền | Guard toàn cục: mọi route cần đăng nhập trừ khi gắn `@Public()`; giới hạn role bằng `@Roles(Role.Admin)` |
 | Response | Format chuẩn cho mọi response thành công/lỗi, tự tách `meta` khi phân trang |
 | Validate | `class-validator`, lỗi trả về dạng `[{ field, messages }]` |
@@ -74,7 +74,7 @@ src/
 │   ├── migrations/
 │   └── seeds/
 └── modules/
-    ├── auth/               # register, login, refresh, logout, me
+    ├── auth/               # register, login, refresh, logout, me; refresh-cookie.ts đặt/xoá cookie
     ├── users/              # CRUD user (Admin)
     └── health/
 test/                       # E2E test
@@ -116,7 +116,7 @@ Lỗi:
 | --- | --- | --- |
 | POST | `/api/v1/auth/register` | Public |
 | POST | `/api/v1/auth/login` | Public |
-| POST | `/api/v1/auth/refresh` | Public (gửi `refreshToken` trong body) |
+| POST | `/api/v1/auth/refresh` | Public (đọc refresh token từ cookie `refresh_token`) |
 | POST | `/api/v1/auth/logout` | Đã đăng nhập |
 | GET | `/api/v1/auth/me` | Đã đăng nhập |
 | GET / POST | `/api/v1/users` | Admin |

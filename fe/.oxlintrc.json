@@ -25,7 +25,7 @@
   },
   "overrides": [
     {
-      "files": ["src/routes/router.tsx"],
+      "files": ["src/routes/router.tsx", "src/mocks/**/*.test.ts"],
       "rules": {
         "no-restricted-imports": "off"
       }

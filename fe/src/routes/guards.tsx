@@ -1,7 +1,8 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
+import { usePermission } from '@/hooks/use-permission'
+import type { Permission } from '@/lib/permissions'
 import ForbiddenPage from '@/pages/ForbiddenPage'
-import { useAuthStore, useIsAuthenticated } from '@/stores/auth.store'
-import type { Role } from '@/types/user'
+import { useIsAuthenticated } from '@/stores/auth.store'
 import { paths } from './paths'
 
 /** Chỉ cho vào khi đã đăng nhập; lưu lại trang đang định vào để quay lại sau khi login */
@@ -17,10 +18,10 @@ export function ProtectedRoute() {
   return <Outlet />
 }
 
-/** Chỉ cho vào khi user có một trong các role được liệt kê */
-export function RoleRoute({ roles }: { roles: Role[] }) {
-  const role = useAuthStore((s) => s.user?.role)
-  if (!role || !roles.includes(role)) return <ForbiddenPage />
+/** Chỉ cho vào khi user có permission (thay RoleRoute, kickoff mục 11.2) */
+export function PermissionRoute({ permission }: { permission: Permission }) {
+  const allowed = usePermission(permission)
+  if (!allowed) return <ForbiddenPage />
   return <Outlet />
 }
 

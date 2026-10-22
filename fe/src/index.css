@@ -1,13 +1,111 @@
 @import 'tailwindcss';
 
-/* Màu chủ đạo – dùng như bg-primary, text-primary, ... */
+/*
+ * Design token (FE Architecture mục 10): khai báo một nơi, feature chỉ dùng tên ngữ nghĩa.
+ * Bảng màu tiết chế: một màu chủ đạo (indigo) + nền trung tính hơi ấm.
+ */
 @theme {
-  --color-primary: oklch(0.55 0.2 260);
-  --color-primary-foreground: oklch(0.98 0 0);
+  --font-sans: 'Be Vietnam Pro', ui-sans-serif, system-ui, sans-serif;
+
+  --color-primary: oklch(0.52 0.19 268);
+  --color-primary-hover: oklch(0.47 0.19 268);
+  --color-primary-foreground: oklch(0.99 0 0);
+  --color-primary-soft: oklch(0.96 0.025 268);
+
+  --color-canvas: oklch(0.985 0.003 265);
+
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06);
+  --shadow-raised: 0 4px 12px -2px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.05);
+
+  --animate-fade-in: fade-in 0.25s ease-out both;
+  --animate-slide-up: slide-up 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-scale-in: scale-in 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-grow-x: grow-x 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-shimmer: shimmer 1.4s linear infinite;
+  --animate-blink: blink 1.2s ease-in-out infinite;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+  }
+  /* Thanh tiến độ "mọc" từ trái khi xuất hiện */
+  @keyframes grow-x {
+    from {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+  @keyframes blink {
+    0%,
+    100% {
+      opacity: 0.25;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
 }
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    @apply bg-canvas text-slate-900 antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  ::selection {
+    @apply bg-primary/15;
+  }
+
+  /* Hộp thoại <dialog>: hiện ra nhẹ nhàng */
+  dialog[open] {
+    @apply animate-scale-in;
+  }
+  dialog[open]::backdrop {
+    @apply animate-fade-in;
+  }
+
+  /* Tôn trọng cài đặt giảm chuyển động của hệ điều hành */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Xuất hiện lần lượt cho danh sách: style={{ '--i': index }} */
+  .stagger {
+    animation-delay: calc(min(var(--i, 0), 12) * 30ms);
+  }
+
+  /* Nền chấm bi mờ để trang trí khối thương hiệu */
+  .bg-dots {
+    background-image: radial-gradient(rgb(255 255 255 / 0.18) 1px, transparent 1px);
+    background-size: 18px 18px;
   }
 }

@@ -57,6 +57,14 @@ export function useLogout() {
   })
 }
 
+/** Đổi mật khẩu. Lỗi để form tự xử lý (gắn vào đúng ô) */
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: authApi.changePassword,
+    onSuccess: () => toast.success('Đã đổi mật khẩu. Các phiên đăng nhập khác đã bị đăng xuất'),
+  })
+}
+
 /** Đồng bộ thông tin user mới nhất từ server vào store */
 export function useMe() {
   const isAuthenticated = useIsAuthenticated()

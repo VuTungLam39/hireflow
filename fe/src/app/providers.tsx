@@ -9,7 +9,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       {children}
       <Toaster position="top-right" richColors closeButton />
-      {import.meta.env.DEV && <ReactQueryDevtools buttonPosition="bottom-left" />}
+      {import.meta.env.DEV && <ReactQueryDevtools buttonPosition="bottom-right" />}
     </QueryClientProvider>
   )
 }

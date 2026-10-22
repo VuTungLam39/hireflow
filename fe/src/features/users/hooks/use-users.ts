@@ -1,5 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { authKeys } from '@/features/auth'
 import { getErrorMessage } from '@/lib/errors'
 import { usersApi, type UpdateUserInput, type UserListParams } from '../api/users.api'
 
@@ -36,8 +37,25 @@ export function useUpdateUser() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateUserInput }) =>
       usersApi.update(id, input),
-    onSuccess: () => {
-      toast.success('Đã cập nhật')
+    // Lỗi do form hiển thị theo từng ô (EditUserDialog)
+    onSuccess: (user) => {
+      toast.success(`Đã cập nhật ${user.fullName}`)
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: userKeys.all }),
+        // Admin sửa chính mình: sidebar lấy tên mới từ /auth/me
+        queryClient.invalidateQueries({ queryKey: authKeys.me }),
+      ])
+    },
+  })
+}
+
+export function useSetUserStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      usersApi.setStatus(id, isActive),
+    onSuccess: (user) => {
+      toast.success(user.isActive ? 'Đã mở khoá tài khoản' : 'Đã khoá tài khoản')
       return queryClient.invalidateQueries({ queryKey: userKeys.all })
     },
     onError: (error) => toast.error(getErrorMessage(error)),

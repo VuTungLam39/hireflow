@@ -1,0 +1,29 @@
+/**
+ * Mã lỗi nghiệp vụ của BE → câu hiển thị tiếng Việt (FE Architecture mục 7.2).
+ * Chỉ map ở đây, không so sánh chuỗi message rải rác trong feature.
+ */
+export const ERROR_MESSAGES: Record<string, string> = {
+  UNAUTHORIZED: 'Email hoặc mật khẩu không đúng',
+  ACCOUNT_DISABLED: 'Tài khoản đã bị khoá',
+  WRONG_PASSWORD: 'Mật khẩu hiện tại không đúng',
+  REFRESH_TOKEN_REUSED: 'Phiên đăng nhập không còn hợp lệ, vui lòng đăng nhập lại',
+  FORBIDDEN: 'Bạn không có quyền thực hiện thao tác này',
+  SCOPE_FORBIDDEN: 'Dữ liệu này nằm ngoài phạm vi phòng ban của bạn',
+  NOT_FOUND: 'Không tìm thấy dữ liệu',
+  EMAIL_EXISTS: 'Email đã tồn tại',
+  DEPARTMENT_IN_USE: 'Phòng ban còn người dùng hoặc tin tuyển dụng, không thể xoá',
+  JOB_NOT_PUBLISHABLE: 'Chỉ đăng được tin ở trạng thái Nháp và có ít nhất 1 tiêu chí',
+  JOB_NOT_CLOSABLE: 'Chỉ đóng được tin đang tuyển',
+  JOB_NOT_EDITABLE: 'Tin đã đóng, không sửa được JD và tiêu chí',
+  JOB_NOT_DELETABLE: 'Chỉ xoá được tin nháp chưa có hồ sơ',
+  JOB_NOT_OPEN: 'Tin không còn nhận hồ sơ',
+  APPLICATION_DUPLICATED: 'Bạn đã nộp CV cho vị trí này',
+  CANDIDATE_ANONYMIZED: 'Ứng viên đã được ẩn danh, không thể thay đổi',
+  INVALID_STATUS_TRANSITION: 'Trạng thái hồ sơ vừa thay đổi, dữ liệu đã được tải lại',
+  REJECT_REASON_REQUIRED: 'Vui lòng nhập lý do từ chối',
+  FILE_TYPE_NOT_ALLOWED: 'Chỉ nhận file PDF hoặc DOCX, tối đa 5MB',
+  FILE_TOO_LARGE: 'File lớn hơn 5MB',
+  TOO_MANY_REQUESTS: 'Bạn thao tác quá nhanh, thử lại sau ít phút',
+  AI_UNAVAILABLE: 'Dịch vụ AI đang bận, vui lòng thử lại sau',
+  INTERNAL_ERROR: 'Máy chủ gặp lỗi, vui lòng thử lại sau',
+}
