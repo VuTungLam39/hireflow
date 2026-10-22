@@ -122,20 +122,18 @@ describe('Applications (e2e)', () => {
         job(depB.id, `Job B ${run}`),
         job(depA.id, `Job đóng ${run}`, JobStatus.Closed),
       ]);
-    const [reqA] = await ds
-      .getRepository(JobRequirement)
-      .save([
-        {
-          jobId: jobA.id,
-          jdVersion: 2,
-          position: 1,
-          label: 'NestJS',
-          type: RequirementType.Must,
-          weight: 3,
-          minYears: 2,
-          keywords: ['nestjs'],
-        },
-      ]);
+    const [reqA] = await ds.getRepository(JobRequirement).save([
+      {
+        jobId: jobA.id,
+        jdVersion: 2,
+        position: 1,
+        label: 'NestJS',
+        type: RequirementType.Must,
+        weight: 3,
+        minYears: 2,
+        keywords: ['nestjs'],
+      },
+    ]);
 
     const [c1, c2, c3] = await ds.getRepository(Candidate).save(
       ['Phạm Văn Một', 'Lê Thị Hai', 'Ngô Ba'].map((name, i) => ({
