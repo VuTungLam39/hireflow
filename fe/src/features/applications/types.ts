@@ -31,7 +31,8 @@ export interface ApplicationDetail extends ApplicationListItem {
   /** Điểm được tính theo phiên bản tiêu chí nào */
   scoredJdVersion: number | null
   aiError: string | null
-  cv: { fileId: string; fileName: string; text: string | null }
+  /** null khi CV đã bị xoá do ẩn danh (BR-DATA-03) */
+  cv: { fileId: string; fileName: string; text: string | null } | null
 }
 
 export interface StatusHistoryItem {
