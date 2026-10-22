@@ -4,6 +4,7 @@ import { FakeEmbeddingProvider } from './providers/fake.embedding.js';
 import { FakeLlmProvider } from './providers/fake.llm.js';
 import { FallbackLlmProvider } from './providers/fallback.llm.js';
 import { OllamaEmbeddingProvider } from './providers/ollama.embedding.js';
+import { OpenAICompatibleEmbeddingProvider } from './providers/openai-compatible.embedding.js';
 import { OpenAICompatibleLlmProvider } from './providers/openai-compatible.llm.js';
 
 const AI_KEYS = [
@@ -14,6 +15,7 @@ const AI_KEYS = [
   'GROQ_API_KEY',
   'GROQ_MODEL',
   'EMBEDDING_PROVIDER',
+  'EMBEDDING_MODEL',
   'EMBEDDING_DIM',
 ];
 
@@ -79,5 +81,23 @@ describe('AI provider factory', () => {
     );
     expect(embedding).toBeInstanceOf(OllamaEmbeddingProvider);
     expect(embedding).toMatchObject({ model: 'bge-m3', dimension: 1024 });
+  });
+
+  it('builds the Gemini embedding provider with its default model', () => {
+    const embedding = buildEmbeddingProvider(
+      withEnv({ EMBEDDING_PROVIDER: 'gemini', GEMINI_API_KEY: 'g' }),
+    );
+    expect(embedding).toBeInstanceOf(OpenAICompatibleEmbeddingProvider);
+    expect(embedding).toMatchObject({
+      name: 'gemini',
+      model: 'gemini-embedding-2',
+      dimension: 1024,
+    });
+  });
+
+  it('requires a Gemini key for Gemini embeddings', () => {
+    expect(() => buildEmbeddingProvider(withEnv({ EMBEDDING_PROVIDER: 'gemini' }))).toThrow(
+      /GEMINI_API_KEY is required when EMBEDDING_PROVIDER/,
+    );
   });
 });

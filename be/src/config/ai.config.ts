@@ -1,7 +1,13 @@
 import { registerAs } from '@nestjs/config';
 
 export type LlmProviderName = 'gemini' | 'groq' | 'ollama' | 'fake';
-export type EmbeddingProviderName = 'ollama' | 'fake';
+export type EmbeddingProviderName = 'gemini' | 'ollama' | 'fake';
+
+const DEFAULT_EMBEDDING_MODEL: Record<EmbeddingProviderName, string> = {
+  gemini: 'gemini-embedding-2',
+  ollama: 'bge-m3',
+  fake: 'fake',
+};
 
 const optional = (value: string | undefined) => (value?.trim() ? value.trim() : undefined);
 
@@ -30,12 +36,18 @@ export const buildAiConfig = () => ({
     model: process.env.OLLAMA_MODEL ?? 'qwen3:4b',
     jsonMode: (process.env.OLLAMA_JSON_MODE ?? 'json_schema') as 'json_schema' | 'json_object',
   },
-  embedding: {
-    provider: (process.env.EMBEDDING_PROVIDER ?? 'fake') as EmbeddingProviderName,
-    model: process.env.EMBEDDING_MODEL ?? 'bge-m3',
-    dimension: Number(process.env.EMBEDDING_DIM ?? 1024),
-  },
+  embedding: embeddingConfig(),
 });
+
+function embeddingConfig() {
+  const provider = (process.env.EMBEDDING_PROVIDER ?? 'fake') as EmbeddingProviderName;
+  return {
+    provider,
+    model: optional(process.env.EMBEDDING_MODEL) ?? DEFAULT_EMBEDDING_MODEL[provider],
+    dimension: Number(process.env.EMBEDDING_DIM ?? 1024),
+    batchSize: Number(process.env.EMBEDDING_BATCH_SIZE ?? 100),
+  };
+}
 
 export type AiConfig = ReturnType<typeof buildAiConfig>;
 

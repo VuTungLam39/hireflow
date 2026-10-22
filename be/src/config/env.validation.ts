@@ -132,11 +132,17 @@ class EnvironmentVariables {
   @IsIn(['json_schema', 'json_object'])
   OLLAMA_JSON_MODE: string = 'json_schema';
 
-  @IsIn(['ollama', 'fake'])
+  @IsIn(['gemini', 'ollama', 'fake'])
   EMBEDDING_PROVIDER: string = 'fake';
 
+  @IsOptional()
   @IsString()
-  EMBEDDING_MODEL: string = 'bge-m3';
+  EMBEDDING_MODEL?: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  EMBEDDING_BATCH_SIZE: number = 100;
 
   // Database Design 4.9
   @IsInt()
