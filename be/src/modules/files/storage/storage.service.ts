@@ -1,25 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+export abstract class StorageService {
+  abstract readonly driver: string;
+  abstract put(key: string, body: Buffer, contentType?: string): Promise<void>;
+  abstract get(key: string): Promise<Buffer>;
+  abstract remove(key: string): Promise<void>;
+}
 
-// TODO tuần 3: thay bằng MinIO / S3 (Kickoff 13)
-@Injectable()
-export class StorageService {
-  private readonly root = resolve(process.cwd(), 'storage');
+export class StorageKeyError extends Error {}
 
-  async put(key: string, body: Buffer): Promise<void> {
-    const path = this.pathOf(key);
-    await mkdir(dirname(path), { recursive: true });
-    await writeFile(path, body);
-  }
-
-  async remove(key: string): Promise<void> {
-    await rm(this.pathOf(key), { force: true });
-  }
-
-  private pathOf(key: string): string {
-    const path = resolve(join(this.root, key));
-    if (!path.startsWith(this.root)) throw new Error(`Invalid storage key: ${key}`);
-    return path;
+export class StorageNotFoundError extends Error {
+  constructor(readonly key: string) {
+    super(`Storage object not found: ${key}`);
   }
 }

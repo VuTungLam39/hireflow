@@ -11,6 +11,7 @@ import {
   Min,
   Matches,
   MinLength,
+  ValidateIf,
   validateSync,
 } from 'class-validator';
 
@@ -143,6 +144,42 @@ class EnvironmentVariables {
   @Min(1)
   @Max(100)
   EMBEDDING_BATCH_SIZE: number = 100;
+
+  @IsString()
+  REDIS_HOST: string = 'localhost';
+
+  @IsInt()
+  @Min(1)
+  @Max(65535)
+  REDIS_PORT: number = 6379;
+
+  @IsIn(['local', 's3'])
+  STORAGE_DRIVER: string = 'local';
+
+  @IsString()
+  STORAGE_LOCAL_ROOT: string = 'storage';
+
+  @IsString()
+  S3_ENDPOINT: string = 'http://localhost:9000';
+
+  @IsString()
+  S3_REGION: string = 'us-east-1';
+
+  @Matches(/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/)
+  S3_BUCKET: string = 'hireflow-cv';
+
+  @ValidateIf((env: EnvironmentVariables) => env.STORAGE_DRIVER === 's3')
+  @IsString()
+  @IsNotEmpty()
+  S3_ACCESS_KEY?: string;
+
+  @ValidateIf((env: EnvironmentVariables) => env.STORAGE_DRIVER === 's3')
+  @IsString()
+  @IsNotEmpty()
+  S3_SECRET_KEY?: string;
+
+  @IsIn(['true', 'false'])
+  S3_FORCE_PATH_STYLE: string = 'true';
 
   // Database Design 4.9
   @IsInt()

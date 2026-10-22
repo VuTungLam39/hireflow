@@ -28,7 +28,7 @@ export class FilesService {
   async store(cv: CheckedCv): Promise<string> {
     const now = new Date();
     const key = `cv/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${randomUUID()}.${cv.ext}`;
-    await this.storage.put(key, cv.buffer);
+    await this.storage.put(key, cv.buffer, cv.mime);
     return key;
   }
 
