@@ -1,6 +1,16 @@
 import { delay, http } from 'msw'
 import { db } from '../data'
-import { api, authorize, fail, isStrongPassword, ok, SESSION_KEY, toUser, tokenFor } from '../http'
+import {
+  api,
+  latency,
+  authorize,
+  fail,
+  isStrongPassword,
+  ok,
+  SESSION_KEY,
+  toUser,
+  tokenFor,
+} from '../http'
 
 /**
  * Giả lập cookie refresh token bằng sessionStorage: tải lại trang vẫn giữ phiên,
@@ -22,7 +32,7 @@ export const authHandlers = [
   }),
 
   http.post(api('/auth/refresh'), async () => {
-    await delay(150)
+    await latency(150)
     const user = db.users.find((u) => u.id === sessionStorage.getItem(SESSION_KEY))
     if (!user?.isActive) return fail(401, 'UNAUTHORIZED', 'Missing refresh token')
     return ok(tokenFor(user))
@@ -34,7 +44,7 @@ export const authHandlers = [
   }),
 
   http.get(api('/auth/me'), async ({ request }) => {
-    await delay(100)
+    await latency(100)
     const user = authorize(request)
     if (user instanceof Response) return user
     return ok(toUser(user))

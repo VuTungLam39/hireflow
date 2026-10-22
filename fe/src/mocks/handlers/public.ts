@@ -1,7 +1,17 @@
 import { delay, http } from 'msw'
 import type { PublicJob, PublicJobSummary } from '@/features/public-jobs'
 import { addApplication, createCandidate, db, uid, type JobRow } from '../data'
-import { api, fail, includesText, checkCvFile, notFound, ok, paginate, searchParams } from '../http'
+import {
+  api,
+  latency,
+  fail,
+  includesText,
+  checkCvFile,
+  notFound,
+  ok,
+  paginate,
+  searchParams,
+} from '../http'
 
 const toPublicSummary = (job: JobRow): PublicJobSummary => ({
   id: job.id,
@@ -36,7 +46,7 @@ export const publicHandlers = [
   }),
 
   http.post(api('/public/jobs/:id/apply'), async ({ request, params }) => {
-    await delay(800)
+    await latency(800)
     const job = db.jobs.find((j) => j.id === params.id && j.status === 'OPEN')
     if (!job) return notFound('Job')
 

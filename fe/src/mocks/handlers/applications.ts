@@ -19,6 +19,7 @@ import {
 } from '../data'
 import {
   api,
+  latency,
   authorize,
   candidateOf,
   fail,
@@ -217,7 +218,7 @@ export const applicationHandlers = [
 
   // BR-APP-10: HR tải CV hộ ứng viên vào job OPEN. Kiểm như nộp công khai, nguồn HR_UPLOAD.
   http.post(api('/jobs/:id/applications'), async ({ request, params }) => {
-    await delay(800)
+    await latency(800)
     const user = authorize(request, Permission.ApplicationCreate)
     if (user instanceof Response) return user
     const job = db.jobs.find((j) => j.id === params.id && inScope(user, j.departmentId))

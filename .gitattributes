@@ -1,0 +1,9 @@
+# Luôn dùng LF cho file text (Prettier yêu cầu endOfLine: lf), kể cả khi máy bật core.autocrlf
+* text=auto eol=lf
+
+# File nhị phân
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
+*.docx binary
