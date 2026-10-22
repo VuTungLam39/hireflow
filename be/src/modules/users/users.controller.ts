@@ -13,10 +13,12 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator.js';
+import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { Role } from '../../common/enums/role.enum.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { QueryUserDto } from './dto/query-user.dto.js';
+import { UpdateUserStatusDto } from './dto/update-user-status.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { UsersService } from './users.service.js';
 
@@ -53,11 +55,22 @@ export class UsersController {
     return this.usersService.update(id, dto);
   }
 
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Khoá / mở tài khoản; khoá thì thu hồi mọi phiên (Admin)' })
+  @ResponseMessage('User status updated')
+  setStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateUserStatusDto,
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.usersService.setStatus(id, dto.isActive, actorId);
+  }
+
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Xoá mềm user (Admin)' })
   @ResponseMessage('User deleted')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.usersService.remove(id);
+  remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser('id') actorId: string) {
+    return this.usersService.remove(id, actorId);
   }
 }

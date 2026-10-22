@@ -1,7 +1,7 @@
 import { api } from '@/lib/api-client'
 import type { ApiResponse } from '@/types/api'
 import type { AccessToken, User } from '@/types/user'
-import type { ChangePasswordInput, LoginInput, RegisterInput } from '../schemas/auth.schema'
+import type { ChangePasswordInput, LoginInput } from '../schemas/auth.schema'
 
 export interface AuthResult {
   user: User
@@ -11,9 +11,6 @@ export interface AuthResult {
 export const authApi = {
   login: async (input: LoginInput) =>
     (await api.post<ApiResponse<AuthResult>>('/auth/login', input)).data.data,
-
-  register: async (input: RegisterInput) =>
-    (await api.post<ApiResponse<AuthResult>>('/auth/register', input)).data.data,
 
   logout: async () => {
     await api.post('/auth/logout')

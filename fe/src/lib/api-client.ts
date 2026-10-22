@@ -21,7 +21,7 @@ api.interceptors.request.use((config) => {
 })
 
 // Các endpoint không được tự refresh khi trả 401 (tránh vòng lặp)
-const NO_REFRESH_URLS = ['/auth/login', '/auth/register', '/auth/refresh']
+const NO_REFRESH_URLS = ['/auth/login', '/auth/refresh']
 
 // Nhiều request cùng bị 401 (hoặc khôi phục phiên lúc tải trang) dùng chung 1 lần refresh.
 // Quan trọng vì refresh token xoay vòng: gọi 2 lần song song thì lần sau sẽ bị từ chối.

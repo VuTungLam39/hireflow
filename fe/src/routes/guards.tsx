@@ -25,7 +25,7 @@ export function PermissionRoute({ permission }: { permission: Permission }) {
   return <Outlet />
 }
 
-/** Trang login/register: đã đăng nhập thì chuyển về trang chủ */
+/** Trang login: đã đăng nhập thì chuyển về trang chủ */
 export function GuestRoute() {
   const isAuthenticated = useIsAuthenticated()
   if (isAuthenticated) return <Navigate to={paths.home} replace />

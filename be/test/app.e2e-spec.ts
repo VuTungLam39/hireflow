@@ -7,6 +7,7 @@ import { DataSource, In } from 'typeorm';
 import { AppModule } from '../src/app.module.js';
 import { Role } from '../src/common/enums/role.enum.js';
 import { Department } from '../src/modules/departments/entities/department.entity.js';
+import { RefreshTokensService } from '../src/modules/refresh-tokens/refresh-tokens.service.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
 
@@ -26,6 +27,7 @@ describe('App (e2e)', () => {
   const adminEmail = `e2e-admin-${run}@example.com`;
   const hrEmail = `e2e-hr-${run}@example.com`;
   const hmEmail = `e2e-hm-${run}@example.com`;
+  const lockEmail = `e2e-lock-${run}@example.com`;
   const departmentCode = `E2E_${run}`.toUpperCase();
   let departmentId = '';
   let adminToken = '';
@@ -35,6 +37,14 @@ describe('App (e2e)', () => {
   const server = () => app.getHttpServer();
   const asAdmin = (req: request.Test) => req.set('Authorization', `Bearer ${adminToken}`);
   const asHr = (req: request.Test) => req.set('Authorization', `Bearer ${hrToken}`);
+  const refresh = (cookie: string) =>
+    request(server()).post('/api/v1/auth/refresh').set('Cookie', cookie);
+  const sessionOf = async (email: string) => {
+    const user = await dataSource.getRepository(User).findOneByOrFail({ email });
+    return `refresh_token=${await app.get(RefreshTokensService).issue(user.id)}`;
+  };
+  const userId = async (email: string) =>
+    (await dataSource.getRepository(User).findOneByOrFail({ email })).id;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -48,6 +58,7 @@ describe('App (e2e)', () => {
     await users.save([
       users.create({ email: adminEmail, fullName: 'E2E Admin', role: Role.Admin, passwordHash }),
       users.create({ email: hrEmail, fullName: 'E2E HR', role: Role.Hr, passwordHash }),
+      users.create({ email: lockEmail, fullName: 'E2E Lock', role: Role.Hr, passwordHash }),
     ]);
 
     const admin = await request(server())
@@ -67,7 +78,9 @@ describe('App (e2e)', () => {
   });
 
   afterAll(async () => {
-    await dataSource.getRepository(User).delete({ email: In([adminEmail, hrEmail, hmEmail]) });
+    await dataSource
+      .getRepository(User)
+      .delete({ email: In([adminEmail, hrEmail, hmEmail, lockEmail]) });
     await dataSource.getRepository(Department).delete({ code: departmentCode });
     await app.close();
   });
@@ -83,15 +96,42 @@ describe('App (e2e)', () => {
       expect(hrCookie).toMatch(/SameSite=Strict/i);
       expect(hrCookie).toMatch(/Path=\/api\/v1\/auth/i);
 
-      const refreshed = await request(server())
-        .post('/api/v1/auth/refresh')
-        .set('Cookie', hrCookie)
-        .expect(200);
+      const refreshed = await refresh(hrCookie).expect(200);
       expect(refreshed.body.data.accessToken).toBeTruthy();
-      expect(refreshCookieOf(refreshed)).not.toBe(hrCookie);
+      expect(refreshed.body.data.refreshToken).toBeUndefined();
+      const next = refreshCookieOf(refreshed);
+      expect(next).not.toBe(hrCookie);
+      expect((await refresh(next).expect(200)).body.data.accessToken).toBeTruthy();
+    });
 
-      await request(server()).post('/api/v1/auth/refresh').set('Cookie', hrCookie).expect(401);
-      await request(server()).post('/api/v1/auth/refresh').expect(401);
+    it('reusing an old refresh token revokes the whole chain (BE-06)', async () => {
+      const first = await sessionOf(hrEmail);
+      const second = refreshCookieOf(await refresh(first).expect(200));
+
+      const reused = await refresh(first).expect(401);
+      expect(reused.body.code).toBe('REFRESH_TOKEN_REUSED');
+      expect(refreshCookieOf(reused)).toMatch(/refresh_token=;/);
+
+      const after = await refresh(second).expect(401);
+      expect(after.body.code).toBe('REFRESH_TOKEN_REUSED');
+    });
+
+    it('rejects a missing or unknown refresh token with 401 UNAUTHORIZED', async () => {
+      const missing = await request(server()).post('/api/v1/auth/refresh').expect(401);
+      expect(missing.body.code).toBe('UNAUTHORIZED');
+      const unknown = await refresh('refresh_token=made-up').expect(401);
+      expect(unknown.body.code).toBe('UNAUTHORIZED');
+    });
+
+    it('logout revokes the current chain only', async () => {
+      const current = await sessionOf(hrEmail);
+      const other = await sessionOf(hrEmail);
+      const res = await asHr(request(server()).post('/api/v1/auth/logout'))
+        .set('Cookie', current)
+        .expect(200);
+      expect(refreshCookieOf(res)).toMatch(/refresh_token=;/);
+      await refresh(current).expect(401);
+      await refresh(other).expect(200);
     });
 
     it('GET /auth/me returns role and department', async () => {
@@ -102,6 +142,8 @@ describe('App (e2e)', () => {
         departmentId: null,
         department: null,
       });
+      expect(res.body.data.permissions).toEqual(expect.arrayContaining(['application:create']));
+      expect(res.body.data.permissions).not.toContain('user:manage');
     });
 
     it('has no self-registration (BR-ACC-01)', async () => {
@@ -120,24 +162,86 @@ describe('App (e2e)', () => {
       expect(res.body.code).toBe('UNAUTHORIZED');
     });
 
-    it('rejects a disabled account with 403 ACCOUNT_DISABLED (BR-ACC-04)', async () => {
-      const users = dataSource.getRepository(User);
-      await users.update({ email: hrEmail }, { isActive: false });
-      try {
-        const res = await request(server())
-          .post('/api/v1/auth/login')
-          .send({ email: hrEmail, password })
-          .expect(403);
-        expect(res.body.code).toBe('ACCOUNT_DISABLED');
-      } finally {
-        await users.update({ email: hrEmail }, { isActive: true });
-      }
+    it('changes the password and signs out other sessions (BR-ACC-06)', async () => {
+      const current = await sessionOf(hrEmail);
+      const other = await sessionOf(hrEmail);
+      const change = (body: object) =>
+        asHr(request(server()).patch('/api/v1/auth/password')).set('Cookie', current).send(body);
+
+      const wrong = await change({ currentPassword: 'Wrong12345', newPassword: 'NewPass123' });
+      expect(wrong.status).toBe(400);
+      expect(wrong.body.code).toBe('WRONG_PASSWORD');
+      expect(wrong.body.errors).toEqual([expect.objectContaining({ field: 'currentPassword' })]);
+
+      const weak = await change({ currentPassword: password, newPassword: 'weak' });
+      expect(weak.status).toBe(400);
+      expect(weak.body.code).toBe('VALIDATION_FAILED');
+
+      await change({ currentPassword: password, newPassword: 'NewPass123' }).expect(200);
+      await refresh(current).expect(200);
+      await refresh(other).expect(401);
+
+      const saved = await dataSource
+        .getRepository(User)
+        .createQueryBuilder('user')
+        .addSelect('user.passwordHash')
+        .where('user.email = :email', { email: hrEmail })
+        .getOneOrFail();
+      expect(await bcrypt.compare('NewPass123', saved.passwordHash)).toBe(true);
     });
 
     it('requires a token for protected routes', async () => {
       const res = await request(server()).get('/api/v1/users').expect(401);
       expect(res.body.code).toBe('UNAUTHORIZED');
       expect(res.headers['x-request-id']).toBeTruthy();
+    });
+  });
+
+  describe('account status (BE-07)', () => {
+    it('locking revokes sessions and blocks login; unlocking allows it again (BR-ACC-04)', async () => {
+      const id = await userId(lockEmail);
+      const session = await sessionOf(lockEmail);
+
+      const locked = await asAdmin(request(server()).patch(`/api/v1/users/${id}/status`))
+        .send({ isActive: false })
+        .expect(200);
+      expect(locked.body.data.isActive).toBe(false);
+      await refresh(session).expect(401);
+
+      const login = await request(server())
+        .post('/api/v1/auth/login')
+        .send({ email: lockEmail, password })
+        .expect(403);
+      expect(login.body.code).toBe('ACCOUNT_DISABLED');
+
+      const unlocked = await asAdmin(request(server()).patch(`/api/v1/users/${id}/status`))
+        .send({ isActive: true })
+        .expect(200);
+      expect(unlocked.body.data.isActive).toBe(true);
+    });
+
+    it('isActive is only changed through /status', async () => {
+      const id = await userId(lockEmail);
+      const res = await asAdmin(request(server()).patch(`/api/v1/users/${id}`))
+        .send({ isActive: false })
+        .expect(400);
+      expect(res.body.errors).toEqual([expect.objectContaining({ field: 'isActive' })]);
+    });
+
+    it('an admin cannot disable or delete themself (BR-ACC-05)', async () => {
+      const id = await userId(adminEmail);
+      const lockSelf = await asAdmin(request(server()).patch(`/api/v1/users/${id}/status`))
+        .send({ isActive: false })
+        .expect(400);
+      expect(lockSelf.body.code).toBe('VALIDATION_FAILED');
+      await asAdmin(request(server()).delete(`/api/v1/users/${id}`)).expect(400);
+    });
+
+    it('non-admin cannot change account status', async () => {
+      const id = await userId(lockEmail);
+      await asHr(request(server()).patch(`/api/v1/users/${id}/status`))
+        .send({ isActive: false })
+        .expect(403);
     });
   });
 

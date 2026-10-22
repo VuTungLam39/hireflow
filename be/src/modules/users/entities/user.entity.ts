@@ -39,11 +39,6 @@ export class User extends AbstractEntity {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
-  @Exclude()
-  @ApiHideProperty()
-  @Column({ type: 'varchar', length: 255, nullable: true, select: false })
-  refreshTokenHash: string | null;
-
   @Column({ type: 'timestamptz', nullable: true })
   lastLoginAt: Date | null;
 }

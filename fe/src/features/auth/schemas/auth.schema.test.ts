@@ -1,4 +1,4 @@
-import { loginSchema, registerSchema } from './auth.schema'
+import { changePasswordSchema, loginSchema, passwordSchema } from './auth.schema'
 
 describe('auth schemas', () => {
   it('normalizes email on login', () => {
@@ -6,24 +6,40 @@ describe('auth schemas', () => {
     expect(result.email).toBe('admin@example.com')
   })
 
-  it('rejects weak passwords', () => {
-    const result = registerSchema.safeParse({
-      fullName: 'Intern',
-      email: 'a@b.com',
-      password: 'password',
-      confirmPassword: 'password',
-    })
-    expect(result.success).toBe(false)
+  it.each(['password', 'PASSWORD1', 'Pass1', `Aa1${'x'.repeat(70)}`])(
+    'rejects weak or too long password %s (BR-ACC-06)',
+    (value) => {
+      expect(passwordSchema.safeParse(value).success).toBe(false)
+    },
+  )
+
+  it('accepts a strong password', () => {
+    expect(passwordSchema.safeParse('Password123').success).toBe(true)
   })
 
-  it('rejects mismatched confirm password', () => {
-    const result = registerSchema.safeParse({
-      fullName: 'Intern',
-      email: 'a@b.com',
-      password: 'Password123',
-      confirmPassword: 'Password124',
+  describe('changePasswordSchema', () => {
+    const valid = {
+      currentPassword: 'Password123',
+      newPassword: 'NewPass123',
+      confirmPassword: 'NewPass123',
+    }
+
+    it('accepts a valid change', () => {
+      expect(changePasswordSchema.safeParse(valid).success).toBe(true)
     })
-    expect(result.success).toBe(false)
-    expect(result.error?.issues[0].path).toEqual(['confirmPassword'])
+
+    it('rejects reusing the current password', () => {
+      const result = changePasswordSchema.safeParse({
+        ...valid,
+        newPassword: valid.currentPassword,
+        confirmPassword: valid.currentPassword,
+      })
+      expect(result.error?.issues[0].path).toEqual(['newPassword'])
+    })
+
+    it('rejects mismatched confirm password', () => {
+      const result = changePasswordSchema.safeParse({ ...valid, confirmPassword: 'NewPass124' })
+      expect(result.error?.issues[0].path).toEqual(['confirmPassword'])
+    })
   })
 })

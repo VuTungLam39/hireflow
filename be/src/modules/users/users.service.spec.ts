@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import { Role } from '../../common/enums/role.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import { DepartmentsService } from '../departments/departments.service.js';
+import { RefreshTokensService } from '../refresh-tokens/refresh-tokens.service.js';
 import type { CreateUserDto } from './dto/create-user.dto.js';
 import { User } from './entities/user.entity.js';
 import { UsersService } from './users.service.js';
@@ -40,9 +41,13 @@ describe('UsersService', () => {
       return stored;
     }),
     softDelete: vi.fn(),
+    update: vi.fn(async (_id: string, patch: Partial<User>) => {
+      stored = { ...stored, ...patch };
+    }),
     createQueryBuilder: vi.fn(() => queryBuilder(() => stored)),
   };
   const departments = { exists: vi.fn() };
+  const refreshTokens = { revokeAllForUser: vi.fn() };
 
   const dto = (patch: Partial<CreateUserDto> = {}): CreateUserDto => ({
     email: 'a@b.com',
@@ -62,6 +67,7 @@ describe('UsersService', () => {
         UsersService,
         { provide: getRepositoryToken(User), useValue: repo },
         { provide: DepartmentsService, useValue: departments },
+        { provide: RefreshTokensService, useValue: refreshTokens },
       ],
     }).compile();
     service = moduleRef.get(UsersService);
@@ -142,9 +148,57 @@ describe('UsersService', () => {
       expect(error.getResponse()).toMatchObject({ errors: [{ field: 'departmentId' }] });
     });
 
-    it('re-hashes a new password', async () => {
+    it('re-hashes a new password and signs the user out everywhere (BR-ACC-06)', async () => {
       const user = await service.update('u-1', { password: 'NewPass123' });
       expect(await bcrypt.compare('NewPass123', user.passwordHash)).toBe(true);
+      expect(refreshTokens.revokeAllForUser).toHaveBeenCalledWith('u-1');
+    });
+
+    it('keeps sessions when the password is not changed', async () => {
+      await service.update('u-1', { fullName: 'Tên mới' });
+      expect(refreshTokens.revokeAllForUser).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('setStatus (BR-ACC-04, BR-ACC-05)', () => {
+    beforeEach(() => {
+      stored = { id: 'u-1', role: Role.Hr, isActive: true };
+    });
+
+    it('disables the account and revokes every refresh token', async () => {
+      const user = await service.setStatus('u-1', false, 'admin-1');
+      expect(user.isActive).toBe(false);
+      expect(refreshTokens.revokeAllForUser).toHaveBeenCalledWith('u-1');
+    });
+
+    it('re-enables without touching sessions', async () => {
+      await service.setStatus('u-1', true, 'admin-1');
+      expect(refreshTokens.revokeAllForUser).not.toHaveBeenCalled();
+    });
+
+    it('does not let an admin disable themself', async () => {
+      const error = await errorOf(service.setStatus('u-1', false, 'u-1'));
+      expect(error.getStatus()).toBe(HttpStatus.BAD_REQUEST);
+      expect(error.code).toBe(ErrorCode.ValidationFailed);
+      expect(repo.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('remove (BR-ACC-05)', () => {
+    beforeEach(() => {
+      stored = { id: 'u-1', role: Role.Hr };
+    });
+
+    it('soft-deletes and revokes sessions', async () => {
+      await service.remove('u-1', 'admin-1');
+      expect(repo.softDelete).toHaveBeenCalledWith('u-1');
+      expect(refreshTokens.revokeAllForUser).toHaveBeenCalledWith('u-1');
+    });
+
+    it('does not let an admin delete themself', async () => {
+      const error = await errorOf(service.remove('u-1', 'u-1'));
+      expect(error.getStatus()).toBe(HttpStatus.BAD_REQUEST);
+      expect(repo.softDelete).not.toHaveBeenCalled();
     });
   });
 

@@ -17,26 +17,6 @@ export const loginSchema = z.object({
 })
 export type LoginInput = z.infer<typeof loginSchema>
 
-export const registerSchema = z
-  .object({
-    fullName: z
-      .string()
-      .trim()
-      .min(2, 'Họ tên ít nhất 2 ký tự')
-      .max(100, 'Họ tên tối đa 100 ký tự'),
-    email: emailSchema,
-    password: passwordSchema,
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    path: ['confirmPassword'],
-    message: 'Mật khẩu xác nhận không khớp',
-  })
-export type RegisterFormValues = z.input<typeof registerSchema>
-export type RegisterFormOutput = z.output<typeof registerSchema>
-/** Dữ liệu gửi lên API (không có confirmPassword) */
-export type RegisterInput = Omit<RegisterFormOutput, 'confirmPassword'>
-
 /** Đổi mật khẩu (API Contract 4.1, BR-ACC-06) */
 export const changePasswordSchema = z
   .object({
