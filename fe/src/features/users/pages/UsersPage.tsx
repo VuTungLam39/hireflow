@@ -1,145 +1,183 @@
+import { UserPlus } from 'lucide-react'
 import { useState } from 'react'
-import { Badge, Button, Card, Input, Pagination, Select, Spinner } from '@/components/ui'
-import { useDebounce } from '@/hooks/use-debounce'
-import { getErrorMessage } from '@/lib/errors'
+import { z } from 'zod'
+import {
+  ConfirmDialog,
+  DataTable,
+  FilterBar,
+  PageHeader,
+  SearchInput,
+  type Column,
+} from '@/components/shared'
+import { Avatar, Badge, Button, Card, Select } from '@/components/ui'
+import { pageFields, useListParams } from '@/hooks/use-list-params'
 import { formatDateTime } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
-import { Role, type User } from '@/types/user'
+import { Role, ROLE_LABELS, type User } from '@/types/user'
 import { CreateUserDialog } from '../components/CreateUserDialog'
-import { useDeleteUser, useUpdateUser, useUsers } from '../hooks/use-users'
+import { EditUserDialog } from '../components/EditUserDialog'
+import { useDeleteUser, useSetUserStatus, useUsers } from '../hooks/use-users'
 
-const PAGE_SIZE = 10
+const listSchema = z.object({
+  ...pageFields,
+  search: z.string().optional().catch(undefined),
+  role: z.enum([Role.Admin, Role.Hr, Role.HiringManager]).optional().catch(undefined),
+})
+
+const ROLE_TONE = { admin: 'info', hr: 'success', hiring_manager: 'warning' } as const
 
 export default function UsersPage() {
   const currentUserId = useAuthStore((s) => s.user?.id)
-  const [page, setPage] = useState(1)
-  const [search, setSearch] = useState('')
-  const [role, setRole] = useState<Role | ''>('')
+  const [params, setParams] = useListParams(listSchema)
   const [creating, setCreating] = useState(false)
-  const debouncedSearch = useDebounce(search)
+  const [editing, setEditing] = useState<User | null>(null)
+  const [deleting, setDeleting] = useState<User | null>(null)
 
-  const { data, isPending, isError, error, isFetching } = useUsers({
-    page,
-    limit: PAGE_SIZE,
-    search: debouncedSearch || undefined,
-    role: role || undefined,
-  })
-  const updateUser = useUpdateUser()
+  const query = useUsers(params)
+  const setStatus = useSetUserStatus()
   const deleteUser = useDeleteUser()
 
-  const toggleActive = (user: User) =>
-    updateUser.mutate({ id: user.id, input: { isActive: !user.isActive } })
-
-  const remove = (user: User) => {
-    if (window.confirm(`Xoá người dùng ${user.email}?`)) deleteUser.mutate(user.id)
-  }
+  const columns: Column<User>[] = [
+    {
+      key: 'name',
+      header: 'Họ tên',
+      cell: (u) => (
+        <div className="flex items-center gap-3">
+          <Avatar name={u.fullName} size="sm" className="hidden md:inline-flex" />
+          <div className="min-w-0">
+            <p className="font-medium">{u.fullName}</p>
+            <p className="text-xs text-slate-500">{u.email}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'role',
+      header: 'Vai trò',
+      cell: (u) => <Badge tone={ROLE_TONE[u.role]}>{ROLE_LABELS[u.role]}</Badge>,
+    },
+    { key: 'dept', header: 'Phòng ban', cell: (u) => u.department?.name ?? '—' },
+    {
+      key: 'status',
+      header: 'Trạng thái',
+      cell: (u) => (
+        <Badge tone={u.isActive ? 'success' : 'danger'}>
+          {u.isActive ? 'Hoạt động' : 'Đã khoá'}
+        </Badge>
+      ),
+    },
+    {
+      key: 'lastLogin',
+      header: 'Đăng nhập gần nhất',
+      cell: (u) => <span className="text-slate-500">{formatDateTime(u.lastLoginAt)}</span>,
+    },
+    {
+      key: 'actions',
+      header: '',
+      isAction: true,
+      className: 'text-right whitespace-nowrap',
+      // BR-ACC-05: không cho tự khoá / tự xoá chính mình
+      cell: (u) => (
+        <>
+          <Button variant="ghost" size="sm" onClick={() => setEditing(u)}>
+            Sửa
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={u.id === currentUserId}
+            onClick={() => setStatus.mutate({ id: u.id, isActive: !u.isActive })}
+          >
+            {u.isActive ? 'Khoá' : 'Mở khoá'}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-red-600"
+            disabled={u.id === currentUserId}
+            onClick={() => setDeleting(u)}
+          >
+            Xoá
+          </Button>
+        </>
+      ),
+    },
+  ]
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Người dùng</h1>
-        <Button onClick={() => setCreating(true)}>+ Thêm người dùng</Button>
-      </div>
+      <PageHeader
+        title="Người dùng"
+        description="Tài khoản nội bộ do Admin tạo, không có trang tự đăng ký."
+        actions={
+          <Button onClick={() => setCreating(true)}>
+            <UserPlus />
+            Thêm người dùng
+          </Button>
+        }
+      />
 
       <Card className="space-y-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <Input
+        <FilterBar
+          onReset={
+            params.search || params.role ? () => setParams({ search: null, role: null }) : undefined
+          }
+        >
+          <SearchInput
+            value={params.search}
+            onChange={(search) => setParams({ search })}
             placeholder="Tìm theo email hoặc họ tên..."
-            className="max-w-xs"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
           />
           <Select
             aria-label="Lọc theo vai trò"
-            value={role}
-            onChange={(e) => {
-              setRole(e.target.value as Role | '')
-              setPage(1)
-            }}
+            value={params.role ?? ''}
+            onChange={(e) => setParams({ role: (e.target.value || null) as Role | null })}
           >
             <option value="">Tất cả vai trò</option>
-            <option value={Role.Admin}>Admin</option>
-            <option value={Role.User}>User</option>
+            {Object.values(Role).map((role) => (
+              <option key={role} value={role}>
+                {ROLE_LABELS[role]}
+              </option>
+            ))}
           </Select>
-          {isFetching && !isPending && <Spinner className="text-primary size-4" />}
-        </div>
+        </FilterBar>
 
-        {isPending ? (
-          <div className="flex justify-center py-10">
-            <Spinner className="text-primary size-6" />
-          </div>
-        ) : isError ? (
-          <p className="py-10 text-center text-red-600">{getErrorMessage(error)}</p>
-        ) : data.items.length === 0 ? (
-          <p className="py-10 text-center text-slate-500">Không có người dùng nào</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-200 text-slate-500">
-                <tr>
-                  <th className="py-2 pr-4 font-medium">Họ tên</th>
-                  <th className="py-2 pr-4 font-medium">Email</th>
-                  <th className="py-2 pr-4 font-medium">Vai trò</th>
-                  <th className="py-2 pr-4 font-medium">Trạng thái</th>
-                  <th className="py-2 pr-4 font-medium">Đăng nhập gần nhất</th>
-                  <th className="py-2 font-medium" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {data.items.map((user) => {
-                  const isSelf = user.id === currentUserId
-                  return (
-                    <tr key={user.id}>
-                      <td className="py-3 pr-4 font-medium">{user.fullName}</td>
-                      <td className="py-3 pr-4">{user.email}</td>
-                      <td className="py-3 pr-4">
-                        <Badge tone={user.role === Role.Admin ? 'info' : 'neutral'}>
-                          {user.role}
-                        </Badge>
-                      </td>
-                      <td className="py-3 pr-4">
-                        <Badge tone={user.isActive ? 'success' : 'danger'}>
-                          {user.isActive ? 'Hoạt động' : 'Đã khoá'}
-                        </Badge>
-                      </td>
-                      <td className="py-3 pr-4 text-slate-500">
-                        {formatDateTime(user.lastLoginAt)}
-                      </td>
-                      <td className="py-3 text-right whitespace-nowrap">
-                        {/* Không cho tự khoá / tự xoá chính mình */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={isSelf}
-                          onClick={() => toggleActive(user)}
-                        >
-                          {user.isActive ? 'Khoá' : 'Mở khoá'}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600"
-                          disabled={isSelf}
-                          onClick={() => remove(user)}
-                        >
-                          Xoá
-                        </Button>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {data && <Pagination meta={data.meta} onPageChange={setPage} />}
+        <DataTable
+          columns={columns}
+          data={query.data?.items}
+          rowKey={(u) => u.id}
+          isPending={query.isPending}
+          isError={query.isError}
+          error={query.error}
+          onRetry={query.refetch}
+          isFetching={query.isFetching && !query.isPending}
+          emptyTitle="Không có người dùng nào"
+          meta={query.data?.meta}
+          onPageChange={(page) => setParams({ page })}
+        />
       </Card>
 
       <CreateUserDialog open={creating} onClose={() => setCreating(false)} />
+      {editing && (
+        <EditUserDialog
+          key={editing.id}
+          user={editing}
+          isSelf={editing.id === currentUserId}
+          onClose={() => setEditing(null)}
+        />
+      )}
+      <ConfirmDialog
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        title="Xoá người dùng?"
+        description={`Tài khoản ${deleting?.email} sẽ bị xoá và không đăng nhập được nữa.`}
+        confirmLabel="Xoá"
+        tone="danger"
+        loading={deleteUser.isPending}
+        onConfirm={() =>
+          deleting && deleteUser.mutate(deleting.id, { onSettled: () => setDeleting(null) })
+        }
+      />
     </div>
   )
 }

@@ -19,6 +19,7 @@
     "@tanstack/react-query": "^5.104.4",
     "axios": "^1.20.0",
     "clsx": "^2.1.1",
+    "lucide-react": "^1.60.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-hook-form": "^7.90.0",
@@ -39,6 +40,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "jsdom": "^29.1.1",
+    "msw": "^2.15.0",
     "oxlint": "^1.88.0",
     "prettier": "^3.9.10",
     "prettier-plugin-tailwindcss": "^0.8.1",
@@ -50,5 +52,10 @@
   "description": "NCC Intern Project - Frontend (React)",
   "engines": {
     "node": ">=22"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

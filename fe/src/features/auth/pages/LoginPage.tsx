@@ -1,11 +1,22 @@
+import { FlaskConical } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router'
 import { Button, FormField, Input } from '@/components/ui'
+import { env } from '@/config/env'
 import { applyServerErrors, getErrorMessage } from '@/lib/errors'
 import { paths } from '@/routes/paths'
 import { useLogin } from '../hooks/use-auth'
 import { loginSchema, type LoginInput } from '../schemas/auth.schema'
+
+// Chỉ hiện khi VITE_ENABLE_MOCKS=true – khớp tài khoản trong src/mocks/data.ts
+const DEMO_PASSWORD = 'Hireflow@123'
+const DEMO_ACCOUNTS = [
+  { label: 'Admin', email: 'admin@hireflow.dev' },
+  { label: 'HR', email: 'hr@hireflow.dev' },
+  { label: 'HM Kỹ thuật', email: 'hm.eng@hireflow.dev' },
+  { label: 'HM Kinh doanh', email: 'hm.sales@hireflow.dev' },
+]
 
 export default function LoginPage() {
   const login = useLogin()
@@ -13,6 +24,7 @@ export default function LoginPage() {
     register,
     handleSubmit,
     setError,
+    setValue,
     formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -30,8 +42,10 @@ export default function LoginPage() {
 
   return (
     <>
-      <h1 className="mb-1 text-2xl font-semibold">Đăng nhập</h1>
-      <p className="mb-6 text-sm text-slate-500">Chào mừng bạn quay lại</p>
+      <h1 className="text-2xl font-semibold tracking-tight">Chào mừng trở lại</h1>
+      <p className="mt-1 mb-8 text-sm text-slate-500">
+        Đăng nhập bằng tài khoản nội bộ do Admin cấp.
+      </p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <FormField label="Email" htmlFor="email" error={errors.email?.message}>
@@ -55,7 +69,10 @@ export default function LoginPage() {
         </FormField>
 
         {errors.root && (
-          <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+          <p
+            role="alert"
+            className="animate-scale-in rounded-lg bg-red-50 p-3 text-sm text-red-700 ring-1 ring-red-600/10"
+          >
             {errors.root.message}
           </p>
         )}
@@ -64,6 +81,30 @@ export default function LoginPage() {
           Đăng nhập
         </Button>
       </form>
+
+      {env.enableMocks && (
+        <div className="mt-8 rounded-xl border border-dashed border-slate-300 p-4 text-sm">
+          <p className="mb-3 flex items-center gap-2 font-medium text-slate-600">
+            <FlaskConical className="text-primary size-4" />
+            Dữ liệu giả · đăng nhập nhanh với vai trò
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {DEMO_ACCOUNTS.map((acc) => (
+              <Button
+                key={acc.email}
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setValue('email', acc.email)
+                  setValue('password', DEMO_PASSWORD)
+                }}
+              >
+                {acc.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <p className="mt-6 text-center text-sm text-slate-600">
         Chưa có tài khoản?{' '}

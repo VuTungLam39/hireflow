@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { PaginationMeta } from '@/types/api'
 import { Button } from './Button'
 
@@ -13,29 +14,35 @@ export function Pagination({ meta, onPageChange }: PaginationProps) {
   const to = Math.min(meta.page * meta.limit, meta.totalItems)
 
   return (
-    <div className="flex items-center justify-between gap-4 text-sm text-slate-600">
+    <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
       <span>
-        {from}–{to} / {meta.totalItems}
+        Hiển thị{' '}
+        <span className="font-medium text-slate-700">
+          {from}–{to}
+        </span>{' '}
+        trên <span className="font-medium text-slate-700">{meta.totalItems}</span>
       </span>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <Button
           variant="secondary"
           size="sm"
+          aria-label="Trang trước"
           disabled={!meta.hasPreviousPage}
           onClick={() => onPageChange(meta.page - 1)}
         >
-          Trước
+          <ChevronLeft />
         </Button>
-        <span>
-          Trang {meta.page}/{meta.totalPages}
+        <span className="min-w-16 text-center tabular-nums">
+          {meta.page} / {meta.totalPages}
         </span>
         <Button
           variant="secondary"
           size="sm"
+          aria-label="Trang sau"
           disabled={!meta.hasNextPage}
           onClick={() => onPageChange(meta.page + 1)}
         >
-          Sau
+          <ChevronRight />
         </Button>
       </div>
     </div>

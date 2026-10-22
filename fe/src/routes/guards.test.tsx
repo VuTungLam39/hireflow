@@ -1,14 +1,16 @@
 import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
+import { Permission } from '@/lib/permissions'
 import { useAuthStore } from '@/stores/auth.store'
 import { Role, type User } from '@/types/user'
-import { GuestRoute, ProtectedRoute, RoleRoute } from './guards'
+import { GuestRoute, PermissionRoute, ProtectedRoute } from './guards'
 
 const user: User = {
   id: '1',
   email: 'u@example.com',
   fullName: 'User',
-  role: Role.User,
+  role: Role.Hr,
+  departmentId: null,
   isActive: true,
   lastLoginAt: null,
   createdAt: '',
@@ -25,7 +27,7 @@ function renderAt(path: string) {
         children: [
           { path: '/', element: <p>home page</p> },
           {
-            element: <RoleRoute roles={[Role.Admin]} />,
+            element: <PermissionRoute permission={Permission.UserManage} />,
             children: [{ path: '/users', element: <p>users page</p> }],
           },
         ],
@@ -50,7 +52,7 @@ describe('route guards', () => {
     expect(screen.getByText('home page')).toBeInTheDocument()
   })
 
-  it('blocks users without the required role', () => {
+  it('blocks users without the required permission', () => {
     useAuthStore.getState().setSession(user, tokens)
     renderAt('/users')
     expect(screen.getByText(/không có quyền/i)).toBeInTheDocument()

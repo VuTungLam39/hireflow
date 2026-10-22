@@ -36,3 +36,22 @@ export type RegisterFormValues = z.input<typeof registerSchema>
 export type RegisterFormOutput = z.output<typeof registerSchema>
 /** Dữ liệu gửi lên API (không có confirmPassword) */
 export type RegisterInput = Omit<RegisterFormOutput, 'confirmPassword'>
+
+/** Đổi mật khẩu (API Contract 4.1, BR-ACC-06) */
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Vui lòng nhập mật khẩu hiện tại'),
+    newPassword: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword !== data.currentPassword, {
+    path: ['newPassword'],
+    message: 'Mật khẩu mới phải khác mật khẩu hiện tại',
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    path: ['confirmPassword'],
+    message: 'Mật khẩu xác nhận không khớp',
+  })
+export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>
+/** Dữ liệu gửi lên API (không có confirmPassword) */
+export type ChangePasswordInput = Omit<ChangePasswordFormValues, 'confirmPassword'>
