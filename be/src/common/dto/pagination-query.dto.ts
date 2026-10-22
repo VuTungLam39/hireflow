@@ -25,10 +25,14 @@ export class PaginationQueryDto {
   @IsString()
   search?: string;
 
+  /**
+   * Chiều sắp xếp (API Contract mục 1.4). Cột sắp xếp `sortBy` do từng DTO con tự khai báo
+   * bằng @IsIn(WHITELIST), để chỉ giá trị đã kiểm mới vào được orderBy.
+   */
   @ApiPropertyOptional({ enum: SortOrder, default: SortOrder.DESC })
   @IsOptional()
   @IsEnum(SortOrder)
-  sortOrder: SortOrder = SortOrder.DESC;
+  order: SortOrder = SortOrder.DESC;
 
   get skip(): number {
     return (this.page - 1) * this.limit;

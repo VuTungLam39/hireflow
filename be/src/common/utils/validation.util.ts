@@ -1,9 +1,6 @@
 import { BadRequestException, ValidationError, ValidationPipe } from '@nestjs/common';
-
-interface FieldError {
-  field: string;
-  messages: string[];
-}
+import { ErrorCode } from '../exceptions/error-code.enum.js';
+import type { FieldError } from '../interfaces/api-response.interface.js';
 
 /** Làm phẳng lỗi validate lồng nhau thành [{ field: 'a.b', messages: [...] }] */
 const flatten = (errors: ValidationError[], parent = ''): FieldError[] =>
@@ -20,5 +17,9 @@ export const createValidationPipe = () =>
     transform: true,
     transformOptions: { enableImplicitConversion: true },
     exceptionFactory: (errors) =>
-      new BadRequestException({ message: 'Validation failed', errors: flatten(errors) }),
+      new BadRequestException({
+        code: ErrorCode.ValidationFailed,
+        message: 'Validation failed',
+        errors: flatten(errors),
+      }),
   });
