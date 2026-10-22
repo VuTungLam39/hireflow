@@ -13,8 +13,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator.js';
-import { Roles } from '../../common/decorators/roles.decorator.js';
-import { Role } from '../../common/enums/role.enum.js';
+import { Authenticated, Permissions } from '../../common/decorators/permissions.decorator.js';
+import { Permission } from '../../common/permissions/permission.enum.js';
 import { DepartmentsService } from './departments.service.js';
 import { CreateDepartmentDto } from './dto/create-department.dto.js';
 import { QueryDepartmentDto } from './dto/query-department.dto.js';
@@ -27,13 +27,14 @@ export class DepartmentsController {
   constructor(private readonly departmentsService: DepartmentsService) {}
 
   @Get()
+  @Authenticated()
   @ApiOperation({ summary: 'Danh sách phòng ban (mọi người dùng đăng nhập)' })
   findAll(@Query() query: QueryDepartmentDto) {
     return this.departmentsService.findAll(query);
   }
 
   @Post()
-  @Roles(Role.Admin)
+  @Permissions(Permission.DepartmentManage)
   @ApiOperation({ summary: 'Tạo phòng ban (Admin)' })
   @ResponseMessage('Department created')
   create(@Body() dto: CreateDepartmentDto) {
@@ -41,7 +42,7 @@ export class DepartmentsController {
   }
 
   @Patch(':id')
-  @Roles(Role.Admin)
+  @Permissions(Permission.DepartmentManage)
   @ApiOperation({ summary: 'Sửa phòng ban (Admin)' })
   @ResponseMessage('Department updated')
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateDepartmentDto) {
@@ -50,7 +51,7 @@ export class DepartmentsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.Admin)
+  @Permissions(Permission.DepartmentManage)
   @ApiOperation({ summary: 'Xoá mềm phòng ban không còn user, job (Admin)' })
   @ResponseMessage('Department deleted')
   remove(@Param('id', ParseUUIDPipe) id: string) {
