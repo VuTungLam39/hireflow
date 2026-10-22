@@ -5,11 +5,11 @@ import { AppProviders } from '@/app/providers'
 import { env } from '@/config/env'
 import './index.css'
 
-/** Bật API giả (MSW) khi VITE_ENABLE_MOCKS=true. Code mock không vào bundle khi tắt. */
+/** Bật API giả (MSW) theo VITE_API_MOCKS. Code mock không vào bundle khi tắt. */
 async function enableMocking() {
-  if (!env.enableMocks) return
-  const { worker } = await import('./mocks/browser')
-  await worker.start({ onUnhandledRequest: 'bypass', quiet: true })
+  if (env.apiMocks === 'off') return
+  const { createWorker } = await import('./mocks/browser')
+  await createWorker(env.apiMocks).start({ onUnhandledRequest: 'bypass', quiet: true })
 }
 
 // Router được import sau khi mock sẵn sàng: createBrowserRouter chạy loader gốc

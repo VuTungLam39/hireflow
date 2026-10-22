@@ -26,9 +26,17 @@ cp .env.example .env
 npm run dev          # http://localhost:5173
 ```
 
-### Chạy với dữ liệu giả (mặc định khi chưa có backend)
+### Chế độ API: `VITE_API_MOCKS`
 
-`.env.example` đặt `VITE_ENABLE_MOCKS=true`. Khi đó, mọi request `/api/v1/*` được **MSW** (file `public/mockServiceWorker.js`) chặn lại và trả dữ liệu giả từ `src/mocks/`. Code feature vẫn gọi API như với backend thật, nên khi backend xong chỉ cần đặt `VITE_ENABLE_MOCKS=false`.
+| Giá trị | Ý nghĩa |
+| --- | --- |
+| `pending` (mặc định trong `.env.example`) | Gọi backend thật; chỉ các endpoint BE chưa làm (`PENDING_ENDPOINTS` trong `src/mocks/handlers/index.ts`) được **MSW** trả dữ liệu giả |
+| `all` | Toàn bộ `/api/v1/*` dùng dữ liệu giả từ `src/mocks/`, không cần backend |
+| `off` | Chỉ backend thật |
+
+Khi BE làm xong một endpoint, xoá nó khỏi `PENDING_ENDPOINTS`. Hiện còn giả: dashboard, link xem CV, trang tuyển dụng công khai + nộp hồ sơ, chat AI.
+
+### Chạy với dữ liệu giả (`VITE_API_MOCKS=all`)
 
 Tài khoản demo dùng chung mật khẩu `Hireflow@123`. Trang đăng nhập có nút điền nhanh:
 
@@ -44,11 +52,17 @@ Tài khoản demo dùng chung mật khẩu `Hireflow@123`. Trang đăng nhập c
 - Có sẵn hồ sơ đang chấm (tự xong sau 15–25 giây), hồ sơ chấm lỗi và bằng chứng bị hệ thống loại, để xem đủ các trạng thái giao diện.
 - `src/mocks/handlers.test.ts` kiểm tra dữ liệu giả vẫn khớp type và luật nghiệp vụ (scope, luồng trạng thái, quyền).
 
-### Chạy với backend thật
+### Chạy với backend thật (`pending` hoặc `off`)
 
-Đặt `VITE_ENABLE_MOCKS=false` và chạy backend ở `http://localhost:3000` (xem `../be/README.md`). Mọi request `/api/...` được Vite **proxy** sang backend, nên không phải cấu hình CORS. Tài khoản seed của backend: `admin@example.com` / `Admin@123`.
+Chạy backend ở `http://localhost:3000` (xem `../be/README.md`, nhớ `npm run seed`). Mọi request `/api/...` được Vite **proxy** sang backend, nên không phải cấu hình CORS. Tài khoản seed dùng chung mật khẩu `Admin@123`: `admin@example.com`, `hr@hireflow.dev`, `hm.eng@hireflow.dev`, `hm.sales@hireflow.dev` (trang đăng nhập có nút điền nhanh khi chạy dev).
 
-> Backend hiện chưa có role `hr` / `hiring_manager`, phòng ban, job hay application (từ đầu việc BE-04 trở đi). Khi nối backend thật, mới chỉ trang đăng nhập và trang Người dùng chạy được.
+### Contract test FE ↔ BE
+
+```bash
+npm run test:contract   # cần backend đang chạy; CONTRACT_API_URL mặc định http://localhost:3000/api/v1
+```
+
+Gọi cùng các hàm API của feature vào mock và backend thật rồi so cấu trúc dữ liệu: báo lỗi khi BE thiếu field hoặc sai kiểu so với mock, in danh sách field BE trả thêm. Có tạo một job nháp rồi xoá ngay. Không chạy trong `npm test` và CI.
 
 ## Scripts
 

@@ -183,9 +183,14 @@ export function toUser(row: UserRow): User {
   return {
     ...rest,
     department: deptRef(row.departmentId),
-    permissions: [...ROLE_PERMISSIONS[row.role]],
   }
 }
+
+// GET /auth/me
+export const toMe = (row: UserRow): User => ({
+  ...toUser(row),
+  permissions: [...ROLE_PERMISSIONS[row.role]],
+})
 
 export function toJobSummary(job: JobRow): JobSummary {
   const apps = db.applications.filter((a) => a.jobId === job.id)

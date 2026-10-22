@@ -7,10 +7,13 @@ import { applyServerErrors, getErrorMessage } from '@/lib/errors'
 import { useLogin } from '../hooks/use-auth'
 import { loginSchema, type LoginInput } from '../schemas/auth.schema'
 
-// Chỉ hiện khi VITE_ENABLE_MOCKS=true – khớp tài khoản trong src/mocks/data.ts
-const DEMO_PASSWORD = 'Hireflow@123'
+// all: src/mocks/data.ts · dev + BE thật: be/src/database/seeds/seed.ts
+const MOCK_DEMO = { password: 'Hireflow@123', admin: 'admin@hireflow.dev' }
+const SEED_DEMO = { password: 'Admin@123', admin: 'admin@example.com' }
+const demo = env.apiMocks === 'all' ? MOCK_DEMO : env.isDev ? SEED_DEMO : null
+const DEMO_PASSWORD = demo?.password ?? ''
 const DEMO_ACCOUNTS = [
-  { label: 'Admin', email: 'admin@hireflow.dev' },
+  { label: 'Admin', email: demo?.admin ?? '' },
   { label: 'HR', email: 'hr@hireflow.dev' },
   { label: 'HM Kỹ thuật', email: 'hm.eng@hireflow.dev' },
   { label: 'HM Kinh doanh', email: 'hm.sales@hireflow.dev' },
@@ -80,11 +83,12 @@ export default function LoginPage() {
         </Button>
       </form>
 
-      {env.enableMocks && (
+      {demo && (
         <div className="mt-8 rounded-xl border border-dashed border-slate-300 p-4 text-sm">
           <p className="mb-3 flex items-center gap-2 font-medium text-slate-600">
             <FlaskConical className="text-primary size-4" />
-            Dữ liệu giả · đăng nhập nhanh với vai trò
+            {env.apiMocks === 'all' ? 'Dữ liệu giả' : 'Tài khoản seed'} · đăng nhập nhanh với vai
+            trò
           </p>
           <div className="flex flex-wrap gap-2">
             {DEMO_ACCOUNTS.map((acc) => (

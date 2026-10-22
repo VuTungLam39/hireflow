@@ -102,6 +102,14 @@ export const adminHandlers = [
     return ok(toUser(row), { status: 201, message: 'User created' })
   }),
 
+  http.get(api('/users/:id'), async ({ request, params }) => {
+    await delay()
+    const auth = authorize(request, Permission.UserManage)
+    if (auth instanceof Response) return auth
+    const row = db.users.find((u) => u.id === params.id)
+    return row ? ok(toUser(row)) : notFound('User')
+  }),
+
   http.patch(api('/users/:id'), async ({ request, params }) => {
     await delay()
     const auth = authorize(request, Permission.UserManage)
