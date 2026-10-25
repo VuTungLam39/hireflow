@@ -28,6 +28,7 @@ import { FilesModule } from './modules/files/files.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { JobsModule } from './modules/jobs/jobs.module.js';
 import { PublicModule } from './modules/public/public.module.js';
+import { RagModule } from './modules/rag/rag.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
 @Module({
@@ -70,6 +71,7 @@ import { UsersModule } from './modules/users/users.module.js';
     AiModule,
     DashboardModule,
     PublicModule,
+    RagModule,
   ],
   providers: [
     // Guards chạy theo thứ tự đăng ký: rate limit -> xác thực JWT -> phân quyền

@@ -5,6 +5,7 @@ export const QUEUE = {
   parse: 'parse-cv',
   extract: 'extract-cv',
   score: 'score',
+  embed: 'embed-cv',
 } as const;
 
 export interface CvJobData {
@@ -30,6 +31,7 @@ export const jobId = {
     `${cvFileId}_extract_${promptVersion.startsWith('v') ? promptVersion : `v${promptVersion}`}`,
   score: (applicationId: string, jdVersion: number) => `${applicationId}_score_v${jdVersion}`,
   rescoreJob: (jobId: string, jdVersion: number) => `${jobId}_rescore_v${jdVersion}`,
+  embed: (cvFileId: string) => `${cvFileId}_embed_v1`,
 };
 
 export const DEFAULT_JOB_OPTIONS: DefaultJobOptions = {

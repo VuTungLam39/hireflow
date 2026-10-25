@@ -5,7 +5,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { aiConfig } from '../../config/ai.config.js';
 import { queueConfig } from '../../config/queue.config.js';
 import { FilesModule } from '../files/files.module.js';
-import { AiController } from './ai.controller.js';
 import { buildEmbeddingProvider, buildLlmProvider } from './ai.factory.js';
 import { EMBEDDING_PROVIDER, LLM_PROVIDER } from './ai.types.js';
 import { CvProfile } from './entities/cv-profile.entity.js';
@@ -14,21 +13,25 @@ import { ExtractCvProcessor, ParseCvProcessor, ScoreProcessor } from './pipeline
 import { DEFAULT_JOB_OPTIONS, QUEUE } from './pipeline/queues.js';
 import { RequirementsSuggester } from './requirements-suggester.service.js';
 
-// TODO tuần 4: embed-cv, RAG chat
 @Module({
   imports: [
     BullModule.forRootAsync({
       inject: [queueConfig.KEY],
       useFactory: (config: ConfigType<typeof queueConfig>) => ({
         connection: config.redis,
+        prefix: config.prefix,
         defaultJobOptions: DEFAULT_JOB_OPTIONS,
       }),
     }),
-    BullModule.registerQueue({ name: QUEUE.parse }, { name: QUEUE.extract }, { name: QUEUE.score }),
+    BullModule.registerQueue(
+      { name: QUEUE.parse },
+      { name: QUEUE.extract },
+      { name: QUEUE.score },
+      { name: QUEUE.embed },
+    ),
     TypeOrmModule.forFeature([CvProfile]),
     FilesModule,
   ],
-  controllers: [AiController],
   providers: [
     {
       provide: LLM_PROVIDER,

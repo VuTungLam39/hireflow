@@ -153,6 +153,10 @@ class EnvironmentVariables {
   @Max(65535)
   REDIS_PORT: number = 6379;
 
+  @IsOptional()
+  @Matches(/^[\w-]{0,32}$/)
+  QUEUE_PREFIX?: string;
+
   @IsIn(['local', 's3'])
   STORAGE_DRIVER: string = 'local';
 
