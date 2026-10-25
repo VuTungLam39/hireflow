@@ -16,6 +16,7 @@ import { ScoreFlag } from '../../common/enums/score-flag.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { applyDepartmentScope } from '../../common/utils/department-scope.js';
+import { CvPipelineService } from '../ai/pipeline/cv-pipeline.service.js';
 import { CandidatesService } from '../candidates/candidates.service.js';
 import { checkCv, type UploadedCv } from '../files/cv-file.rules.js';
 import { FilesService } from '../files/files.service.js';
@@ -70,6 +71,7 @@ export class ApplicationsService {
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly candidatesService: CandidatesService,
     private readonly filesService: FilesService,
+    private readonly pipeline: CvPipelineService,
   ) {}
 
   // US-06, BR-ACC-07
@@ -252,14 +254,11 @@ export class ApplicationsService {
     return this.findOne(id, user);
   }
 
-  // TODO tuần 3: queue parse-cv / score (BR-AI-08)
-  async rescore(id: string, user: ScopeUser): Promise<never> {
+  // BR-AI-08
+  async rescore(id: string, user: ScopeUser, requestId?: string): Promise<null> {
     await this.findWritable(id, user);
-    throw new BusinessException(
-      ErrorCode.AiUnavailable,
-      'AI pipeline is not available yet',
-      HttpStatus.SERVICE_UNAVAILABLE,
-    );
+    await this.pipeline.rescore(id, requestId);
+    return null;
   }
 
   // US-15, BR-APP-10
@@ -268,15 +267,34 @@ export class ApplicationsService {
     dto: HrUploadDto,
     file: UploadedCv | undefined,
     user: ScopeUser,
+    requestId?: string,
   ): Promise<ApplicationDetailView> {
     const job = await this.dataSource.getRepository(Job).findOneBy({ id: jobId });
     if (!job) throw new NotFoundException('Job not found');
     if (job.status !== JobStatus.Open) {
       throw new BusinessException(ErrorCode.JobNotOpen, 'Job is not open', HttpStatus.CONFLICT);
     }
-    const cv = checkCv(file);
+    const applicationId = await this.submit(
+      jobId,
+      { fullName: dto.fullName, email: dto.email, phone: dto.phone },
+      file,
+      { source: ApplicationSource.HrUpload, consentVersion: HR_CONSENT_VERSION, by: user.id },
+    );
+    const view = await this.findOne(applicationId, user);
+    // Kickoff 12: cv.uploaded
+    await this.pipeline.enqueueApplication(applicationId, requestId);
+    return view;
+  }
 
-    const known = await this.candidatesService.findByEmail(dto.email);
+  // BR-CAND-01, 02, BR-APP-03, BR-FILE-01, 02, Kickoff 13
+  private async submit(
+    jobId: string,
+    contact: { fullName: string; email: string; phone?: string },
+    file: UploadedCv | undefined,
+    opts: { source: ApplicationSource; consentVersion: string; by: string | null },
+  ): Promise<string> {
+    const cv = checkCv(file);
+    const known = await this.candidatesService.findByEmail(contact.email);
     const reusable = await this.filesService.findReusable(
       this.dataSource.manager,
       known?.id,
@@ -285,11 +303,11 @@ export class ApplicationsService {
     const storageKey = reusable ? null : await this.filesService.store(cv);
 
     try {
-      const applicationId = await this.dataSource.transaction(async (manager) => {
+      return await this.dataSource.transaction(async (manager) => {
         const candidate = await this.candidatesService.upsertForApplication(
           manager,
-          { fullName: dto.fullName, email: dto.email, phone: dto.phone },
-          HR_CONSENT_VERSION,
+          contact,
+          opts.consentVersion,
         );
         await this.assertNotApplied(manager, jobId, candidate.id);
         const cvFile =
@@ -299,12 +317,10 @@ export class ApplicationsService {
           jobId,
           candidateId: candidate.id,
           cvFileId: cvFile.id,
-          source: ApplicationSource.HrUpload,
-          changedBy: user.id,
+          source: opts.source,
+          changedBy: opts.by,
         });
       });
-      // TODO tuần 3: queue parse-cv sau khi commit
-      return this.findOne(applicationId, user);
     } catch (error) {
       if (storageKey) await this.filesService.removeStored(storageKey);
       throw this.duplicateOr(error);

@@ -15,6 +15,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Permissions } from '../../common/decorators/permissions.decorator.js';
+import { RequestId } from '../../common/decorators/request-id.decorator.js';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { Permission } from '../../common/permissions/permission.enum.js';
@@ -75,7 +76,7 @@ export class JobsController {
   @Post(':id/requirements/suggest')
   @HttpCode(HttpStatus.OK)
   @Permissions(Permission.JobUpdate)
-  @ApiOperation({ summary: 'AI gợi ý tiêu chí từ JD (tuần 3); hiện trả 503 AI_UNAVAILABLE' })
+  @ApiOperation({ summary: 'AI gợi ý tiêu chí từ JD (không lưu); 503 AI_UNAVAILABLE khi LLM lỗi' })
   suggestRequirements(@Param('id', ParseUUIDPipe) id: string) {
     return this.jobsService.suggestRequirements(id);
   }
@@ -85,8 +86,12 @@ export class JobsController {
   @Permissions(Permission.JobUpdate)
   @ApiOperation({ summary: 'Thay toàn bộ tiêu chí, tạo phiên bản mới, tính lại điểm' })
   @ResponseMessage('Rescoring scheduled')
-  saveRequirements(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SaveRequirementsDto) {
-    return this.jobsService.saveRequirements(id, dto);
+  saveRequirements(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SaveRequirementsDto,
+    @RequestId() requestId?: string,
+  ) {
+    return this.jobsService.saveRequirements(id, dto, requestId);
   }
 
   @Patch(':id/publish')

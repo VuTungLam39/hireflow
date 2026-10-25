@@ -1,11 +1,34 @@
+import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { aiConfig } from '../../config/ai.config.js';
+import { queueConfig } from '../../config/queue.config.js';
+import { FilesModule } from '../files/files.module.js';
+import { AiController } from './ai.controller.js';
 import { buildEmbeddingProvider, buildLlmProvider } from './ai.factory.js';
 import { EMBEDDING_PROVIDER, LLM_PROVIDER } from './ai.types.js';
+import { CvProfile } from './entities/cv-profile.entity.js';
+import { CvPipelineService } from './pipeline/cv-pipeline.service.js';
+import { ExtractCvProcessor, ParseCvProcessor, ScoreProcessor } from './pipeline/processors.js';
+import { DEFAULT_JOB_OPTIONS, QUEUE } from './pipeline/queues.js';
+import { RequirementsSuggester } from './requirements-suggester.service.js';
 
-// TODO tuần 3: worker parse-cv, extract-cv, score, embed-cv
+// TODO tuần 4: embed-cv, RAG chat
 @Module({
+  imports: [
+    BullModule.forRootAsync({
+      inject: [queueConfig.KEY],
+      useFactory: (config: ConfigType<typeof queueConfig>) => ({
+        connection: config.redis,
+        defaultJobOptions: DEFAULT_JOB_OPTIONS,
+      }),
+    }),
+    BullModule.registerQueue({ name: QUEUE.parse }, { name: QUEUE.extract }, { name: QUEUE.score }),
+    TypeOrmModule.forFeature([CvProfile]),
+    FilesModule,
+  ],
+  controllers: [AiController],
   providers: [
     {
       provide: LLM_PROVIDER,
@@ -17,7 +40,12 @@ import { EMBEDDING_PROVIDER, LLM_PROVIDER } from './ai.types.js';
       inject: [aiConfig.KEY],
       useFactory: (config: ConfigType<typeof aiConfig>) => buildEmbeddingProvider(config),
     },
+    CvPipelineService,
+    RequirementsSuggester,
+    ParseCvProcessor,
+    ExtractCvProcessor,
+    ScoreProcessor,
   ],
-  exports: [LLM_PROVIDER, EMBEDDING_PROVIDER],
+  exports: [LLM_PROVIDER, EMBEDDING_PROVIDER, CvPipelineService, RequirementsSuggester],
 })
 export class AiModule {}

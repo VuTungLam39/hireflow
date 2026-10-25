@@ -14,6 +14,7 @@ import {
   appConfig,
   databaseConfig,
   jwtConfig,
+  queueConfig,
   storageConfig,
   validateEnv,
 } from './config/index.js';
@@ -33,7 +34,7 @@ import { UsersModule } from './modules/users/users.module.js';
       isGlobal: true,
       cache: true,
       envFilePath: ['.env.local', '.env'],
-      load: [appConfig, databaseConfig, jwtConfig, aiConfig, storageConfig],
+      load: [appConfig, databaseConfig, jwtConfig, aiConfig, storageConfig, queueConfig],
       validate: validateEnv,
     }),
     TypeOrmModule.forRootAsync({

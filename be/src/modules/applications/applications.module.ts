@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AiModule } from '../ai/ai.module.js';
 import { CandidatesModule } from '../candidates/candidates.module.js';
 import { FilesModule } from '../files/files.module.js';
 import { ApplicationsController, JobApplicationsController } from './applications.controller.js';
@@ -13,6 +14,7 @@ import { Application } from './entities/application.entity.js';
     TypeOrmModule.forFeature([Application, ApplicationStatusHistory, ApplicationNote]),
     CandidatesModule,
     FilesModule,
+    AiModule,
   ],
   controllers: [ApplicationsController, JobApplicationsController],
   providers: [ApplicationsService],

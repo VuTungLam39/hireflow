@@ -211,12 +211,21 @@ describe('Jobs (e2e)', () => {
       await as('hr', request(server()).patch(`/api/v1/jobs/${jobA}/publish`)).expect(409);
     });
 
-    it('AI suggestion is not available until the LLM provider exists', async () => {
+    it('BR-JOB-05: AI suggests requirements without saving them (LLM giả)', async () => {
+      const before = await ds.query(
+        'SELECT count(*)::int AS n FROM job_requirements WHERE job_id = $1',
+        [jobA],
+      );
       const res = await as(
         'hr',
         request(server()).post(`/api/v1/jobs/${jobA}/requirements/suggest`),
-      ).expect(503);
-      expect(res.body.code).toBe('AI_UNAVAILABLE');
+      ).expect(200);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      const after = await ds.query(
+        'SELECT count(*)::int AS n FROM job_requirements WHERE job_id = $1',
+        [jobA],
+      );
+      expect(after).toEqual(before);
     });
   });
 

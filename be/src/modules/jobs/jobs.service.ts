@@ -9,6 +9,8 @@ import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { applyDepartmentScope } from '../../common/utils/department-scope.js';
 import { normalizeKeywords } from '../../common/utils/text.js';
+import { CvPipelineService } from '../ai/pipeline/cv-pipeline.service.js';
+import { RequirementsSuggester } from '../ai/requirements-suggester.service.js';
 import { Application } from '../applications/entities/application.entity.js';
 import { DepartmentsService } from '../departments/departments.service.js';
 import { CreateJobDto } from './dto/create-job.dto.js';
@@ -78,6 +80,8 @@ export class JobsService {
     private readonly requirementsRepository: Repository<JobRequirement>,
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly departmentsService: DepartmentsService,
+    private readonly suggester: RequirementsSuggester,
+    private readonly pipeline: CvPipelineService,
   ) {}
 
   async findAll(query: QueryJobDto, user: ScopeUser): Promise<PaginatedResult<JobSummaryView>> {
@@ -144,19 +148,19 @@ export class JobsService {
     return this.findOne(id, user);
   }
 
-  // TODO tuần 3: LlmProvider
-  async suggestRequirements(id: string): Promise<never> {
-    await this.getOrFail(id);
-    throw new BusinessException(
-      ErrorCode.AiUnavailable,
-      'LLM provider is not configured',
-      HttpStatus.SERVICE_UNAVAILABLE,
-    );
+  // Kickoff 8.2
+  async suggestRequirements(id: string) {
+    const job = await this.getOrFail(id);
+    return this.suggester.suggest(job.title, job.jdText);
   }
 
   // BR-JOB-05, BR-JOB-06, BR-AI-05
-  async saveRequirements(id: string, dto: SaveRequirementsDto): Promise<{ jdVersion: number }> {
-    return this.dataSource.transaction(async (manager) => {
+  async saveRequirements(
+    id: string,
+    dto: SaveRequirementsDto,
+    requestId?: string,
+  ): Promise<{ jdVersion: number }> {
+    const result = await this.dataSource.transaction(async (manager) => {
       const job = await this.lockJob(manager, id);
       this.assertEditable(job);
       const jdVersion = job.jdVersion + 1;
@@ -174,9 +178,11 @@ export class JobsService {
           keywords: normalizeKeywords(r.keywords),
         })),
       );
-      // TODO tuần 3: queue score (job.requirements.updated)
       return { jdVersion };
     });
+    // Kickoff 12: job.requirements.updated
+    await this.pipeline.enqueueJobRescore(id, result.jdVersion, requestId);
+    return result;
   }
 
   // BR-JOB-02
