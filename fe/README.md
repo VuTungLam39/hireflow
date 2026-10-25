@@ -26,35 +26,26 @@ cp .env.example .env
 npm run dev          # http://localhost:5173
 ```
 
-### Chế độ API: `VITE_API_MOCKS`
+### Dữ liệu: luôn từ backend thật
 
-| Giá trị | Ý nghĩa |
-| --- | --- |
-| `pending` (mặc định trong `.env.example`) | Gọi backend thật; chỉ các endpoint BE chưa làm (`PENDING_ENDPOINTS` trong `src/mocks/handlers/index.ts`) được **MSW** trả dữ liệu giả |
-| `all` | Toàn bộ `/api/v1/*` dùng dữ liệu giả từ `src/mocks/`, không cần backend |
-| `off` | Chỉ backend thật |
+FE không còn chế độ API giả: mọi màn hình gọi backend ở `http://localhost:3000`, dữ liệu lấy từ PostgreSQL. Vite **proxy** mọi request `/api/...` sang backend, nên không phải cấu hình CORS.
 
-Khi BE làm xong một endpoint, xoá nó khỏi `PENDING_ENDPOINTS`. Hiện còn giả: dashboard, link xem CV, trang tuyển dụng công khai + nộp hồ sơ, chat AI.
-
-### Chạy với dữ liệu giả (`VITE_API_MOCKS=all`)
-
-Tài khoản demo dùng chung mật khẩu `Hireflow@123`. Trang đăng nhập có nút điền nhanh:
+1. Chạy backend và seed dữ liệu mẫu (xem `../be/README.md`): `npm run migration:run`, sau đó `npm run seed` (hoặc `npm run seed -- --reset` để thay dữ liệu cũ).
+2. `npm run dev` rồi đăng nhập. Khi chạy dev, trang đăng nhập có nút điền nhanh tài khoản seed (mật khẩu chung `Admin@123`):
 
 | Email | Vai trò | Thấy gì |
 | --- | --- | --- |
-| `admin@hireflow.dev` | Admin | Tất cả, thêm Người dùng và Phòng ban |
+| `admin@example.com` | Admin | Tất cả, thêm Người dùng và Phòng ban |
 | `hr@hireflow.dev` | HR | Mọi job và hồ sơ; tạo job, đổi trạng thái, chấm lại |
-| `hm.eng@hireflow.dev` | Hiring Manager | Chỉ phòng Kỹ thuật; được duyệt OFFER → HIRED |
+| `hm.eng@hireflow.dev` | Hiring Manager | Chỉ phòng Phát triển phần mềm; duyệt OFFER → HIRED |
 | `hm.sales@hireflow.dev` | Hiring Manager | Chỉ phòng Kinh doanh |
+| `phuoc.le@hireflow.dev` | Hiring Manager | Chỉ phòng Phát triển Mobile |
 
-- Dữ liệu sinh theo seed cố định: 8 job, khoảng 90 ứng viên, hơn 100 hồ sơ. Tải lại trang thì mọi thay đổi mất đi.
-- Phiên đăng nhập giả lưu ở `sessionStorage`, thay cho cookie refresh token.
-- Có sẵn hồ sơ đang chấm (tự xong sau 15–25 giây), hồ sơ chấm lỗi và bằng chứng bị hệ thống loại, để xem đủ các trạng thái giao diện.
-- `src/mocks/handlers.test.ts` kiểm tra dữ liệu giả vẫn khớp type và luật nghiệp vụ (scope, luồng trạng thái, quyền).
+Chat AI trả "AI chưa sẵn sàng" (503 `AI_UNAVAILABLE`) cho tới khi backend có RAG (tuần 4).
 
-### Chạy với backend thật (`pending` hoặc `off`)
+### API giả chỉ dùng trong test
 
-Chạy backend ở `http://localhost:3000` (xem `../be/README.md`, nhớ `npm run seed`). Mọi request `/api/...` được Vite **proxy** sang backend, nên không phải cấu hình CORS. Tài khoản seed dùng chung mật khẩu `Admin@123`: `admin@example.com`, `hr@hireflow.dev`, `hm.eng@hireflow.dev`, `hm.sales@hireflow.dev` (trang đăng nhập có nút điền nhanh khi chạy dev).
+`src/test/msw/` là API giả (MSW) theo API Contract, **chỉ** được import trong test: test component (`*.test.tsx`) và contract test. Code của app không import thư mục này, nên bundle production không chứa dữ liệu giả.
 
 ### Contract test FE ↔ BE
 
@@ -78,7 +69,7 @@ Gọi cùng các hàm API của feature vào mock và backend thật rồi so c�
 
 ```
 src/
-├── main.tsx                 # Khởi động: bật MSW (nếu có) rồi mới tạo router
+├── main.tsx                 # Khởi động: tạo router, render app
 ├── app/
 │   ├── providers.tsx        # QueryClient, Toaster, Devtools
 │   └── layouts/             # MainLayout (sidebar theo quyền), AuthLayout, PublicLayout
@@ -98,7 +89,7 @@ src/
 │   └── shared/              # Composite: DataTable, FilterBar, ConfirmDialog, FileUploader, Can, PageHeader...
 ├── routes/                  # router.tsx (lazy + loader), guards.tsx (PermissionRoute), paths.ts
 ├── pages/                   # Trang chung: 404, 403, Error
-├── mocks/                   # API giả (MSW): data.ts, http.ts, handlers/
+├── test/                    # setup.ts; msw/ (API giả chỉ dùng trong test); contract/ (FE ↔ BE)
 └── features/                # Mỗi feature: api / hooks / components / pages / schemas / constants / index.ts
     ├── auth/                # Đăng nhập, phiên
     ├── users/, departments/ # Quản trị (Admin)
@@ -124,7 +115,7 @@ src/
 2. `api/`: hàm gọi API dùng `api` từ `@/lib/api-client`, trả về `res.data.data`.
 3. `hooks/`: bọc API bằng `useQuery` / `useMutation`, khai báo query key dạng phân cấp để dễ làm mới dữ liệu.
 4. Thêm đường dẫn vào `routes/paths.ts` và route vào `routes/router.tsx`, bọc bằng `requires(Permission.X, [...])`.
-5. Thêm link vào `navGroups` trong `app/layouts/MainLayout.tsx` (kèm permission) và handler giả trong `src/mocks/handlers/`.
+5. Thêm link vào `navGroups` trong `app/layouts/MainLayout.tsx` (kèm permission) và handler giả cho test trong `src/test/msw/handlers/`.
 6. Export những gì feature khác cần dùng qua `features/<ten>/index.ts`. oxlint chặn import sâu kiểu `@/features/<ten>/hooks/...` từ bên ngoài feature.
 
 Import trong `src` dùng alias `@/`, ví dụ `import { Button } from '@/components/ui'`.
