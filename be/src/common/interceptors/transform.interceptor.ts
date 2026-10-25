@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import type { Response } from 'express';
 import { map, Observable } from 'rxjs';
 import { RESPONSE_MESSAGE_KEY } from '../constants/index.js';
+import { CursorResult } from '../dto/cursor-result.dto.js';
 import { PaginatedResult } from '../dto/paginated-result.dto.js';
 import type { ApiResponse } from '../interfaces/api-response.interface.js';
 
@@ -27,7 +28,7 @@ export class TransformInterceptor<T> implements NestInterceptor<T, ApiResponse<u
           message,
           timestamp: new Date().toISOString(),
         };
-        if (data instanceof PaginatedResult) {
+        if (data instanceof PaginatedResult || data instanceof CursorResult) {
           return { ...base, data: data.items, meta: data.meta };
         }
         return { ...base, data: data ?? null };

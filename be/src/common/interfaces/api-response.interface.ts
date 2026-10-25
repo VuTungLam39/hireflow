@@ -9,12 +9,18 @@ export interface PaginationMeta {
   hasPreviousPage: boolean;
 }
 
+export interface CursorMeta {
+  limit: number;
+  nextCursor: string | null;
+  hasNextPage: boolean;
+}
+
 export interface ApiResponse<T = unknown> {
   success: true;
   statusCode: number;
   message: string;
   data: T;
-  meta?: PaginationMeta;
+  meta?: PaginationMeta | CursorMeta;
   timestamp: string;
 }
 
