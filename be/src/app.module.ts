@@ -9,7 +9,14 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from './common/guards/permissions.guard.js';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor.js';
-import { aiConfig, appConfig, databaseConfig, jwtConfig, validateEnv } from './config/index.js';
+import {
+  aiConfig,
+  appConfig,
+  databaseConfig,
+  jwtConfig,
+  storageConfig,
+  validateEnv,
+} from './config/index.js';
 import { AiModule } from './modules/ai/ai.module.js';
 import { ApplicationsModule } from './modules/applications/applications.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
@@ -26,7 +33,7 @@ import { UsersModule } from './modules/users/users.module.js';
       isGlobal: true,
       cache: true,
       envFilePath: ['.env.local', '.env'],
-      load: [appConfig, databaseConfig, jwtConfig, aiConfig],
+      load: [appConfig, databaseConfig, jwtConfig, aiConfig, storageConfig],
       validate: validateEnv,
     }),
     TypeOrmModule.forRootAsync({

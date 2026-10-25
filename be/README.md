@@ -23,7 +23,7 @@ Yêu cầu: Node.js >= 22, PostgreSQL (cài sẵn hoặc chạy bằng Docker).
 ```bash
 npm ci                     # cài dependency theo package-lock
 cp .env.example .env       # sau đó sửa thông tin DB và JWT secret
-npm run db:up              # (tuỳ chọn) bật PostgreSQL bằng Docker
+npm run infra:up           # (tuỳ chọn) bật Postgres + pgvector, Redis, RustFS bằng Docker
 npm run migration:run      # tạo bảng
 npm run seed               # tạo tài khoản admin (admin@example.com / Admin@123)
 npm run start:dev          # chạy dev, tự reload
@@ -46,7 +46,7 @@ npm run start:dev          # chạy dev, tự reload
 | `npm run migration:create -- src/database/migrations/<Ten>` | Tạo migration rỗng |
 | `npm run migration:run` / `migration:revert` / `migration:show` | Chạy / hoàn tác / xem migration |
 | `npm run seed` | Chạy seed |
-| `npm run db:up` / `npm run db:down` | Bật / tắt PostgreSQL bằng Docker |
+| `npm run infra:up` / `npm run infra:down` | Bật / tắt Postgres (pgvector), Redis, RustFS bằng Docker |
 
 > Các lệnh migration chạy trên code đã build (`dist/`), script đã tự `npm run build` trước.
 
@@ -136,9 +136,21 @@ Lưu ý: dự án dùng **ESM**, nên import file nội bộ phải có đuôi `
 ## Docker
 
 ```bash
-npm run db:up                               # chỉ bật PostgreSQL
-docker compose --profile app up -d --build  # bật cả PostgreSQL và API (tự chạy migration)
+npm run infra:up                            # Postgres + pgvector, Redis, RustFS
+docker compose --profile app up -d --build  # bật thêm API (tự chạy migration)
 ```
+
+| Dịch vụ | Image | Cổng máy | Ghi chú |
+|---|---|---|---|
+| Postgres | `pgvector/pgvector:0.8.7-pg18-trixie` | `POSTGRES_HOST_PORT` (5433) | Dùng: đặt `DB_PORT=5433` trong `.env` rồi `npm run migration:run` |
+| Redis | `redis:7-alpine` | `REDIS_PORT` (6379) | Hàng đợi BullMQ, AOF bật, `noeviction` |
+| RustFS | `rustfs/rustfs:1.0.3` | 9000 (S3), 9001 (console) | Object storage S3-compatible thay MinIO; bật bằng `STORAGE_DRIVER=s3`, bucket tự tạo khi khởi động |
+
+Cổng Postgres trong Docker để 5433 để không trùng Postgres cài sẵn trên máy (5432).
+
+## CI
+
+`.github/workflows/ci.yml` chạy trên mỗi PR và push vào `main`: BE (format, lint, typecheck, unit test, build, kiểm tra compose), BE e2e (Postgres + pgvector, migration từ DB trống), FE (format, lint, typecheck, test, build).
 
 ## Lỗi thường gặp
 
