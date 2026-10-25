@@ -41,7 +41,7 @@ const [PDF_MIME, DOCX_MIME] = CV_MIME_TYPES;
 const MINUTE = 60_000;
 const DAY = 86_400_000;
 const REFRESH_TTL = 7 * DAY;
-const PROMPT_VERSION = process.env.AI_PROMPT_VERSION ?? 'v1';
+const PROMPT_VERSION = process.env.AI_PROMPT_VERSION ?? 'v3';
 
 export const demoId = (name: string) => {
   const h = createHash('sha256').update(`hireflow-demo:${name}`).digest('hex');
