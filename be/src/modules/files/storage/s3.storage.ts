@@ -92,6 +92,11 @@ export class S3StorageService extends StorageService implements OnModuleInit {
     await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }
 
+  // Kickoff 19
+  async ping(): Promise<void> {
+    await this.client.send(new HeadBucketCommand({ Bucket: this.bucket }));
+  }
+
   // BR-FILE-03, Kickoff 13
   signedUrl(key: string, options: SignedUrlOptions): Promise<string> {
     return getSignedUrl(

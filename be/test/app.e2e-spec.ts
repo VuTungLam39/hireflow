@@ -88,6 +88,8 @@ describe('App (e2e)', () => {
   it('GET /api/health', async () => {
     const res = await request(server()).get('/api/health').expect(200);
     expect(res.body.data.status).toBe('ok');
+    expect(Object.keys(res.body.data.info).sort()).toEqual(['database', 'redis', 'storage']);
+    expect(res.body.data.info.storage).toMatchObject({ status: 'up', driver: 'local' });
   });
 
   describe('auth', () => {

@@ -24,6 +24,11 @@ describe('LocalStorageService', () => {
     await expect(storage.get('cv/2026/10/a.pdf')).rejects.toBeInstanceOf(StorageNotFoundError);
   });
 
+  it('Kickoff 19: ping creates the root folder and checks it is writable', async () => {
+    const fresh = new LocalStorageService(join(root, 'new-root'));
+    await expect(fresh.ping()).resolves.toBeUndefined();
+  });
+
   it('ignores removing a missing object', async () => {
     await expect(storage.remove('cv/none.pdf')).resolves.toBeUndefined();
   });
@@ -134,6 +139,13 @@ describe('S3StorageService', () => {
       `inline; filename*=UTF-8''${encodeURIComponent('CV Nguyễn An.docx')}`,
     );
     expect(send).not.toHaveBeenCalled();
+  });
+
+  it('Kickoff 19: ping checks the bucket and surfaces failures', async () => {
+    await storage.ping();
+    expect(command()).toEqual({ name: 'HeadBucketCommand', input: { Bucket: 'hireflow-cv' } });
+    fail(new Error('ECONNREFUSED'));
+    await expect(storage.ping()).rejects.toThrow('ECONNREFUSED');
   });
 
   it('does not crash startup when storage is down', async () => {

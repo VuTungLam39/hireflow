@@ -13,6 +13,7 @@ export const paths = {
   candidates: '/candidates',
   candidateDetail: '/candidates/:id',
   aiChat: '/ai-chat',
+  aiQueue: '/admin/ai-queue',
 
   // Khách
   login: '/login',

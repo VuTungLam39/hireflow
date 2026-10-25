@@ -22,6 +22,7 @@ export const Permission = {
   AiChat: 'ai:chat',
   AiRescore: 'ai:rescore',
   DashboardRead: 'dashboard:read',
+  OpsManage: 'ops:manage',
 } as const
 export type Permission = (typeof Permission)[keyof typeof Permission]
 

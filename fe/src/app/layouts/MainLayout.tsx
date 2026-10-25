@@ -1,4 +1,5 @@
 import {
+  Activity,
   Briefcase,
   Contact,
   Building2,
@@ -71,6 +72,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
         icon: Building2,
         permission: Permission.DepartmentManage,
       },
+      { to: paths.aiQueue, label: 'Hàng đợi AI', icon: Activity, permission: Permission.OpsManage },
     ],
   },
 ]
