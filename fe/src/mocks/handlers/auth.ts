@@ -8,6 +8,7 @@ import {
   isStrongPassword,
   ok,
   SESSION_KEY,
+  toMe,
   toUser,
   tokenFor,
 } from '../http'
@@ -47,7 +48,7 @@ export const authHandlers = [
     await latency(100)
     const user = authorize(request)
     if (user instanceof Response) return user
-    return ok(toUser(user))
+    return ok(toMe(user))
   }),
 
   // BR-ACC-06: BE thu hồi mọi phiên khác; ở đây chỉ có một phiên nên không cần làm gì thêm
