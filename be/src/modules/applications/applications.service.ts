@@ -82,12 +82,43 @@ export class ApplicationsService {
     query: QueryApplicationDto,
     user: ScopeUser,
   ): Promise<PaginatedResult<ApplicationListItemView>> {
-    const qb = this.listQuery(user)
-      .orderBy(`app.${query.sortBy}`, query.order, 'NULLS LAST')
+    const pageQuery = this.filteredQuery(query, user)
+      .select('app.id', 'id')
+      .orderBy(
+        `app.${query.sortBy}`,
+        query.order,
+        query.sortBy === 'score' ? 'NULLS LAST' : undefined,
+      )
       .addOrderBy('app.id', query.order)
       .offset(query.skip)
       .limit(query.limit);
+    const countQuery = this.filteredQuery(query, user).select('COUNT(*)::int', 'total');
 
+    // Kickoff 14: deferred join
+    const [pageRows, countRow] = await Promise.all([
+      pageQuery.getRawMany<{ id: string }>(),
+      countQuery.getRawOne<{ total: number }>(),
+    ]);
+    const ids = pageRows.map((r) => r.id);
+    const rows = ids.length
+      ? await this.listQuery(user).andWhere('app.id IN (:...ids)', { ids }).getMany()
+      : [];
+    const byId = new Map(rows.map((a) => [a.id, a]));
+    return new PaginatedResult(
+      ids.flatMap((id) => (byId.has(id) ? [this.toListItem(byId.get(id)!)] : [])),
+      countRow?.total ?? 0,
+      query.page,
+      query.limit,
+    );
+  }
+
+  // US-06, BR-ACC-07
+  private filteredQuery(query: QueryApplicationDto, user: ScopeUser) {
+    const qb = this.applicationsRepository.createQueryBuilder('app');
+    if (user.role === Role.HiringManager) {
+      qb.innerJoin('app.job', 'job');
+      applyDepartmentScope(qb, user, 'job.departmentId');
+    }
     if (query.jobId) qb.andWhere('app.jobId = :jobId', { jobId: query.jobId });
     if (query.status) qb.andWhere('app.status = :status', { status: query.status });
     if (query.scoreMin !== undefined)
@@ -110,19 +141,12 @@ export class ApplicationsService {
       });
     }
     if (query.search) {
-      qb.andWhere(
+      qb.innerJoin('app.candidate', 'candidate').andWhere(
         `(f_unaccent(lower(candidate.fullName)) LIKE '%' || f_unaccent(lower(:search)) || '%' OR candidate.email LIKE '%' || lower(:search) || '%')`,
         { search: escapeLike(query.search) },
       );
     }
-
-    const [items, total] = await qb.getManyAndCount();
-    return new PaginatedResult(
-      items.map((a) => this.toListItem(a)),
-      total,
-      query.page,
-      query.limit,
-    );
+    return qb;
   }
 
   // US-04

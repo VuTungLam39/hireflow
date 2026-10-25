@@ -29,6 +29,7 @@
     "migration:show": "npm run build && typeorm migration:show -d dist/database/data-source.js",
     "seed": "npm run build && node dist/database/seeds/seed.js",
     "seed:perf": "npm run build && node dist/database/seeds/seed-perf.js",
+    "perf": "npm run build && node dist/database/perf/perf-run.js",
     "ai:smoke": "npm run build && node dist/modules/ai/ai-smoke.js",
     "infra:up": "docker compose up -d postgres redis storage",
     "infra:down": "docker compose down"

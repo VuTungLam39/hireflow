@@ -4,6 +4,10 @@ import { User } from '../../users/entities/user.entity.js';
 
 @Entity('candidates')
 @Check('CK_candidates_email_lower', `"email" = lower("email")`)
+// Migration AddPerformanceIndexes
+@Index('IDX_candidates_created_at_id', { synchronize: false })
+@Index('IDX_candidates_full_name_trgm', { synchronize: false })
+@Index('IDX_candidates_email_trgm', { synchronize: false })
 export class Candidate extends CursorEntity {
   @Column({ type: 'varchar', length: 150 })
   fullName: string;

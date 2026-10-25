@@ -20,6 +20,11 @@ export interface BreakdownItem {
   unique: true,
   where: '"deleted_at" IS NULL',
 })
+// Migration AddPerformanceIndexes
+@Index('IDX_applications_created_at_id', { synchronize: false })
+@Index('IDX_applications_score_id', { synchronize: false })
+@Index('IDX_applications_job_id_status_score', { synchronize: false })
+@Index('IDX_applications_flags', { synchronize: false })
 @Check('CK_applications_score', `"score" BETWEEN 0 AND 100`)
 @Check('CK_applications_score_breakdown', `jsonb_typeof("score_breakdown") = 'array'`)
 @Check('CK_applications_done_has_score', `"ai_status" <> 'DONE' OR "score" IS NOT NULL`)
