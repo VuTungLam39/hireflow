@@ -71,8 +71,8 @@ describe('mock API', () => {
     const detail = await applicationsApi.get(items[0].id)
     expect(detail.aiStatus).toBe('DONE')
     for (const b of detail.breakdown) {
-      if (b.evidence) expect(detail.cv.text).toContain(b.evidence)
-      if (b.rejectedEvidence) expect(detail.cv.text).not.toContain(b.rejectedEvidence)
+      if (b.evidence) expect(detail.cv!.text).toContain(b.evidence)
+      if (b.rejectedEvidence) expect(detail.cv!.text).not.toContain(b.rejectedEvidence)
     }
   })
 
@@ -357,7 +357,8 @@ describe('mock API', () => {
 
     const app = await applicationsApi.get(before.applications[0].id)
     expect(app.breakdown).toEqual([])
-    await expect(applicationsApi.cvUrl(app.cv.fileId)).rejects.toSatisfy(
+    expect(app.cv).toBeNull()
+    await expect(applicationsApi.cvUrl(`file-${app.id}`)).rejects.toSatisfy(
       (e) => getErrorCode(e) === 'NOT_FOUND',
     )
     await expect(candidatesApi.anonymize(target.id)).rejects.toSatisfy(

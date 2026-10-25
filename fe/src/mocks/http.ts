@@ -243,10 +243,12 @@ export function toApplicationDetail(app: ApplicationRow): ApplicationDetail {
     breakdown: app.breakdown,
     scoredJdVersion: app.scoredJdVersion,
     aiError: app.aiError,
-    cv: {
-      fileId: `file-${app.id}`,
-      fileName: app.cvFileName,
-      text: app.aiStatus === 'FAILED' ? null : c.cvText,
-    },
+    cv: c.anonymizedAt
+      ? null
+      : {
+          fileId: `file-${app.id}`,
+          fileName: app.cvFileName,
+          text: app.aiStatus === 'FAILED' ? null : c.cvText,
+        },
   }
 }

@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { CursorResult } from '../../common/dto/cursor-result.dto.js';
 import type { ApplicationSource } from '../../common/enums/application-source.enum.js';
 import type { ApplicationStatus } from '../../common/enums/application-status.enum.js';
@@ -157,6 +157,39 @@ export class CandidatesService {
     });
     // TODO tuần 3: xoá object trên S3 sau khi commit
     return this.findOne(id, user);
+  }
+
+  findByEmail(email: string): Promise<Candidate | null> {
+    return this.candidatesRepository.findOneBy({ email: email.toLowerCase() });
+  }
+
+  // BR-CAND-01, BR-CAND-02, BR-APP-04
+  async upsertForApplication(
+    manager: EntityManager,
+    input: { fullName: string; email: string; phone?: string | null },
+    consentVersion: string,
+  ): Promise<Candidate> {
+    const email = input.email.toLowerCase();
+    const existing = await manager.findOne(Candidate, {
+      where: { email },
+      lock: { mode: 'pessimistic_write' },
+    });
+    if (!existing) {
+      return manager.save(
+        manager.create(Candidate, {
+          fullName: input.fullName,
+          email,
+          phone: input.phone ?? null,
+          consentAt: new Date(),
+          consentVersion,
+        }),
+      );
+    }
+    if (!existing.phone && input.phone) {
+      await manager.update(Candidate, existing.id, { phone: input.phone });
+      existing.phone = input.phone;
+    }
+    return existing;
   }
 
   private async applicationStats(

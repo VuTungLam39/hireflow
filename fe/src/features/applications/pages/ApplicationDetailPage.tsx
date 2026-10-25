@@ -55,7 +55,7 @@ export default function ApplicationDetailPage() {
 
   // Presigned URL hết hạn sau 5 phút: lấy URL mới mỗi lần mở, không lưu lâu
   const openOriginalCv = () =>
-    cvUrl.mutate(app.cv.fileId, { onSuccess: ({ url }) => window.open(url, '_blank') })
+    app.cv && cvUrl.mutate(app.cv.fileId, { onSuccess: ({ url }) => window.open(url, '_blank') })
 
   return (
     <div className="space-y-6">
@@ -189,22 +189,26 @@ export default function ApplicationDetailPage() {
             <CardTitle
               icon={<FileText />}
               aside={
-                <Can permission={Permission.CvRead}>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    loading={cvUrl.isPending}
-                    onClick={openOriginalCv}
-                  >
-                    {!cvUrl.isPending && <ExternalLink />}
-                    Mở file gốc
-                  </Button>
-                </Can>
+                app.cv && (
+                  <Can permission={Permission.CvRead}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      loading={cvUrl.isPending}
+                      onClick={openOriginalCv}
+                    >
+                      {!cvUrl.isPending && <ExternalLink />}
+                      Mở file gốc
+                    </Button>
+                  </Can>
+                )
               }
             >
-              {app.cv.fileName}
+              {app.cv?.fileName ?? 'CV'}
             </CardTitle>
-            {app.cv.text ? (
+            {!app.cv ? (
+              <p className="text-sm text-slate-500">CV đã bị xoá do ứng viên yêu cầu ẩn danh.</p>
+            ) : app.cv.text ? (
               <Suspense fallback={<Skeleton className="h-64" />}>
                 <CvTextViewer text={app.cv.text} highlight={evidence} />
               </Suspense>

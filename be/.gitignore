@@ -23,3 +23,6 @@ Thumbs.db
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+
+# CV lưu tạm trên ổ đĩa (thay bằng MinIO ở tuần 3)
+/storage
