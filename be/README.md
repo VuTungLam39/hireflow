@@ -7,7 +7,7 @@ API backend viết bằng **NestJS 12** (ESM) + **PostgreSQL** + **TypeORM**.
 | Nhóm | Chi tiết |
 | --- | --- |
 | Cấu hình | `@nestjs/config`, validate biến môi trường khi khởi động (`src/config/env.validation.ts`) |
-| Database | TypeORM + PostgreSQL, đặt tên cột snake_case, migration, seed admin |
+| Database | TypeORM + PostgreSQL, đặt tên cột snake_case, migration, seed dữ liệu mẫu |
 | Xác thực | JWT access token (trả trong body) + refresh token trong cookie httpOnly, SameSite=Strict (có rotation, lưu hash trong DB), đăng ký / đăng nhập / đăng xuất |
 | Phân quyền | Guard toàn cục: mọi route cần đăng nhập trừ khi gắn `@Public()`; giới hạn role bằng `@Roles(Role.Admin)` |
 | Response | Format chuẩn cho mọi response thành công/lỗi, tự tách `meta` khi phân trang |
@@ -25,7 +25,7 @@ npm ci                     # cài dependency theo package-lock
 cp .env.example .env       # sau đó sửa thông tin DB và JWT secret
 npm run infra:up           # (tuỳ chọn) bật Postgres + pgvector, Redis, RustFS bằng Docker
 npm run migration:run      # tạo bảng
-npm run seed               # tạo tài khoản admin (admin@example.com / Admin@123)
+npm run seed               # dữ liệu mẫu tự nhiên: 20 phòng ban, 20 user, 20 job, 27 ứng viên, 31 hồ sơ (mật khẩu Admin@123)
 npm run start:dev          # chạy dev, tự reload
 ```
 
@@ -45,10 +45,22 @@ npm run start:dev          # chạy dev, tự reload
 | `npm run migration:generate -- src/database/migrations/<Ten>` | Sinh migration từ thay đổi entity |
 | `npm run migration:create -- src/database/migrations/<Ten>` | Tạo migration rỗng |
 | `npm run migration:run` / `migration:revert` / `migration:show` | Chạy / hoàn tác / xem migration |
-| `npm run seed` | Chạy seed |
+| `npm run seed` | Seed dữ liệu mẫu vào DB trống; `npm run seed -- --reset` xoá dữ liệu nghiệp vụ (job, ứng viên, hồ sơ, CV) rồi seed lại. Không chạy `--reset` khi `NODE_ENV=production` |
+| `npm run seed:perf` | 200.000 hồ sơ để đo hiệu năng; chỉ chạy trên DB tên `*_perf` |
+| `npm run perf -- <nhãn>` | Đo p95, số query mỗi request và EXPLAIN ANALYZE trên DB perf, ghi `docs/perf/<nhãn>.md`. Kết quả tối ưu: `docs/perf-report.md` |
 | `npm run infra:up` / `npm run infra:down` | Bật / tắt Postgres (pgvector), Redis, RustFS bằng Docker |
 
 > Các lệnh migration chạy trên code đã build (`dist/`), script đã tự `npm run build` trước.
+
+### Dữ liệu mẫu (`npm run seed`)
+
+Nội dung nằm ở `src/database/seeds/demo/`: `org.ts` (phòng ban, user, phiên đăng nhập), `jobs.ts`, `candidates.ts`, `applications.ts`. Seed chạy bằng chính code nghiệp vụ nên dữ liệu luôn nhất quán:
+
+- CV là file DOCX thật, lưu qua `StorageService` (local hoặc S3 theo `STORAGE_DRIVER`); text CV lấy bằng `extractCvText`, nên xem và tải CV được như hồ sơ thật.
+- Điểm và bằng chứng tính bằng `scoreApplication`; seed báo lỗi nếu bằng chứng không có trong CV. Một ứng viên có bằng chứng "AI bịa" để thấy cờ `UNVERIFIED_EVIDENCE`.
+- Luồng trạng thái kiểm bằng `assertTransition`; OFFER → HIRED chỉ do Hiring Manager đúng phòng; mốc thời gian khớp ngày đăng và đóng job.
+- Có đủ tình huống: job nháp, đang mở, đã đóng; tiêu chí 2 phiên bản; CV đang chờ xử lý, CV scan lỗi; ứng viên nộp nhiều job, dùng lại CV, đã ẩn danh; HR tải CV hộ.
+- Hồ sơ trích xuất (`cv_profiles`) ghi model `seed`, 0 token, để không lẫn vào số liệu chi phí AI.
 
 ## Cấu trúc thư mục
 
@@ -74,7 +86,7 @@ src/
 │   ├── migrations/
 │   └── seeds/
 └── modules/
-    ├── auth/               # register, login, refresh, logout, me; refresh-cookie.ts đặt/xoá cookie
+    ├── auth/               # login, refresh, logout, me, đổi mật khẩu; refresh-cookie.ts đặt/xoá cookie
     ├── users/              # CRUD user (Admin)
     └── health/
 test/                       # E2E test
