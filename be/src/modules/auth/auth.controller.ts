@@ -21,7 +21,6 @@ import { jwtConfig } from '../../config/jwt.config.js';
 import { UsersService } from '../users/users.service.js';
 import { AuthService, type AuthTokens } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
-import { RegisterDto } from './dto/register.dto.js';
 import {
   clearRefreshCookie,
   REFRESH_COOKIE,
@@ -48,15 +47,6 @@ export class AuthController {
       isProduction: config.get<string>('app.env') === 'production',
       maxAgeSeconds: jwt.refreshExpiresIn,
     };
-  }
-
-  @Public()
-  @Post('register')
-  @ApiOperation({ summary: 'Đăng ký tài khoản' })
-  @ResponseMessage('Register successfully')
-  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
-    const { user, tokens } = await this.authService.register(dto);
-    return { user, tokens: this.withCookie(res, tokens) };
   }
 
   @Public()

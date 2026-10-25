@@ -11,6 +11,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js
 import { TransformInterceptor } from './common/interceptors/transform.interceptor.js';
 import { appConfig, databaseConfig, jwtConfig, validateEnv } from './config/index.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { DepartmentsModule } from './modules/departments/departments.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
@@ -44,6 +45,7 @@ import { UsersModule } from './modules/users/users.module.js';
 
     // Feature modules
     HealthModule,
+    DepartmentsModule,
     UsersModule,
     AuthModule,
   ],

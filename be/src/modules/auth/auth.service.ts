@@ -9,7 +9,6 @@ import { jwtConfig } from '../../config/jwt.config.js';
 import { User } from '../users/entities/user.entity.js';
 import { UsersService } from '../users/users.service.js';
 import { LoginDto } from './dto/login.dto.js';
-import { RegisterDto } from './dto/register.dto.js';
 
 export interface AuthTokens {
   accessToken: string;
@@ -31,16 +30,10 @@ export class AuthService {
     @Inject(jwtConfig.KEY) private readonly config: ConfigType<typeof jwtConfig>,
   ) {}
 
-  async register(dto: RegisterDto): Promise<{ user: User; tokens: AuthTokens }> {
-    const user = await this.usersService.create(dto);
-    const tokens = await this.issueTokens(user);
-    return { user, tokens };
-  }
-
   async login(dto: LoginDto): Promise<{ user: User; tokens: AuthTokens }> {
     const user = await this.usersService.findByEmailWithPassword(dto.email);
     // Dùng chung 1 thông báo lỗi để không lộ email nào đã tồn tại
-    if (!user || !(await bcrypt.compare(dto.password, user.password))) {
+    if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
       throw new UnauthorizedException('Invalid email or password');
     }
     // BR-ACC-04: tài khoản bị khoá trả 403 (API Contract 4.1), khác với sai mật khẩu (401)
