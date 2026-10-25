@@ -28,14 +28,16 @@ describe('DepartmentsService', () => {
     }).compile();
     service = moduleRef.get(DepartmentsService);
     vi.spyOn(service, 'userCounts').mockResolvedValue(new Map());
+    vi.spyOn(service, 'jobCounts').mockResolvedValue(new Map());
   });
 
   it('returns userCount and jobCount with the department', async () => {
     vi.spyOn(service, 'userCounts').mockResolvedValue(new Map([[eng.id, 3]]));
+    vi.spyOn(service, 'jobCounts').mockResolvedValue(new Map([[eng.id, 2]]));
     expect(await service.findById(eng.id)).toMatchObject({
       code: 'ENG',
       userCount: 3,
-      jobCount: 0,
+      jobCount: 2,
     });
   });
 
@@ -78,6 +80,12 @@ describe('DepartmentsService', () => {
       expect(error.getStatus()).toBe(HttpStatus.CONFLICT);
       expect(error.code).toBe(ErrorCode.DepartmentInUse);
       expect(repo.softDelete).not.toHaveBeenCalled();
+    });
+
+    it('refuses to delete a department that still has jobs', async () => {
+      vi.spyOn(service, 'jobCounts').mockResolvedValue(new Map([[eng.id, 1]]));
+      const error = (await service.remove(eng.id).catch((e: unknown) => e)) as BusinessException;
+      expect(error.code).toBe(ErrorCode.DepartmentInUse);
     });
   });
 });
