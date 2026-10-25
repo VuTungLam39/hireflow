@@ -5,10 +5,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { aiConfig } from '../../config/ai.config.js';
 import { queueConfig } from '../../config/queue.config.js';
 import { FilesModule } from '../files/files.module.js';
+import { AdminJobsController } from './admin-jobs.controller.js';
 import { buildEmbeddingProvider, buildLlmProvider } from './ai.factory.js';
 import { EMBEDDING_PROVIDER, LLM_PROVIDER } from './ai.types.js';
 import { CvProfile } from './entities/cv-profile.entity.js';
 import { CvPipelineService } from './pipeline/cv-pipeline.service.js';
+import { PipelineOpsService } from './pipeline/pipeline-ops.service.js';
 import { ExtractCvProcessor, ParseCvProcessor, ScoreProcessor } from './pipeline/processors.js';
 import { DEFAULT_JOB_OPTIONS, QUEUE } from './pipeline/queues.js';
 import { RequirementsSuggester } from './requirements-suggester.service.js';
@@ -32,6 +34,7 @@ import { RequirementsSuggester } from './requirements-suggester.service.js';
     TypeOrmModule.forFeature([CvProfile]),
     FilesModule,
   ],
+  controllers: [AdminJobsController],
   providers: [
     {
       provide: LLM_PROVIDER,
@@ -44,6 +47,7 @@ import { RequirementsSuggester } from './requirements-suggester.service.js';
       useFactory: (config: ConfigType<typeof aiConfig>) => buildEmbeddingProvider(config),
     },
     CvPipelineService,
+    PipelineOpsService,
     RequirementsSuggester,
     ParseCvProcessor,
     ExtractCvProcessor,

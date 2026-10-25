@@ -16,4 +16,5 @@ export enum Permission {
   AiChat = 'ai:chat',
   AiRescore = 'ai:rescore',
   DashboardRead = 'dashboard:read',
+  OpsManage = 'ops:manage',
 }

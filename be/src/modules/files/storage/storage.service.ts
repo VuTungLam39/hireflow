@@ -9,6 +9,7 @@ export abstract class StorageService {
   abstract put(key: string, body: Buffer, contentType?: string): Promise<void>;
   abstract get(key: string): Promise<Buffer>;
   abstract remove(key: string): Promise<void>;
+  abstract ping(): Promise<void>;
   abstract signedUrl(key: string, options: SignedUrlOptions): Promise<string | null>;
 }
 

@@ -132,6 +132,12 @@ export const router = createBrowserRouter([
               requires(Permission.UserManage, [
                 { path: paths.users, lazy: page(() => import('@/features/users/pages/UsersPage')) },
               ]),
+              requires(Permission.OpsManage, [
+                {
+                  path: paths.aiQueue,
+                  lazy: page(() => import('@/features/operations/pages/AiQueuePage')),
+                },
+              ]),
               requires(Permission.DepartmentManage, [
                 {
                   path: paths.departments,

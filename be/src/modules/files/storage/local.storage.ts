@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, constants, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve, sep } from 'node:path';
 import {
   type SignedUrlOptions,
@@ -33,6 +33,12 @@ export class LocalStorageService extends StorageService {
 
   async remove(key: string): Promise<void> {
     await rm(this.pathOf(key), { force: true });
+  }
+
+  // Kickoff 19
+  async ping(): Promise<void> {
+    await mkdir(this.root, { recursive: true });
+    await access(this.root, constants.W_OK);
   }
 
   signedUrl(_key: string, _options: SignedUrlOptions): Promise<string | null> {

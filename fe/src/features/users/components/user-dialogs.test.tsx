@@ -16,16 +16,7 @@ import { Role } from '@/types/user'
 import { EditUserDialog } from './EditUserDialog'
 
 const server = setupServer(...authHandlers, ...adminHandlers)
-beforeAll(() => {
-  server.listen({ onUnhandledRequest: 'error' })
-  // jsdom chưa có showModal/close cho <dialog>
-  HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
-    this.setAttribute('open', '')
-  }
-  HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
-    this.removeAttribute('open')
-  }
-})
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => server.close())
 
 const rowOf = (email: string) => db.users.find((u) => u.email === email)!
