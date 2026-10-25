@@ -2,6 +2,7 @@ import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { PaginatedResult } from '../../common/dto/paginated-result.dto.js';
+import { PaginationQueryDto } from '../../common/dto/pagination-query.dto.js';
 import { AiStatus } from '../../common/enums/ai-status.enum.js';
 import { ApplicationStatus } from '../../common/enums/application-status.enum.js';
 import type { ScoreFlag } from '../../common/enums/score-flag.enum.js';
@@ -70,7 +71,22 @@ export interface RankingView {
   }[];
 }
 
+export interface PublicJobSummaryView {
+  id: string;
+  title: string;
+  location: string;
+  department: { name: string };
+  publishedAt: Date;
+}
+
+export interface PublicJobView extends PublicJobSummaryView {
+  jdText: string;
+  requirements: { label: string; type: JobRequirement['type'] }[];
+}
+
 const EMPTY_PIPELINE: JobPipeline = { new: 0, inProgress: 0, hired: 0, closed: 0 };
+
+const escapeLike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 @Injectable()
 export class JobsService {
@@ -276,6 +292,72 @@ export class JobsService {
             ? (a.scoreBreakdown ?? []).map(({ requirementId, match }) => ({ requirementId, match }))
             : [],
       })),
+    };
+  }
+
+  // US-03, BR-JOB-07
+  async findPublic(query: PaginationQueryDto): Promise<PaginatedResult<PublicJobSummaryView>> {
+    const qb = this.publicQuery()
+      .orderBy('job.publishedAt', 'DESC')
+      .addOrderBy('job.id', 'DESC')
+      .offset(query.skip)
+      .limit(query.limit);
+    if (query.search) {
+      qb.andWhere(`f_unaccent(lower(job.title)) LIKE '%' || f_unaccent(lower(:search)) || '%'`, {
+        search: escapeLike(query.search),
+      });
+    }
+    const [jobs, total] = await qb.getManyAndCount();
+    return new PaginatedResult(
+      jobs.map((j) => this.toPublicSummary(j)),
+      total,
+      query.page,
+      query.limit,
+    );
+  }
+
+  // BR-APP-02, BR-JOB-07
+  async findPublicOne(id: string): Promise<PublicJobView> {
+    const job = await this.publicQuery()
+      .addSelect('job.jdText')
+      .andWhere('job.id = :id', { id })
+      .getOne();
+    if (!job) throw new NotFoundException('Job not found');
+    const requirements = await this.requirementsRepository.find({
+      select: ['label', 'type'],
+      where: { jobId: job.id, jdVersion: job.jdVersion },
+      order: { position: 'ASC' },
+    });
+    return {
+      ...this.toPublicSummary(job),
+      jdText: job.jdText,
+      requirements: requirements.map((r) => ({ label: r.label, type: r.type })),
+    };
+  }
+
+  private publicQuery() {
+    return this.jobsRepository
+      .createQueryBuilder('job')
+      .innerJoin('job.department', 'department')
+      .select([
+        'job.id',
+        'job.title',
+        'job.location',
+        'job.publishedAt',
+        'job.jdVersion',
+        'department.id',
+        'department.name',
+      ])
+      .where('job.status = :open', { open: JobStatus.Open });
+  }
+
+  private toPublicSummary(job: Job): PublicJobSummaryView {
+    return {
+      id: job.id,
+      title: job.title,
+      location: job.location,
+      department: { name: job.department!.name },
+      publishedAt: job.publishedAt!,
     };
   }
 

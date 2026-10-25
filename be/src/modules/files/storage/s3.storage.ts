@@ -7,9 +7,15 @@ import {
   S3Client,
   S3ServiceException,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Logger, type OnModuleInit } from '@nestjs/common';
 import type { StorageConfig } from '../../../config/storage.config.js';
-import { StorageNotFoundError, StorageService } from './storage.service.js';
+import {
+  contentDisposition,
+  type SignedUrlOptions,
+  StorageNotFoundError,
+  StorageService,
+} from './storage.service.js';
 
 const NOT_FOUND = new Set(['NotFound', 'NoSuchKey', 'NoSuchBucket']);
 
@@ -22,6 +28,7 @@ export class S3StorageService extends StorageService implements OnModuleInit {
   readonly driver = 's3';
   private readonly logger = new Logger(S3StorageService.name);
   private readonly bucket: string;
+  private readonly signer: S3Client;
 
   constructor(
     config: StorageConfig['s3'],
@@ -36,6 +43,12 @@ export class S3StorageService extends StorageService implements OnModuleInit {
   ) {
     super();
     this.bucket = config.bucket;
+    this.signer = new S3Client({
+      endpoint: config.publicEndpoint ?? config.endpoint,
+      region: config.region,
+      forcePathStyle: config.forcePathStyle,
+      credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
+    });
   }
 
   async onModuleInit(): Promise<void> {
@@ -77,5 +90,19 @@ export class S3StorageService extends StorageService implements OnModuleInit {
 
   async remove(key: string): Promise<void> {
     await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+  }
+
+  // BR-FILE-03, Kickoff 13
+  signedUrl(key: string, options: SignedUrlOptions): Promise<string> {
+    return getSignedUrl(
+      this.signer,
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ResponseContentType: options.contentType,
+        ResponseContentDisposition: contentDisposition(options.fileName),
+      }),
+      { expiresIn: options.expiresIn },
+    );
   }
 }

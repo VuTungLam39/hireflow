@@ -1,6 +1,11 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve, sep } from 'node:path';
-import { StorageKeyError, StorageNotFoundError, StorageService } from './storage.service.js';
+import {
+  type SignedUrlOptions,
+  StorageKeyError,
+  StorageNotFoundError,
+  StorageService,
+} from './storage.service.js';
 
 export class LocalStorageService extends StorageService {
   readonly driver = 'local';
@@ -28,6 +33,10 @@ export class LocalStorageService extends StorageService {
 
   async remove(key: string): Promise<void> {
     await rm(this.pathOf(key), { force: true });
+  }
+
+  signedUrl(_key: string, _options: SignedUrlOptions): Promise<string | null> {
+    return Promise.resolve(null);
   }
 
   private pathOf(key: string): string {

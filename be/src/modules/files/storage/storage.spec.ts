@@ -31,11 +31,18 @@ describe('LocalStorageService', () => {
   it.each(['../escape.pdf', 'cv/../../escape.pdf', '.'])('rejects key %j', async (key) => {
     await expect(storage.put(key, Buffer.from('x'))).rejects.toBeInstanceOf(StorageKeyError);
   });
+
+  it('has no presigned URL (served by the API instead)', async () => {
+    await expect(
+      storage.signedUrl('cv/a.pdf', { expiresIn: 300, fileName: 'a.pdf', contentType: 'x' }),
+    ).resolves.toBeNull();
+  });
 });
 
 describe('S3StorageService', () => {
   const config = {
     endpoint: 'http://s3.test',
+    publicEndpoint: 'http://cdn.test',
     region: 'us-east-1',
     bucket: 'hireflow-cv',
     accessKeyId: 'k',
@@ -110,6 +117,23 @@ describe('S3StorageService', () => {
     await storage.ensureBucket();
     expect(send).toHaveBeenCalledTimes(1);
     expect(command().name).toBe('HeadBucketCommand');
+  });
+
+  it('BR-FILE-03: signs a 5-minute URL on the public endpoint without calling S3', async () => {
+    const url = new URL(
+      await storage.signedUrl('cv/2026/10/a.docx', {
+        expiresIn: 300,
+        fileName: 'CV Nguyễn An.docx',
+        contentType: 'application/pdf',
+      }),
+    );
+    expect(url.origin).toBe('http://cdn.test');
+    expect(url.pathname).toBe('/hireflow-cv/cv/2026/10/a.docx');
+    expect(url.searchParams.get('X-Amz-Expires')).toBe('300');
+    expect(url.searchParams.get('response-content-disposition')).toBe(
+      `inline; filename*=UTF-8''${encodeURIComponent('CV Nguyễn An.docx')}`,
+    );
+    expect(send).not.toHaveBeenCalled();
   });
 
   it('does not crash startup when storage is down', async () => {

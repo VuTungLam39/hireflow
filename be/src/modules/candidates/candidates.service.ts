@@ -10,6 +10,7 @@ import { decodeCursor, encodeCursor } from '../../common/utils/cursor.js';
 import { applyCandidateScope, applyDepartmentScope } from '../../common/utils/department-scope.js';
 import { Application } from '../applications/entities/application.entity.js';
 import { CvFile } from '../files/entities/cv-file.entity.js';
+import { FilesService } from '../files/files.service.js';
 import { QueryCandidateDto } from './dto/query-candidate.dto.js';
 import { UpdateCandidateDto } from './dto/update-candidate.dto.js';
 import { Candidate } from './entities/candidate.entity.js';
@@ -47,6 +48,7 @@ export class CandidatesService {
   constructor(
     @InjectRepository(Candidate) private readonly candidatesRepository: Repository<Candidate>,
     @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly filesService: FilesService,
   ) {}
 
   // US-14, BR-CAND-03
@@ -137,7 +139,7 @@ export class CandidatesService {
 
   // BR-DATA-03, Database Design 6
   async anonymize(id: string, user: ScopeUser): Promise<CandidateDetailView> {
-    await this.dataSource.transaction(async (manager) => {
+    const storageKeys = await this.dataSource.transaction(async (manager) => {
       const candidate = await manager.findOne(Candidate, {
         where: { id },
         lock: { mode: 'pessimistic_write' },
@@ -145,6 +147,11 @@ export class CandidatesService {
       if (!candidate) throw new NotFoundException('Candidate not found');
       this.assertNotAnonymized(candidate);
 
+      const files = await manager.find(CvFile, {
+        select: ['storageKey'],
+        where: { candidateId: id },
+        withDeleted: true,
+      });
       await manager.update(Application, { candidateId: id }, { scoreBreakdown: null });
       await manager.delete(CvFile, { candidateId: id });
       await manager.update(Candidate, id, {
@@ -154,8 +161,9 @@ export class CandidatesService {
         anonymizedAt: new Date(),
         anonymizedBy: user.id,
       });
+      return files.map((f) => f.storageKey);
     });
-    // TODO tuần 3: xoá object trên S3 sau khi commit
+    await this.filesService.removeAllStored(storageKeys);
     return this.findOne(id, user);
   }
 

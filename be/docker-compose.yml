@@ -74,6 +74,7 @@ services:
       REDIS_PORT: 6379
       STORAGE_DRIVER: s3
       S3_ENDPOINT: http://storage:9000
+      S3_PUBLIC_ENDPOINT: http://localhost:${S3_PORT:-9000}
     ports:
       - '${PORT:-3000}:3000'
     depends_on:
