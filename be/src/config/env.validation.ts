@@ -75,10 +75,6 @@ class EnvironmentVariables {
   @Min(60)
   JWT_ACCESS_EXPIRES_IN: number = 900;
 
-  @IsString()
-  @MinLength(32)
-  JWT_REFRESH_SECRET: string;
-
   @IsInt()
   @Min(60)
   JWT_REFRESH_EXPIRES_IN: number = 604800;

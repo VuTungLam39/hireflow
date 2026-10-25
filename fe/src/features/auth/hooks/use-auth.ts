@@ -27,20 +27,6 @@ export function useLogin() {
   })
 }
 
-export function useRegister() {
-  const setSession = useAuthStore((s) => s.setSession)
-  const navigate = useNavigate()
-
-  return useMutation({
-    mutationFn: authApi.register,
-    onSuccess: ({ user, tokens }) => {
-      setSession(user, tokens)
-      toast.success('Đăng ký thành công')
-      navigate(paths.home, { replace: true })
-    },
-  })
-}
-
 export function useLogout() {
   const clear = useAuthStore((s) => s.clear)
   const queryClient = useQueryClient()

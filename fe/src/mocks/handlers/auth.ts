@@ -70,9 +70,4 @@ export const authHandlers = [
     Object.assign(user, { password: newPassword, updatedAt: new Date().toISOString() })
     return ok(null, { message: 'Password changed' })
   }),
-
-  // Kickoff 4.1: không có tự đăng ký, tài khoản do Admin tạo
-  http.post(api('/auth/register'), () =>
-    fail(403, 'FORBIDDEN', 'Tài khoản nội bộ do Admin tạo, không tự đăng ký được'),
-  ),
 ]

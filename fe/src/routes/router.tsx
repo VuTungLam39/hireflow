@@ -69,10 +69,6 @@ export const router = createBrowserRouter([
             element: <AuthLayout />,
             children: [
               { path: paths.login, lazy: page(() => import('@/features/auth/pages/LoginPage')) },
-              {
-                path: paths.register,
-                lazy: page(() => import('@/features/auth/pages/RegisterPage')),
-              },
             ],
           },
         ],

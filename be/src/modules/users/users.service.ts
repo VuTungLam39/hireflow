@@ -7,6 +7,7 @@ import { Role } from '../../common/enums/role.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { FieldError } from '../../common/interfaces/api-response.interface.js';
 import { DepartmentsService } from '../departments/departments.service.js';
+import { RefreshTokensService } from '../refresh-tokens/refresh-tokens.service.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { QueryUserDto } from './dto/query-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
@@ -20,6 +21,7 @@ export class UsersService {
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
     private readonly departmentsService: DepartmentsService,
+    private readonly refreshTokensService: RefreshTokensService,
   ) {}
 
   async create(dto: CreateUserDto): Promise<User> {
@@ -77,12 +79,18 @@ export class UsersService {
       .getOne();
   }
 
-  findByIdWithRefreshToken(id: string): Promise<User | null> {
+  findByIdWithPassword(id: string): Promise<User | null> {
     return this.usersRepository
       .createQueryBuilder('user')
-      .addSelect('user.refreshTokenHash')
+      .addSelect('user.passwordHash')
       .where('user.id = :id', { id })
       .getOne();
+  }
+
+  async setPassword(id: string, password: string): Promise<void> {
+    await this.usersRepository.update(id, {
+      passwordHash: await bcrypt.hash(password, SALT_ROUNDS),
+    });
   }
 
   async update(id: string, dto: UpdateUserDto): Promise<User> {
@@ -101,16 +109,26 @@ export class UsersService {
       user.passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     }
     await this.usersRepository.save(user);
+    // BR-ACC-06
+    if (password) await this.refreshTokensService.revokeAllForUser(id);
     return this.findById(id);
   }
 
-  async remove(id: string): Promise<void> {
+  // BR-ACC-04, BR-ACC-05
+  async setStatus(id: string, isActive: boolean, actorId: string): Promise<User> {
+    if (!isActive) this.assertNotSelf(id, actorId, 'Cannot disable your own account');
     await this.findById(id);
-    await this.usersRepository.softDelete(id);
+    await this.usersRepository.update(id, { isActive });
+    if (!isActive) await this.refreshTokensService.revokeAllForUser(id);
+    return this.findById(id);
   }
 
-  async updateRefreshTokenHash(id: string, refreshTokenHash: string | null): Promise<void> {
-    await this.usersRepository.update(id, { refreshTokenHash });
+  // BR-ACC-05
+  async remove(id: string, actorId: string): Promise<void> {
+    this.assertNotSelf(id, actorId, 'Cannot delete your own account');
+    await this.findById(id);
+    await this.usersRepository.softDelete(id);
+    await this.refreshTokensService.revokeAllForUser(id);
   }
 
   async updateLastLogin(id: string): Promise<void> {
@@ -138,6 +156,11 @@ export class UsersService {
       );
     }
     return departmentId!;
+  }
+
+  private assertNotSelf(id: string, actorId: string, message: string): void {
+    if (id !== actorId) return;
+    throw new BusinessException(ErrorCode.ValidationFailed, message, HttpStatus.BAD_REQUEST);
   }
 
   private withDepartment(qb: SelectQueryBuilder<User>): SelectQueryBuilder<User> {

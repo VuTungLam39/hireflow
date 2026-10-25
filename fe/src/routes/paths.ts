@@ -16,7 +16,6 @@ export const paths = {
 
   // Khách
   login: '/login',
-  register: '/register',
 
   // Công khai cho ứng viên (FE Architecture mục 8.2)
   publicJobs: '/jobs',

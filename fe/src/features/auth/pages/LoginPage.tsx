@@ -1,11 +1,9 @@
 import { FlaskConical } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
-import { Link } from 'react-router'
 import { Button, FormField, Input } from '@/components/ui'
 import { env } from '@/config/env'
 import { applyServerErrors, getErrorMessage } from '@/lib/errors'
-import { paths } from '@/routes/paths'
 import { useLogin } from '../hooks/use-auth'
 import { loginSchema, type LoginInput } from '../schemas/auth.schema'
 
@@ -107,10 +105,7 @@ export default function LoginPage() {
       )}
 
       <p className="mt-6 text-center text-sm text-slate-600">
-        Chưa có tài khoản?{' '}
-        <Link to={paths.register} className="text-primary font-medium hover:underline">
-          Đăng ký
-        </Link>
+        Chưa có tài khoản? Liên hệ Admin để được cấp.
       </p>
     </>
   )

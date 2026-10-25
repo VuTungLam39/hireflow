@@ -6,7 +6,6 @@ const base = {
   DB_PASSWORD: 'postgres',
   DB_DATABASE: 'db',
   JWT_ACCESS_SECRET: 'a'.repeat(32),
-  JWT_REFRESH_SECRET: 'b'.repeat(32),
 };
 
 describe('validateEnv', () => {

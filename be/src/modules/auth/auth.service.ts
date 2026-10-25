@@ -2,12 +2,17 @@ import { HttpStatus, Inject, Injectable, UnauthorizedException } from '@nestjs/c
 import type { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcryptjs';
-import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface.js';
+import { type Permission, ROLE_PERMISSIONS } from '../../common/permissions/index.js';
 import { jwtConfig } from '../../config/jwt.config.js';
+import {
+  RefreshTokensService,
+  type SessionMeta,
+} from '../refresh-tokens/refresh-tokens.service.js';
 import { User } from '../users/entities/user.entity.js';
 import { UsersService } from '../users/users.service.js';
+import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 
 export interface AuthTokens {
@@ -17,26 +22,21 @@ export interface AuthTokens {
   expiresIn: number;
 }
 
-const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
-
-const safeEqual = (a: string, b: string) =>
-  a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
-
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
+    private readonly refreshTokensService: RefreshTokensService,
     private readonly jwtService: JwtService,
     @Inject(jwtConfig.KEY) private readonly config: ConfigType<typeof jwtConfig>,
   ) {}
 
-  async login(dto: LoginDto): Promise<{ user: User; tokens: AuthTokens }> {
+  async login(dto: LoginDto, meta: SessionMeta): Promise<{ user: User; tokens: AuthTokens }> {
     const user = await this.usersService.findByEmailWithPassword(dto.email);
-    // Dùng chung 1 thông báo lỗi để không lộ email nào đã tồn tại
     if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
       throw new UnauthorizedException('Invalid email or password');
     }
-    // BR-ACC-04: tài khoản bị khoá trả 403 (API Contract 4.1), khác với sai mật khẩu (401)
+    // BR-ACC-04
     if (!user.isActive) {
       throw new BusinessException(
         ErrorCode.AccountDisabled,
@@ -46,54 +46,58 @@ export class AuthService {
     }
 
     await this.usersService.updateLastLogin(user.id);
-    const tokens = await this.issueTokens(user);
-    return { user: await this.usersService.findById(user.id), tokens };
+    const refreshToken = await this.refreshTokensService.issue(user.id, meta);
+    return {
+      user: await this.usersService.findById(user.id),
+      tokens: await this.withAccessToken(user, refreshToken),
+    };
   }
 
-  async refresh(refreshToken: string): Promise<AuthTokens> {
-    let payload: JwtPayload;
-    try {
-      payload = await this.jwtService.verifyAsync<JwtPayload>(refreshToken, {
-        secret: this.config.refreshSecret,
-      });
-    } catch {
+  async refresh(refreshToken: string, meta: SessionMeta): Promise<AuthTokens> {
+    const rotated = await this.refreshTokensService.rotate(refreshToken, meta);
+    const user = await this.usersService.findById(rotated.userId).catch(() => null);
+    if (!user?.isActive) {
+      await this.refreshTokensService.revokeAllForUser(rotated.userId);
       throw new UnauthorizedException('Invalid refresh token');
     }
+    return this.withAccessToken(user, rotated.token);
+  }
 
-    const user = await this.usersService.findByIdWithRefreshToken(payload.sub);
-    const valid =
-      !!user?.refreshTokenHash && safeEqual(hashToken(refreshToken), user.refreshTokenHash);
-    if (!user || !valid || !user.isActive) {
-      throw new UnauthorizedException('Invalid refresh token');
+  async logout(refreshToken: string | undefined): Promise<void> {
+    if (refreshToken) await this.refreshTokensService.revokeFamilyOf(refreshToken);
+  }
+
+  async me(userId: string): Promise<User & { permissions: readonly Permission[] }> {
+    const user = await this.usersService.findById(userId);
+    return Object.assign(user, { permissions: ROLE_PERMISSIONS[user.role] });
+  }
+
+  // BR-ACC-06
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+    currentRefreshToken: string | undefined,
+  ): Promise<void> {
+    const user = await this.usersService.findByIdWithPassword(userId);
+    if (!user || !(await bcrypt.compare(dto.currentPassword, user.passwordHash))) {
+      throw new BusinessException(
+        ErrorCode.WrongPassword,
+        'Current password is incorrect',
+        HttpStatus.BAD_REQUEST,
+        [{ field: 'currentPassword', messages: ['Mật khẩu hiện tại không đúng'] }],
+      );
     }
-    // Rotation: mỗi lần refresh sẽ cấp refresh token mới, token cũ hết hiệu lực
-    return this.issueTokens(user);
+    await this.usersService.setPassword(userId, dto.newPassword);
+    await this.refreshTokensService.revokeAllForUser(userId, currentRefreshToken);
   }
 
-  async logout(userId: string): Promise<void> {
-    await this.usersService.updateRefreshTokenHash(userId, null);
-  }
-
-  private async issueTokens(user: User): Promise<AuthTokens> {
+  private async withAccessToken(user: User, refreshToken: string): Promise<AuthTokens> {
     const payload: JwtPayload = { sub: user.id, email: user.email, role: user.role };
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload, {
+    return {
+      accessToken: await this.jwtService.signAsync(payload, {
         secret: this.config.accessSecret,
         expiresIn: this.config.accessExpiresIn,
       }),
-      this.jwtService.signAsync(payload, {
-        secret: this.config.refreshSecret,
-        expiresIn: this.config.refreshExpiresIn,
-        jwtid: randomUUID(),
-      }),
-    ]);
-
-    // Chỉ lưu hash của refresh token trong DB. Không dùng bcrypt vì bcrypt chỉ đọc
-    // 72 byte đầu, mà các JWT của cùng 1 user có phần đầu gần như giống nhau.
-    await this.usersService.updateRefreshTokenHash(user.id, hashToken(refreshToken));
-
-    return {
-      accessToken,
       refreshToken,
       tokenType: 'Bearer',
       expiresIn: this.config.accessExpiresIn,
