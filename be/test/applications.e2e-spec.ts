@@ -457,11 +457,10 @@ describe('Applications (e2e)', () => {
     });
   });
 
-  it('rescore is not available until the AI pipeline exists', async () => {
-    expect(
-      (await as('hr', request(server()).post(`/api/v1/applications/${ids.a1}/rescore`)).expect(503))
-        .body.code,
-    ).toBe('AI_UNAVAILABLE');
+  it('BR-AI-08: rescore is accepted for HR (202) and forbidden for Hiring Manager', async () => {
+    const res = await as('hr', request(server()).post(`/api/v1/applications/${ids.a1}/rescore`));
+    expect(res.status).toBe(202);
+    expect(res.body.data).toBeNull();
     await as('hmA', request(server()).post(`/api/v1/applications/${ids.a1}/rescore`)).expect(403);
   });
 

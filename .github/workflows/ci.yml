@@ -36,7 +36,7 @@ jobs:
         run: cp .env.example .env && docker compose config --quiet
 
   be-e2e:
-    name: BE · e2e (Postgres + pgvector)
+    name: BE · e2e (Postgres + pgvector, Redis)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -55,8 +55,19 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       NODE_ENV: test
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
       DB_HOST: localhost
       DB_PORT: 5432
       DB_USERNAME: postgres

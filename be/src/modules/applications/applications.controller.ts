@@ -16,6 +16,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Permissions } from '../../common/decorators/permissions.decorator.js';
+import { RequestId } from '../../common/decorators/request-id.decorator.js';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { Permission } from '../../common/permissions/permission.enum.js';
@@ -109,9 +110,14 @@ export class ApplicationsController {
   @Post(':id/rescore')
   @HttpCode(HttpStatus.ACCEPTED)
   @Permissions(Permission.AiRescore)
-  @ApiOperation({ summary: 'Chấm lại (tuần 3); hiện trả 503 AI_UNAVAILABLE' })
-  rescore(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
-    return this.applicationsService.rescore(id, user);
+  @ApiOperation({ summary: 'Chấm lại: FAILED chạy lại từ bước lỗi, DONE chỉ tính lại điểm' })
+  @ResponseMessage('Rescoring scheduled')
+  rescore(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+    @RequestId() requestId?: string,
+  ) {
+    return this.applicationsService.rescore(id, user, requestId);
   }
 }
 
@@ -132,7 +138,8 @@ export class JobApplicationsController {
     @Body() dto: HrUploadDto,
     @UploadedFile() file: UploadedCv | undefined,
     @CurrentUser() user: AuthUser,
+    @RequestId() requestId?: string,
   ) {
-    return this.applicationsService.uploadForCandidate(jobId, dto, file, user);
+    return this.applicationsService.uploadForCandidate(jobId, dto, file, user, requestId);
   }
 }
