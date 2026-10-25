@@ -3,14 +3,15 @@ import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import type { StorageConfig } from '../../config/storage.config.js';
 import { CvFile } from './entities/cv-file.entity.js';
+import { FilesController } from './files.controller.js';
 import { FilesService } from './files.service.js';
 import { LocalStorageService } from './storage/local.storage.js';
 import { S3StorageService } from './storage/s3.storage.js';
 import { StorageService } from './storage/storage.service.js';
 
-// TODO tuần 3: GET /files/:fileId/url (presigned URL)
 @Module({
   imports: [TypeOrmModule.forFeature([CvFile])],
+  controllers: [FilesController],
   providers: [
     FilesService,
     {

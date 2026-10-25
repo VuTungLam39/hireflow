@@ -22,10 +22,12 @@ import { AiModule } from './modules/ai/ai.module.js';
 import { ApplicationsModule } from './modules/applications/applications.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { CandidatesModule } from './modules/candidates/candidates.module.js';
+import { DashboardModule } from './modules/dashboard/dashboard.module.js';
 import { DepartmentsModule } from './modules/departments/departments.module.js';
 import { FilesModule } from './modules/files/files.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { JobsModule } from './modules/jobs/jobs.module.js';
+import { PublicModule } from './modules/public/public.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
 @Module({
@@ -66,6 +68,8 @@ import { UsersModule } from './modules/users/users.module.js';
     FilesModule,
     ApplicationsModule,
     AiModule,
+    DashboardModule,
+    PublicModule,
   ],
   providers: [
     // Guards chạy theo thứ tự đăng ký: rate limit -> xác thực JWT -> phân quyền

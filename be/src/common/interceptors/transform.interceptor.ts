@@ -1,4 +1,10 @@
-import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+  StreamableFile,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Response } from 'express';
 import { map, Observable } from 'rxjs';
@@ -22,6 +28,7 @@ export class TransformInterceptor<T> implements NestInterceptor<T, ApiResponse<u
 
     return next.handle().pipe(
       map((data) => {
+        if (data instanceof StreamableFile) return data as never;
         const base = {
           success: true as const,
           statusCode: response.statusCode,

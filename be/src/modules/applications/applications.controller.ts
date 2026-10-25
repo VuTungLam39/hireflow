@@ -21,7 +21,7 @@ import { ResponseMessage } from '../../common/decorators/response-message.decora
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { Permission } from '../../common/permissions/permission.enum.js';
 import type { UploadedCv } from '../files/cv-file.rules.js';
-import { CV_MAX_BYTES } from '../files/entities/cv-file.entity.js';
+import { CV_UPLOAD_OPTIONS } from '../files/cv-upload.options.js';
 import { ApplicationsService } from './applications.service.js';
 import { ChangeStatusDto, DeclineOfferDto } from './dto/change-status.dto.js';
 import { CreateNoteDto } from './dto/create-note.dto.js';
@@ -132,7 +132,7 @@ export class JobApplicationsController {
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'HR tải CV hộ ứng viên vào job OPEN (nguồn HR_UPLOAD)' })
   @ResponseMessage('Application created')
-  @UseInterceptors(FileInterceptor('cv', { limits: { fileSize: CV_MAX_BYTES, files: 1 } }))
+  @UseInterceptors(FileInterceptor('cv', CV_UPLOAD_OPTIONS))
   upload(
     @Param('jobId', ParseUUIDPipe) jobId: string,
     @Body() dto: HrUploadDto,

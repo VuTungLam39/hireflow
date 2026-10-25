@@ -7,6 +7,7 @@ export const buildStorageConfig = () => ({
   localRoot: process.env.STORAGE_LOCAL_ROOT ?? 'storage',
   s3: {
     endpoint: process.env.S3_ENDPOINT ?? 'http://localhost:9000',
+    publicEndpoint: process.env.S3_PUBLIC_ENDPOINT || undefined,
     region: process.env.S3_REGION ?? 'us-east-1',
     bucket: process.env.S3_BUCKET ?? 'hireflow-cv',
     accessKeyId: process.env.S3_ACCESS_KEY ?? '',

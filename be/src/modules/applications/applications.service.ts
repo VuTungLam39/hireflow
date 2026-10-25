@@ -26,6 +26,7 @@ import { assertTransition } from './application-status.js';
 import { ChangeStatusDto } from './dto/change-status.dto.js';
 import { CreateNoteDto } from './dto/create-note.dto.js';
 import { HrUploadDto } from './dto/hr-upload.dto.js';
+import { PublicApplyDto } from './dto/public-apply.dto.js';
 import { QueryApplicationDto } from './dto/query-application.dto.js';
 import { ApplicationNote } from './entities/application-note.entity.js';
 import { ApplicationStatusHistory } from './entities/application-status-history.entity.js';
@@ -34,6 +35,8 @@ import { Application, type BreakdownItem } from './entities/application.entity.j
 type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId'>;
 
 export const HR_CONSENT_VERSION = 'HR_CONFIRMED';
+// BR-APP-04
+export const PUBLIC_CONSENT_VERSION = 'v1';
 const VN_OFFSET = '+07:00';
 const DAY_MS = 86_400_000;
 
@@ -284,6 +287,31 @@ export class ApplicationsService {
     // Kickoff 12: cv.uploaded
     await this.pipeline.enqueueApplication(applicationId, requestId);
     return view;
+  }
+
+  // US-03, BR-APP-01 → 08
+  async applyPublic(
+    jobId: string,
+    dto: PublicApplyDto,
+    file: UploadedCv | undefined,
+    requestId?: string,
+  ): Promise<null> {
+    const open = await this.dataSource
+      .getRepository(Job)
+      .existsBy({ id: jobId, status: JobStatus.Open });
+    if (!open) throw new NotFoundException('Job not found');
+    // BR-APP-06
+    if (dto.website) return null;
+    const applicationId = await this.submit(
+      jobId,
+      { fullName: dto.fullName, email: dto.email, phone: dto.phone },
+      file,
+      { source: ApplicationSource.PublicForm, consentVersion: PUBLIC_CONSENT_VERSION, by: null },
+    );
+    // Kickoff 12: cv.uploaded
+    await this.pipeline.enqueueApplication(applicationId, requestId);
+    // BR-APP-07
+    return null;
   }
 
   // BR-CAND-01, 02, BR-APP-03, BR-FILE-01, 02, Kickoff 13

@@ -162,6 +162,10 @@ class EnvironmentVariables {
   @IsString()
   S3_ENDPOINT: string = 'http://localhost:9000';
 
+  @IsOptional()
+  @IsString()
+  S3_PUBLIC_ENDPOINT?: string;
+
   @IsString()
   S3_REGION: string = 'us-east-1';
 
