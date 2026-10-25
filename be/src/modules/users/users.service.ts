@@ -1,8 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import bcrypt from 'bcryptjs';
 import { Repository } from 'typeorm';
 import { PaginatedResult } from '../../common/dto/paginated-result.dto.js';
+import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { QueryUserDto } from './dto/query-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
@@ -19,7 +20,13 @@ export class UsersService {
 
   async create(dto: CreateUserDto): Promise<User> {
     if (await this.usersRepository.existsBy({ email: dto.email })) {
-      throw new ConflictException('Email already exists');
+      // BR-ACC-02: gắn lỗi vào ô email để FE hiện đúng chỗ
+      throw new BusinessException(
+        ErrorCode.EmailExists,
+        'Email already exists',
+        HttpStatus.CONFLICT,
+        [{ field: 'email', messages: ['Email đã tồn tại'] }],
+      );
     }
     const user = this.usersRepository.create({
       ...dto,
@@ -31,7 +38,7 @@ export class UsersService {
   async findAll(query: QueryUserDto): Promise<PaginatedResult<User>> {
     const qb = this.usersRepository
       .createQueryBuilder('user')
-      .orderBy('user.createdAt', query.sortOrder)
+      .orderBy('user.createdAt', query.order)
       .skip(query.skip)
       .take(query.limit);
 

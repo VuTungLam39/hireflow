@@ -1,4 +1,4 @@
-import { HttpResponse } from 'msw'
+import { delay, HttpResponse } from 'msw'
 import { env } from '@/config/env'
 import type { ApplicationDetail, ApplicationListItem } from '@/features/applications'
 import type { Job, JobSummary } from '@/features/jobs'
@@ -9,6 +9,13 @@ import { db, type ApplicationRow, type JobRow, type UserRow } from './data'
 
 /** Đường dẫn đầy đủ của API, ví dụ api('/jobs') → '/api/v1/jobs' */
 export const api = (path: string) => `${env.apiUrl}${path}`
+
+/**
+ * Giả lập độ trễ cố định (upload, gọi AI) để thấy trạng thái đang tải trên trình duyệt.
+ * Khi chạy test thì bỏ qua, để test không chậm theo số lần gọi.
+ */
+export const latency = (ms: number) =>
+  import.meta.env.MODE === 'test' ? Promise.resolve() : delay(ms)
 
 // ---------- response theo đúng envelope của BE ----------
 export function ok<T>(

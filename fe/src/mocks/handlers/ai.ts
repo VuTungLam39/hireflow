@@ -1,8 +1,8 @@
-import { delay, http, HttpResponse } from 'msw'
+import { http, HttpResponse } from 'msw'
 import type { ChatSource } from '@/features/ai-chat'
 import { Permission } from '@/lib/permissions'
 import { db, settleProcessing, SKILLS } from '../data'
-import { api, authorize, candidateOf, inScope, jobOf } from '../http'
+import { api, latency, authorize, candidateOf, inScope, jobOf } from '../http'
 
 const sse = (event: string, data: unknown) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
 
@@ -73,13 +73,13 @@ export const aiHandlers = [
     const stream = new ReadableStream({
       async start(controller) {
         const send = (chunk: string) => !cancelled && controller.enqueue(encoder.encode(chunk))
-        await delay(400)
+        await latency(400)
         send(sse('sources', sources))
         // Gửi từng nhóm vài ký tự, giữ nguyên trích dẫn để FE không phải ghép
         for (const token of answer.match(/\[[^\]]+\]|.{1,4}/gs) ?? []) {
           if (cancelled) return
           send(sse('token', { text: token }))
-          await delay(25)
+          await latency(25)
         }
         send(sse('done', {}))
         if (!cancelled) controller.close()

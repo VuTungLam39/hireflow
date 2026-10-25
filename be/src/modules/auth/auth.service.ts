@@ -1,8 +1,9 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcryptjs';
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
+import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface.js';
 import { jwtConfig } from '../../config/jwt.config.js';
 import { User } from '../users/entities/user.entity.js';
@@ -42,8 +43,13 @@ export class AuthService {
     if (!user || !(await bcrypt.compare(dto.password, user.password))) {
       throw new UnauthorizedException('Invalid email or password');
     }
+    // BR-ACC-04: tài khoản bị khoá trả 403 (API Contract 4.1), khác với sai mật khẩu (401)
     if (!user.isActive) {
-      throw new UnauthorizedException('Account is disabled');
+      throw new BusinessException(
+        ErrorCode.AccountDisabled,
+        'Account is disabled',
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     await this.usersService.updateLastLogin(user.id);

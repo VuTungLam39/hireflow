@@ -49,6 +49,8 @@ describe('App (e2e)', () => {
       .send({ email: 'not-an-email', password: '123' })
       .expect(400);
     expect(res.body.success).toBe(false);
+    expect(res.body.code).toBe('VALIDATION_FAILED');
+    expect(res.headers['x-request-id']).toBeTruthy();
     expect(res.body.errors).toEqual(
       expect.arrayContaining([expect.objectContaining({ field: 'email' })]),
     );
@@ -104,12 +106,37 @@ describe('App (e2e)', () => {
       .send({ email, password })
       .expect(200);
 
-    await request(app.getHttpServer())
+    const res = await request(app.getHttpServer())
       .get('/api/v1/users')
       .set('Authorization', `Bearer ${login.body.data.tokens.accessToken}`)
       .expect(403);
+    expect(res.body.code).toBe('FORBIDDEN');
   });
 
-  it('requires a token for protected routes', () =>
-    request(app.getHttpServer()).get('/api/v1/users').expect(401));
+  it('rejects a wrong password with 401 UNAUTHORIZED', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email, password: 'Wrong12345' })
+      .expect(401);
+    expect(res.body.code).toBe('UNAUTHORIZED');
+  });
+
+  it('rejects a disabled account with 403 ACCOUNT_DISABLED (BR-ACC-04)', async () => {
+    const users = app.get(DataSource).getRepository(User);
+    await users.update({ email }, { isActive: false });
+    try {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email, password })
+        .expect(403);
+      expect(res.body.code).toBe('ACCOUNT_DISABLED');
+    } finally {
+      await users.update({ email }, { isActive: true });
+    }
+  });
+
+  it('requires a token for protected routes', async () => {
+    const res = await request(app.getHttpServer()).get('/api/v1/users').expect(401);
+    expect(res.body.code).toBe('UNAUTHORIZED');
+  });
 });

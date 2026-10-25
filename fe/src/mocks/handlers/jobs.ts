@@ -5,6 +5,7 @@ import { Permission } from '@/lib/permissions'
 import { applyScore, db, settleProcessing, SKILLS, uid, type JobRow, type UserRow } from '../data'
 import {
   api,
+  latency,
   authorize,
   candidateOf,
   fail,
@@ -108,7 +109,7 @@ export const jobHandlers = [
 
   // LLM giả: tìm từ khoá kỹ năng xuất hiện trong JD
   http.post(api('/jobs/:id/requirements/suggest'), async ({ request, params }) => {
-    await delay(1500)
+    await latency(1500)
     const user = authorize(request, Permission.JobUpdate)
     if (user instanceof Response) return user
     const job = findJob(user, params.id)
