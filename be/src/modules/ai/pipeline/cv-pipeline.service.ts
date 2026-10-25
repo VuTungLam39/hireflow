@@ -74,6 +74,7 @@ export class CvPipelineService implements OnModuleInit {
     @InjectQueue(QUEUE.parse) private readonly parseQueue: Queue<CvJobData>,
     @InjectQueue(QUEUE.extract) private readonly extractQueue: Queue<CvJobData>,
     @InjectQueue(QUEUE.score) private readonly scoreQueue: Queue<ScoreJobData | RescoreJobData>,
+    @InjectQueue(QUEUE.embed) private readonly embedQueue: Queue<CvJobData>,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -212,6 +213,17 @@ export class CvPipelineService implements OnModuleInit {
       'extract',
       { cvFileId, requestId },
       { jobId: jobId.extract(cvFileId, this.ai.promptVersion) },
+    );
+    // Kickoff 8.1: embed-cv
+    await this.safely(`embed ${cvFileId}`, () => this.enqueueEmbed(cvFileId, requestId));
+  }
+
+  enqueueEmbed(cvFileId: string, requestId?: string): Promise<void> {
+    return this.add(
+      this.embedQueue,
+      'embed',
+      { cvFileId, requestId },
+      { jobId: jobId.embed(cvFileId) },
     );
   }
 

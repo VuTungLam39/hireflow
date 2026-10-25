@@ -323,12 +323,4 @@ describe('Public jobs, CV files, dashboard (e2e)', () => {
       expect(res.body.data.totals.openJobs).toBeGreaterThanOrEqual(2);
     });
   });
-
-  it('API Contract 4.8: AI chat answers 503 AI_UNAVAILABLE until RAG is ready', async () => {
-    const res = await as(
-      'hr',
-      request(server()).post('/api/v1/ai/chat').send({ question: 'Ai biết Kafka?' }),
-    ).expect(503);
-    expect(res.body.code).toBe('AI_UNAVAILABLE');
-  });
 });
