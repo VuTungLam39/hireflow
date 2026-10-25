@@ -9,7 +9,8 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from './common/guards/permissions.guard.js';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor.js';
-import { appConfig, databaseConfig, jwtConfig, validateEnv } from './config/index.js';
+import { aiConfig, appConfig, databaseConfig, jwtConfig, validateEnv } from './config/index.js';
+import { AiModule } from './modules/ai/ai.module.js';
 import { ApplicationsModule } from './modules/applications/applications.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { CandidatesModule } from './modules/candidates/candidates.module.js';
@@ -25,7 +26,7 @@ import { UsersModule } from './modules/users/users.module.js';
       isGlobal: true,
       cache: true,
       envFilePath: ['.env.local', '.env'],
-      load: [appConfig, databaseConfig, jwtConfig],
+      load: [appConfig, databaseConfig, jwtConfig, aiConfig],
       validate: validateEnv,
     }),
     TypeOrmModule.forRootAsync({
@@ -56,6 +57,7 @@ import { UsersModule } from './modules/users/users.module.js';
     CandidatesModule,
     FilesModule,
     ApplicationsModule,
+    AiModule,
   ],
   providers: [
     // Guards chạy theo thứ tự đăng ký: rate limit -> xác thực JWT -> phân quyền

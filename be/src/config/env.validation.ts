@@ -2,12 +2,14 @@ import { plainToInstance, Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   Max,
   Min,
+  Matches,
   MinLength,
   validateSync,
 } from 'class-validator';
@@ -84,6 +86,69 @@ class EnvironmentVariables {
 
   @IsInt()
   THROTTLE_LIMIT: number = 100;
+
+  @Matches(/^(gemini|groq|ollama|fake)(,(gemini|groq|ollama|fake))*$/, {
+    message: 'LLM_PROVIDERS là danh sách gemini, groq, ollama, fake cách nhau bằng dấu phẩy',
+  })
+  LLM_PROVIDERS: string = 'fake';
+
+  @IsInt()
+  @Min(1000)
+  AI_TIMEOUT_MS: number = 60000;
+
+  @IsString()
+  @IsNotEmpty()
+  AI_PROMPT_VERSION: string = 'v1';
+
+  @IsOptional()
+  @IsString()
+  GEMINI_API_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  GEMINI_MODEL?: string;
+
+  @IsOptional()
+  @IsString()
+  GEMINI_MODEL_EXTRACT?: string;
+
+  @IsOptional()
+  @IsString()
+  GROQ_API_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  GROQ_MODEL?: string;
+
+  @IsIn(['json_schema', 'json_object'])
+  GROQ_JSON_MODE: string = 'json_object';
+
+  @IsString()
+  OLLAMA_BASE_URL: string = 'http://localhost:11434';
+
+  @IsString()
+  OLLAMA_MODEL: string = 'qwen3:4b';
+
+  @IsIn(['json_schema', 'json_object'])
+  OLLAMA_JSON_MODE: string = 'json_schema';
+
+  @IsIn(['gemini', 'ollama', 'fake'])
+  EMBEDDING_PROVIDER: string = 'fake';
+
+  @IsOptional()
+  @IsString()
+  EMBEDDING_MODEL?: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  EMBEDDING_BATCH_SIZE: number = 100;
+
+  // Database Design 4.9
+  @IsInt()
+  @Min(1)
+  @Max(2000)
+  EMBEDDING_DIM: number = 1024;
 }
 
 export function validateEnv(config: Record<string, unknown>) {
