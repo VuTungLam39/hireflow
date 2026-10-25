@@ -6,12 +6,14 @@ import { setupServer } from 'msw/node'
 import { applicationsApi } from '@/features/applications/api/applications.api'
 import { authApi } from '@/features/auth/api/auth.api'
 import { candidatesApi } from '@/features/candidates/api/candidates.api'
+import { dashboardApi } from '@/features/dashboard/api/dashboard.api'
 import { departmentsApi } from '@/features/departments/api/departments.api'
 import { jobsApi } from '@/features/jobs/api/jobs.api'
+import { publicJobsApi } from '@/features/public-jobs/api/public-jobs.api'
 import { rankingApi } from '@/features/ranking/api/ranking.api'
 import { usersApi } from '@/features/users/api/users.api'
-import { MOCK_PASSWORD } from '@/mocks/data'
-import { allHandlers } from '@/mocks/handlers'
+import { MOCK_PASSWORD } from '@/test/msw/data'
+import { allHandlers } from '@/test/msw/handlers'
 import { useAuthStore } from '@/stores/auth.store'
 import { diffShape, type ShapeDiff } from './shape'
 
@@ -63,6 +65,12 @@ async function collect(source: keyof typeof ACCOUNTS): Promise<Samples> {
 
   const candidates = await take('GET /candidates', () => candidatesApi.list({ limit: 20 }))
   await take('GET /candidates/:id', () => candidatesApi.get(candidates.items[0].id))
+  await take('GET /dashboard/summary', () => dashboardApi.summary())
+
+  const publicJobs = await take('GET /public/jobs', () =>
+    publicJobsApi.list({ page: 1, limit: 20 }),
+  )
+  await take('GET /public/jobs/:id', () => publicJobsApi.get(publicJobs.items[0].id))
 
   const departmentId = jobs.items[0].department.id
   const draft = await take('POST /jobs', () =>

@@ -53,10 +53,5 @@
   "description": "NCC Intern Project - Frontend (React)",
   "engines": {
     "node": ">=22"
-  },
-  "msw": {
-    "workerDirectory": [
-      "public"
-    ]
   }
 }
