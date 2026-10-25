@@ -111,8 +111,8 @@ export class JobsService {
         query.order === 'DESC' ? 'NULLS LAST' : 'NULLS FIRST',
       )
       .addOrderBy('job.id', query.order)
-      .skip(query.skip)
-      .take(query.limit);
+      .offset(query.skip)
+      .limit(query.limit);
 
     applyDepartmentScope(qb, user, 'job.departmentId');
     if (query.status) qb.andWhere('job.status = :status', { status: query.status });

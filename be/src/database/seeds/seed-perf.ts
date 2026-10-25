@@ -102,8 +102,8 @@ async function seedPerf() {
   });
   console.log(`${result.applications} applications, ${result.history} history rows (${elapsed()})`);
 
-  await dataSource.query('ANALYZE');
-  console.log(`ANALYZE done (${elapsed()}). Mật khẩu: SEED_ADMIN_PASSWORD`);
+  await dataSource.query('VACUUM (ANALYZE)');
+  console.log(`VACUUM ANALYZE done (${elapsed()}). Mật khẩu: SEED_ADMIN_PASSWORD`);
   await dataSource.destroy();
 }
 
