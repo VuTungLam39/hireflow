@@ -1,10 +1,14 @@
+import { fakerVI } from '@faker-js/faker';
 import bcrypt from 'bcryptjs';
 import { Role } from '../../common/enums/role.enum.js';
 import { Department } from '../../modules/departments/entities/department.entity.js';
+import { Job, JobStatus } from '../../modules/jobs/entities/job.entity.js';
 import { User } from '../../modules/users/entities/user.entity.js';
 import dataSource from '../data-source.js';
+import type { TRACKS } from './factories.js';
+import { seedCandidates, seedJobs } from './seed-data.js';
 
-const DEPARTMENTS = [
+const DEPARTMENTS: { code: keyof typeof TRACKS; name: string }[] = [
   { code: 'ENG', name: 'Kỹ thuật' },
   { code: 'SALES', name: 'Kinh doanh' },
   { code: 'MKT', name: 'Marketing' },
@@ -64,9 +68,42 @@ async function seed() {
     );
     console.log(`added ${account.email} (${account.role})`);
   }
-  console.log(`Mật khẩu mọi tài khoản demo: SEED_ADMIN_PASSWORD`);
+  console.log('Mật khẩu mọi tài khoản demo: SEED_ADMIN_PASSWORD');
+
+  if (await dataSource.getRepository(Job).exists()) {
+    console.log('skip  jobs, candidates, applications (đã có)');
+  } else {
+    await seedDemoData(departmentIds);
+  }
 
   await dataSource.destroy();
+}
+
+async function seedDemoData(departmentIds: Map<string, string>) {
+  fakerVI.seed(7);
+  const users = await dataSource.getRepository(User).find();
+  const managerIds = new Map<string, string[]>();
+  for (const u of users) {
+    if (u.role !== Role.HiringManager || !u.departmentId) continue;
+    managerIds.set(u.departmentId, [...(managerIds.get(u.departmentId) ?? []), u.id]);
+  }
+  const ctx = {
+    departments: DEPARTMENTS.map((d) => ({ id: departmentIds.get(d.code)!, track: d.code })),
+    hrIds: users.filter((u) => u.role === Role.Hr).map((u) => u.id),
+    managerIds,
+    adminId: users.find((u) => u.role === Role.Admin)!.id,
+  };
+
+  const jobs = await seedJobs(dataSource, fakerVI, ctx, 8, (i) =>
+    i === 7 ? JobStatus.Draft : i === 5 ? JobStatus.Closed : JobStatus.Open,
+  );
+  const result = await seedCandidates(dataSource, fakerVI, ctx, jobs, {
+    candidates: 90,
+    appsPerCandidate: (i) => (i < 30 ? 2 : 1),
+  });
+  console.log(
+    `added ${jobs.length} jobs, 90 candidates, ${result.applications} applications, ${result.history} history`,
+  );
 }
 
 seed().catch(async (error) => {

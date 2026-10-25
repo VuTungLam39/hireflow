@@ -14,8 +14,8 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
-import { Roles } from '../../common/decorators/roles.decorator.js';
-import { Role } from '../../common/enums/role.enum.js';
+import { Permissions } from '../../common/decorators/permissions.decorator.js';
+import { Permission } from '../../common/permissions/permission.enum.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { QueryUserDto } from './dto/query-user.dto.js';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto.js';
@@ -24,7 +24,7 @@ import { UsersService } from './users.service.js';
 
 @ApiTags('Users')
 @ApiBearerAuth()
-@Roles(Role.Admin)
+@Permissions(Permission.UserManage)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

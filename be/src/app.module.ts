@@ -6,13 +6,17 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import type { DataSourceOptions } from 'typeorm';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
-import { RolesGuard } from './common/guards/roles.guard.js';
+import { PermissionsGuard } from './common/guards/permissions.guard.js';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor.js';
 import { appConfig, databaseConfig, jwtConfig, validateEnv } from './config/index.js';
+import { ApplicationsModule } from './modules/applications/applications.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { CandidatesModule } from './modules/candidates/candidates.module.js';
 import { DepartmentsModule } from './modules/departments/departments.module.js';
+import { FilesModule } from './modules/files/files.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { JobsModule } from './modules/jobs/jobs.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
 @Module({
@@ -48,12 +52,16 @@ import { UsersModule } from './modules/users/users.module.js';
     DepartmentsModule,
     UsersModule,
     AuthModule,
+    JobsModule,
+    CandidatesModule,
+    FilesModule,
+    ApplicationsModule,
   ],
   providers: [
     // Guards chạy theo thứ tự đăng ký: rate limit -> xác thực JWT -> phân quyền
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
-    { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: PermissionsGuard },
 
     // Interceptors: đăng ký trước = bọc ngoài = xử lý response sau cùng.
     // TransformInterceptor phải chạy trước ClassSerializer để còn nhận ra PaginatedResult;

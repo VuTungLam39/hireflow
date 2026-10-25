@@ -16,6 +16,7 @@ import { ApiBearerAuth, ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swa
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { Authenticated } from '../../common/decorators/permissions.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator.js';
 import { jwtConfig } from '../../config/jwt.config.js';
@@ -94,6 +95,7 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
+  @Authenticated()
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Đăng xuất: thu hồi chuỗi token hiện tại, xoá cookie' })
@@ -104,6 +106,7 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
+  @Authenticated()
   @Get('me')
   @ApiOperation({ summary: 'User đang đăng nhập, kèm phòng ban và danh sách quyền' })
   me(@CurrentUser('id') userId: string) {
@@ -111,6 +114,7 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
+  @Authenticated()
   @Patch('password')
   @ApiOperation({ summary: 'Đổi mật khẩu; thu hồi mọi phiên khác (BR-ACC-06)' })
   @ResponseMessage('Password changed')
