@@ -12,4 +12,6 @@ export const appConfig = registerAs('app', () => ({
     ttl: Number(process.env.THROTTLE_TTL ?? 60000),
     limit: Number(process.env.THROTTLE_LIMIT ?? 100),
   },
+  trustProxy: Number(process.env.TRUST_PROXY ?? 0),
+  cvRetentionMonths: Number(process.env.CV_RETENTION_MONTHS ?? 12),
 }));

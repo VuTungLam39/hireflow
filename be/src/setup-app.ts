@@ -14,6 +14,9 @@ export function setupApp(app: INestApplication): void {
   const config = app.get(ConfigService);
   const apiPrefix = config.get<string>('app.apiPrefix', 'api');
   const corsOrigins = config.get<string[]>('app.corsOrigins', []);
+  const trustProxy = config.get<number>('app.trustProxy', 0);
+
+  if (trustProxy > 0) app.getHttpAdapter().getInstance().set('trust proxy', trustProxy);
 
   // Gắn id trước mọi middleware khác để cả lỗi sớm (helmet, CORS) cũng có id trong log
   app.use(requestId);

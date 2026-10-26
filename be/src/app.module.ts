@@ -1,12 +1,13 @@
 import { ClassSerializerInterceptor, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import type { DataSourceOptions } from 'typeorm';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from './common/guards/permissions.guard.js';
+import { UserThrottlerGuard } from './common/guards/user-throttler.guard.js';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor.js';
 import {
@@ -74,9 +75,9 @@ import { UsersModule } from './modules/users/users.module.js';
     RagModule,
   ],
   providers: [
-    // Guards chạy theo thứ tự đăng ký: rate limit -> xác thực JWT -> phân quyền
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Guards chạy theo thứ tự đăng ký: xác thực JWT -> rate limit (theo user, chưa đăng nhập theo IP) -> phân quyền
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: UserThrottlerGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
 
     // Interceptors: đăng ký trước = bọc ngoài = xử lý response sau cùng.
