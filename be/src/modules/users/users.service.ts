@@ -93,8 +93,12 @@ export class UsersService {
     });
   }
 
-  async update(id: string, dto: UpdateUserDto): Promise<User> {
+  async update(id: string, dto: UpdateUserDto, actorId: string): Promise<User> {
     const user = await this.findById(id);
+    // BR-ACC-05
+    if (dto.role !== undefined && dto.role !== user.role) {
+      this.assertNotSelf(id, actorId, 'Cannot change your own role');
+    }
     const { password, departmentId, ...rest } = dto;
     const role = dto.role ?? user.role;
     Object.assign(user, rest, {
