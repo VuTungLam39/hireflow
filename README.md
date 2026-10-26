@@ -444,7 +444,7 @@ Trước khi mở PR, cả bốn lệnh `lint`, `typecheck`, `test`, `build` ph�
 
 **Kết quả hiện tại (26/10/2026):**
 
-- Backend: 290 unit test, 174 E2E (PostgreSQL + pgvector, Redis thật); coverage service lõi 92,6% (mục tiêu 70%, CI báo lỗi nếu tụt dưới).
+- Backend: 292 unit test, 175 E2E (PostgreSQL + pgvector, Redis thật); coverage service lõi 92,6% (mục tiêu 70%, CI báo lỗi nếu tụt dưới).
 - Frontend: 79 test, gồm test hydrate trang dựng sẵn và virtualization bảng xếp hạng; contract test FE ↔ BE.
 - E2E phân quyền cho từng role, gồm cả chat RAG và link tải CV; tên test bắt đầu bằng mã quy tắc (ví dụ `BR-STS-02: …`).
 - Ca bắt buộc: sai quyền / sai phạm vi, chuyển trạng thái sai luồng, upload giả mime, nộp trùng, LLM trả sai schema, bằng chứng bịa bị loại, job queue lỗi và retry.
@@ -455,7 +455,7 @@ Trước khi mở PR, cả bốn lệnh `lint`, `typecheck`, `test`, `build` ph�
 | Báo cáo | Nội dung |
 | --- | --- |
 | [be/docs/perf-report.md](be/docs/perf-report.md) | Tối ưu query trên 200k hồ sơ: N+1, index, phân trang cursor, số liệu trước/sau |
-| [be/docs/ai-eval.md](be/docs/ai-eval.md) | Chất lượng AI: 10 CV × 2 JD có đáp án, tỉ lệ tiêu chí đúng, bằng chứng có thật, token, thời gian |
+| [be/docs/ai-eval.md](be/docs/ai-eval.md) | Chất lượng AI: 10 CV × 2 JD có đáp án, tỉ lệ tiêu chí đúng, bằng chứng có thật, token; thời gian từ lúc nộp CV đến khi có điểm (G2, p95 10–31 s) |
 | [fe/docs/rendering.md](fe/docs/rendering.md) | CSR/SSR/SSG/ISR, prerender, Lighthouse, waterfall loader, React Profiler bảng xếp hạng |
 | [fe/docs/qa-responsive.md](fe/docs/qa-responsive.md) | Kiểm giao diện 3 role × 360/768/1280px trên hệ thống chạy bằng compose |
 

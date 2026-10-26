@@ -2,6 +2,7 @@ import { CallHandler, ExecutionContext, Injectable, Logger, NestInterceptor } fr
 import type { Request, Response } from 'express';
 import { Observable, tap } from 'rxjs';
 import { REQUEST_ID_HEADER } from '../middleware/request-id.js';
+import { safeUrl } from '../utils/safe-url.js';
 
 /** Log request id, method, url, status và thời gian xử lý của mỗi request thành công */
 @Injectable()
@@ -17,7 +18,9 @@ export class LoggingInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap(() => {
         const { statusCode } = http.getResponse<Response>();
-        this.logger.log(`[${id}] ${method} ${originalUrl} ${statusCode} - ${Date.now() - start}ms`);
+        this.logger.log(
+          `[${id}] ${method} ${safeUrl(originalUrl)} ${statusCode} - ${Date.now() - start}ms`,
+        );
       }),
     );
   }

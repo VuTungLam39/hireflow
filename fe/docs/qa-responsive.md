@@ -67,7 +67,22 @@ Ngày chạy 26/10/2026, Chrome 155. **Kết quả: 96 lượt, 0 lỗi** (sau k
 | Chat AI | ✔ | ✔ | ✔ |  |
 | Quản lý người dùng | ✔ | ✔ | ✔ | Trang "không có quyền" (đúng ma trận quyền Kickoff 11.1) |
 
+## Dùng bằng bàn phím (Kickoff 6)
+
+Script `fe/scripts/qa/keyboard.mjs` chỉ dùng Tab, Space, Enter, Esc (không chuột) trên bản build thật nối BE thật, ngày 26/10/2026. **9/9 bước đạt:**
+
+| Luồng | Bước | Kết quả |
+| --- | --- | --- |
+| Nộp CV (ứng viên) | Mở chi tiết job từ danh sách bằng Enter | ✔ |
+| | Tab lần lượt tới họ tên → email → số điện thoại | ✔ |
+| | Chọn file CV bằng Enter trên nút "chọn từ máy" | ✔ |
+| | Tích ô đồng ý bằng Space | ✔ |
+| | Gửi hồ sơ bằng Enter, hiện lời cảm ơn | ✔ |
+| Đăng nhập | Tab tới email, mật khẩu, Enter để đăng nhập | ✔ |
+| Tạo job (HR) | Tab tới tiêu đề → phòng ban (chọn bằng phím mũi tên) → địa điểm → JD | ✔ |
+| | Tạo job bằng Enter, chuyển sang trang sửa job | ✔ |
+| Đổi trạng thái hồ sơ | Mở hộp thoại bằng Enter, đóng bằng Esc | ✔ |
+
 ## Còn lại
 
-- Chưa kiểm thao tác bằng bàn phím trên các form chính (Kickoff 6).
 - Ô chọn ngày hiển thị theo ngôn ngữ của trình duyệt (`mm/dd/yyyy` trên Chrome tiếng Anh), không phải lỗi của ứng dụng.
