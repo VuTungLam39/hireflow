@@ -28,6 +28,8 @@ const toBoolean = ({ obj, key }: { obj: Record<string, unknown>; key: string }) 
   return raw === true || raw === 'true' || raw === '1';
 };
 
+const withoutDatabaseUrl = (env: { DATABASE_URL?: string }) => !env.DATABASE_URL;
+
 class EnvironmentVariables {
   @IsEnum(Environment)
   NODE_ENV: Environment = Environment.Development;
@@ -44,6 +46,11 @@ class EnvironmentVariables {
   @IsString()
   CORS_ORIGINS?: string;
 
+  @IsOptional()
+  @Matches(/^postgres(ql)?:\/\/.+/, { message: 'DATABASE_URL phải có dạng postgres://...' })
+  DATABASE_URL?: string;
+
+  @ValidateIf(withoutDatabaseUrl)
   @IsString()
   @IsNotEmpty()
   DB_HOST: string;
@@ -51,16 +58,23 @@ class EnvironmentVariables {
   @IsInt()
   DB_PORT: number = 5432;
 
+  @ValidateIf(withoutDatabaseUrl)
   @IsString()
   @IsNotEmpty()
   DB_USERNAME: string;
 
+  @ValidateIf(withoutDatabaseUrl)
   @IsString()
   DB_PASSWORD: string;
 
+  @ValidateIf(withoutDatabaseUrl)
   @IsString()
   @IsNotEmpty()
   DB_DATABASE: string;
+
+  @Transform(toBoolean)
+  @IsBoolean()
+  DB_SSL: boolean = false;
 
   @Transform(toBoolean)
   @IsBoolean()
@@ -92,6 +106,10 @@ class EnvironmentVariables {
   @Min(0)
   @Max(10)
   TRUST_PROXY: number = 0;
+
+  @Transform(toBoolean)
+  @IsBoolean()
+  DEBUG_CLIENT_IP: boolean = false;
 
   // BR-DATA-04
   @IsInt()
@@ -156,6 +174,10 @@ class EnvironmentVariables {
   @Max(100)
   EMBEDDING_BATCH_SIZE: number = 100;
 
+  @IsOptional()
+  @Matches(/^rediss?:\/\/.+/, { message: 'REDIS_URL phải có dạng redis://... hoặc rediss://...' })
+  REDIS_URL?: string;
+
   @IsString()
   REDIS_HOST: string = 'localhost';
 
@@ -163,6 +185,18 @@ class EnvironmentVariables {
   @Min(1)
   @Max(65535)
   REDIS_PORT: number = 6379;
+
+  @IsOptional()
+  @IsString()
+  REDIS_USERNAME?: string;
+
+  @IsOptional()
+  @IsString()
+  REDIS_PASSWORD?: string;
+
+  @Transform(toBoolean)
+  @IsBoolean()
+  REDIS_TLS: boolean = false;
 
   @IsOptional()
   @Matches(/^[\w-]{0,32}$/)
