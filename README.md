@@ -444,7 +444,7 @@ Trước khi mở PR, cả bốn lệnh `lint`, `typecheck`, `test`, `build` ph�
 
 **Kết quả hiện tại (26/10/2026):**
 
-- Backend: 292 unit test, 175 E2E (PostgreSQL + pgvector, Redis thật); coverage service lõi 92,6% (mục tiêu 70%, CI báo lỗi nếu tụt dưới).
+- Backend: 293 unit test, 177 E2E (PostgreSQL + pgvector, Redis thật); coverage service lõi 92,6% (mục tiêu 70%, CI báo lỗi nếu tụt dưới).
 - Frontend: 79 test, gồm test hydrate trang dựng sẵn và virtualization bảng xếp hạng; contract test FE ↔ BE.
 - E2E phân quyền cho từng role, gồm cả chat RAG và link tải CV; tên test bắt đầu bằng mã quy tắc (ví dụ `BR-STS-02: …`).
 - Ca bắt buộc: sai quyền / sai phạm vi, chuyển trạng thái sai luồng, upload giả mime, nộp trùng, LLM trả sai schema, bằng chứng bịa bị loại, job queue lỗi và retry.

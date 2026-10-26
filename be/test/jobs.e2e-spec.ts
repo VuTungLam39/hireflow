@@ -335,16 +335,20 @@ describe('Jobs (e2e)', () => {
       expect(res.body.code).toBe('JOB_NOT_DELETABLE');
     });
 
-    it('deletes an empty DRAFT job', async () => {
+    it('BR-JOB-04, BR-DATA-02: deletes an empty DRAFT job softly', async () => {
       const res = await as('hr', request(server()).post('/api/v1/jobs'))
         .send(jobBody(dep.b, `Nháp xoá ${run}`))
         .expect(201);
       jobIds.push(res.body.data.id);
       await as('hr', request(server()).delete(`/api/v1/jobs/${res.body.data.id}`)).expect(200);
       await as('hr', request(server()).get(`/api/v1/jobs/${res.body.data.id}`)).expect(404);
+      const row = await ds
+        .getRepository(Job)
+        .findOne({ where: { id: res.body.data.id }, withDeleted: true });
+      expect(row?.deletedAt).toBeInstanceOf(Date);
     });
 
-    it('closes an OPEN job; a CLOSED job cannot be closed, edited or get new requirements', async () => {
+    it('BR-JOB-03, BR-JOB-04: closes an OPEN job; a CLOSED job cannot be closed, edited or get new requirements', async () => {
       const closed = await as('hr', request(server()).patch(`/api/v1/jobs/${jobA}/close`)).expect(
         200,
       );

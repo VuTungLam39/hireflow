@@ -35,6 +35,7 @@ const FABRICATED = '8 năm phát triển giao diện bằng React cho ngân hàn
 
 interface Detail {
   id: string;
+  status: string;
   aiStatus: AiStatus;
   aiError: string | null;
   score: number | null;
@@ -197,13 +198,14 @@ describe('AI pipeline (e2e, LLM giả)', () => {
   let first = '';
   const email = `cv-${run}@example.com`;
 
-  it('parses, extracts and scores an uploaded CV with verbatim evidence', async () => {
+  it('BR-AI-01, BR-AI-02: parses, extracts and scores an uploaded CV with verbatim evidence, without touching the status', async () => {
     const created = await upload(ids.job, email, await makeDocx(SAMPLE_CV));
     expect(created.aiStatus).toBe(AiStatus.Pending);
     first = created.id;
 
     const done = await waitFor(first, settled);
     expect(done).toMatchObject({ aiStatus: AiStatus.Done, aiError: null, scoredJdVersion: 1 });
+    expect(done.status).toBe('NEW');
     // BR-AI-02: (3 × 1 + 2 × 1 + 1 × 0) / 6
     expect(done.score).toBe(83);
     expect(done.flags).toEqual([]);
@@ -279,6 +281,15 @@ describe('AI pipeline (e2e, LLM giả)', () => {
     expect((await detail(created.id)).aiStatus).not.toBe(AiStatus.Done);
     const again = await waitFor(created.id, settled);
     expect(again).toMatchObject({ aiStatus: AiStatus.Failed, aiError: AI_ERROR.noText });
+  });
+
+  it('BR-AI-07: the database refuses a FAILED application without a reason', async () => {
+    const app = await ds.getRepository(Application).findOneByOrFail({});
+    for (const aiError of [null, '   ']) {
+      await expect(
+        ds.getRepository(Application).update(app.id, { aiStatus: AiStatus.Failed, aiError }),
+      ).rejects.toThrow(/CK_applications_failed_has_reason/);
+    }
   });
 
   it('retries invalid LLM output twice, then FAILED (BR-AI-06)', async () => {
