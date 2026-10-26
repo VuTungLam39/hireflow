@@ -146,13 +146,13 @@ export default function ApplicationsPage() {
               </option>
             ))}
           </Select>
-          <fieldset className="flex items-center gap-1.5 text-sm text-slate-500">
+          <fieldset className="flex w-full min-w-0 items-center gap-1.5 text-sm text-slate-500 sm:w-auto">
             <legend className="sr-only">Ngày nộp</legend>
             <CalendarDays className="size-4 text-slate-400" />
             <Input
               aria-label="Nộp từ ngày"
               type="date"
-              className="w-38"
+              className="min-w-0 flex-1 sm:w-38 sm:flex-none"
               max={params.createdTo}
               value={params.createdFrom ?? ''}
               onChange={(e) => setParams({ createdFrom: e.target.value || null })}
@@ -161,7 +161,7 @@ export default function ApplicationsPage() {
             <Input
               aria-label="Nộp đến ngày"
               type="date"
-              className="w-38"
+              className="min-w-0 flex-1 sm:w-38 sm:flex-none"
               min={params.createdFrom}
               value={params.createdTo ?? ''}
               onChange={(e) => setParams({ createdTo: e.target.value || null })}

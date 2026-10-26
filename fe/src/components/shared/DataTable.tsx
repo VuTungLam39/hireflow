@@ -77,7 +77,7 @@ export function DataTable<T>({
         {isFetching && <Spinner className="text-primary absolute top-3 right-3 z-10 size-4" />}
 
         {/* Từ md trở lên: bảng */}
-        <div className="hidden overflow-x-auto rounded-lg border border-slate-200 md:block">
+        <div className="relative hidden overflow-x-auto rounded-lg border border-slate-200 md:block">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50/80 text-xs tracking-wide text-slate-500 uppercase">
               <tr>

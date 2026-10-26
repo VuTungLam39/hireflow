@@ -24,7 +24,7 @@ export const RankingTable = memo(function RankingTable({
 }: RankingTableProps) {
   return (
     <Profiler id="ranking-table" onRender={onProfilerRender}>
-      <div className="overflow-x-auto rounded-lg border border-slate-200">
+      <div className="relative overflow-x-auto rounded-lg border border-slate-200">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-slate-200 bg-slate-50/80 text-xs tracking-wide text-slate-500 uppercase">
             <tr>
