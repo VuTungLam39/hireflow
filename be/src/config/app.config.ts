@@ -13,5 +13,6 @@ export const appConfig = registerAs('app', () => ({
     limit: Number(process.env.THROTTLE_LIMIT ?? 100),
   },
   trustProxy: Number(process.env.TRUST_PROXY ?? 0),
+  debugClientIp: process.env.DEBUG_CLIENT_IP === 'true',
   cvRetentionMonths: Number(process.env.CV_RETENTION_MONTHS ?? 12),
 }));

@@ -1,0 +1,88 @@
+# Render Blueprint: API NestJS (Docker, free) + Redis cho BullMQ (Key Value, free)
+# Database: Neon, lưu file CV: Cloudflare R2, frontend: Vercel (fe/vercel.json)
+services:
+  - type: web
+    name: hireflow-api
+    runtime: docker
+    plan: free
+    region: singapore
+    rootDir: be
+    dockerfilePath: ./be/Dockerfile
+    dockerContext: ./be
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_PREFIX
+        value: api
+      - key: CORS_ORIGINS
+        sync: false
+      - key: TRUST_PROXY
+        value: '2'
+      - key: DEBUG_CLIENT_IP
+        value: 'false'
+
+      # Neon
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SSL
+        value: 'true'
+
+      # Redis
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: hireflow-redis
+          property: connectionString
+
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: '900'
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: '604800'
+
+      # Cloudflare R2
+      - key: STORAGE_DRIVER
+        value: s3
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_REGION
+        value: auto
+      - key: S3_BUCKET
+        value: hireflow-cv
+      - key: S3_FORCE_PATH_STYLE
+        value: 'true'
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false
+
+      - key: CV_RETENTION_MONTHS
+        value: '12'
+
+      # AI
+      - key: LLM_PROVIDERS
+        value: gemini,groq
+      - key: AI_PROMPT_VERSION
+        value: v3
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        sync: false
+      - key: EMBEDDING_PROVIDER
+        value: gemini
+      - key: EMBEDDING_DIM
+        value: '1024'
+
+  - type: keyvalue
+    name: hireflow-redis
+    plan: free
+    region: singapore
+    maxmemoryPolicy: noeviction
+    ipAllowList: []

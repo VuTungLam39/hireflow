@@ -17,6 +17,7 @@ HR đăng tin tuyển dụng, ứng viên nộp CV, hệ thống tự đọc CV 
 - [Công nghệ](#công-nghệ)
 - [Cấu trúc repo](#cấu-trúc-repo)
 - [Chạy trên máy](#chạy-trên-máy)
+- [Deploy](#deploy)
 - [Kiểm thử và chất lượng code](#kiểm-thử-và-chất-lượng-code)
 - [Xác thực và bảo mật](#xác-thực-và-bảo-mật)
 - [API](#api)
@@ -149,7 +150,7 @@ Chấm điểm không phụ thuộc embedding, nên embedding lỗi không chặ
 | Frontend | React 19, Vite 8, TypeScript 7, React Router 8, TanStack Query 5, Zustand 5, React Hook Form + Zod 4, Axios, Tailwind CSS 4 |
 | Test | Vitest, Supertest, Testing Library |
 | Chất lượng code | oxlint, Prettier, TypeScript strict |
-| Hạ tầng | Docker Compose; MVP 2 thêm GitHub Actions, Caddy (HTTPS) |
+| Hạ tầng | Dev: Docker Compose. Deploy: Vercel (FE), Render (API + Redis), Neon (PostgreSQL), Cloudflare R2 (file CV); CI bằng GitHub Actions |
 
 ---
 
@@ -250,6 +251,125 @@ Mở http://localhost:5173 và đăng nhập bằng tài khoản admin vừa see
 cd be
 docker compose --profile app up -d --build   # PostgreSQL + API, tự chạy migration
 ```
+
+---
+
+## Deploy
+
+Frontend chạy trên **Vercel**, API và worker chạy trên **Render**. Tất cả đều dùng gói miễn phí.
+
+```
+Trình duyệt ──► Vercel (hireflow.vercel.app)
+                 ├─ /*      → file tĩnh của fe/dist
+                 └─ /api/*  → chuyển tiếp sang Render ──► hireflow-api (NestJS + 4 worker BullMQ)
+                                                           ├─ Neon            PostgreSQL + pgvector
+                                                           ├─ Render Key Value Redis cho BullMQ
+                                                           ├─ Cloudflare R2   file CV (S3)
+                                                           └─ Gemini / Groq   LLM + embedding
+```
+
+FE và API dùng chung domain Vercel, vì cookie refresh token đặt `SameSite=Strict`. Gọi thẳng `*.onrender.com` từ trình duyệt thì sẽ không đăng nhập lại được sau khi tải lại trang.
+
+Các file cấu hình: [`render.yaml`](render.yaml) (Blueprint của Render) và [`fe/vercel.json`](fe/vercel.json) (rewrite `/api` và fallback SPA).
+
+### Giới hạn gói miễn phí
+
+| Dịch vụ | Giới hạn | Ảnh hưởng |
+| --- | --- | --- |
+| Render web (free) | 512 MB RAM, 0,1 CPU. Ngủ sau 15 phút không có request, mở lại mất khoảng 1 phút | Lúc ngủ, worker cũng dừng: CV vừa nộp chỉ được xử lý khi API thức dậy. Xem bước 7 |
+| Render Key Value (free) | 25 MB, **không lưu xuống đĩa** | Redis khởi động lại thì job đang chờ trong hàng đợi bị mất |
+| Neon (free) | 0,5 GB, tự tạm dừng khi không dùng | Truy vấn đầu tiên sau khi tạm dừng chậm hơn một chút |
+| Cloudflare R2 | 10 GB, không tính phí tải xuống | Phải thêm phương thức thanh toán mới bật được R2 |
+| Vercel (Hobby) | Chỉ dùng cho mục đích phi thương mại | Đủ cho demo và thực tập |
+
+### 1. Neon (database)
+
+1. Tạo project ở https://console.neon.tech, chọn region **AWS Asia Pacific (Singapore)** cho gần Render.
+2. Tạo database `hireflow`.
+3. Bấm **Connect**, **tắt Connection pooling** rồi copy chuỗi kết nối. Chuỗi đúng không có `-pooler` trong host. Migration của TypeORM cần kết nối trực tiếp. Chuỗi có dạng:
+   ```
+   postgresql://<user>:<password>@ep-xxx.ap-southeast-1.aws.neon.tech/hireflow?sslmode=require
+   ```
+4. Không cần bật extension bằng tay: migration tự chạy `CREATE EXTENSION` cho `vector`, `pg_trgm`, `unaccent`, và Neon hỗ trợ cả ba.
+
+### 2. Cloudflare R2 (file CV)
+
+1. Vào Cloudflare dashboard, mở **R2 Object Storage** và tạo bucket `hireflow-cv` (location: Asia-Pacific). **Không** bật public access, vì API trả file qua presigned URL.
+2. Vào **R2 → Manage API tokens → Create API token**, chọn quyền **Object Read & Write**, giới hạn trong bucket `hireflow-cv`.
+3. Ghi lại **Access Key ID**, **Secret Access Key** và endpoint `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`.
+
+### 3. Render (API + Redis)
+
+1. Ở https://dashboard.render.com, chọn **New → Blueprint** rồi chọn repo này. Render đọc `render.yaml` và tạo 2 dịch vụ: `hireflow-api` (Docker, region Singapore) và `hireflow-redis`.
+2. Điền các biến Render hỏi (những biến `sync: false`):
+
+   | Biến | Giá trị |
+   | --- | --- |
+   | `DATABASE_URL` | Chuỗi kết nối Neon ở bước 1 |
+   | `S3_ENDPOINT` | `https://<ACCOUNT_ID>.r2.cloudflarestorage.com` |
+   | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Token R2 ở bước 2 |
+   | `GEMINI_API_KEY`, `GEMINI_MODEL` | Key ở https://aistudio.google.com |
+   | `GROQ_API_KEY`, `GROQ_MODEL` | Key ở https://console.groq.com (dự phòng khi Gemini lỗi) |
+   | `CORS_ORIGINS` | Domain Vercel, ví dụ `https://hireflow.vercel.app` (điền sau bước 5 cũng được) |
+
+   Các biến còn lại đã có sẵn trong `render.yaml`. `JWT_ACCESS_SECRET` do Render tự sinh, còn `REDIS_URL` lấy từ `hireflow-redis` qua mạng nội bộ.
+3. Mỗi lần khởi động, container chạy `typeorm migration:run` rồi mới bật server (xem `be/Dockerfile`).
+4. Mở `https://hireflow-api.onrender.com/api/health`. Ba mục `database`, `redis`, `storage` đều phải là `up`.
+
+> Nếu tên `hireflow-api` đã có người dùng, Render sẽ thêm hậu tố vào URL. Khi đó sửa `destination` trong `fe/vercel.json` cho khớp.
+
+### 4. Tạo dữ liệu ban đầu (seed)
+
+Gói free của Render không có shell, nên chạy seed từ máy mình, trỏ thẳng vào Neon và R2. Biến đặt trong shell được ưu tiên hơn `be/.env`.
+
+```powershell
+cd be
+$env:DATABASE_URL = "postgresql://...neon.tech/hireflow?sslmode=require"
+$env:DB_SSL = "true"
+$env:STORAGE_DRIVER = "s3"
+$env:S3_ENDPOINT = "https://<ACCOUNT_ID>.r2.cloudflarestorage.com"
+$env:S3_REGION = "auto"
+$env:S3_ACCESS_KEY = "..."
+$env:S3_SECRET_KEY = "..."
+$env:SEED_ADMIN_PASSWORD = "<mật khẩu mạnh>"
+npm run seed
+```
+
+Không dùng `--reset` trên database thật.
+
+### 5. Vercel (frontend)
+
+1. Ở https://vercel.com/new, import repo và đặt **Root Directory = `fe`**. Vercel tự nhận Vite; build command và output đã khai báo trong `fe/vercel.json`.
+2. Không cần biến môi trường: `VITE_API_URL` mặc định là `/api/v1`, và Vercel chuyển tiếp `/api/*` sang Render.
+3. Deploy xong, quay lại Render và đặt `CORS_ORIGINS` bằng domain Vercel.
+4. Mở domain Vercel và đăng nhập bằng tài khoản seed. Tải lại trang (F5) để kiểm tra phiên đăng nhập vẫn còn.
+
+### 6. Kiểm tra `TRUST_PROXY`
+
+Rate limit dựa vào IP người dùng (`req.ip`). Request đi qua 2 lớp: Vercel ghi IP thật vào `X-Forwarded-For`, rồi Render nối thêm IP của Vercel. Vì vậy `render.yaml` đặt sẵn `TRUST_PROXY=2`. Kiểm tra lại như sau:
+
+1. Trên Render, đặt `DEBUG_CLIENT_IP=true` (service tự deploy lại).
+2. Mở `https://<domain-vercel>/api/health/ip` và so `ip` với IP thật của bạn (xem ở https://api.ipify.org).
+3. Nếu khác, nhìn mảng `ips` (danh sách IP từ người dùng đến Render), tăng hoặc giảm `TRUST_PROXY` cho tới khi `ip` đúng.
+4. Đặt lại `DEBUG_CLIENT_IP=false`. Khi tắt, route trả 404.
+
+### 7. Giữ API không ngủ (tuỳ chọn)
+
+Tạo một job miễn phí ở https://cron-job.org gọi `https://<domain-vercel>/api/health` mỗi 10 phút. Render free có 750 giờ mỗi tháng, đủ cho một service chạy cả tháng. Nếu có ngân sách, nâng `hireflow-api` lên gói Starter (7$/tháng) để bỏ hẳn chế độ ngủ.
+
+### Deploy tự động
+
+- **Render:** deploy lại `hireflow-api` mỗi khi có commit mới trên `main` (`autoDeployTrigger: commit`, `rootDir: be`, nên chỉ sửa trong `be/` mới deploy lại).
+- **Vercel:** deploy production từ `main`, mỗi PR có một preview riêng. Preview cũng gọi API production qua rewrite.
+
+### Biến môi trường theo dịch vụ
+
+| Nơi đặt | Biến |
+| --- | --- |
+| Render `hireflow-api` | `NODE_ENV`, `CORS_ORIGINS`, `TRUST_PROXY`, `DEBUG_CLIENT_IP`, `DATABASE_URL`, `DB_SSL`, `REDIS_URL`, `JWT_*`, `STORAGE_DRIVER`, `S3_*`, `LLM_PROVIDERS`, `GEMINI_*`, `GROQ_*`, `EMBEDDING_*`, `CV_RETENTION_MONTHS` |
+| Render `hireflow-redis` | Không có. `maxmemoryPolicy: noeviction` để BullMQ không bị mất key |
+| Vercel | Không có (`fe/vercel.json` đã chứa URL API) |
+| Máy local khi seed | Xem bước 4 |
 
 ---
 
@@ -373,3 +493,6 @@ Prefix `/api/v1`, REST + JSON. Tài liệu đầy đủ ở Swagger: http://loca
 | `migration:run` không kết nối được DB | Kiểm tra PostgreSQL đang chạy (`npm run db:up` nếu dùng Docker) và thông tin `DB_*` trong `be/.env` |
 | Đăng nhập xong, tải lại trang thì bị đăng xuất | Mở frontend qua `http://localhost:5173` (dev server có proxy). Nếu frontend và API khác domain, thêm domain frontend vào `CORS_ORIGINS` và bật HTTPS để cookie hoạt động |
 | Cổng 3000 hoặc 5173 đang bị dùng | Đổi `PORT` trong `be/.env`; với frontend chạy `npm run dev -- --port 5174` (và cập nhật `CORS_ORIGINS`) |
+| `/api/health` trên Render báo `database` down | Kiểm tra `DATABASE_URL` là chuỗi **không** có `-pooler` và `DB_SSL=true` |
+| Trên Vercel, `/api/...` trả 404 hoặc 502 | `destination` trong `fe/vercel.json` phải khớp URL thật của `hireflow-api`; API có thể đang ngủ, đợi khoảng 1 phút rồi thử lại |
+| CV nộp lên Render bị kẹt ở trạng thái chờ | API vừa ngủ hoặc Redis free vừa khởi động lại. Xem [Deploy, bước 7](#7-giữ-api-không-ngủ-tuỳ-chọn) |

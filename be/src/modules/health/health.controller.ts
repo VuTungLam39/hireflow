@@ -1,5 +1,6 @@
 import { InjectQueue } from '@nestjs/bullmq';
-import { Controller, Get, VERSION_NEUTRAL } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Req, VERSION_NEUTRAL } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   HealthCheck,
@@ -9,6 +10,7 @@ import {
 } from '@nestjs/terminus';
 import { SkipThrottle } from '@nestjs/throttler';
 import type { Queue } from 'bullmq';
+import type { Request } from 'express';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { QUEUE } from '../ai/pipeline/queues.js';
 import { StorageService } from '../files/storage/storage.service.js';
@@ -26,6 +28,7 @@ export class HealthController {
     private readonly db: TypeOrmHealthIndicator,
     private readonly indicators: HealthIndicatorService,
     private readonly storage: StorageService,
+    private readonly config: ConfigService,
     @InjectQueue(QUEUE.parse) private readonly queue: Queue,
   ) {}
 
@@ -51,5 +54,13 @@ export class HealthController {
           })
           .withTimeout(CHECK_TIMEOUT_MS),
     ]);
+  }
+
+  // Deploy: dò TRUST_PROXY
+  @Get('ip')
+  @ApiOperation({ summary: 'IP server nhận được (chỉ bật khi DEBUG_CLIENT_IP=true)' })
+  clientIp(@Req() req: Request) {
+    if (!this.config.get<boolean>('app.debugClientIp', false)) throw new NotFoundException();
+    return { ip: req.ip, ips: req.ips, forwardedFor: req.headers['x-forwarded-for'] ?? null };
   }
 }
