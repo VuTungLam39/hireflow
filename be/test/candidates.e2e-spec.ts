@@ -11,8 +11,12 @@ import { Role } from '../src/common/enums/role.enum.js';
 import { Application } from '../src/modules/applications/entities/application.entity.js';
 import { Candidate } from '../src/modules/candidates/entities/candidate.entity.js';
 import { Department } from '../src/modules/departments/entities/department.entity.js';
+import { CvProfile } from '../src/modules/ai/entities/cv-profile.entity.js';
 import { CvFile } from '../src/modules/files/entities/cv-file.entity.js';
+import { RequirementType } from '../src/modules/jobs/entities/job-requirement.entity.js';
 import { Job, JobStatus } from '../src/modules/jobs/entities/job.entity.js';
+import { JobMatch } from '../src/modules/matching/entities/job-match.entity.js';
+import { CV_CHUNK_DIMENSION, CvChunk } from '../src/modules/rag/entities/cv-chunk.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
 
@@ -114,6 +118,41 @@ describe('Candidates (e2e)', () => {
       },
       { jobId: jobB.id, candidateId: quan.id, cvFileId: cv.id, status: ApplicationStatus.Offer },
     ]);
+    await ds.getRepository(CvProfile).save({
+      cvFileId: cv.id,
+      data: {
+        skills: [{ name: 'NestJS', years: 3, evidence: '3 năm NestJS' }],
+        experiences: [],
+        education: [],
+        summary: '',
+      },
+      model: 'fake',
+      promptVersion: 'test',
+      inputTokens: 0,
+      outputTokens: 0,
+    });
+    await ds.query(
+      `INSERT INTO cv_chunks (cv_file_id, section, position, content, token_count, embedding_model, embedding)
+       VALUES ($1, 'skills', 0, '3 năm NestJS', 4, 'fake', $2::vector)`,
+      [cv.id, `[${Array.from({ length: CV_CHUNK_DIMENSION }, () => 0.01).join(',')}]`],
+    );
+    await ds.getRepository(JobMatch).save({
+      jobId: jobB.id,
+      candidateId: quan.id,
+      cvFileId: cv.id,
+      jdVersion: 1,
+      score: 80,
+      scoreBreakdown: [
+        {
+          requirementId: randomUUID(),
+          label: 'NestJS',
+          type: RequirementType.Must,
+          match: 1,
+          evidence: '3 năm NestJS',
+        },
+      ],
+      lastAppliedAt: new Date(),
+    });
     Object.assign(ids, {
       depA: depA.id,
       depB: depB.id,
@@ -257,7 +296,10 @@ describe('Candidates (e2e)', () => {
       );
     });
 
-    it('removes contact, CV files and evidence but keeps status and score', async () => {
+    it('BR-DATA-03: removes contact, CV files, CV text, chunks, matches and evidence but keeps status, score and dashboard numbers', async () => {
+      const dashboard = () =>
+        as('hmA', request(server()).get('/api/v1/dashboard/summary')).expect(200);
+      const before = (await dashboard()).body.data;
       const res = await as(
         'admin',
         request(server()).post(`/api/v1/candidates/${ids.quan}/anonymize`),
@@ -270,6 +312,10 @@ describe('Candidates (e2e)', () => {
       });
 
       expect(await ds.getRepository(CvFile).countBy({ candidateId: ids.quan })).toBe(0);
+      expect(await ds.getRepository(CvProfile).countBy({ cvFileId: ids.cv })).toBe(0);
+      expect(await ds.getRepository(CvChunk).countBy({ cvFileId: ids.cv })).toBe(0);
+      expect(await ds.getRepository(JobMatch).countBy({ candidateId: ids.quan })).toBe(0);
+      expect((await dashboard()).body.data).toEqual(before);
       const apps = await ds.getRepository(Application).find({
         where: { candidateId: ids.quan },
         order: { status: 'ASC' },

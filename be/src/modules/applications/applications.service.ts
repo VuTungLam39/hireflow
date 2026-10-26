@@ -385,6 +385,21 @@ export class ApplicationsService {
     return result.applicationId;
   }
 
+  // F-MATCH-02, BR-MATCH-03
+  async createInvited(
+    manager: EntityManager,
+    input: { jobId: string; candidateId: string; cvFileId: string; by: string },
+  ): Promise<string> {
+    await this.assertNotApplied(manager, input.jobId, input.candidateId);
+    return this.createApplication(manager, {
+      jobId: input.jobId,
+      candidateId: input.candidateId,
+      cvFileId: input.cvFileId,
+      source: ApplicationSource.MatchInvite,
+      changedBy: input.by,
+    });
+  }
+
   // BR-APP-08
   private async createApplication(
     manager: EntityManager,

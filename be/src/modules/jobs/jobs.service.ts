@@ -14,6 +14,7 @@ import { CvPipelineService } from '../ai/pipeline/cv-pipeline.service.js';
 import { RequirementsSuggester } from '../ai/requirements-suggester.service.js';
 import { Application } from '../applications/entities/application.entity.js';
 import { DepartmentsService } from '../departments/departments.service.js';
+import { MatchingService } from '../matching/matching.service.js';
 import { CreateJobDto } from './dto/create-job.dto.js';
 import { QueryJobDto } from './dto/query-job.dto.js';
 import { SaveRequirementsDto } from './dto/save-requirements.dto.js';
@@ -100,6 +101,7 @@ export class JobsService {
     private readonly suggester: RequirementsSuggester,
     private readonly pipeline: CvPipelineService,
     private readonly prerender: PrerenderHookService,
+    private readonly matching: MatchingService,
   ) {}
 
   async findAll(query: QueryJobDto, user: ScopeUser): Promise<PaginatedResult<JobSummaryView>> {
@@ -201,13 +203,16 @@ export class JobsService {
     });
     // Kickoff 12: job.requirements.updated
     await this.pipeline.enqueueJobRescore(id, result.jdVersion, requestId);
-    if (result.isOpen) this.prerender.schedule('job.requirements.updated');
+    if (result.isOpen) {
+      this.prerender.schedule('job.requirements.updated');
+      await this.matching.enqueue(id, result.jdVersion, requestId);
+    }
     return { jdVersion: result.jdVersion };
   }
 
   // BR-JOB-02
-  async publish(id: string, user: ScopeUser): Promise<JobView> {
-    await this.dataSource.transaction(async (manager) => {
+  async publish(id: string, user: ScopeUser, requestId?: string): Promise<JobView> {
+    const jdVersion = await this.dataSource.transaction(async (manager) => {
       const job = await this.lockJob(manager, id);
       const hasRequirements = await manager.existsBy(JobRequirement, {
         jobId: id,
@@ -221,8 +226,11 @@ export class JobsService {
         );
       }
       await manager.update(Job, id, { status: JobStatus.Open, publishedAt: new Date() });
+      return job.jdVersion;
     });
     this.prerender.schedule('job.published');
+    // Kickoff 12: job.published
+    await this.matching.enqueue(id, jdVersion, requestId);
     return this.findOne(id, user);
   }
 
