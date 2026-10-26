@@ -19,6 +19,10 @@ import { Candidate } from '../src/modules/candidates/entities/candidate.entity.j
 import { Department } from '../src/modules/departments/entities/department.entity.js';
 import { CvFile } from '../src/modules/files/entities/cv-file.entity.js';
 import {
+  StorageNotFoundError,
+  StorageService,
+} from '../src/modules/files/storage/storage.service.js';
+import {
   JobRequirement,
   RequirementType,
 } from '../src/modules/jobs/entities/job-requirement.entity.js';
@@ -192,7 +196,7 @@ describe('Public jobs, CV files, dashboard (e2e)', () => {
   });
 
   describe('public apply (US-03, BR-APP-01 → 07)', () => {
-    it('BR-APP-07: creates a NEW application and returns no id, score or status', async () => {
+    it('BR-APP-07, BR-APP-08: creates a NEW application with one history row and returns no id, score or status', async () => {
       const res = await apply(ids.open, form(1)).expect(201);
       expect(res.body.data).toBeNull();
 
@@ -236,6 +240,18 @@ describe('Public jobs, CV files, dashboard (e2e)', () => {
     it('BR-APP-03: the same email cannot apply twice to the same job', async () => {
       const res = await apply(ids.open, form(1)).expect(409);
       expect(res.body.code).toBe('APPLICATION_DUPLICATED');
+    });
+
+    it('Kickoff 13: a submission rolled back after storing a new CV removes that file', async () => {
+      const storage = app.get(StorageService);
+      const put = vi.spyOn(storage, 'put');
+      const newCv = await makeDocx([`CV khác ${run}`, 'Kinh nghiệm: 3 năm NestJS']);
+      const res = await apply(ids.open, form(1), newCv).expect(409);
+      expect(res.body.code).toBe('APPLICATION_DUPLICATED');
+      expect(put).toHaveBeenCalledTimes(1);
+      const [key] = put.mock.calls[0];
+      await expect(storage.get(key)).rejects.toBeInstanceOf(StorageNotFoundError);
+      put.mockRestore();
     });
 
     it('BR-APP-06: honeypot answers 201 but stores nothing', async () => {

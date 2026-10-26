@@ -61,6 +61,15 @@ describe('validateEnv', () => {
     expect(env.DB_HOST).toBe('localhost');
   });
 
+  it('BR-DATA-04: keeps CVs 12 months by default and accepts 1–120 months', () => {
+    expect(validateEnv(base).CV_RETENTION_MONTHS).toBe(12);
+    expect(validateEnv({ ...base, CV_RETENTION_MONTHS: '24' }).CV_RETENTION_MONTHS).toBe(24);
+    expect(() => validateEnv({ ...base, CV_RETENTION_MONTHS: '0' })).toThrow(/CV_RETENTION_MONTHS/);
+    expect(() => validateEnv({ ...base, CV_RETENTION_MONTHS: '121' })).toThrow(
+      /CV_RETENTION_MONTHS/,
+    );
+  });
+
   it('still rejects a malformed deploy hook URL', () => {
     expect(() => validateEnv({ ...base, PRERENDER_DEPLOY_HOOK_URL: 'http://x' })).toThrow(
       /PRERENDER_DEPLOY_HOOK_URL/,

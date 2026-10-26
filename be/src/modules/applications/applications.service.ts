@@ -354,29 +354,35 @@ export class ApplicationsService {
     );
     const storageKey = reusable ? null : await this.filesService.store(cv);
 
+    let result: { applicationId: string; storedUnused: boolean };
     try {
-      return await this.dataSource.transaction(async (manager) => {
+      result = await this.dataSource.transaction(async (manager) => {
         const candidate = await this.candidatesService.upsertForApplication(
           manager,
           contact,
           opts.consentVersion,
         );
         await this.assertNotApplied(manager, jobId, candidate.id);
+        const reused = await this.filesService.findReusable(manager, candidate.id, cv.sha256);
         const cvFile =
-          (await this.filesService.findReusable(manager, candidate.id, cv.sha256)) ??
-          (await this.filesService.createRecord(manager, candidate.id, cv, storageKey!));
-        return this.createApplication(manager, {
+          reused ?? (await this.filesService.createRecord(manager, candidate.id, cv, storageKey!));
+        const id = await this.createApplication(manager, {
           jobId,
           candidateId: candidate.id,
           cvFileId: cvFile.id,
           source: opts.source,
           changedBy: opts.by,
         });
+        return { applicationId: id, storedUnused: !!(reused && storageKey) };
       });
     } catch (error) {
       if (storageKey) await this.filesService.removeStored(storageKey);
       throw this.duplicateOr(error);
     }
+    // Kickoff 13
+    if (result.storedUnused)
+      await this.filesService.removeStored(storageKey!).catch(() => undefined);
+    return result.applicationId;
   }
 
   // BR-APP-08

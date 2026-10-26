@@ -324,7 +324,7 @@ describe('Applications (e2e)', () => {
     const change = (who: Who, id: string, body: object) =>
       as(who, request(server()).patch(`/api/v1/applications/${id}/status`)).send(body);
 
-    it('moves one step and records history', async () => {
+    it('BR-STS-01, BR-STS-06: moves one step and records history', async () => {
       const res = await change('hr', ids.a1, { status: 'SCREENING' }).expect(200);
       expect(res.body.data.status).toBe('SCREENING');
       const history = await as(
@@ -380,7 +380,7 @@ describe('Applications (e2e)', () => {
       expect(res.body.code).toBe('SCOPE_FORBIDDEN');
     });
 
-    it('declining an offer needs a reason', async () => {
+    it('BR-STS-05: declining an offer needs a reason', async () => {
       const res = await as(
         'hmA',
         request(server()).patch(`/api/v1/applications/${ids.a2}/decline-offer`),
@@ -408,7 +408,7 @@ describe('Applications (e2e)', () => {
       });
     });
 
-    it('decline-offer only works from OFFER', async () => {
+    it('BR-STS-05: decline-offer only works from OFFER', async () => {
       const res = await as(
         'hmB',
         request(server()).patch(`/api/v1/applications/${ids.a3}/decline-offer`),

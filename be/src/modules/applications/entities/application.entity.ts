@@ -28,6 +28,11 @@ export interface BreakdownItem {
 @Check('CK_applications_score', `"score" BETWEEN 0 AND 100`)
 @Check('CK_applications_score_breakdown', `jsonb_typeof("score_breakdown") = 'array'`)
 @Check('CK_applications_done_has_score', `"ai_status" <> 'DONE' OR "score" IS NOT NULL`)
+// BR-AI-07
+@Check(
+  'CK_applications_failed_has_reason',
+  `"ai_status" <> 'FAILED' OR ("ai_error" IS NOT NULL AND btrim("ai_error") <> '')`,
+)
 export class Application extends CursorEntity {
   // BR-APP-03
   @Column({ type: 'uuid' })
