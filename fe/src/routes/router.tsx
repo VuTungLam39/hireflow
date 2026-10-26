@@ -108,6 +108,12 @@ export const routes: RouteObject[] = [
                   lazy: page(() => import('@/features/ranking/pages/JobRankingPage')),
                 },
               ]),
+              requires(Permission.ApplicationCreate, [
+                {
+                  path: paths.jobMatches,
+                  lazy: page(() => import('@/features/matching/pages/JobMatchesPage')),
+                },
+              ]),
               requires(Permission.JobCreate, [
                 {
                   path: paths.jobNew,

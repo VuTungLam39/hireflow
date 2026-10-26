@@ -1,4 +1,4 @@
-import { Building2, MapPin, Megaphone, Plus, Trophy, X } from 'lucide-react'
+import { Building2, MapPin, Megaphone, Plus, Sparkles, Trophy, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import {
@@ -115,6 +115,17 @@ export default function JobsPage() {
             <Trophy />
             Xếp hạng
           </Link>
+          <Can permission={Permission.ApplicationCreate}>
+            {job.status !== 'DRAFT' && (
+              <Link
+                to={links.jobMatches(job.id)}
+                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+              >
+                <Sparkles />
+                Gợi ý
+              </Link>
+            )}
+          </Can>
           <Can permission={Permission.JobPublish}>
             {job.status === 'DRAFT' && (
               <Button

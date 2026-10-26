@@ -9,6 +9,7 @@ import { candidatesApi } from '@/features/candidates/api/candidates.api'
 import { dashboardApi } from '@/features/dashboard/api/dashboard.api'
 import { departmentsApi } from '@/features/departments/api/departments.api'
 import { jobsApi } from '@/features/jobs/api/jobs.api'
+import { matchingApi } from '@/features/matching/api/matching.api'
 import { publicJobsApi } from '@/features/public-jobs/api/public-jobs.api'
 import { rankingApi } from '@/features/ranking/api/ranking.api'
 import { usersApi } from '@/features/users/api/users.api'
@@ -55,6 +56,7 @@ async function collect(source: keyof typeof ACCOUNTS): Promise<Samples> {
   const open = await jobsApi.list({ ...page, status: 'OPEN' })
   if (open.items[0]) {
     await take('GET /jobs/:id/ranking', () => rankingApi.get(open.items[0].id))
+    await take('GET /jobs/:id/matches', () => matchingApi.get(open.items[0].id))
   }
 
   const apps = await take('GET /applications', () => applicationsApi.list(page))

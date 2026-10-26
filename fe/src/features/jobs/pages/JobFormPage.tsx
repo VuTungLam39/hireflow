@@ -1,4 +1,4 @@
-import { ArrowLeft, Lock, Trash2, Upload } from 'lucide-react'
+import { ArrowLeft, Lock, Sparkles, Trash2, Upload } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
@@ -141,6 +141,17 @@ function JobFormContent({ job }: { job: Job | undefined }) {
               >
                 Bảng xếp hạng
               </Link>
+              <Can permission={Permission.ApplicationCreate}>
+                {job.status !== 'DRAFT' && (
+                  <Link
+                    to={links.jobMatches(job.id)}
+                    className={buttonVariants({ variant: 'secondary' })}
+                  >
+                    <Sparkles />
+                    Ứng viên cũ phù hợp
+                  </Link>
+                )}
+              </Can>
               <Can permission={Permission.ApplicationCreate}>
                 {job.status === 'OPEN' && (
                   <Button variant="secondary" onClick={() => setUploadOpen(true)}>
