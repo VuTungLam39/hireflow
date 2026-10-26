@@ -11,6 +11,13 @@ export interface RankingItem {
   matches: { requirementId: string; match: MatchLevel }[]
 }
 
+export interface RankingInput {
+  id: string
+  name: string
+  matches: Record<string, number>
+  item: RankingItem
+}
+
 /** GET /jobs/:id/ranking – tải một lần toàn bộ application đã chấm của job */
 export interface RankingData {
   job: { id: string; title: string; status: JobStatus; jdVersion: number }

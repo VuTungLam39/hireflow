@@ -8,7 +8,14 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), tailwindcss()],
-    resolve: { tsconfigPaths: true },
+    resolve: {
+      tsconfigPaths: true,
+      // rendering.md: bản build đo bằng React Profiler
+      alias:
+        mode === 'profiling'
+          ? [{ find: 'react-dom/client', replacement: 'react-dom/profiling' }]
+          : [],
+    },
     build: {
       rolldownOptions: {
         output: {

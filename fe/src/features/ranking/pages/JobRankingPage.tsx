@@ -7,7 +7,7 @@ import { Button, Card, CardTitle, PageLoader } from '@/components/ui'
 import { JobStatusBadge } from '@/features/jobs'
 import { Permission } from '@/lib/permissions'
 import { links, paths } from '@/routes/paths'
-import { RankingRow } from '../components/RankingRow'
+import { RankingTable } from '../components/RankingTable'
 import { WeightSlider } from '../components/WeightSlider'
 import { useRanking, useSaveWeights } from '../hooks/use-ranking'
 import { rankByWeights } from '../lib/score'
@@ -154,40 +154,7 @@ function RankingView({ data }: { data: RankingData }) {
               description="Hồ sơ sẽ hiện ở đây sau khi hệ thống chấm điểm xong."
             />
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50/80 text-xs tracking-wide text-slate-500 uppercase">
-                  <tr>
-                    <th className="py-2.5 pr-3 pl-4 font-medium">Hạng</th>
-                    <th className="py-2.5 pr-3 font-medium">Ứng viên</th>
-                    <th className="py-2.5 pr-3 font-medium">Điểm</th>
-                    {data.requirements.map((req) => (
-                      <th
-                        key={req.id}
-                        className="hidden max-w-20 truncate py-2.5 pr-3 text-center font-medium normal-case md:table-cell"
-                        title={req.label}
-                      >
-                        {req.label}
-                      </th>
-                    ))}
-                    <th className="py-2.5 pr-4 font-medium">Trạng thái</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {ranked.map(({ item, score, rank }) => (
-                    <RankingRow
-                      key={item.id}
-                      item={item.item}
-                      matches={item.matches}
-                      requirements={data.requirements}
-                      rank={rank}
-                      score={score}
-                      delta={(savedRank.get(item.id) ?? rank) - rank}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <RankingTable rows={ranked} requirements={data.requirements} savedRank={savedRank} />
           )}
         </Card>
       </div>
