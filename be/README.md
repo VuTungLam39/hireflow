@@ -48,6 +48,7 @@ npm run start:dev          # chạy dev, tự reload
 | `npm run seed` | Seed dữ liệu mẫu vào DB trống; `npm run seed -- --reset` xoá dữ liệu nghiệp vụ (job, ứng viên, hồ sơ, CV) rồi seed lại. Không chạy `--reset` khi `NODE_ENV=production` |
 | `npm run seed:perf` | 200.000 hồ sơ để đo hiệu năng; chỉ chạy trên DB tên `*_perf` |
 | `npm run perf -- <nhãn>` | Đo p95, số query mỗi request và EXPLAIN ANALYZE trên DB perf, ghi `docs/perf/<nhãn>.md`. Kết quả tối ưu: `docs/perf-report.md` |
+| `npm run ai:eval` | Đánh giá chất lượng AI: 10 CV mẫu × 2 JD qua LLM thật (theo `.env`), ghi báo cáo vào `docs/ai-eval/`. Tổng hợp kết quả: `docs/ai-eval.md` |
 | `npm run infra:up` / `npm run infra:down` | Bật / tắt Postgres (pgvector), Redis, RustFS bằng Docker |
 
 > Các lệnh migration chạy trên code đã build (`dist/`), script đã tự `npm run build` trước.

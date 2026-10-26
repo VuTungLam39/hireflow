@@ -1,7 +1,7 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { HttpStatus, Inject, Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
-import { Queue, UnrecoverableError, type JobsOptions } from 'bullmq';
+import { Queue, type JobsOptions } from 'bullmq';
 import { DataSource, In, IsNull, Not } from 'typeorm';
 import { aiConfig } from '../../../config/ai.config.js';
 import { queueConfig } from '../../../config/queue.config.js';
@@ -15,33 +15,13 @@ import { JobRequirement } from '../../jobs/entities/job-requirement.entity.js';
 import { LLM_PROVIDER, LlmError, type LlmProvider } from '../ai.types.js';
 import { CvParseError, extractCvText } from '../cv-parser.js';
 import { maskPii } from '../cv-text.js';
-import { CvProfileDto, parseLlmOutput } from '../dto/llm-output.dto.js';
-import { CvProfile, type CvProfileData } from '../entities/cv-profile.entity.js';
-import {
-  EXTRACT_CV_SCHEMA,
-  EXTRACT_CV_SYSTEM,
-  extractCvPrompt,
-} from '../prompts/extract-cv.prompt.js';
+import { extractProfile } from '../cv-extract.js';
+import { CvProfile } from '../entities/cv-profile.entity.js';
 import { scoreApplication } from '../scoring.js';
-import {
-  type CvJobData,
-  jobId,
-  LLM_STEP_TIMEOUT_MS,
-  QUEUE,
-  type RescoreJobData,
-  type ScoreJobData,
-} from './queues.js';
+import { type CvJobData, jobId, QUEUE, type RescoreJobData, type ScoreJobData } from './queues.js';
+import { AI_ERROR, PipelineFailure } from './errors.js';
 
-// BR-AI-07: lý do hiện cho HR
-export const AI_ERROR = {
-  noText: 'Không đọc được chữ trong CV (có thể là ảnh scan). Hệ thống không OCR.',
-  unreadable: 'File CV bị lỗi hoặc không đúng định dạng PDF/DOCX.',
-  tooLarge: 'File DOCX quá lớn sau khi giải nén.',
-  fileMissing: 'Không tìm thấy file CV trong kho lưu trữ.',
-  invalidOutput: 'AI trả kết quả sai cấu trúc sau 3 lần thử.',
-  config: 'Cấu hình AI chưa đúng, liên hệ Admin.',
-  unavailable: 'Dịch vụ AI tạm thời không phản hồi. Bấm Chấm lại để thử lại.',
-} as const;
+export { AI_ERROR, PipelineFailure } from './errors.js';
 
 const PARSE_ERROR: Record<CvParseError['reason'], string> = {
   NO_TEXT: AI_ERROR.noText,
@@ -50,16 +30,7 @@ const PARSE_ERROR: Record<CvParseError['reason'], string> = {
   TOO_LARGE: AI_ERROR.tooLarge,
 };
 
-// BR-AI-06
-const EXTRACT_ATTEMPTS = 3;
-
 const ACTIVE = In([AiStatus.Pending, AiStatus.Processing]);
-
-export class PipelineFailure extends UnrecoverableError {
-  constructor(readonly reason: string) {
-    super(reason);
-  }
-}
 
 @Injectable()
 export class CvPipelineService implements OnModuleInit {
@@ -265,38 +236,10 @@ export class CvPipelineService implements OnModuleInit {
     }
   }
 
-  private async callExtract(text: string) {
-    let lastError: LlmError | undefined;
-    for (let attempt = 1; attempt <= EXTRACT_ATTEMPTS; attempt++) {
-      try {
-        const result = await this.llm.generateJson({
-          task: 'extract-cv',
-          system: EXTRACT_CV_SYSTEM,
-          prompt: extractCvPrompt(maskPii(text)),
-          schema: EXTRACT_CV_SCHEMA,
-          maxOutputTokens: 4096,
-          signal: AbortSignal.timeout(LLM_STEP_TIMEOUT_MS),
-        });
-        const profile = parseLlmOutput(CvProfileDto, result.data, result.provider);
-        return {
-          data: JSON.parse(JSON.stringify(profile)) as CvProfileData,
-          model: `${result.provider}/${result.model}`.slice(0, 100),
-          inputTokens: result.usage.inputTokens,
-          outputTokens: result.usage.outputTokens,
-        };
-      } catch (error) {
-        if (!(error instanceof LlmError)) throw error;
-        if (error.retryable) throw error;
-        if (error.code !== 'INVALID_JSON') {
-          throw new PipelineFailure(
-            error.code === 'CONFIG' ? AI_ERROR.config : AI_ERROR.unavailable,
-          );
-        }
-        lastError = error;
-        this.logger.warn(`extract-cv invalid output (attempt ${attempt}): ${error.message}`);
-      }
-    }
-    throw new PipelineFailure(`${AI_ERROR.invalidOutput} ${lastError?.message ?? ''}`.trim());
+  private callExtract(text: string) {
+    return extractProfile(this.llm, text, (attempt, error) =>
+      this.logger.warn(`extract-cv invalid output (attempt ${attempt}): ${error.message}`),
+    );
   }
 
   // Kickoff 8.4: score

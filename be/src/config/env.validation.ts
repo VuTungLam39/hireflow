@@ -99,7 +99,7 @@ class EnvironmentVariables {
 
   @IsString()
   @IsNotEmpty()
-  AI_PROMPT_VERSION: string = 'v1';
+  AI_PROMPT_VERSION: string = 'v3';
 
   @IsOptional()
   @IsString()
