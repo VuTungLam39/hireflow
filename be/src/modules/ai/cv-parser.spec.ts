@@ -49,7 +49,7 @@ describe('extractCvText', () => {
     });
     expect(bomb.length).toBeLessThan(1024 * 1024);
     expect(await reasonOf(extractCvText(bomb, DOCX))).toBe('TOO_LARGE');
-  });
+  }, 20_000);
 });
 
 describe('unzippedSize', () => {

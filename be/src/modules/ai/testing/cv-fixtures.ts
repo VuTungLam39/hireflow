@@ -51,7 +51,11 @@ export async function makeDocx(paragraphs: string[], extra: Record<string, strin
       .join('')}</w:body></w:document>`,
   );
   for (const [name, body] of Object.entries(extra)) add(name, body);
-  return zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+  return zip.generateAsync({
+    type: 'nodebuffer',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 1 },
+  });
 }
 
 export const SAMPLE_CV = [
