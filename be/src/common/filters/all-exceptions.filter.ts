@@ -11,6 +11,7 @@ import { QueryFailedError } from 'typeorm';
 import { ErrorCode } from '../exceptions/error-code.enum.js';
 import type { ApiErrorResponse } from '../interfaces/api-response.interface.js';
 import { REQUEST_ID_HEADER } from '../middleware/request-id.js';
+import { safeUrl } from '../utils/safe-url.js';
 
 // Mã lỗi PostgreSQL thường gặp
 const PG_UNIQUE_VIOLATION = '23505';
@@ -87,7 +88,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (statusCode >= 500) {
       this.logger.error(
-        `[${request.headers[REQUEST_ID_HEADER] as string}] ${request.method} ${request.originalUrl}`,
+        `[${request.headers[REQUEST_ID_HEADER] as string}] ${request.method} ${safeUrl(request.originalUrl)}`,
         exception instanceof Error ? exception.stack : String(exception),
       );
     }

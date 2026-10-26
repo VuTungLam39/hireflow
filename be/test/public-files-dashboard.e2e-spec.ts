@@ -216,6 +216,23 @@ describe('Public jobs, CV files, dashboard (e2e)', () => {
       ]);
     });
 
+    it('BR-APP-05: a rejected candidate cannot apply again to the same job', async () => {
+      const candidate = await ds
+        .getRepository(Candidate)
+        .findOneByOrFail({ email: `p-c1-${run}@gmail.com` });
+      await ds
+        .getRepository(Application)
+        .update(
+          { candidateId: candidate.id, jobId: ids.open },
+          { status: ApplicationStatus.Rejected },
+        );
+      const res = await apply(ids.open, form(1)).expect(409);
+      expect(res.body.code).toBe('APPLICATION_DUPLICATED');
+      await ds
+        .getRepository(Application)
+        .update({ candidateId: candidate.id, jobId: ids.open }, { status: ApplicationStatus.New });
+    });
+
     it('BR-APP-03: the same email cannot apply twice to the same job', async () => {
       const res = await apply(ids.open, form(1)).expect(409);
       expect(res.body.code).toBe('APPLICATION_DUPLICATED');

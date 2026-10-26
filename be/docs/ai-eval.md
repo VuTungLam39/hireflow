@@ -45,9 +45,20 @@ So với mục tiêu:
 | Mục tiêu | Kết quả (prompt v3) |
 |---|---|
 | 100% bằng chứng hiển thị cho HR có thật trong CV (G2) | Đạt: 25/25. Ngoài ra 62/62 bằng chứng LLM trích (cả kỹ năng, kinh nghiệm, học vấn) đều nguyên văn có trong CV, nên chưa thấy lần nào phải dùng tới bước loại bằng chứng bịa |
-| Có điểm dưới 60 giây p95 (G2) | Đạt cho riêng bước gọi LLM: p95 khoảng 2,5 giây. Xem giới hạn ở mục 4 về thời gian chờ hàng đợi |
+| Có điểm dưới 60 giây p95 (G2) | **Đạt.** Đo đủ đường đi từ lúc nộp CV đến khi có điểm (đọc file → trích xuất bằng Gemini → chấm điểm), mục 2.1. Bước gọi LLM riêng: p95 khoảng 2,5 giây |
 | Dưới $0,01 mỗi CV (Kickoff 6) | Đạt: $0 với gói miễn phí. Khoảng 1.100 token mỗi CV, nên vẫn dưới $0,01 khi giá trả phí không quá khoảng $9 cho 1 triệu token |
 | AI không làm theo chỉ dẫn trong CV (Kickoff 8.6) | Đạt ở cả 5 lần chạy |
+
+### 2.1. Thời gian từ lúc nộp CV đến khi có điểm (G2)
+
+Đo ngày 26/10/2026 bằng `node scripts/g2-latency.mjs` (biến `API_URL`, `LOGIN_EMAIL`): HR tải lên 10 CV của bộ dữ liệu trên vào một job đang mở qua `POST /jobs/:id/applications`, rồi theo dõi tới khi trạng thái AI là DONE. API, worker, PostgreSQL, Redis chạy trên máy dev; LLM là Gemini thật (`LLM_PROVIDERS=gemini`), giới hạn hàng đợi 10 lần gọi mỗi phút.
+
+| Lần | Tình huống | DONE | p50 | p95 | Chậm nhất |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 1 | 10 CV nộp liền nhau, hàng đợi đang trống | 10/10 | 5,6 s | 10,1 s | 10,1 s |
+| 2 | 10 CV nộp tiếp ngay sau lần 1 (20 CV trong khoảng 2 phút) | 10/10 | 25,7 s | 30,6 s | 30,6 s |
+
+Lần 2 chậm hơn vì giới hạn 10 lần gọi LLM mỗi phút: CV sau phải chờ lượt. Cả hai lần đều dưới mục tiêu 60 giây. Lần 1 lấy số từ cột `created_at` và `scored_at` trong DB, lần 2 lấy từ thời gian script đo được.
 
 ## 3. Những gì bộ đánh giá phát hiện và đã sửa
 
@@ -62,7 +73,7 @@ Mỗi lần đổi prompt đều tăng `AI_PROMPT_VERSION` (mặc định trong 
 ## 4. Giới hạn của kết quả
 
 - **Bộ dữ liệu nhỏ và prompt được chỉnh trên chính bộ này.** Kết quả 90/90 vì thế lạc quan hơn thực tế. MVP 2 dùng 30 CV, có người chấm xếp hạng độc lập (Kickoff 8.7); nên tách một phần làm tập giữ riêng, không dùng để chỉnh prompt.
-- **Thời gian đo là thời gian gọi LLM, chưa gồm thời gian chờ hàng đợi.** Hàng đợi `extract-cv` giới hạn 10 CV mỗi phút (`AI_LLM_PER_MINUTE`, theo hạn mức gói miễn phí). Nộp dồn khoảng 30 CV cùng lúc thì CV cuối phải chờ khoảng 3 phút, vượt mục tiêu 60 giây. Mục tiêu G2 chỉ đạt khi lượng CV dưới khoảng 10 mỗi phút; muốn hơn thì cần gói trả phí hoặc thêm provider dự phòng.
+- **Thời gian ở bảng chính là thời gian gọi LLM; đường đi đầy đủ đo riêng ở mục 2.1.** Hàng đợi `extract-cv` giới hạn 10 CV mỗi phút (`AI_LLM_PER_MINUTE`, theo hạn mức gói miễn phí). Nộp dồn khoảng 30 CV cùng lúc thì CV cuối phải chờ khoảng 3 phút, vượt mục tiêu 60 giây. Mục tiêu G2 chỉ đạt khi lượng CV dưới khoảng 10 mỗi phút; muốn hơn thì cần gói trả phí hoặc thêm provider dự phòng.
 - **Kiểm bằng chứng không chặn được prompt injection.** Câu ra lệnh nằm ngay trong CV, nên nếu LLM làm theo thì bằng chứng vẫn "có thật trong CV" và qua được bước kiểm. Lớp bảo vệ hiện tại chỉ là prompt (khối `<cv>` là dữ liệu, không phải chỉ dẫn), và mới thử với 1 ca. Hướng bổ sung: gắn cờ khi bằng chứng chứa câu có dạng ra lệnh cho AI.
 - **Khớp tiêu chí dựa vào tên kỹ năng LLM đặt.** Nếu LLM đặt tên không chứa từ khoá của tiêu chí (ví dụ "Bán hàng doanh nghiệp" thay vì "B2B"), tiêu chí sẽ không khớp dù CV có kỹ năng đó. HR giảm rủi ro này bằng cách thêm từ khoá đồng nghĩa vào tiêu chí.
 - **Chỉ đo một model.** Chưa so sánh với Groq hay Ollama.
