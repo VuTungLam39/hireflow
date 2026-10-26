@@ -1,23 +1,22 @@
 import { ArrowRight, Building2, Clock, MapPin } from 'lucide-react'
 import { Link } from 'react-router'
-import { z } from 'zod'
 import { EmptyState, ErrorState, SearchInput } from '@/components/shared'
 import { Pagination, Skeleton } from '@/components/ui'
-import { pageFields, useListParams } from '@/hooks/use-list-params'
-import { formatRelative, staggerStyle } from '@/lib/utils'
+import { useDocumentTitle } from '@/hooks/use-document-title'
+import { useHydrated } from '@/hooks/use-hydrated'
+import { useListParams } from '@/hooks/use-list-params'
+import { formatDate, formatRelative, staggerStyle, VN_TIME_ZONE } from '@/lib/utils'
+import { SITE_NAME } from '@/prerender/shared'
 import { links } from '@/routes/paths'
 import { usePublicJobs } from '../hooks/use-public-jobs'
+import { publicJobsListSchema } from '../schemas'
 
-const listSchema = z.object({
-  ...pageFields,
-  limit: z.coerce.number().int().min(1).max(50).catch(12),
-  search: z.string().optional().catch(undefined),
-})
-
-/** Danh sách job đang tuyển. MVP 1: CSR; MVP 2 prerender để có SEO (FE Architecture mục 2). */
+/** Danh sách job đang tuyển, prerender lúc build để có SEO (F-PUB-04, FE Architecture mục 2). */
 export default function PublicJobsPage() {
-  const [params, setParams] = useListParams(listSchema)
+  const [params, setParams] = useListParams(publicJobsListSchema)
   const { data, isPending, isError, error, refetch } = usePublicJobs(params)
+  const hydrated = useHydrated()
+  useDocumentTitle(`Việc làm đang tuyển – ${SITE_NAME}`)
 
   return (
     <div className="space-y-10">
@@ -78,7 +77,9 @@ export default function PublicJobsPage() {
                       </span>
                       <span className="inline-flex items-center gap-1.5">
                         <Clock className="size-3.5" />
-                        {formatRelative(job.publishedAt)}
+                        {hydrated
+                          ? formatRelative(job.publishedAt)
+                          : formatDate(job.publishedAt, VN_TIME_ZONE)}
                       </span>
                     </span>
                     <ArrowRight className="text-primary size-4 -translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />

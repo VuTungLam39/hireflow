@@ -1,5 +1,10 @@
 import type { ComponentType } from 'react'
-import { createBrowserRouter, type LoaderFunctionArgs } from 'react-router'
+import {
+  createBrowserRouter,
+  type DOMRouterOpts,
+  type LoaderFunctionArgs,
+  type RouteObject,
+} from 'react-router'
 import { AuthLayout } from '@/app/layouts/AuthLayout'
 import { MainLayout } from '@/app/layouts/MainLayout'
 import { PublicLayout } from '@/app/layouts/PublicLayout'
@@ -37,14 +42,19 @@ async function applicationsLoader({ request }: LoaderFunctionArgs) {
   return null
 }
 
-export const router = createBrowserRouter([
+async function sessionLoader() {
+  await restoreSession()
+  return null
+}
+
+export const ROOT_ROUTE_ID = 'root'
+
+export const routes: RouteObject[] = [
   {
+    id: ROOT_ROUTE_ID,
     // Khôi phục phiên từ cookie refresh token trước khi guard kiểm tra đăng nhập.
     // Trong lúc chờ, hydrateFallbackElement hiện PageLoader.
-    loader: async () => {
-      await restoreSession()
-      return null
-    },
+    loader: sessionLoader,
     errorElement: <ErrorPage />,
     hydrateFallbackElement: <PageLoader />,
     children: [
@@ -64,6 +74,7 @@ export const router = createBrowserRouter([
       },
       {
         element: <GuestRoute />,
+        loader: sessionLoader,
         children: [
           {
             element: <AuthLayout />,
@@ -75,6 +86,7 @@ export const router = createBrowserRouter([
       },
       {
         element: <ProtectedRoute />,
+        loader: sessionLoader,
         children: [
           {
             element: <MainLayout />,
@@ -151,4 +163,6 @@ export const router = createBrowserRouter([
       },
     ],
   },
-])
+]
+
+export const createAppRouter = (opts?: DOMRouterOpts) => createBrowserRouter(routes, opts)

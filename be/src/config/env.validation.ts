@@ -111,6 +111,16 @@ class EnvironmentVariables {
   @IsBoolean()
   DEBUG_CLIENT_IP: boolean = false;
 
+  // F-PUB-04
+  @IsOptional()
+  @Matches(/^https:\/\/.+/, { message: 'PRERENDER_DEPLOY_HOOK_URL phải là URL https://' })
+  PRERENDER_DEPLOY_HOOK_URL?: string;
+
+  @IsInt()
+  @Min(0)
+  @Max(600000)
+  PRERENDER_DEBOUNCE_MS: number = 30000;
+
   // BR-DATA-04
   @IsInt()
   @Min(1)
