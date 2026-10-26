@@ -134,29 +134,47 @@ describe('UsersService', () => {
     });
 
     it('clears the department when a hiring manager becomes HR', async () => {
-      const user = await service.update('u-1', { role: Role.Hr });
+      const user = await service.update('u-1', { role: Role.Hr }, 'admin-1');
       expect(user).toMatchObject({ role: Role.Hr, departmentId: null });
     });
 
     it('keeps the current department when only the name changes', async () => {
-      const user = await service.update('u-1', { fullName: 'Tên mới' });
+      const user = await service.update('u-1', { fullName: 'Tên mới' }, 'admin-1');
       expect(user).toMatchObject({ fullName: 'Tên mới', departmentId: DEPT });
     });
 
     it('rejects removing the department of a hiring manager', async () => {
-      const error = await errorOf(service.update('u-1', { departmentId: null }));
+      const error = await errorOf(service.update('u-1', { departmentId: null }, 'admin-1'));
       expect(error.getResponse()).toMatchObject({ errors: [{ field: 'departmentId' }] });
     });
 
     it('re-hashes a new password and signs the user out everywhere (BR-ACC-06)', async () => {
-      const user = await service.update('u-1', { password: 'NewPass123' });
+      const user = await service.update('u-1', { password: 'NewPass123' }, 'admin-1');
       expect(await bcrypt.compare('NewPass123', user.passwordHash)).toBe(true);
       expect(refreshTokens.revokeAllForUser).toHaveBeenCalledWith('u-1');
     });
 
     it('keeps sessions when the password is not changed', async () => {
-      await service.update('u-1', { fullName: 'Tên mới' });
+      await service.update('u-1', { fullName: 'Tên mới' }, 'admin-1');
       expect(refreshTokens.revokeAllForUser).not.toHaveBeenCalled();
+    });
+
+    it('BR-ACC-05: does not let an admin change their own role', async () => {
+      stored = { id: 'admin-1', email: 'a@b.com', role: Role.Admin, departmentId: null };
+      const error = await errorOf(service.update('admin-1', { role: Role.Hr }, 'admin-1'));
+      expect(error.getStatus()).toBe(HttpStatus.BAD_REQUEST);
+      expect(error.code).toBe(ErrorCode.ValidationFailed);
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it('BR-ACC-05: lets an admin edit their own profile when the role stays the same', async () => {
+      stored = { id: 'admin-1', email: 'a@b.com', role: Role.Admin, departmentId: null };
+      const user = await service.update(
+        'admin-1',
+        { role: Role.Admin, fullName: 'Tên mới' },
+        'admin-1',
+      );
+      expect(user).toMatchObject({ role: Role.Admin, fullName: 'Tên mới' });
     });
   });
 

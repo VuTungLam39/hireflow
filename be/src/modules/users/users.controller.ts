@@ -51,8 +51,12 @@ export class UsersController {
   @Patch(':id')
   @ApiOperation({ summary: 'Cập nhật user (Admin)' })
   @ResponseMessage('User updated')
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateUserDto) {
-    return this.usersService.update(id, dto);
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateUserDto,
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.usersService.update(id, dto, actorId);
   }
 
   @Patch(':id/status')

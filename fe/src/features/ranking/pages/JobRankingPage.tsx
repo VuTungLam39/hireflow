@@ -108,16 +108,24 @@ function RankingView({ data }: { data: RankingData }) {
               onChange={onWeightChange}
             />
           ))}
-          <Can permission={Permission.JobUpdate}>
-            <div className="flex gap-2 border-t border-slate-100 pt-4">
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={!isDirty}
-                onClick={() => resetDraft(jobId)}
-              >
-                Đặt lại
-              </Button>
+          <div className="flex gap-2 border-t border-slate-100 pt-4">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={!isDirty}
+              onClick={() => resetDraft(jobId)}
+            >
+              Đặt lại
+            </Button>
+            {/* BR-AI-05: Hiring Manager chỉ kéo thử, không lưu */}
+            <Can
+              permission={Permission.JobUpdate}
+              fallback={
+                <p className="flex-1 self-center text-xs text-slate-500">
+                  Chỉ là bản nháp để xem thử, không lưu.
+                </p>
+              }
+            >
               <Button
                 size="sm"
                 className="flex-1"
@@ -127,8 +135,8 @@ function RankingView({ data }: { data: RankingData }) {
               >
                 Lưu trọng số
               </Button>
-            </div>
-          </Can>
+            </Can>
+          </div>
         </Card>
 
         <Card className="min-w-0 space-y-3">

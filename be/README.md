@@ -42,6 +42,7 @@ npm run start:dev          # chạy dev, tự reload
 | `npm run lint` / `npm run format` / `npm run typecheck` | Kiểm tra code |
 | `npm test` | Unit test (Vitest, file `*.spec.ts` trong `src/`) |
 | `npm run test:e2e` | E2E test với DB thật trong `.env` (file `test/*.e2e-spec.ts`) |
+| `npm run test:cov` + `npm run test:e2e:cov` + `npm run coverage:report` | Đo coverage service lõi, gộp unit và e2e; báo lỗi nếu dưới 70% (Kickoff G4). CI chạy cả ba |
 | `npm run migration:generate -- src/database/migrations/<Ten>` | Sinh migration từ thay đổi entity |
 | `npm run migration:create -- src/database/migrations/<Ten>` | Tạo migration rỗng |
 | `npm run migration:run` / `migration:revert` / `migration:show` | Chạy / hoàn tác / xem migration |
@@ -78,7 +79,7 @@ src/
 │   ├── entities/           # AbstractEntity (id uuid, createdAt, updatedAt, deletedAt)
 │   ├── enums/              # Role, SortOrder
 │   ├── filters/            # AllExceptionsFilter – format lỗi thống nhất
-│   ├── guards/             # JwtAuthGuard, RolesGuard
+│   ├── guards/             # JwtAuthGuard, PermissionsGuard, rate limit theo user / tài khoản
 │   ├── interceptors/       # TransformInterceptor, LoggingInterceptor
 │   ├── interfaces/         # ApiResponse, JwtPayload, AuthUser
 │   └── utils/              # ValidationPipe tuỳ biến

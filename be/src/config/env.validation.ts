@@ -88,6 +88,17 @@ class EnvironmentVariables {
   @IsInt()
   THROTTLE_LIMIT: number = 100;
 
+  @IsInt()
+  @Min(0)
+  @Max(10)
+  TRUST_PROXY: number = 0;
+
+  // BR-DATA-04
+  @IsInt()
+  @Min(1)
+  @Max(120)
+  CV_RETENTION_MONTHS: number = 12;
+
   @Matches(/^(gemini|groq|ollama|fake)(,(gemini|groq|ollama|fake))*$/, {
     message: 'LLM_PROVIDERS là danh sách gemini, groq, ollama, fake cách nhau bằng dấu phẩy',
   })

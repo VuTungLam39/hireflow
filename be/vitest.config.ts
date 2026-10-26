@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { coreCoverage } from './vitest.coverage.js';
 
 export default defineConfig({
   resolve: { tsconfigPaths: true },
@@ -7,5 +8,6 @@ export default defineConfig({
     setupFiles: ['reflect-metadata'],
     root: './',
     include: ['src/**/*.spec.ts'],
+    coverage: coreCoverage('coverage/unit'),
   },
 });

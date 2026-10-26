@@ -28,6 +28,8 @@ jobs:
           cache: npm
           cache-dependency-path: be/package-lock.json
       - run: npm ci
+      - name: Audit production dependencies (Kickoff 16)
+        run: npm audit --omit=dev --audit-level=high
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
@@ -89,7 +91,10 @@ jobs:
       - run: npm run migration:run
       - name: pgvector available
         run: psql "postgresql://postgres:postgres@localhost:5432/hireflow_test" -c "CREATE EXTENSION IF NOT EXISTS vector" -c "SELECT extversion FROM pg_extension WHERE extname = 'vector'"
-      - run: npm run test:e2e
+      - run: npm run test:cov
+      - run: npm run test:e2e:cov
+      - name: Core service coverage ≥ 70% (Kickoff G4)
+        run: npm run coverage:report
 
   fe:
     name: FE · lint, typecheck, test, build
@@ -105,6 +110,8 @@ jobs:
           cache: npm
           cache-dependency-path: fe/package-lock.json
       - run: npm ci
+      - name: Audit production dependencies (Kickoff 16)
+        run: npm audit --omit=dev --audit-level=high
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck

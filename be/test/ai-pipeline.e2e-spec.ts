@@ -30,6 +30,8 @@ import { setupApp } from '../src/setup-app.js';
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 const INVALID_MARKER = 'CV_GAY_LOI_SCHEMA';
 const BROKEN_JD = 'JD_LLM_SAP';
+const FABRICATE_MARKER = 'CV_GAY_BIA_BANG_CHUNG';
+const FABRICATED = '8 năm phát triển giao diện bằng React cho ngân hàng';
 
 interface Detail {
   id: string;
@@ -38,7 +40,12 @@ interface Detail {
   score: number | null;
   flags: ScoreFlag[];
   scoredJdVersion: number | null;
-  breakdown: { requirementId: string; match: number; evidence: string | null }[];
+  breakdown: {
+    requirementId: string;
+    match: number;
+    evidence: string | null;
+    rejectedEvidence: string | null;
+  }[];
   requirements: { id: string; label: string }[];
   cv: { text: string | null } | null;
 }
@@ -52,8 +59,14 @@ describe('AI pipeline (e2e, LLM giả)', () => {
   const ids = { dep: '', job: '', job2: '' };
 
   const llm = new FakeLlmProvider({
-    'extract-cv': (req: JsonRequest) =>
-      req.prompt.includes(INVALID_MARKER) ? { skills: 'không phải mảng' } : fakeExtract(req),
+    'extract-cv': (req: JsonRequest) => {
+      if (req.prompt.includes(INVALID_MARKER)) return { skills: 'không phải mảng' };
+      const profile = fakeExtract(req) as { skills: unknown[] };
+      if (req.prompt.includes(FABRICATE_MARKER)) {
+        profile.skills.push({ name: 'React', years: 8, evidence: FABRICATED });
+      }
+      return profile;
+    },
     'suggest-requirements': (req: JsonRequest) => {
       if (req.prompt.includes(BROKEN_JD))
         throw new LlmError('down', 'fake', 'UNAVAILABLE', true, 503);
@@ -275,6 +288,25 @@ describe('AI pipeline (e2e, LLM giả)', () => {
     expect(failed.aiStatus).toBe(AiStatus.Failed);
     expect(failed.aiError).toContain(AI_ERROR.invalidOutput);
     expect(extractCalls(INVALID_MARKER)).toBe(3);
+  });
+
+  it('BR-AI-03: drops evidence the LLM made up and flags it for HR', async () => {
+    const content = await makeDocx([...SAMPLE_CV, FABRICATE_MARKER]);
+    const created = await upload(ids.job, `fake-${run}@example.com`, content);
+    const done = await waitFor(created.id, settled);
+    expect(done.aiStatus).toBe(AiStatus.Done);
+    expect(done.cv?.text).not.toContain(FABRICATED);
+
+    const react = done.requirements.find((r) => r.label === 'React')!;
+    expect(done.breakdown.find((b) => b.requirementId === react.id)).toMatchObject({
+      match: 0,
+      evidence: null,
+      rejectedEvidence: FABRICATED,
+    });
+    expect(done.flags).toContain(ScoreFlag.UnverifiedEvidence);
+    for (const item of done.breakdown) {
+      if (item.evidence) expect(done.cv?.text).toContain(item.evidence);
+    }
   });
 
   it('suggests requirements from the JD without saving them', async () => {
