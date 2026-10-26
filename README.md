@@ -4,7 +4,7 @@
 
 HR đăng tin tuyển dụng, ứng viên nộp CV, hệ thống tự đọc CV và xếp hạng ứng viên theo mô tả công việc (JD). Mỗi điểm số đi kèm **trích dẫn nguyên văn từ CV** làm bằng chứng, và code kiểm tra trích dẫn đó có thật trong CV. HR chỉnh trọng số tiêu chí thì bảng xếp hạng đổi ngay, không tốn thêm lần gọi LLM nào.
 
-> Dự án thực tập tại NCC (10/2026 – 12/2026). Đang ở giai đoạn **MVP 1, tuần 1**. Xem [Trạng thái](#trạng-thái) để biết phần nào đã chạy được.
+> Dự án thực tập tại NCC (10/2026). **MVP 1 đã đủ tính năng** (53/53 feature, mốc M4 ngày 26/10/2026); MVP 2 đang làm, hạn hoàn thiện cả hai bản là **01/11/2026**. Xem [Trạng thái](#trạng-thái) và [Kịch bản demo](#kịch-bản-demo-15-phút).
 
 ---
 
@@ -17,6 +17,7 @@ HR đăng tin tuyển dụng, ứng viên nộp CV, hệ thống tự đọc CV 
 - [Công nghệ](#công-nghệ)
 - [Cấu trúc repo](#cấu-trúc-repo)
 - [Chạy trên máy](#chạy-trên-máy)
+- [Kịch bản demo (15 phút)](#kịch-bản-demo-15-phút)
 - [Deploy](#deploy)
 - [Kiểm thử và chất lượng code](#kiểm-thử-và-chất-lượng-code)
 - [Xác thực và bảo mật](#xác-thực-và-bảo-mật)
@@ -58,7 +59,7 @@ HireFlow xử lý ba vấn đề của cách "gửi CV cho LLM rồi nhận đi�
 
 ## Tính năng
 
-### MVP 1 (19/10 – 13/11/2026)
+### MVP 1 (xong 26/10/2026)
 
 - **Tuyển dụng:** CRUD phòng ban, job (DRAFT / OPEN / CLOSED), ứng viên, hồ sơ ứng tuyển (application).
 - **Pipeline trạng thái:** `NEW → SCREENING → INTERVIEW → OFFER → HIRED`, có thể `REJECTED` (bắt buộc lý do) hoặc `WITHDRAWN`. Lịch sử ghi trong cùng transaction.
@@ -68,11 +69,15 @@ HireFlow xử lý ba vấn đề của cách "gửi CV cho LLM rồi nhận đi�
 - **Chat AI tìm ứng viên (RAG):** câu trả lời stream, mỗi ý có trích dẫn tới đoạn CV, lọc theo quyền người hỏi.
 - **Phân quyền:** RBAC + phạm vi theo phòng ban (Hiring Manager chỉ thấy phòng mình), áp dụng cả cho RAG và link tải CV.
 - **Tối ưu truy vấn:** danh sách 200.000 application, p95 dưới 300ms; báo cáo N+1 và index có số liệu trước/sau.
-- **Giao diện responsive** từ 360px.
+- **Giao diện responsive** từ 360px, kiểm cho 3 role ở 360/768/1280px.
+- **Kho ứng viên, HR tải CV hộ, ẩn danh ứng viên** theo yêu cầu (Nghị định 13/2023).
+- **Hàng đợi AI cho Admin:** xem hồ sơ chấm lỗi hoặc kẹt, chạy lại.
 
-### MVP 2 (16/11 – ~11/12/2026)
+### MVP 2 (đến 01/11/2026)
 
-Gợi ý ứng viên cũ khi publish job mới · hybrid search (full-text + vector) · phỏng vấn và phiếu đánh giá (role Interviewer) · thông báo realtime (SSE) · bộ đánh giá chất lượng AI · cache Redis · audit log · prerender trang công khai · deploy có HTTPS + CI/CD.
+Đã làm sớm: bộ đánh giá chất lượng AI (10 CV × 2 JD) · prerender trang job công khai · cấu hình deploy (Vercel + Render + Neon + R2) + CI.
+
+Còn lại: gợi ý ứng viên cũ khi publish job mới · phỏng vấn và phiếu đánh giá (role Interviewer) · thông báo realtime (SSE) · audit log · cache Redis · mở lại hồ sơ đã kết thúc · nhập text CV thủ công · tự ẩn danh khi hết hạn lưu · hybrid search (full-text + vector, bỏ đầu tiên nếu trễ).
 
 ### Không nằm trong phạm vi
 
@@ -82,27 +87,33 @@ Tự động loại ứng viên · lương, ký offer điện tử · SSO, mobil
 
 ## Trạng thái
 
-| Phần | Trạng thái |
-| --- | --- |
-| Khung backend: config + validate env, TypeORM + migration, format response/lỗi thống nhất, Swagger, health check, Docker | Xong |
-| Xác thực: JWT access token + refresh token xoay vòng trong cookie httpOnly | Xong |
-| Quản lý user (Admin), guard theo role | Xong |
-| Khung frontend: routing lazy, TanStack Query, guard, form + Zod, bộ component UI cơ bản | Xong |
-| Màn đăng nhập, quản lý user | Xong |
-| Phân quyền theo permission + phạm vi phòng ban; role HR, Hiring Manager | Tuần 1 |
-| Phòng ban, job, ứng viên, application, pipeline trạng thái | Tuần 1–2 |
-| Upload CV (MinIO), queue (BullMQ), LLM trích xuất + chấm điểm | Tuần 3 |
-| pgvector + chat RAG, bảng xếp hạng + thanh trọng số | Tuần 4 |
+Cập nhật 26/10/2026. Chi tiết từng feature: tài liệu "Danh mục Feature theo Actor" (thư mục `docs/`, không đưa lên git).
+
+| Phần | Trạng thái | Minh chứng |
+| --- | --- | --- |
+| Auth JWT + refresh token xoay vòng, quản lý user, phòng ban, RBAC + phạm vi phòng ban (3 role) | Xong | E2E cho từng role |
+| Job + tiêu chí có phiên bản, kho ứng viên, hồ sơ, pipeline trạng thái + lịch sử, ghi chú, HR tải CV hộ, ẩn danh | Xong | E2E theo mã quy tắc BR-xx |
+| Upload CV lên S3 (RustFS khi dev), presigned URL, trang nộp CV công khai | Xong | E2E giả mime, quá 5MB, nộp trùng, honeypot, 429 |
+| Pipeline AI qua BullMQ: đọc CV → trích xuất (LLM) + embedding → chấm điểm có bằng chứng | Xong | [be/docs/ai-eval.md](be/docs/ai-eval.md): 90/90 ô tiêu chí đúng, 100% bằng chứng hiển thị có thật |
+| Bảng xếp hạng + thanh trọng số (< 100 ms với 1.107 hồ sơ) | Xong | [fe/docs/rendering.md](fe/docs/rendering.md) mục 6 (React Profiler) |
+| Chat AI (RAG) stream SSE, trích dẫn, lọc theo quyền | Xong | E2E Hiring Manager không nhận đoạn CV phòng khác |
+| Tối ưu query 200k hồ sơ (p95 < 300 ms, không N+1) | Xong | [be/docs/perf-report.md](be/docs/perf-report.md) |
+| Hàng đợi AI cho Admin, health check DB + Redis + storage | Xong | – |
+| Rate limit theo người dùng và theo tài khoản, `npm audit` trong CI, coverage service lõi | Xong | Coverage 92,6% (mục tiêu 70%) |
+| Prerender trang job công khai (SSG + hydrate), tài liệu rendering | Xong | [fe/docs/rendering.md](fe/docs/rendering.md) |
+| `docker compose up` chạy toàn hệ thống, kiểm giao diện 3 role × 3 độ rộng | Xong | [fe/docs/qa-responsive.md](fe/docs/qa-responsive.md) |
+| Cấu hình deploy Vercel + Render + Neon + R2 | Xong phần code, chưa deploy thật | Mục [Deploy](#deploy) |
+| MVP 2: gợi ý ứng viên cũ, phỏng vấn, thông báo realtime, audit log, cache, hybrid search | Đang làm (28–31/10) | – |
 
 ---
 
 ## Kiến trúc
 
 ```
-[React + Vite (CSR)] ──HTTPS──▶ [NestJS API] ──▶ [PostgreSQL + pgvector]
-                                     │
-                                     ├──▶ [Redis]        BullMQ (queue), cache (MVP 2)
-                                     ├──▶ [MinIO / S3]   file CV
+[React + Vite] ──HTTPS──▶ [NestJS API] ──▶ [PostgreSQL 18 + pgvector]
+CSR; trang job công khai             │
+prerender lúc build                  ├──▶ [Redis]        BullMQ (queue), cache (MVP 2)
+                                     ├──▶ [RustFS / S3]  file CV
                                      └──▶ [LlmProvider]  LLM + embedding (API hoặc Ollama)
                                      ▼
                               [BullMQ workers]
@@ -133,7 +144,7 @@ Chấm điểm không phụ thuộc embedding, nên embedding lỗi không chặ
 | PostgreSQL thay vì MySQL | pgvector + JSONB + full-text trong một DB, không cần vector DB riêng |
 | Việc nặng (parse, LLM, embedding) chạy qua queue | API không bị chặn, retry được |
 | LLM chỉ trích xuất một lần; điểm tính bằng công thức | Điểm ổn định, rẻ, giải thích được |
-| Frontend CSR bằng Vite, không dùng Next.js | Ứng dụng chủ yếu sau đăng nhập; trang công khai sẽ prerender ở MVP 2 |
+| Frontend CSR bằng Vite, không dùng Next.js; prerender riêng trang job công khai | Ứng dụng chủ yếu sau đăng nhập; chỉ 2 trang công khai cần SEO, prerender lúc build rẻ hơn đổi framework ([rendering.md](fe/docs/rendering.md)) |
 | Server state (TanStack Query) tách khỏi client state (Zustand) | Tránh trùng nguồn dữ liệu, dễ cache và invalidate |
 
 ---
@@ -143,10 +154,10 @@ Chấm điểm không phụ thuộc embedding, nên embedding lỗi không chặ
 | Lớp | Lựa chọn |
 | --- | --- |
 | Backend | NestJS 12 (ESM, TypeScript strict), TypeORM, class-validator, Passport JWT, Swagger |
-| Database | PostgreSQL 17 (+ pgvector từ tuần 3) |
-| Queue / cache | Redis + BullMQ (tuần 3) |
-| Lưu trữ file | MinIO (dev), S3 tương thích (prod) (tuần 3) |
-| AI | Qua interface `LlmProvider`: LLM (Claude / OpenAI) và embedding đa ngôn ngữ; dự phòng Ollama |
+| Database | PostgreSQL 18 + pgvector 0.8 (image `pgvector/pgvector:0.8.7-pg18-trixie`) |
+| Queue / cache | Redis + BullMQ |
+| Lưu trữ file | RustFS khi dev (thay MinIO đã ngừng phát hành image), S3 tương thích khi deploy (Cloudflare R2) |
+| AI | Qua interface `LlmProvider`, thứ tự dự phòng cấu hình được: Gemini → Groq → Ollama (đều miễn phí); embedding Gemini hoặc Ollama bge-m3, 1024 chiều; LLM giả cho test và CI |
 | Frontend | React 19, Vite 8, TypeScript 7, React Router 8, TanStack Query 5, Zustand 5, React Hook Form + Zod 4, Axios, Tailwind CSS 4 |
 | Test | Vitest, Supertest, Testing Library |
 | Chất lượng code | oxlint, Prettier, TypeScript strict |
@@ -163,17 +174,23 @@ hireflow/
 │   │   ├── config/         # Cấu hình theo nhóm + validate biến môi trường
 │   │   ├── common/         # Decorator, guard, interceptor, filter, DTO dùng chung
 │   │   ├── database/       # data-source, migrations, seeds
-│   │   └── modules/        # auth, users, health (sắp có: departments, jobs, candidates, applications, files, ai, rag...)
+│   │   └── modules/        # auth, users, departments, jobs, candidates, applications, files, public, ai, rag, dashboard, health
 │   ├── test/               # E2E test
-│   └── docker-compose.yml
-└── fe/                     # Frontend React + Vite – xem fe/README.md
-    └── src/
-        ├── app/            # providers, layouts
-        ├── routes/         # router, guards, paths
-        ├── features/       # mỗi nghiệp vụ một module: api, hooks, components, pages, schemas
-        ├── components/     # ui (primitive), shared (composite)
-        ├── lib/            # api-client, query-client, errors
-        └── stores/         # Zustand store
+│   ├── docs/               # perf-report.md, ai-eval.md
+│   └── docker-compose.yml  # Postgres, Redis, RustFS, API, web
+├── fe/                     # Frontend React + Vite – xem fe/README.md
+│   ├── docs/               # rendering.md, qa-responsive.md
+│   ├── scripts/            # prerender.mjs, perf/ (đo Lighthouse, Profiler), qa/
+│   └── src/
+│       ├── app/            # providers, layouts
+│       ├── routes/         # router, guards, paths
+│       ├── features/       # mỗi nghiệp vụ một module: api, hooks, components, pages, schemas
+│       ├── components/     # ui (primitive), shared (composite)
+│       ├── prerender/      # render trang công khai lúc build, hydrate ở client
+│       ├── lib/            # api-client, query-client, errors, profiler
+│       └── stores/         # Zustand store
+├── docker-compose.yml      # include be/docker-compose.yml: chạy toàn hệ thống từ gốc repo
+└── render.yaml             # Blueprint deploy Render
 ```
 
 Frontend chia code theo tính năng và chỉ cho import một chiều giữa các tầng: `app/routes → features → components → lib`. Feature khác chỉ được import qua `index.ts`; oxlint chặn import sâu vào bên trong feature.
@@ -182,28 +199,48 @@ Frontend chia code theo tính năng và chỉ cho import một chiều giữa c�
 
 ## Chạy trên máy
 
-### Yêu cầu
+### Cách 1: một lệnh, chỉ cần Docker
+
+Chạy toàn bộ hệ thống (PostgreSQL + pgvector, Redis, RustFS, API, giao diện web), không cần cài Node:
+
+```bash
+git clone https://github.com/VuTungLam39/hireflow.git
+cd hireflow
+docker compose up -d --build                                    # lần đầu khoảng 1–2 phút
+docker compose exec api node dist/database/seeds/seed.js        # dữ liệu demo
+```
+
+Mở http://localhost:8080 và đăng nhập bằng [tài khoản demo](#4-đăng-nhập). Container API tự chạy migration khi khởi động.
+
+- Mặc định dùng **LLM giả** (điểm và gợi ý tiêu chí có thật nhưng do code giả lập sinh ra). Muốn dùng AI thật: tạo `be/.env` từ `be/.env.example`, điền `LLM_PROVIDERS=gemini,groq`, `GEMINI_API_KEY`, `EMBEDDING_PROVIDER=gemini` rồi `docker compose up -d api`.
+- Đổi cổng bằng `WEB_PORT`, `API_HOST_PORT` (mặc định 8080 và 3000).
+- Giao diện trong container là bản build chạy CSR; prerender trang công khai chỉ chạy khi build có API (xem [rendering.md](fe/docs/rendering.md)).
+- Dừng: `docker compose down` (giữ dữ liệu), `docker compose down -v` (xoá cả dữ liệu).
+
+### Cách 2: chạy để phát triển
+
+#### Yêu cầu
 
 - **Node.js ≥ 22**
-- **PostgreSQL 17**: cài sẵn trên máy, hoặc chạy bằng Docker (cần Docker Desktop)
+- **Docker Desktop** cho PostgreSQL 18 + pgvector, Redis, RustFS (hoặc tự cài; PostgreSQL cần extension pgvector)
 - Git
 
-### 1. Lấy code
+#### 1. Lấy code
 
 ```bash
 git clone https://github.com/VuTungLam39/hireflow.git
 cd hireflow
 ```
 
-### 2. Backend
+#### 2. Backend
 
 ```bash
 cd be
 npm ci
-cp .env.example .env        # sửa thông tin DB; đổi 2 JWT secret (tối thiểu 32 ký tự)
-npm run db:up               # (tuỳ chọn) bật PostgreSQL bằng Docker
+cp .env.example .env        # đặt DB_PORT=5433 nếu dùng infra:up; đổi JWT_ACCESS_SECRET (≥ 32 ký tự); AI thật thì điền khoá Gemini/Groq
+npm run infra:up            # PostgreSQL (cổng 5433), Redis, RustFS bằng Docker
 npm run migration:run       # tạo bảng
-npm run seed                # tạo tài khoản admin
+npm run seed                # dữ liệu demo: phòng ban, user 3 role, job, hồ sơ có CV thật
 npm run start:dev           # http://localhost:3000
 ```
 
@@ -213,7 +250,7 @@ Tạo JWT secret ngẫu nhiên:
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
-### 3. Frontend
+#### 3. Frontend
 
 Mở terminal khác:
 
@@ -226,31 +263,47 @@ npm run dev                 # http://localhost:5173
 
 Khi chạy dev, mọi request tới `/api/...` được Vite chuyển tiếp sang backend, nên không phải cấu hình CORS và cookie đăng nhập hoạt động như cùng một trang.
 
-### 4. Đăng nhập
+#### 4. Đăng nhập
 
-Mở http://localhost:5173 và đăng nhập bằng tài khoản admin vừa seed:
+Mở http://localhost:5173 (cách 2) hoặc http://localhost:8080 (cách 1). Mọi tài khoản seed có mật khẩu `Admin@123` (đổi bằng `SEED_ADMIN_PASSWORD`):
 
-| Email | Mật khẩu |
-| --- | --- |
-| `admin@example.com` | `Admin@123` |
+| Role | Email | Thấy gì |
+| --- | --- | --- |
+| Admin | `admin@example.com` | Toàn hệ thống, quản lý user, phòng ban, hàng đợi AI |
+| HR | `hr@hireflow.dev` | Mọi job, hồ sơ, ứng viên; đổi trạng thái, chấm lại |
+| Hiring Manager | `hm.eng@hireflow.dev` | Chỉ phòng "Phát triển phần mềm"; duyệt hoặc từ chối ở bước OFFER |
 
-Đổi giá trị `SEED_ADMIN_EMAIL` và `SEED_ADMIN_PASSWORD` trong `be/.env` nếu muốn. **Không dùng tài khoản mặc định này ở môi trường thật.**
+**Không dùng các tài khoản này ở môi trường thật.**
 
-### Địa chỉ hữu ích
+#### Địa chỉ hữu ích
 
 | Địa chỉ | Nội dung |
 | --- | --- |
-| http://localhost:5173 | Giao diện web |
+| http://localhost:5173 | Giao diện web (cách 2) |
+| http://localhost:8080 | Giao diện web (cách 1, Nginx chuyển `/api` sang API) |
 | http://localhost:3000/api/v1 | REST API |
 | http://localhost:3000/api/docs | Swagger (tắt ở production) |
-| http://localhost:3000/api/health | Health check |
+| http://localhost:3000/api/health | Health check: DB, Redis, kho file |
 
-### Chạy backend bằng Docker
+---
 
-```bash
-cd be
-docker compose --profile app up -d --build   # PostgreSQL + API, tự chạy migration
-```
+## Kịch bản demo (15 phút)
+
+Theo Kickoff 22.2. Chuẩn bị: hệ thống chạy với AI thật (Gemini) để bước 1 và 6 có kết quả có nghĩa; mở sẵn 2 cửa sổ trình duyệt (một cửa sổ ẩn danh cho Hiring Manager).
+
+| # | Phút | Người dùng | Thao tác | Điểm cần chỉ ra |
+| --- | --- | --- | --- | --- |
+| 1 | 0–2 | HR `hr@hireflow.dev` | Tin tuyển dụng → Tạo job → dán JD → Lưu → "AI gợi ý từ JD" → sửa một tiêu chí → Lưu tiêu chí → Đăng tin | AI chỉ gợi ý (BR-JOB-05), HR quyết định; job hiện ngay ở `/jobs` |
+| 2 | 2–4 | Ứng viên (không đăng nhập) | Mở `/jobs` → chọn job vừa đăng → nộp CV (PDF/DOCX) | Trang công khai không lộ trọng số, từ khoá; sau khi nộp không lộ điểm (BR-APP-07) |
+| 3 | 4–6 | HR | Bảng hồ sơ → mở hồ sơ vừa nộp: trạng thái AI từ "Chờ xử lý" sang "Đang chấm" rồi có điểm | Pipeline BullMQ: đọc CV → trích xuất + embedding → chấm điểm; mỗi tiêu chí có trích dẫn, bấm vào để xem đúng đoạn trong CV |
+| 4 | 6–7 | HR | Mở hồ sơ **Lê Văn Thắng** (job Senior Java Developer) | Một bằng chứng bị loại vì không có trong CV, cờ "Có bằng chứng bị loại" (BR-AI-03); xem thêm `be/docs/ai-eval.md` |
+| 5 | 7–9 | HR | Tin tuyển dụng → Xếp hạng của "Backend Developer (NestJS)" → kéo thanh trọng số | Xếp hạng đổi ngay, không gọi LLM; số liệu Profiler ở [rendering.md](fe/docs/rendering.md) mục 6 |
+| 6 | 9–11 | HR | Bảng hồ sơ: lọc theo trạng thái, khoảng điểm, cờ "thiếu tiêu chí bắt buộc", sắp xếp, phân trang | Bộ lọc nằm trên URL; số liệu 200k hồ sơ ở [perf-report.md](be/docs/perf-report.md) (số query không đổi theo số dòng, p95 < 300 ms) |
+| 7 | 11–12 | HR | Trợ lý AI → hỏi "Ai từng làm với Kafka hoặc microservices?" | Trả lời stream, mỗi ý có trích dẫn mở đúng đoạn CV; thiếu dữ liệu thì nói không đủ thông tin |
+| 8 | 12–14 | Hiring Manager `hm.eng@hireflow.dev` | Dashboard, Bảng hồ sơ chỉ thấy phòng "Phát triển phần mềm"; hỏi lại câu ở bước 7; mở hồ sơ **Phạm Quang Huy** (OFFER) → Duyệt nhận việc | Phạm vi phòng ban áp dụng cả cho chat AI (BR-ACC-07); HR không tự chuyển HIRED (BR-STS-04) |
+| 9 | 14–15 | – | Mở `/jobs` với "View source" (hoặc tắt JavaScript) | HTML đã có nội dung nhờ prerender; trang nội bộ là CSR – lý do ở [rendering.md](fe/docs/rendering.md) |
+
+Dự phòng khi không có mạng hoặc hết hạn mức AI: đặt `LLM_PROVIDERS=fake` để bước 1, 3 vẫn chạy (kết quả giả lập); bước 4, 5, 6, 8, 9 dùng dữ liệu seed nên không phụ thuộc AI.
 
 ---
 
@@ -340,9 +393,10 @@ Không dùng `--reset` trên database thật.
 ### 5. Vercel (frontend)
 
 1. Ở https://vercel.com/new, import repo và đặt **Root Directory = `fe`**. Vercel tự nhận Vite; build command và output đã khai báo trong `fe/vercel.json`.
-2. Không cần biến môi trường: `VITE_API_URL` mặc định là `/api/v1`, và Vercel chuyển tiếp `/api/*` sang Render.
+2. Đặt biến môi trường `PRERENDER_API_URL=https://hireflow-api.onrender.com/api/v1` để build dựng sẵn trang job công khai (F-PUB-04, xem [rendering.md](fe/docs/rendering.md)). Không đặt thì trang công khai chạy CSR như các trang khác. `VITE_API_URL` để mặc định `/api/v1`, Vercel chuyển tiếp `/api/*` sang Render.
 3. Deploy xong, quay lại Render và đặt `CORS_ORIGINS` bằng domain Vercel.
-4. Mở domain Vercel và đăng nhập bằng tài khoản seed. Tải lại trang (F5) để kiểm tra phiên đăng nhập vẫn còn.
+4. Tạo Deploy Hook để trang công khai được build lại khi HR đăng, đóng hoặc sửa job: Vercel → Project Settings → Git → **Deploy Hooks** → tạo hook cho nhánh `main` → copy URL vào biến `PRERENDER_DEPLOY_HOOK_URL` của `hireflow-api` trên Render. Các thay đổi trong 30 giây được gộp thành một lần build.
+5. Mở domain Vercel và đăng nhập bằng tài khoản seed. Tải lại trang (F5) để kiểm tra phiên đăng nhập vẫn còn. Mở `/jobs` → View source để thấy HTML đã có danh sách job.
 
 ### 6. Kiểm tra `TRUST_PROXY`
 
@@ -366,9 +420,9 @@ Tạo một job miễn phí ở https://cron-job.org gọi `https://<domain-verc
 
 | Nơi đặt | Biến |
 | --- | --- |
-| Render `hireflow-api` | `NODE_ENV`, `CORS_ORIGINS`, `TRUST_PROXY`, `DEBUG_CLIENT_IP`, `DATABASE_URL`, `DB_SSL`, `REDIS_URL`, `JWT_*`, `STORAGE_DRIVER`, `S3_*`, `LLM_PROVIDERS`, `GEMINI_*`, `GROQ_*`, `EMBEDDING_*`, `CV_RETENTION_MONTHS` |
+| Render `hireflow-api` | `NODE_ENV`, `CORS_ORIGINS`, `TRUST_PROXY`, `DEBUG_CLIENT_IP`, `DATABASE_URL`, `DB_SSL`, `REDIS_URL`, `JWT_*`, `STORAGE_DRIVER`, `S3_*`, `LLM_PROVIDERS`, `GEMINI_*`, `GROQ_*`, `EMBEDDING_*`, `CV_RETENTION_MONTHS`, `PRERENDER_DEPLOY_HOOK_URL` |
 | Render `hireflow-redis` | Không có. `maxmemoryPolicy: noeviction` để BullMQ không bị mất key |
-| Vercel | Không có (`fe/vercel.json` đã chứa URL API) |
+| Vercel | `PRERENDER_API_URL` (tuỳ chọn, nên đặt). URL API cho rewrite nằm trong `fe/vercel.json` |
 | Máy local khi seed | Xem bước 4 |
 
 ---
@@ -388,12 +442,22 @@ Chạy trong từng thư mục `be/` và `fe/`:
 
 Trước khi mở PR, cả bốn lệnh `lint`, `typecheck`, `test`, `build` phải chạy được ở cả hai thư mục.
 
-**Mục tiêu kiểm thử của dự án:**
+**Kết quả hiện tại (26/10/2026):**
 
-- Coverage từ 70% cho service lõi của backend.
-- E2E phân quyền cho từng role, gồm cả chat RAG và link tải CV.
+- Backend: 290 unit test, 174 E2E (PostgreSQL + pgvector, Redis thật); coverage service lõi 92,6% (mục tiêu 70%, CI báo lỗi nếu tụt dưới).
+- Frontend: 79 test, gồm test hydrate trang dựng sẵn và virtualization bảng xếp hạng; contract test FE ↔ BE.
+- E2E phân quyền cho từng role, gồm cả chat RAG và link tải CV; tên test bắt đầu bằng mã quy tắc (ví dụ `BR-STS-02: …`).
 - Ca bắt buộc: sai quyền / sai phạm vi, chuyển trạng thái sai luồng, upload giả mime, nộp trùng, LLM trả sai schema, bằng chứng bịa bị loại, job queue lỗi và retry.
-- CI dùng LLM giả (mock) để test không tốn tiền.
+- CI dùng LLM giả để test không tốn tiền; `npm audit` chặn lỗ hổng mức high.
+
+**Báo cáo đo đạc:**
+
+| Báo cáo | Nội dung |
+| --- | --- |
+| [be/docs/perf-report.md](be/docs/perf-report.md) | Tối ưu query trên 200k hồ sơ: N+1, index, phân trang cursor, số liệu trước/sau |
+| [be/docs/ai-eval.md](be/docs/ai-eval.md) | Chất lượng AI: 10 CV × 2 JD có đáp án, tỉ lệ tiêu chí đúng, bằng chứng có thật, token, thời gian |
+| [fe/docs/rendering.md](fe/docs/rendering.md) | CSR/SSR/SSG/ISR, prerender, Lighthouse, waterfall loader, React Profiler bảng xếp hạng |
+| [fe/docs/qa-responsive.md](fe/docs/qa-responsive.md) | Kiểm giao diện 3 role × 360/768/1280px trên hệ thống chạy bằng compose |
 
 ---
 
@@ -474,13 +538,19 @@ Prefix `/api/v1`, REST + JSON. Tài liệu đầy đủ ở Swagger: http://loca
 
 ## Lộ trình
 
-| Tuần | Nội dung | Mốc |
+Ngày 26/10/2026 lịch được rút lại: hoàn thiện cả MVP 1 và MVP 2 trước **01/11/2026** (Kickoff ghi 13/11 và ~11/12 là lịch cũ).
+
+| Ngày | Nội dung | Trạng thái |
 | --- | --- | --- |
-| 1 (19–23/10) | Schema + migration + seed 200k application; permission + phạm vi phòng ban; CRUD phòng ban, job, ứng viên | 3 role đăng nhập, mỗi role thấy dữ liệu khác nhau |
-| 2 (26–30/10) | DataTable, bộ lọc trên URL, responsive; danh sách application; case study N+1 + index; pipeline trạng thái | ATS dùng được, có báo cáo hiệu năng |
-| 3 (2–6/11) | MinIO + trang nộp CV; BullMQ + parse PDF/DOCX; LLM tách JD, trích xuất CV; công thức điểm + kiểm tra bằng chứng | Nộp CV xong tự có điểm kèm bằng chứng |
-| 4 (9–13/11) | Bảng xếp hạng + thanh trọng số; embedding + pgvector + chat có trích dẫn; tài liệu rendering; test, Docker Compose | **Phát hành MVP 1** |
-| 5–8 (16/11–11/12) | Gợi ý ứng viên cũ, hybrid search, phỏng vấn, thông báo realtime, đánh giá AI, deploy + CI/CD, load test | **Phát hành MVP 2** |
+| 19–25/10 | Toàn bộ tính năng MVP 1: nền tảng, ATS lõi, AI Screening, RAG, tối ưu query, hàng đợi AI, bộ đánh giá AI | Xong |
+| 26/10 (D2, D3) | Siết MVP 1 (rate limit, quyền, audit, coverage); cấu hình deploy; prerender trang công khai; virtualization + Profiler; rendering.md; compose toàn hệ thống; README + kịch bản demo; kiểm giao diện; đồng bộ tài liệu | **Mốc M4: MVP 1 hoàn chỉnh** |
+| 28/10 | Chi tiết hoá MVP 2 (user story, API, DB); gợi ý ứng viên cũ; job định kỳ tự ẩn danh, dọn token | |
+| 29/10 | Deploy thật (Vercel + Render + Neon + R2), backup; cache dashboard | |
+| 30/10 | Thông báo realtime (SSE), audit log, mở lại hồ sơ, nhập text CV thủ công | |
+| 31/10 | Phỏng vấn + role Interviewer; ai-eval 30 CV; load test; hybrid search nếu còn giờ | |
+| 01/11 | Cho người dùng thử, sửa lỗi, báo cáo, demo. Không thêm tính năng | **Phát hành MVP 2** |
+
+Nếu trễ: bỏ hybrid search trước, sau đó đến module phỏng vấn; luôn giữ gợi ý ứng viên cũ, deploy và bộ đánh giá AI (Kickoff 20.3).
 
 ---
 
@@ -490,7 +560,7 @@ Prefix `/api/v1`, REST + JSON. Tài liệu đầy đủ ở Swagger: http://loca
 | --- | --- |
 | `npm install <package>` báo `Cannot read properties of null (reading 'edgesOut')` | Lỗi của npm 10. Dùng `npx npm@11 install <package>` |
 | Backend không chạy, báo `Invalid environment variables` | So `be/.env` với `be/.env.example`; JWT secret phải có tối thiểu 32 ký tự |
-| `migration:run` không kết nối được DB | Kiểm tra PostgreSQL đang chạy (`npm run db:up` nếu dùng Docker) và thông tin `DB_*` trong `be/.env` |
+| `migration:run` không kết nối được DB | Kiểm tra PostgreSQL đang chạy (`npm run infra:up` nếu dùng Docker) và thông tin `DB_*` trong `be/.env` (Postgres trong Docker ở cổng 5433) |
 | Đăng nhập xong, tải lại trang thì bị đăng xuất | Mở frontend qua `http://localhost:5173` (dev server có proxy). Nếu frontend và API khác domain, thêm domain frontend vào `CORS_ORIGINS` và bật HTTPS để cookie hoạt động |
 | Cổng 3000 hoặc 5173 đang bị dùng | Đổi `PORT` trong `be/.env`; với frontend chạy `npm run dev -- --port 5174` (và cập nhật `CORS_ORIGINS`) |
 | `/api/health` trên Render báo `database` down | Kiểm tra `DATABASE_URL` là chuỗi **không** có `-pooler` và `DB_SSL=true` |
