@@ -75,9 +75,9 @@ HireFlow xử lý ba vấn đề của cách "gửi CV cho LLM rồi nhận đi�
 
 ### MVP 2 (đến 01/11/2026)
 
-Đã làm sớm: bộ đánh giá chất lượng AI (10 CV × 2 JD) · prerender trang job công khai · cấu hình deploy (Vercel + Render + Neon + R2) + CI.
+Đã làm: **gợi ý ứng viên cũ khi đăng tin** (tối đa 10 người từ 50 điểm, mỗi tiêu chí kèm đoạn trích đã kiểm; mời vào tin bằng một thao tác, không gọi LLM) · bộ đánh giá chất lượng AI (10 CV × 2 JD) · prerender trang job công khai · cấu hình deploy (Vercel + Render + Neon + R2) + CI.
 
-Còn lại: gợi ý ứng viên cũ khi publish job mới · phỏng vấn và phiếu đánh giá (role Interviewer) · thông báo realtime (SSE) · audit log · cache Redis · mở lại hồ sơ đã kết thúc · nhập text CV thủ công · tự ẩn danh khi hết hạn lưu · hybrid search (full-text + vector, bỏ đầu tiên nếu trễ).
+Còn lại: phỏng vấn và phiếu đánh giá (role Interviewer) · thông báo realtime (SSE) · audit log · cache Redis · mở lại hồ sơ đã kết thúc · nhập text CV thủ công · tự ẩn danh khi hết hạn lưu · hybrid search (full-text + vector, bỏ đầu tiên nếu trễ).
 
 ### Không nằm trong phạm vi
 
@@ -103,7 +103,8 @@ Cập nhật 26/10/2026. Chi tiết từng feature: tài liệu "Danh mục Feat
 | Prerender trang job công khai (SSG + hydrate), tài liệu rendering | Xong | [fe/docs/rendering.md](fe/docs/rendering.md) |
 | `docker compose up` chạy toàn hệ thống, kiểm giao diện 3 role × 3 độ rộng | Xong | [fe/docs/qa-responsive.md](fe/docs/qa-responsive.md) |
 | Cấu hình deploy Vercel + Render + Neon + R2 | Xong phần code, chưa deploy thật | Mục [Deploy](#deploy) |
-| MVP 2: gợi ý ứng viên cũ, phỏng vấn, thông báo realtime, audit log, cache, hybrid search | Đang làm (28–31/10) | – |
+| Gợi ý ứng viên cũ khi đăng tin, mời vào tin (US-10) | Xong | E2E `be/test/matching.e2e-spec.ts`; tin nháp demo “Fullstack Developer (NestJS + React)” |
+| MVP 2 còn lại: phỏng vấn, thông báo realtime, audit log, cache, job định kỳ, deploy thật | Đang làm (27–30/10) | – |
 
 ---
 
@@ -363,7 +364,7 @@ Các file cấu hình: [`render.yaml`](render.yaml) (Blueprint của Render) và
    | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Token R2 ở bước 2 |
    | `GEMINI_API_KEY`, `GEMINI_MODEL` | Key ở https://aistudio.google.com |
    | `GROQ_API_KEY`, `GROQ_MODEL` | Key ở https://console.groq.com (dự phòng khi Gemini lỗi) |
-   | `CORS_ORIGINS` | Domain Vercel, ví dụ `https://hireflow.vercel.app` (điền sau bước 5 cũng được) |
+   | `CORS_ORIGINS` | **Bắt buộc** (thiếu thì API không khởi động): domain Vercel dự kiến, ví dụ `https://hireflow.vercel.app`; nhiều domain ngăn cách bằng dấu phẩy |
 
    Các biến còn lại đã có sẵn trong `render.yaml`. `JWT_ACCESS_SECRET` do Render tự sinh, còn `REDIS_URL` lấy từ `hireflow-redis` qua mạng nội bộ.
 3. Mỗi lần khởi động, container chạy `typeorm migration:run` rồi mới bật server (xem `be/Dockerfile`).
@@ -394,7 +395,7 @@ Không dùng `--reset` trên database thật.
 
 1. Ở https://vercel.com/new, import repo và đặt **Root Directory = `fe`**. Vercel tự nhận Vite; build command và output đã khai báo trong `fe/vercel.json`.
 2. Đặt biến môi trường `PRERENDER_API_URL=https://hireflow-api.onrender.com/api/v1` để build dựng sẵn trang job công khai (F-PUB-04, xem [rendering.md](fe/docs/rendering.md)). Không đặt thì trang công khai chạy CSR như các trang khác. `VITE_API_URL` để mặc định `/api/v1`, Vercel chuyển tiếp `/api/*` sang Render.
-3. Deploy xong, quay lại Render và đặt `CORS_ORIGINS` bằng domain Vercel.
+3. Deploy xong, nếu domain Vercel khác giá trị đã điền thì sửa `CORS_ORIGINS` trên Render cho khớp.
 4. Tạo Deploy Hook để trang công khai được build lại khi HR đăng, đóng hoặc sửa job: Vercel → Project Settings → Git → **Deploy Hooks** → tạo hook cho nhánh `main` → copy URL vào biến `PRERENDER_DEPLOY_HOOK_URL` của `hireflow-api` trên Render. Các thay đổi trong 30 giây được gộp thành một lần build.
 5. Mở domain Vercel và đăng nhập bằng tài khoản seed. Tải lại trang (F5) để kiểm tra phiên đăng nhập vẫn còn. Mở `/jobs` → View source để thấy HTML đã có danh sách job.
 
@@ -444,8 +445,8 @@ Trước khi mở PR, cả bốn lệnh `lint`, `typecheck`, `test`, `build` ph�
 
 **Kết quả hiện tại (26/10/2026):**
 
-- Backend: 293 unit test, 177 E2E (PostgreSQL + pgvector, Redis thật); coverage service lõi 92,6% (mục tiêu 70%, CI báo lỗi nếu tụt dưới).
-- Frontend: 79 test, gồm test hydrate trang dựng sẵn và virtualization bảng xếp hạng; contract test FE ↔ BE.
+- Backend: 301 unit test, 186 E2E (PostgreSQL + pgvector, Redis thật); coverage service lõi 92,6% (mục tiêu 70%, CI báo lỗi nếu tụt dưới).
+- Frontend: 82 test, gồm test hydrate trang dựng sẵn và virtualization bảng xếp hạng; contract test FE ↔ BE.
 - E2E phân quyền cho từng role, gồm cả chat RAG và link tải CV; tên test bắt đầu bằng mã quy tắc (ví dụ `BR-STS-02: …`).
 - Ca bắt buộc: sai quyền / sai phạm vi, chuyển trạng thái sai luồng, upload giả mime, nộp trùng, LLM trả sai schema, bằng chứng bịa bị loại, job queue lỗi và retry.
 - CI dùng LLM giả để test không tốn tiền; `npm audit` chặn lỗ hổng mức high.
@@ -538,19 +539,21 @@ Prefix `/api/v1`, REST + JSON. Tài liệu đầy đủ ở Swagger: http://loca
 
 ## Lộ trình
 
-Ngày 26/10/2026 lịch được rút lại: hoàn thiện cả MVP 1 và MVP 2 trước **01/11/2026** (Kickoff ghi 13/11 và ~11/12 là lịch cũ).
+Ngày 26/10/2026 lịch được rút lại: hoàn thiện cả MVP 1 và MVP 2 trước **01/11/2026** (Kickoff ghi 13/11 và ~11/12 là lịch cũ). Chỉ có **một buổi demo duy nhất ngày 01/11**, nên ngừng thêm tính năng từ cuối ngày 30/10 và dành 31/10 để tập demo.
 
 | Ngày | Nội dung | Trạng thái |
 | --- | --- | --- |
 | 19–25/10 | Toàn bộ tính năng MVP 1: nền tảng, ATS lõi, AI Screening, RAG, tối ưu query, hàng đợi AI, bộ đánh giá AI | Xong |
 | 26/10 (D2, D3) | Siết MVP 1 (rate limit, quyền, audit, coverage); cấu hình deploy; prerender trang công khai; virtualization + Profiler; rendering.md; compose toàn hệ thống; README + kịch bản demo; kiểm giao diện; đồng bộ tài liệu | **Mốc M4: MVP 1 hoàn chỉnh** |
-| 28/10 | Chi tiết hoá MVP 2 (user story, API, DB); gợi ý ứng viên cũ; job định kỳ tự ẩn danh, dọn token | |
-| 29/10 | Deploy thật (Vercel + Render + Neon + R2), backup; cache dashboard | |
-| 30/10 | Thông báo realtime (SSE), audit log, mở lại hồ sơ, nhập text CV thủ công | |
-| 31/10 | Phỏng vấn + role Interviewer; ai-eval 30 CV; load test; hybrid search nếu còn giờ | |
-| 01/11 | Cho người dùng thử, sửa lỗi, báo cáo, demo. Không thêm tính năng | **Phát hành MVP 2** |
+| 26/10 (D4) | Đặc tả US-10 và BR-MATCH-01 → 04; gợi ý ứng viên cũ + mời vào tin | Xong (sớm 2 ngày) |
+| 27/10 | Job định kỳ tự ẩn danh khi hết hạn lưu, dọn token; mở lại hồ sơ đã kết thúc; nhập text CV thủ công | |
+| 28/10 | Deploy thật (Vercel + Render + Neon + R2), backup và thử khôi phục; cache dashboard | |
+| 29/10 | Thông báo realtime (SSE), audit log; ai-eval 30 CV | |
+| 30/10 | Phỏng vấn + role Interviewer; load test k6. Ngừng thêm tính năng cuối ngày | |
+| 31/10 | Kịch bản demo gộp MVP 1 + 2, tập demo trên bản deploy, báo cáo cuối kỳ, sửa lỗi | |
+| 01/11 | Buổi demo duy nhất | **Phát hành MVP 2** |
 
-Nếu trễ: bỏ hybrid search trước, sau đó đến module phỏng vấn; luôn giữ gợi ý ứng viên cũ, deploy và bộ đánh giá AI (Kickoff 20.3).
+Hybrid search chỉ làm nếu đi trước lịch. Nếu trễ: bỏ hybrid search trước, sau đó đến module phỏng vấn; luôn giữ gợi ý ứng viên cũ, deploy và bộ đánh giá AI (Kickoff 20.3).
 
 ---
 

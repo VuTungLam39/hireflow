@@ -138,3 +138,32 @@ DB_DATABASE=ncc_intern_perf npm run seed:perf
 npm run perf -- after                          # ghi docs/perf/after.md
 PERF_REQUESTS=200 PERF_CONCURRENCY=10 npm run perf -- after-heavy
 ```
+
+## 8. Gợi ý ứng viên cũ (match-job, MVP 2)
+
+Worker `match-job` chạy một lần mỗi khi đăng tin hoặc lưu tiêu chí lúc tin đang tuyển (BR-MATCH-01). Việc chạy nền, không nằm trên đường request, nên mục tiêu là vài giây chứ không phải 300 ms.
+
+Cách làm: một câu SQL lấy CV gần nhất (có hồ sơ trích xuất theo phiên bản prompt hiện hành) của mỗi ứng viên còn trong hạn lưu, chưa ẩn danh, chưa nộp tin này, và có ít nhất một kỹ năng chứa từ khoá của tiêu chí (`LIKE ANY` trên `f_unaccent(lower(...))`). Sau đó chấm bằng chính hàm `scoreApplication()` của pipeline, không gọi LLM hay embedding. Lọc theo từ khoá không bỏ sót ai, vì ứng viên không chứa từ khoá nào thì điểm luôn bằng 0.
+
+Đo trên DB `ncc_intern_perf` (50.000 ứng viên, 200.000 hồ sơ, thêm 50.000 hồ sơ trích xuất giả lập, mỗi CV 4 kỹ năng ngẫu nhiên trong 12 kỹ năng), tin với 3 từ khoá `nestjs`, `postgresql`, `docker`:
+
+| Bước | Kết quả |
+|---|---|
+| Truy vấn kho ứng viên (`EXPLAIN ANALYZE`) | 1,6 s; 36.429 ứng viên khớp từ khoá, lấy 5.000 người nộp gần nhất |
+| Kế hoạch | Quét song song `cv_files` và `cv_profiles` (hash join), lần nộp gần nhất lấy bằng `IDX_applications_candidate_id` (49.019 lượt, mỗi lượt khoảng 0,01 ms), loại người đã nộp tin bằng `UQ_applications_job_id_candidate_id` |
+
+Giới hạn: khi hơn 5.000 ứng viên khớp từ khoá, worker chỉ chấm 5.000 người nộp gần nhất. Với quy mô dự án (vài trăm CV thật) giới hạn này không chạm tới. Nếu cần, có thể lọc trước bằng điểm thô trong SQL thay vì theo thời gian.
+
+Tạo hồ sơ trích xuất giả lập để đo lại (chỉ chạy trên DB `_perf`):
+
+```sql
+INSERT INTO cv_profiles (cv_file_id, data, model, prompt_version, input_tokens, output_tokens)
+SELECT cf.id,
+  jsonb_build_object('skills', (SELECT jsonb_agg(jsonb_build_object('name', s, 'years', (random()*6)::int, 'evidence', 'perf'))
+     FROM (SELECT s FROM unnest(ARRAY['NestJS','PostgreSQL','Docker','React','Java','Python','Kafka','Redis','AWS','Golang','Vue','Spring']) s
+           ORDER BY random() + (cf.id::text < s)::int * 0 LIMIT 4) x),
+   'experiences', '[]'::jsonb, 'education', '[]'::jsonb, 'summary', ''),
+  'perf-synthetic', 'v3', 0, 0
+FROM cv_files cf WHERE cf.text IS NOT NULL
+ON CONFLICT DO NOTHING;
+```
