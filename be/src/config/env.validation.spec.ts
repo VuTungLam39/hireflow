@@ -50,4 +50,20 @@ describe('validateEnv', () => {
     expect(env.REDIS_URL).toBe('rediss://u:p@host:6380');
     expect(env.REDIS_TLS).toBe(false);
   });
+
+  it('treats empty URL variables as not set (copied from .env.example)', () => {
+    const env = validateEnv({
+      ...base,
+      DATABASE_URL: '',
+      REDIS_URL: '',
+      PRERENDER_DEPLOY_HOOK_URL: '',
+    });
+    expect(env.DB_HOST).toBe('localhost');
+  });
+
+  it('still rejects a malformed deploy hook URL', () => {
+    expect(() => validateEnv({ ...base, PRERENDER_DEPLOY_HOOK_URL: 'http://x' })).toThrow(
+      /PRERENDER_DEPLOY_HOOK_URL/,
+    );
+  });
 });
