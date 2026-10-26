@@ -9,6 +9,7 @@ import {
   ScoreValue,
 } from '@/features/applications'
 import type { Requirement } from '@/features/jobs'
+import { countRender } from '@/lib/profiler'
 import { cn } from '@/lib/utils'
 import { links } from '@/routes/paths'
 import type { RankingItem } from '../types'
@@ -22,6 +23,8 @@ interface RankingRowProps {
   score: number
   /** Số bậc thay đổi so với trọng số đã lưu (dương = lên hạng) */
   delta: number
+  index?: number
+  measureRef?: (el: HTMLTableRowElement | null) => void
 }
 
 /** Ba hạng đầu có màu riêng, nhẹ nhàng */
@@ -49,10 +52,15 @@ export const RankingRow = memo(function RankingRow({
   rank,
   score,
   delta,
+  index,
+  measureRef,
 }: RankingRowProps) {
+  countRender('RankingRow')
   const medal = rank <= 3 ? MEDAL[rank - 1] : 'bg-slate-100 text-slate-500'
   return (
     <tr
+      ref={measureRef}
+      data-index={index}
       className={cn(
         'transition-colors duration-300',
         delta !== 0 ? 'bg-primary-soft/60' : 'hover:bg-slate-50/80',

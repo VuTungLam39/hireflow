@@ -17,9 +17,11 @@ export function formatDateTime(value: string | null | undefined): string {
   )
 }
 
-export function formatDate(value: string | null | undefined): string {
+export const VN_TIME_ZONE = 'Asia/Ho_Chi_Minh'
+
+export function formatDate(value: string | null | undefined, timeZone?: string): string {
   if (!value) return '—'
-  return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' }).format(new Date(value))
+  return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium', timeZone }).format(new Date(value))
 }
 
 /** "3 ngày trước", "vừa xong" */

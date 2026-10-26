@@ -1,5 +1,5 @@
-# Hạ tầng dev: docker compose up -d
-# Chạy cả API trong Docker: docker compose --profile app up -d --build
+# Hạ tầng dev (chạy API, FE trên máy): npm run infra:up
+# Toàn hệ thống (Kickoff 22.1): docker compose up -d --build, mở http://localhost:8080
 services:
   postgres:
     image: pgvector/pgvector:0.8.7-pg18-trixie
@@ -61,22 +61,35 @@ services:
       start_period: 20s
 
   api:
-    profiles: ['app']
     build: .
     container_name: hireflow-api
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
     environment:
       NODE_ENV: production
+      PORT: 3000
       DB_HOST: postgres
       DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_DATABASE: ${DB_DATABASE:-ncc_intern}
+      DATABASE_URL: ''
+      DB_SSL: 'false'
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      REDIS_URL: ''
       STORAGE_DRIVER: s3
       S3_ENDPOINT: http://storage:9000
       S3_PUBLIC_ENDPOINT: http://localhost:${S3_PORT:-9000}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-hireflow}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-hireflow-secret}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-docker-dev-secret-change-me-at-least-32-chars}
+      CORS_ORIGINS: http://localhost:${WEB_PORT:-8080}
+      TRUST_PROXY: 1
     ports:
-      - '${PORT:-3000}:3000'
+      - '${API_HOST_PORT:-3000}:3000'
     depends_on:
       postgres:
         condition: service_healthy
@@ -84,6 +97,18 @@ services:
         condition: service_healthy
       storage:
         condition: service_healthy
+
+  web:
+    build:
+      context: ../fe
+      args:
+        PRERENDER_API_URL: ''
+    container_name: hireflow-web
+    restart: unless-stopped
+    ports:
+      - '${WEB_PORT:-8080}:80'
+    depends_on:
+      - api
 
 volumes:
   pgdata:

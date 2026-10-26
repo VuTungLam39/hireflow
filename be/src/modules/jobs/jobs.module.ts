@@ -6,11 +6,12 @@ import { JobRequirement } from './entities/job-requirement.entity.js';
 import { Job } from './entities/job.entity.js';
 import { JobsController } from './jobs.controller.js';
 import { JobsService } from './jobs.service.js';
+import { PrerenderHookService } from './prerender-hook.service.js';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Job, JobRequirement]), DepartmentsModule, AiModule],
   controllers: [JobsController],
-  providers: [JobsService],
+  providers: [JobsService, PrerenderHookService],
   exports: [JobsService],
 })
 export class JobsModule {}

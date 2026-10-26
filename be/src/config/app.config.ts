@@ -14,5 +14,9 @@ export const appConfig = registerAs('app', () => ({
   },
   trustProxy: Number(process.env.TRUST_PROXY ?? 0),
   debugClientIp: process.env.DEBUG_CLIENT_IP === 'true',
+  prerender: {
+    deployHookUrl: process.env.PRERENDER_DEPLOY_HOOK_URL || undefined,
+    debounceMs: Number(process.env.PRERENDER_DEBOUNCE_MS ?? 30000),
+  },
   cvRetentionMonths: Number(process.env.CV_RETENTION_MONTHS ?? 12),
 }));

@@ -28,6 +28,7 @@ const toBoolean = ({ obj, key }: { obj: Record<string, unknown>; key: string }) 
   return raw === true || raw === 'true' || raw === '1';
 };
 
+const hasValue = (key: string) => (env: object) => !!(env as Record<string, unknown>)[key];
 const withoutDatabaseUrl = (env: { DATABASE_URL?: string }) => !env.DATABASE_URL;
 
 class EnvironmentVariables {
@@ -46,7 +47,7 @@ class EnvironmentVariables {
   @IsString()
   CORS_ORIGINS?: string;
 
-  @IsOptional()
+  @ValidateIf(hasValue('DATABASE_URL'))
   @Matches(/^postgres(ql)?:\/\/.+/, { message: 'DATABASE_URL phải có dạng postgres://...' })
   DATABASE_URL?: string;
 
@@ -111,6 +112,16 @@ class EnvironmentVariables {
   @IsBoolean()
   DEBUG_CLIENT_IP: boolean = false;
 
+  // F-PUB-04
+  @ValidateIf(hasValue('PRERENDER_DEPLOY_HOOK_URL'))
+  @Matches(/^https:\/\/.+/, { message: 'PRERENDER_DEPLOY_HOOK_URL phải là URL https://' })
+  PRERENDER_DEPLOY_HOOK_URL?: string;
+
+  @IsInt()
+  @Min(0)
+  @Max(600000)
+  PRERENDER_DEBOUNCE_MS: number = 30000;
+
   // BR-DATA-04
   @IsInt()
   @Min(1)
@@ -174,7 +185,7 @@ class EnvironmentVariables {
   @Max(100)
   EMBEDDING_BATCH_SIZE: number = 100;
 
-  @IsOptional()
+  @ValidateIf(hasValue('REDIS_URL'))
   @Matches(/^rediss?:\/\/.+/, { message: 'REDIS_URL phải có dạng redis://... hoặc rediss://...' })
   REDIS_URL?: string;
 

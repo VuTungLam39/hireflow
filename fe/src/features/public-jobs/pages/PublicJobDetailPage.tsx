@@ -3,7 +3,9 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { ErrorState } from '@/components/shared'
 import { Card, PageLoader } from '@/components/ui'
-import { cn, formatDate } from '@/lib/utils'
+import { useDocumentTitle } from '@/hooks/use-document-title'
+import { cn, formatDate, VN_TIME_ZONE } from '@/lib/utils'
+import { jobTitle } from '@/prerender/shared'
 import { paths } from '@/routes/paths'
 import { ApplyForm } from '../components/ApplyForm'
 import { usePublicJob } from '../hooks/use-public-jobs'
@@ -13,6 +15,7 @@ export default function PublicJobDetailPage() {
   const { id = '' } = useParams()
   const { data: job, isPending, isError, error, refetch } = usePublicJob(id)
   const [submitted, setSubmitted] = useState(false)
+  useDocumentTitle(job ? jobTitle(job.title) : undefined)
 
   if (isPending) return <PageLoader />
   if (isError) return <ErrorState error={error} onRetry={refetch} />
@@ -42,7 +45,7 @@ export default function PublicJobDetailPage() {
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <CalendarDays className="size-4" />
-                Đăng {formatDate(job.publishedAt)}
+                Đăng {formatDate(job.publishedAt, VN_TIME_ZONE)}
               </span>
             </p>
           </header>

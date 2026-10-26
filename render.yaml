@@ -59,6 +59,10 @@ services:
       - key: S3_SECRET_KEY
         sync: false
 
+      # Vercel Deploy Hook (F-PUB-04)
+      - key: PRERENDER_DEPLOY_HOOK_URL
+        sync: false
+
       - key: CV_RETENTION_MONTHS
         value: '12'
 

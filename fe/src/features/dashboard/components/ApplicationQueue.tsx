@@ -38,7 +38,7 @@ export function ApplicationQueue({
   const query = useQuery(applicationQueries.list({ page: 1, limit: LIMIT, ...params }))
 
   return (
-    <Card className="flex flex-col gap-4">
+    <Card className="flex min-w-0 flex-col gap-4">
       <CardTitle
         icon={icon}
         aside={

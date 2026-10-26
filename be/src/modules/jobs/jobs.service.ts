@@ -20,6 +20,7 @@ import { SaveRequirementsDto } from './dto/save-requirements.dto.js';
 import { UpdateJobDto } from './dto/update-job.dto.js';
 import { JobRequirement } from './entities/job-requirement.entity.js';
 import { Job, JobStatus } from './entities/job.entity.js';
+import { PrerenderHookService } from './prerender-hook.service.js';
 
 type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId'>;
 
@@ -98,6 +99,7 @@ export class JobsService {
     private readonly departmentsService: DepartmentsService,
     private readonly suggester: RequirementsSuggester,
     private readonly pipeline: CvPipelineService,
+    private readonly prerender: PrerenderHookService,
   ) {}
 
   async findAll(query: QueryJobDto, user: ScopeUser): Promise<PaginatedResult<JobSummaryView>> {
@@ -161,6 +163,7 @@ export class JobsService {
     this.assertEditable(job);
     if (dto.departmentId) await this.assertDepartment(dto.departmentId);
     await this.jobsRepository.update(id, dto);
+    if (job.status === JobStatus.Open) this.prerender.schedule('job.updated');
     return this.findOne(id, user);
   }
 
@@ -194,11 +197,12 @@ export class JobsService {
           keywords: normalizeKeywords(r.keywords),
         })),
       );
-      return { jdVersion };
+      return { jdVersion, isOpen: job.status === JobStatus.Open };
     });
     // Kickoff 12: job.requirements.updated
     await this.pipeline.enqueueJobRescore(id, result.jdVersion, requestId);
-    return result;
+    if (result.isOpen) this.prerender.schedule('job.requirements.updated');
+    return { jdVersion: result.jdVersion };
   }
 
   // BR-JOB-02
@@ -218,6 +222,7 @@ export class JobsService {
       }
       await manager.update(Job, id, { status: JobStatus.Open, publishedAt: new Date() });
     });
+    this.prerender.schedule('job.published');
     return this.findOne(id, user);
   }
 
@@ -234,6 +239,7 @@ export class JobsService {
       }
       await manager.update(Job, id, { status: JobStatus.Closed, closedAt: new Date() });
     });
+    this.prerender.schedule('job.closed');
     return this.findOne(id, user);
   }
 
