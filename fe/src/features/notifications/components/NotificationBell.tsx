@@ -1,4 +1,4 @@
-import { Bell, CheckCheck, CircleAlert, CircleCheck } from 'lucide-react'
+import { Bell, CalendarClock, CheckCheck, CircleAlert, CircleCheck } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Button, Spinner } from '@/components/ui'
@@ -115,8 +115,10 @@ export function NotificationBell({ align = 'left' }: NotificationBellProps) {
                         !n.readAt && 'bg-blue-50/50',
                       )}
                     >
-                      {n.type === 'CV_FAILED' ? (
+                      {n.type === 'CV_FAILED' || n.type === 'INTERVIEW_CANCELLED' ? (
                         <CircleAlert className="mt-0.5 size-4 shrink-0 text-red-500" />
+                      ) : n.type.startsWith('INTERVIEW') ? (
+                        <CalendarClock className="mt-0.5 size-4 shrink-0 text-blue-500" />
                       ) : (
                         <CircleCheck className="mt-0.5 size-4 shrink-0 text-emerald-500" />
                       )}

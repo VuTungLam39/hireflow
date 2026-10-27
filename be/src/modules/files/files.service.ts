@@ -97,7 +97,9 @@ export class FilesService {
       .createQueryBuilder('cv')
       .select(['cv.id', 'cv.storageKey', 'cv.originalName', 'cv.mime'])
       .where('cv.id = :fileId', { fileId });
-    const file = await applyCandidateScope(qb, user, '"cv"."candidate_id"').getOne();
+    const file = await applyCandidateScope(qb, user, '"cv"."candidate_id"', {
+      cvFileIdColumn: '"cv"."id"',
+    }).getOne();
     if (!file) throw new NotFoundException('File not found');
 
     const expires = Math.floor(Date.now() / 1000) + FILE_LINK_TTL_SECONDS;

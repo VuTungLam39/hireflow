@@ -218,6 +218,23 @@ export const USERS: DemoUser[] = [
     createdAt: '2026-06-22 09:00',
     lastLoginAt: '2026-09-26 17:10',
   },
+  // F-INT-02: Interviewer chỉ thấy hồ sơ được giao
+  {
+    key: 'iv.khoa',
+    email: 'interviewer@hireflow.dev',
+    fullName: 'Bùi Minh Khoa',
+    role: Role.Interviewer,
+    createdAt: '2026-09-01 09:00',
+    lastLoginAt: '2026-10-21 14:00',
+  },
+  {
+    key: 'iv.linh',
+    email: 'linh.pham@hireflow.dev',
+    fullName: 'Phạm Thùy Linh',
+    role: Role.Interviewer,
+    createdAt: '2026-09-01 09:10',
+    lastLoginAt: '2026-10-20 10:30',
+  },
 ];
 
 export interface DemoSession {

@@ -9,6 +9,7 @@ import { authApi } from '@/features/auth/api/auth.api'
 import { candidatesApi } from '@/features/candidates/api/candidates.api'
 import { dashboardApi } from '@/features/dashboard/api/dashboard.api'
 import { departmentsApi } from '@/features/departments/api/departments.api'
+import { interviewsApi } from '@/features/interviews/api/interviews.api'
 import { jobsApi } from '@/features/jobs/api/jobs.api'
 import { matchingApi } from '@/features/matching/api/matching.api'
 import { notificationsApi } from '@/features/notifications/api/notifications.api'
@@ -66,6 +67,9 @@ async function collect(source: keyof typeof ACCOUNTS): Promise<Samples> {
   await take('GET /applications/:id', () => applicationsApi.get(appId))
   await take('GET /applications/:id/history', () => applicationsApi.history(appId))
   await take('GET /applications/:id/notes', () => applicationsApi.notes(appId))
+  await take('GET /applications/:id/interviews', () => interviewsApi.forApplication(appId))
+  await take('GET /interviews', () => interviewsApi.list({ includeCancelled: true }))
+  await take('GET /interviews/interviewers', () => interviewsApi.interviewers())
 
   const candidates = await take('GET /candidates', () => candidatesApi.list({ limit: 20 }))
   await take('GET /candidates/:id', () => candidatesApi.get(candidates.items[0].id))

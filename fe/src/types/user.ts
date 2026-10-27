@@ -1,10 +1,11 @@
 import type { Permission } from '@/lib/permissions'
 
-/** Role MVP 1 (kickoff mục 4.1). Giá trị khớp enum Role của backend. */
+/** Role theo kickoff mục 4.1 (Interviewer thêm ở MVP 2). Giá trị khớp enum Role của backend. */
 export const Role = {
   Admin: 'admin',
   Hr: 'hr',
   HiringManager: 'hiring_manager',
+  Interviewer: 'interviewer',
 } as const
 export type Role = (typeof Role)[keyof typeof Role]
 
@@ -12,6 +13,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   [Role.Admin]: 'Admin',
   [Role.Hr]: 'HR',
   [Role.HiringManager]: 'Hiring Manager',
+  [Role.Interviewer]: 'Người phỏng vấn',
 }
 
 export interface User {

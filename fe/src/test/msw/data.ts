@@ -300,6 +300,8 @@ const users: UserRow[] = [
   user('u-hm-eng', 'hm.eng@hireflow.dev', 'Trần Đức Long', Role.HiringManager, 'dep-eng'),
   user('u-hm-sales', 'hm.sales@hireflow.dev', 'Phạm Ngọc Lan', Role.HiringManager, 'dep-sales'),
   user('u-hm-mkt', 'hm.mkt@hireflow.dev', 'Vũ Hải Nam', Role.HiringManager, 'dep-mkt'),
+  user('u-iv1', 'interviewer@hireflow.dev', 'Bùi Minh Khoa', Role.Interviewer, null),
+  user('u-iv2', 'linh.pham@hireflow.dev', 'Phạm Thùy Linh', Role.Interviewer, null),
 ]
 
 // ---------- job ----------
@@ -764,6 +766,51 @@ const auditLogs: AuditRow[] = history
     createdAt: h.changedAt,
   }))
 
+// F-INT-01 → 03: buổi đã diễn ra chờ phiếu (u-iv1) và buổi sắp tới (u-iv2)
+export interface FeedbackRow {
+  id: string
+  authorId: string
+  overall: number
+  ratings: { requirementId: string; label: string; score: number }[]
+  comment: string | null
+  submittedAt: string
+  editableUntil: string
+}
+
+export interface InterviewRow {
+  id: string
+  applicationId: string
+  round: number
+  scheduledAt: string
+  durationMinutes: number
+  location: string
+  status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED'
+  cancelReason: string | null
+  createdAt: string
+  interviewerIds: string[]
+  feedbacks: FeedbackRow[]
+}
+
+const interviews: InterviewRow[] = applications
+  .filter(
+    (a) =>
+      a.status === 'INTERVIEW' && jobs.find((j) => j.id === a.jobId)?.departmentId === 'dep-eng',
+  )
+  .slice(0, 2)
+  .map((app, i) => ({
+    id: `iv-${i + 1}`,
+    applicationId: app.id,
+    round: 1,
+    scheduledAt: new Date(Date.now() + (i === 0 ? -2 : 26) * 3_600_000).toISOString(),
+    durationMinutes: 60,
+    location: i === 0 ? 'Phòng họp Hồ Gươm' : 'https://meet.google.com/demo',
+    status: 'SCHEDULED',
+    cancelReason: null,
+    createdAt: daysAgo(3),
+    interviewerIds: [i === 0 ? 'u-iv1' : 'u-iv2'],
+    feedbacks: [],
+  }))
+
 export const db = {
   departments,
   users,
@@ -774,4 +821,5 @@ export const db = {
   notes,
   notifications,
   auditLogs,
+  interviews,
 }

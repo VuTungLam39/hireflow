@@ -29,6 +29,7 @@ export function toNotification(n: NotificationRow): NotificationItem {
           aiError: app.aiError,
         }
       : null,
+    interview: null,
   }
 }
 

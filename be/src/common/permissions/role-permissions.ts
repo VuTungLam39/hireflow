@@ -20,6 +20,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     P.AiChat,
     P.AiRescore,
     P.DashboardRead,
+    P.InterviewManage,
   ],
   [Role.HiringManager]: [
     P.JobRead,
@@ -30,6 +31,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     P.AiChat,
     P.DashboardRead,
   ],
+  // BR-INT-02: phạm vi "được giao" áp ở tầng query
+  [Role.Interviewer]: [P.JobRead, P.ApplicationRead, P.CvRead, P.InterviewFeedback],
 };
 
 export const hasPermission = (role: Role, permission: Permission) =>

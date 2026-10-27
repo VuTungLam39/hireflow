@@ -18,4 +18,6 @@ export enum Permission {
   DashboardRead = 'dashboard:read',
   OpsManage = 'ops:manage',
   AuditRead = 'audit:read',
+  InterviewManage = 'interview:manage',
+  InterviewFeedback = 'interview:feedback',
 }

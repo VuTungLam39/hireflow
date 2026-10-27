@@ -37,6 +37,13 @@ export enum ErrorCode {
   FileTooLarge = 'FILE_TOO_LARGE',
   CvTextNotEditable = 'CV_TEXT_NOT_EDITABLE',
 
+  // Interviews
+  InterviewNotAllowed = 'INTERVIEW_NOT_ALLOWED',
+  InterviewConflict = 'INTERVIEW_CONFLICT',
+  InterviewNotEditable = 'INTERVIEW_NOT_EDITABLE',
+  InterviewNotStarted = 'INTERVIEW_NOT_STARTED',
+  FeedbackLocked = 'FEEDBACK_LOCKED',
+
   // AI
   AiUnavailable = 'AI_UNAVAILABLE',
 }

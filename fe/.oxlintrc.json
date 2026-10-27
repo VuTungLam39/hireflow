@@ -25,7 +25,12 @@
   },
   "overrides": [
     {
-      "files": ["src/routes/router.tsx", "src/test/msw/**/*.test.ts", "src/test/contract/**"],
+      "files": [
+        "src/routes/router.tsx",
+        "src/test/msw/**/*.test.ts",
+        "src/test/contract/**",
+        "src/test/flows/**"
+      ],
       "rules": {
         "no-restricted-imports": "off"
       }

@@ -26,8 +26,8 @@ const page = (load: () => Promise<{ default: ComponentType }>) => async () => ({
 })
 
 /** Bọc các route con bằng PermissionRoute */
-const requires = (permission: Permission, children: object[]) => ({
-  element: <PermissionRoute permission={permission} />,
+const requires = (permission: Permission, children: object[], fallbackTo?: string) => ({
+  element: <PermissionRoute permission={permission} fallbackTo={fallbackTo} />,
   children,
 })
 
@@ -91,10 +91,20 @@ export const routes: RouteObject[] = [
           {
             element: <MainLayout />,
             children: [
-              requires(Permission.DashboardRead, [
+              requires(
+                Permission.DashboardRead,
+                [
+                  {
+                    path: paths.home,
+                    lazy: page(() => import('@/features/dashboard/pages/DashboardPage')),
+                  },
+                ],
+                paths.interviews,
+              ),
+              requires(Permission.ApplicationRead, [
                 {
-                  path: paths.home,
-                  lazy: page(() => import('@/features/dashboard/pages/DashboardPage')),
+                  path: paths.interviews,
+                  lazy: page(() => import('@/features/interviews/pages/InterviewsPage')),
                 },
               ]),
               requires(Permission.JobRead, [

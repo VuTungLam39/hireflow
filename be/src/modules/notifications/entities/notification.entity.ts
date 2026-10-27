@@ -6,13 +6,19 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  type Relation,
 } from 'typeorm';
 import { Application } from '../../applications/entities/application.entity.js';
+import { Interview } from '../../interviews/entities/interview.entity.js';
 import { User } from '../../users/entities/user.entity.js';
 
 export enum NotificationType {
   CvScored = 'CV_SCORED',
   CvFailed = 'CV_FAILED',
+  InterviewAssigned = 'INTERVIEW_ASSIGNED',
+  InterviewUpdated = 'INTERVIEW_UPDATED',
+  InterviewCancelled = 'INTERVIEW_CANCELLED',
+  FeedbackSubmitted = 'FEEDBACK_SUBMITTED',
 }
 
 // F-NOTI-01 · Database Design 9
@@ -42,6 +48,14 @@ export class Notification {
     foreignKeyConstraintName: 'FK_notifications_application_id',
   })
   application?: Application;
+
+  // F-INT-01
+  @Column({ type: 'uuid', nullable: true })
+  interviewId: string | null;
+
+  @ManyToOne(() => Interview, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'interview_id', foreignKeyConstraintName: 'FK_notifications_interview_id' })
+  interview?: Relation<Interview>;
 
   @Column({ type: 'timestamptz', nullable: true })
   readAt: Date | null;

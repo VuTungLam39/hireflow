@@ -19,9 +19,16 @@ export function ProtectedRoute() {
 }
 
 /** Chỉ cho vào khi user có permission (thay RoleRoute, kickoff mục 11.2) */
-export function PermissionRoute({ permission }: { permission: Permission }) {
+export function PermissionRoute({
+  permission,
+  fallbackTo,
+}: {
+  permission: Permission
+  /** Không có quyền thì chuyển sang trang này thay vì báo 403 (Interviewer vào trang chủ) */
+  fallbackTo?: string
+}) {
   const allowed = usePermission(permission)
-  if (!allowed) return <ForbiddenPage />
+  if (!allowed) return fallbackTo ? <Navigate to={fallbackTo} replace /> : <ForbiddenPage />
   return <Outlet />
 }
 

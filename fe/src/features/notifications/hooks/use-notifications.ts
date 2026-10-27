@@ -8,6 +8,7 @@ import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { applicationKeys } from '@/features/applications'
 import { dashboardKeys } from '@/features/dashboard'
+import { interviewKeys } from '@/features/interviews'
 import { jobKeys } from '@/features/jobs'
 import { getErrorMessage } from '@/lib/errors'
 import { useAuthStore } from '@/stores/auth.store'
@@ -23,8 +24,28 @@ export const notificationKeys = {
 
 export const LIST_REFRESH_DEBOUNCE_MS = 500
 
+const when = (iso: string) =>
+  new Intl.DateTimeFormat('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'Asia/Ho_Chi_Minh',
+  }).format(new Date(iso))
+
 export function notificationText(n: NotificationItem): string {
   const name = n.application?.candidateName ?? 'Ứng viên'
+  const iv = n.interview
+  switch (n.type) {
+    case 'INTERVIEW_ASSIGNED':
+      return `Bạn được phân công phỏng vấn ${name}${iv ? ` lúc ${when(iv.scheduledAt)}` : ''}`
+    case 'INTERVIEW_UPDATED':
+      return `Lịch phỏng vấn ${name} đổi sang ${iv ? when(iv.scheduledAt) : 'giờ mới'}`
+    case 'INTERVIEW_CANCELLED':
+      return `Buổi phỏng vấn ${name} đã huỷ hoặc bạn không còn được phân công`
+    case 'FEEDBACK_SUBMITTED':
+      return `Có phiếu đánh giá mới cho ${name}`
+  }
   if (n.type === 'CV_FAILED') return `Chấm CV của ${name} thất bại`
   const score = n.application?.score
   return score === null || score === undefined
@@ -53,8 +74,12 @@ function createEventHandler(queryClient: QueryClient) {
       case 'notification': {
         store.setUnreadCount(event.data.unreadCount)
         void queryClient.invalidateQueries({ queryKey: notificationKeys.list() })
+        if (event.data.notification.interview) {
+          void queryClient.invalidateQueries({ queryKey: interviewKeys.all })
+        }
         const n = event.data.notification
-        const show = n.type === 'CV_FAILED' ? toast.error : toast.info
+        const show =
+          n.type === 'CV_FAILED' || n.type === 'INTERVIEW_CANCELLED' ? toast.error : toast.info
         show(notificationText(n), { description: n.application?.jobTitle })
         return
       }

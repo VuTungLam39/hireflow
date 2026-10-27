@@ -129,9 +129,9 @@ export class ApplicationsService {
   // US-06, BR-ACC-07
   private filteredQuery(query: QueryApplicationDto, user: ScopeUser) {
     const qb = this.applicationsRepository.createQueryBuilder('app');
-    if (user.role === Role.HiringManager) {
+    if (user.role === Role.HiringManager || user.role === Role.Interviewer) {
       qb.innerJoin('app.job', 'job');
-      applyDepartmentScope(qb, user, 'job.departmentId');
+      applyDepartmentScope(qb, user, 'job.departmentId', { applicationIdColumn: '"app"."id"' });
     }
     if (query.jobId) qb.andWhere('app.jobId = :jobId', { jobId: query.jobId });
     if (query.status) qb.andWhere('app.status = :status', { status: query.status });
@@ -613,7 +613,9 @@ export class ApplicationsService {
         'candidate.fullName',
         'candidate.email',
       ]);
-    return applyDepartmentScope(qb, user, 'job.departmentId');
+    return applyDepartmentScope(qb, user, 'job.departmentId', {
+      applicationIdColumn: '"app"."id"',
+    });
   }
 
   // BR-ACC-07

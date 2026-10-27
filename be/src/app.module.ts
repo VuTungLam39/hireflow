@@ -30,6 +30,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module.js';
 import { DepartmentsModule } from './modules/departments/departments.module.js';
 import { FilesModule } from './modules/files/files.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { InterviewsModule } from './modules/interviews/interviews.module.js';
 import { JobsModule } from './modules/jobs/jobs.module.js';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module.js';
 import { MatchingModule } from './modules/matching/matching.module.js';
@@ -85,6 +86,7 @@ import { UsersModule } from './modules/users/users.module.js';
     MatchingModule,
     MaintenanceModule,
     NotificationsModule,
+    InterviewsModule,
   ],
   providers: [
     // Guards chạy theo thứ tự đăng ký: xác thực JWT -> rate limit (theo user, chưa đăng nhập theo IP) -> phân quyền
