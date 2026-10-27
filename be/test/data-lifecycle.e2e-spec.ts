@@ -13,6 +13,7 @@ import { appConfig } from '../src/config/app.config.js';
 import { AI_ERROR } from '../src/modules/ai/pipeline/errors.js';
 import { ApplicationStatusHistory } from '../src/modules/applications/entities/application-status-history.entity.js';
 import { Application } from '../src/modules/applications/entities/application.entity.js';
+import { AuditAction, AuditLog } from '../src/modules/audit/entities/audit-log.entity.js';
 import { ANONYMIZED_NAME } from '../src/modules/candidates/candidates.service.js';
 import { Candidate } from '../src/modules/candidates/entities/candidate.entity.js';
 import { Department } from '../src/modules/departments/entities/department.entity.js';
@@ -129,6 +130,7 @@ describe('Data lifecycle (e2e)', () => {
   });
 
   afterAll(async () => {
+    await ds.getRepository(AuditLog).delete({ entityId: In(candidateIds) });
     await ds.getRepository(JobMatch).delete({ jobId: ids.job });
     await ds.getRepository(Application).delete({ jobId: ids.job });
     await ds.getRepository(CvFile).delete({ candidateId: In(candidateIds) });
@@ -329,6 +331,13 @@ describe('Data lifecycle (e2e)', () => {
       expect(
         await ds.getRepository(Application).findOneByOrFail({ id: expiredApp.id }),
       ).toMatchObject({ status: ApplicationStatus.Rejected, score: 70, scoreBreakdown: null });
+
+      expect(
+        await ds.getRepository(AuditLog).findOneByOrFail({
+          action: AuditAction.CandidateAnonymized,
+          entityId: expired.id,
+        }),
+      ).toMatchObject({ actorId: null, metadata: { reason: 'retention', files: 1 } });
 
       expect(await app.get(MaintenanceService).run(MAINTENANCE_TASK.anonymizeExpired)).toBe(0);
       await ds.getRepository(Application).delete({ jobId: job2.id });

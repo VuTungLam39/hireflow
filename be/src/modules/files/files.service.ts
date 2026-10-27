@@ -8,8 +8,10 @@ import { applyCandidateScope } from '../../common/utils/department-scope.js';
 import type { CheckedCv } from './cv-file.rules.js';
 import { CvFile, CvParseStatus } from './entities/cv-file.entity.js';
 import { contentDisposition, StorageService } from './storage/storage.service.js';
+import { AuditService } from '../audit/audit.service.js';
+import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity.js';
 
-type ScopeUser = Pick<AuthUser, 'role' | 'departmentId'>;
+type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId'>;
 
 // BR-FILE-03
 export const FILE_LINK_TTL_SECONDS = 300;
@@ -34,6 +36,7 @@ export class FilesService {
     private readonly storage: StorageService,
     @InjectDataSource() private readonly dataSource: DataSource,
     config: ConfigService,
+    private readonly audit: AuditService,
   ) {
     this.linkKey = createHmac('sha256', config.getOrThrow<string>('jwt.accessSecret'))
       .update('cv-file-link')
@@ -106,6 +109,12 @@ export class FilesService {
     const url =
       signed ??
       `/${this.apiPrefix}/v1/files/${file.id}/content?expires=${expires}&signature=${this.sign(file.id, expires)}`;
+    await this.audit.recordSafely({
+      actorId: user.id,
+      action: AuditAction.CvViewed,
+      entity: AuditEntity.CvFile,
+      entityId: file.id,
+    });
     return { url, expiresAt: new Date(expires * 1000) };
   }
 

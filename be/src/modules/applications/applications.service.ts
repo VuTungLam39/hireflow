@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { PaginatedResult } from '../../common/dto/paginated-result.dto.js';
 import { AiStatus } from '../../common/enums/ai-status.enum.js';
+import { AppEvents } from '../../common/events/app-events.js';
 import { ApplicationSource } from '../../common/enums/application-source.enum.js';
 import { ApplicationStatus } from '../../common/enums/application-status.enum.js';
 import { Role } from '../../common/enums/role.enum.js';
@@ -16,6 +17,8 @@ import { ScoreFlag } from '../../common/enums/score-flag.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { applyDepartmentScope } from '../../common/utils/department-scope.js';
+import { AuditService } from '../audit/audit.service.js';
+import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity.js';
 import { CvPipelineService } from '../ai/pipeline/cv-pipeline.service.js';
 import { CandidatesService } from '../candidates/candidates.service.js';
 import { Candidate } from '../candidates/entities/candidate.entity.js';
@@ -84,6 +87,8 @@ export class ApplicationsService {
     private readonly candidatesService: CandidatesService,
     private readonly filesService: FilesService,
     private readonly pipeline: CvPipelineService,
+    private readonly events: AppEvents,
+    private readonly audit: AuditService,
   ) {}
 
   // US-06, BR-ACC-07
@@ -302,6 +307,7 @@ export class ApplicationsService {
   async rescore(id: string, user: ScopeUser, requestId?: string): Promise<null> {
     await this.findWritable(id, user);
     await this.pipeline.rescore(id, requestId);
+    this.events.emit('application.changed', { applicationId: id });
     return null;
   }
 
@@ -328,7 +334,18 @@ export class ApplicationsService {
         changedBy: user.id,
         changedAt: now,
       });
+      await this.audit.record(
+        {
+          actorId: user.id,
+          action: AuditAction.ApplicationStatusChanged,
+          entity: AuditEntity.Application,
+          entityId: id,
+          metadata: { from: app.status, to: REOPEN_TO, reason, reopen: true },
+        },
+        manager,
+      );
     });
+    this.events.emit('application.changed', { applicationId: id });
     return this.findOne(id, user);
   }
 
@@ -366,6 +383,16 @@ export class ApplicationsService {
         textEnteredAt: new Date(),
         textEnteredBy: user.id,
       });
+      await this.audit.record(
+        {
+          actorId: user.id,
+          action: AuditAction.CvTextEntered,
+          entity: AuditEntity.Application,
+          entityId: id,
+          metadata: { cvFileId: cv.id, length: dto.text.length },
+        },
+        manager,
+      );
       await manager.update(
         Application,
         { cvFileId: cv.id, aiStatus: AiStatus.Failed },
@@ -373,6 +400,7 @@ export class ApplicationsService {
       );
       return cv.id;
     });
+    this.events.emit('application.changed', { applicationId: id });
     await this.pipeline.enqueueCv(cvFileId, requestId);
     return this.findOne(id, user);
   }
@@ -552,7 +580,18 @@ export class ApplicationsService {
         changedBy: user.id,
         changedAt: now,
       });
+      await this.audit.record(
+        {
+          actorId: user.id,
+          action: AuditAction.ApplicationStatusChanged,
+          entity: AuditEntity.Application,
+          entityId: id,
+          metadata: { from: app.status, to, reason: reason?.trim() || null },
+        },
+        manager,
+      );
     });
+    this.events.emit('application.changed', { applicationId: id });
   }
 
   private listQuery(user: ScopeUser): SelectQueryBuilder<Application> {

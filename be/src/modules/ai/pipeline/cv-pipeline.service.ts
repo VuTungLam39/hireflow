@@ -6,6 +6,7 @@ import { DataSource, In, IsNull, Not } from 'typeorm';
 import { aiConfig } from '../../../config/ai.config.js';
 import { queueConfig } from '../../../config/queue.config.js';
 import { AiStatus } from '../../../common/enums/ai-status.enum.js';
+import { AppEvents } from '../../../common/events/app-events.js';
 import { BusinessException, ErrorCode } from '../../../common/exceptions/index.js';
 import { Application } from '../../applications/entities/application.entity.js';
 import { CvFile, CvParseStatus } from '../../files/entities/cv-file.entity.js';
@@ -46,6 +47,7 @@ export class CvPipelineService implements OnModuleInit {
     @InjectQueue(QUEUE.extract) private readonly extractQueue: Queue<CvJobData>,
     @InjectQueue(QUEUE.score) private readonly scoreQueue: Queue<ScoreJobData | RescoreJobData>,
     @InjectQueue(QUEUE.embed) private readonly embedQueue: Queue<CvJobData>,
+    private readonly events: AppEvents,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -61,7 +63,9 @@ export class CvPipelineService implements OnModuleInit {
   // Kickoff 12: cv.uploaded
   async enqueueApplication(applicationId: string, requestId?: string): Promise<void> {
     const app = await this.applications().findOneBy({ id: applicationId });
-    if (!app?.cvFileId) return;
+    if (!app) return;
+    this.events.emit('application.changed', { applicationId });
+    if (!app.cvFileId) return;
     await this.safely(`application ${applicationId}`, () =>
       this.enqueueParse(app.cvFileId!, requestId),
     );
@@ -261,6 +265,7 @@ export class CvPipelineService implements OnModuleInit {
     }
     const requirements = await this.requirementsOf(app.jobId, app.job!.jdVersion);
     await this.saveScore(app.id, app.job!.jdVersion, requirements, profile, app.cvFile.text);
+    this.events.emit('application.ai-finished', { applicationId: app.id, aiStatus: AiStatus.Done });
   }
 
   // BR-AI-05: tính lại bằng code, không gọi LLM
@@ -284,6 +289,7 @@ export class CvPipelineService implements OnModuleInit {
       await this.saveScore(app.id, jdVersion, requirements, profile, app.cvFile.text);
       count++;
     }
+    if (count) this.events.emit('job.changed', { jobId: id });
     return count;
   }
 
@@ -304,23 +310,40 @@ export class CvPipelineService implements OnModuleInit {
       aiStatus: AiStatus.Done,
       aiError: null,
     });
+    this.events.emit('application.changed', { applicationId });
   }
 
   // ---------- thất bại sau khi hết lượt retry ----------
 
   // BR-AI-07
   async failCv(cvFileId: string, error: Error): Promise<void> {
-    await this.applications().update(
-      { cvFileId, aiStatus: ACTIVE },
-      { aiStatus: AiStatus.Failed, aiError: this.reasonOf(error) },
+    const ids = await this.applications().find({
+      select: ['id'],
+      where: { cvFileId, aiStatus: ACTIVE },
+    });
+    if (!ids.length) return;
+    await this.markFailed(
+      ids.map((a) => a.id),
+      error,
     );
   }
 
   async failApplication(applicationId: string, error: Error): Promise<void> {
-    await this.applications().update(
-      { id: applicationId, aiStatus: ACTIVE },
-      { aiStatus: AiStatus.Failed, aiError: this.reasonOf(error) },
-    );
+    await this.markFailed([applicationId], error);
+  }
+
+  private async markFailed(applicationIds: string[], error: Error): Promise<void> {
+    const result = await this.applications()
+      .createQueryBuilder()
+      .update()
+      .set({ aiStatus: AiStatus.Failed, aiError: this.reasonOf(error) })
+      .where({ id: In(applicationIds), aiStatus: ACTIVE })
+      .returning(['id'])
+      .execute();
+    for (const { id } of result.raw as { id: string }[]) {
+      this.events.emit('application.changed', { applicationId: id });
+      this.events.emit('application.ai-finished', { applicationId: id, aiStatus: AiStatus.Failed });
+    }
   }
 
   private reasonOf(error: Error): string {

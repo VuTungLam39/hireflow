@@ -3,10 +3,12 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { AiStatus } from '../../common/enums/ai-status.enum.js';
 import { ApplicationStatus } from '../../common/enums/application-status.enum.js';
+import { Role } from '../../common/enums/role.enum.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { applyDepartmentScope } from '../../common/utils/department-scope.js';
 import { Application } from '../applications/entities/application.entity.js';
 import { Job, JobStatus } from '../jobs/entities/job.entity.js';
+import { DashboardCache } from './dashboard-cache.service.js';
 
 type ScopeUser = Pick<AuthUser, 'role' | 'departmentId'>;
 
@@ -33,10 +35,18 @@ const average = (sum: number, count: number) => (count ? Math.round(sum / count)
 
 @Injectable()
 export class DashboardService {
-  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly cache: DashboardCache,
+  ) {}
 
-  // FR-DASH, Kickoff 14
-  async summary(user: ScopeUser): Promise<DashboardSummaryView> {
+  // FR-DASH, Kickoff 14, BR-ACC-07
+  summary(user: ScopeUser): Promise<DashboardSummaryView> {
+    const scope = user.role === Role.HiringManager ? `dept:${user.departmentId}` : 'all';
+    return this.cache.getOrCompute(scope, () => this.compute(user));
+  }
+
+  private async compute(user: ScopeUser): Promise<DashboardSummaryView> {
     const statusCounts = STATUSES.map(
       (s) => `'${s}', COUNT(app.id) FILTER (WHERE app.status = '${s}')`,
     ).join(', ');

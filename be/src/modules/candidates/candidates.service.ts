@@ -11,6 +11,8 @@ import { decodeCursor, encodeCursor } from '../../common/utils/cursor.js';
 import { appConfig } from '../../config/app.config.js';
 import { applyCandidateScope, applyDepartmentScope } from '../../common/utils/department-scope.js';
 import { Application } from '../applications/entities/application.entity.js';
+import { AuditService } from '../audit/audit.service.js';
+import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity.js';
 import { CvFile } from '../files/entities/cv-file.entity.js';
 import { FilesService } from '../files/files.service.js';
 import { JobMatch } from '../matching/entities/job-match.entity.js';
@@ -55,6 +57,7 @@ export class CandidatesService {
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly filesService: FilesService,
     @Inject(appConfig.KEY) private readonly app: ConfigType<typeof appConfig>,
+    private readonly audit: AuditService,
   ) {}
 
   // US-14, BR-CAND-03
@@ -199,6 +202,16 @@ export class CandidatesService {
         anonymizedAt: new Date(),
         anonymizedBy: actorId,
       });
+      await this.audit.record(
+        {
+          actorId,
+          action: AuditAction.CandidateAnonymized,
+          entity: AuditEntity.Candidate,
+          entityId: id,
+          metadata: { reason: actorId ? 'request' : 'retention', files: files.length },
+        },
+        manager,
+      );
       return files.map((f) => f.storageKey);
     });
     if (!storageKeys) return false;

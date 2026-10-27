@@ -17,4 +17,5 @@ export enum Permission {
   AiRescore = 'ai:rescore',
   DashboardRead = 'dashboard:read',
   OpsManage = 'ops:manage',
+  AuditRead = 'audit:read',
 }
