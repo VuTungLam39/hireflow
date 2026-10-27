@@ -8,7 +8,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <Toaster position="top-right" richColors closeButton />
+      <Toaster position="top-right" richColors closeButton offset={{ top: 80, right: 16 }} />
       {import.meta.env.DEV && <ReactQueryDevtools buttonPosition="bottom-right" />}
     </QueryClientProvider>
   )

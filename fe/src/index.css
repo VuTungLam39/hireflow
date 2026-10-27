@@ -12,10 +12,23 @@
   --color-primary-foreground: oklch(0.99 0 0);
   --color-primary-soft: oklch(0.96 0.025 268);
 
-  --color-canvas: oklch(0.985 0.003 265);
+  --color-canvas: oklch(0.975 0.007 268);
+
+  /* Theme "Indigo Night": sidebar tối tách khỏi khung main sáng, topbar trắng mờ */
+  --color-sidebar: oklch(0.22 0.05 274);
+  --color-sidebar-deep: oklch(0.17 0.045 276);
+  --color-sidebar-foreground: oklch(0.88 0.02 270);
+  --color-sidebar-muted: oklch(0.64 0.035 272);
+  --color-sidebar-hover: oklch(1 0 0 / 0.07);
+  --color-sidebar-border: oklch(1 0 0 / 0.09);
+  --color-sidebar-active: oklch(0.6 0.2 270);
+  --color-accent: oklch(0.66 0.2 296);
+  --color-topbar: oklch(1 0 0 / 0.82);
 
   --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06);
   --shadow-raised: 0 4px 12px -2px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.05);
+  --shadow-glow: 0 6px 18px -6px oklch(0.6 0.2 270 / 0.7);
+  --shadow-topbar: 0 1px 0 0 rgb(15 23 42 / 0.06), 0 6px 16px -10px rgb(15 23 42 / 0.12);
 
   --animate-fade-in: fade-in 0.25s ease-out both;
   --animate-slide-up: slide-up 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
@@ -101,6 +114,23 @@
   /* Xuất hiện lần lượt cho danh sách: style={{ '--i': index }} */
   .stagger {
     animation-delay: calc(min(var(--i, 0), 12) * 30ms);
+  }
+
+  /* Nền sidebar: chuyển nhẹ từ trên xuống, kèm quầng sáng indigo ở góc trên */
+  .bg-sidebar-surface {
+    background:
+      radial-gradient(120% 60% at 0% 0%, oklch(0.6 0.2 270 / 0.22), transparent 60%),
+      linear-gradient(180deg, var(--color-sidebar), var(--color-sidebar-deep));
+  }
+
+  /* Dải nhấn mảnh ở mép trên topbar */
+  .bg-brand-line {
+    background: linear-gradient(
+      90deg,
+      var(--color-primary),
+      var(--color-accent),
+      oklch(0.72 0.14 200)
+    );
   }
 
   /* Nền chấm bi mờ để trang trí khối thương hiệu */
