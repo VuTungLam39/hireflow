@@ -33,6 +33,7 @@
     "seed:perf": "npm run build && node dist/database/seeds/seed-perf.js",
     "perf": "npm run build && node dist/database/perf/perf-run.js",
     "perf:cache": "npm run build && node dist/database/perf/dashboard-cache.js",
+    "smoke": "node scripts/smoke.mjs",
     "ai:smoke": "npm run build && node dist/modules/ai/ai-smoke.js",
     "ai:eval": "npm run build && node dist/modules/ai/eval/ai-eval.js",
     "infra:up": "docker compose up -d postgres redis storage",
