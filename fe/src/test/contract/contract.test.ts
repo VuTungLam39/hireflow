@@ -4,12 +4,14 @@
  */
 import { setupServer } from 'msw/node'
 import { applicationsApi } from '@/features/applications/api/applications.api'
+import { auditApi } from '@/features/audit/api/audit.api'
 import { authApi } from '@/features/auth/api/auth.api'
 import { candidatesApi } from '@/features/candidates/api/candidates.api'
 import { dashboardApi } from '@/features/dashboard/api/dashboard.api'
 import { departmentsApi } from '@/features/departments/api/departments.api'
 import { jobsApi } from '@/features/jobs/api/jobs.api'
 import { matchingApi } from '@/features/matching/api/matching.api'
+import { notificationsApi } from '@/features/notifications/api/notifications.api'
 import { publicJobsApi } from '@/features/public-jobs/api/public-jobs.api'
 import { rankingApi } from '@/features/ranking/api/ranking.api'
 import { usersApi } from '@/features/users/api/users.api'
@@ -68,6 +70,11 @@ async function collect(source: keyof typeof ACCOUNTS): Promise<Samples> {
   const candidates = await take('GET /candidates', () => candidatesApi.list({ limit: 20 }))
   await take('GET /candidates/:id', () => candidatesApi.get(candidates.items[0].id))
   await take('GET /dashboard/summary', () => dashboardApi.summary())
+  await take('GET /notifications', () => notificationsApi.list({ limit: 10 }))
+  await take('GET /notifications/unread-count', () => notificationsApi.unreadCount())
+  await take('GET /audit-logs', () =>
+    auditApi.list({ limit: 20, action: 'APPLICATION_STATUS_CHANGED' }),
+  )
 
   const publicJobs = await take('GET /public/jobs', () =>
     publicJobsApi.list({ page: 1, limit: 20 }),

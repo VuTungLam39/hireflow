@@ -7,6 +7,7 @@ import { candidateHandlers } from './candidates'
 import { jobHandlers } from './jobs'
 import { matchingHandlers } from './matching'
 import { operationHandlers } from './operations'
+import { auditHandlers, notificationHandlers } from './notifications'
 import { publicHandlers } from './public'
 
 /** API giả theo API Contract, chỉ dùng trong test (component test, contract test) */
@@ -20,4 +21,6 @@ export const allHandlers: HttpHandler[] = [
   ...publicHandlers,
   ...aiHandlers,
   ...operationHandlers,
+  ...notificationHandlers,
+  ...auditHandlers,
 ]

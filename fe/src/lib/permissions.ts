@@ -23,6 +23,7 @@ export const Permission = {
   AiRescore: 'ai:rescore',
   DashboardRead: 'dashboard:read',
   OpsManage: 'ops:manage',
+  AuditRead: 'audit:read',
 } as const
 export type Permission = (typeof Permission)[keyof typeof Permission]
 

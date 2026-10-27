@@ -9,6 +9,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { jobKeys } from '@/features/jobs'
 import { getErrorCode, getErrorMessage } from '@/lib/errors'
+import { useRealtimeStore } from '@/stores/realtime.store'
 import { applicationsApi } from '../api/applications.api'
 import { AI_POLL_INTERVAL, APPLICATION_STATUS, type ApplicationStatus } from '../constants'
 import type { ApplicationListParams } from '../schemas/application.schema'
@@ -42,12 +43,14 @@ export function useApplications(params: ApplicationListParams) {
 }
 
 export function useApplication(id: string) {
+  const realtime = useRealtimeStore((s) => s.connected)
   return useQuery({
     queryKey: applicationKeys.detail(id),
     queryFn: () => applicationsApi.get(id),
     // Chờ hoặc đang chấm thì hỏi lại định kỳ; dừng khi DONE/FAILED hoặc rời trang
     refetchInterval: (query) => {
       const status = query.state.data?.aiStatus
+      if (realtime) return false
       return status === 'PENDING' || status === 'PROCESSING' ? AI_POLL_INTERVAL : false
     },
     staleTime: 30_000,
