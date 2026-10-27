@@ -5,7 +5,7 @@ export function safeUrl(url: string): string {
   const index = url.indexOf('?');
   if (index < 0) return url;
   const params = new URLSearchParams(url.slice(index + 1));
-  for (const key of [...params.keys()]) {
+  for (const key of Array.from(params.keys())) {
     if (SENSITIVE_PARAMS.has(key.toLowerCase())) params.set(key, '***');
   }
   const query = params.toString().replace(/%2A%2A%2A/g, '***');

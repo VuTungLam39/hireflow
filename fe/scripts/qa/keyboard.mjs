@@ -1,7 +1,4 @@
 // Kickoff 6: dùng được bằng bàn phím trên các form chính
-import { mkdtempSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import puppeteer from 'puppeteer-core'
 
 const base = process.env.BASE_URL ?? 'http://localhost:8080'

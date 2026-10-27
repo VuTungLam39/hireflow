@@ -29,6 +29,8 @@ const toBoolean = ({ obj, key }: { obj: Record<string, unknown>; key: string }) 
 };
 
 const hasValue = (key: string) => (env: object) => !!(env as Record<string, unknown>)[key];
+const corsRequired = (env: { NODE_ENV?: string; CORS_ORIGINS?: string }) =>
+  env.NODE_ENV === Environment.Production || env.CORS_ORIGINS !== undefined;
 const withoutDatabaseUrl = (env: { DATABASE_URL?: string }) => !env.DATABASE_URL;
 
 class EnvironmentVariables {
@@ -43,8 +45,12 @@ class EnvironmentVariables {
   @IsString()
   API_PREFIX: string = 'api';
 
-  @IsOptional()
+  // Kickoff 6, 16: CORS whitelist
+  @ValidateIf(corsRequired)
   @IsString()
+  @Matches(/^\s*https?:\/\/[^\s,]+(\s*,\s*https?:\/\/[^\s,]+)*\s*$/, {
+    message: 'CORS_ORIGINS bắt buộc khi NODE_ENV=production, dạng https://a.com,https://b.com',
+  })
   CORS_ORIGINS?: string;
 
   @ValidateIf(hasValue('DATABASE_URL'))

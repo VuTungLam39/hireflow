@@ -11,6 +11,7 @@ import { applyCandidateScope, applyDepartmentScope } from '../../common/utils/de
 import { Application } from '../applications/entities/application.entity.js';
 import { CvFile } from '../files/entities/cv-file.entity.js';
 import { FilesService } from '../files/files.service.js';
+import { JobMatch } from '../matching/entities/job-match.entity.js';
 import { QueryCandidateDto } from './dto/query-candidate.dto.js';
 import { UpdateCandidateDto } from './dto/update-candidate.dto.js';
 import { Candidate } from './entities/candidate.entity.js';
@@ -154,6 +155,7 @@ export class CandidatesService {
       });
       await manager.update(Application, { candidateId: id }, { scoreBreakdown: null });
       await manager.delete(CvFile, { candidateId: id });
+      await manager.delete(JobMatch, { candidateId: id });
       await manager.update(Candidate, id, {
         fullName: ANONYMIZED_NAME,
         email: `anon+${id}@invalid.local`,

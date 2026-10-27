@@ -245,6 +245,33 @@ export const JOBS: DemoJob[] = [
     ],
     versions: [],
   },
+  // US-10: demo
+  {
+    key: 'fullstack',
+    department: 'ENG',
+    title: 'Fullstack Developer (NestJS + React)',
+    location: 'Hà Nội',
+    status: JobStatus.Draft,
+    createdBy: 'hr.ha',
+    createdAt: '2026-10-24 14:00',
+    jd: [
+      'Tham gia đội phát triển cổng thông tin cho đối tác bán hàng: một người làm trọn tính năng từ API tới giao diện.',
+      'Mô tả công việc: viết API bằng NestJS và PostgreSQL; xây màn hình bằng React; đóng gói dịch vụ bằng Docker.',
+      'Yêu cầu: tối thiểu 1 năm NestJS và có kinh nghiệm React. Ưu tiên ứng viên biết PostgreSQL, Docker.',
+      BENEFITS,
+    ],
+    versions: [
+      {
+        savedAt: '2026-10-24 16:30',
+        requirements: [
+          ['NestJS', M, 3, 1, ['nestjs', 'nest.js']],
+          ['React', M, 2, null, ['react', 'reactjs']],
+          ['PostgreSQL', N, 1, null, ['postgresql', 'postgres']],
+          ['Docker', N, 1, null, ['docker']],
+        ],
+      },
+    ],
+  },
   {
     key: 'po',
     department: 'PRODUCT',

@@ -98,8 +98,12 @@ export class JobsController {
   @Permissions(Permission.JobPublish)
   @ApiOperation({ summary: 'DRAFT → OPEN (cần ít nhất 1 tiêu chí)' })
   @ResponseMessage('Job published')
-  publish(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
-    return this.jobsService.publish(id, user);
+  publish(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+    @RequestId() requestId?: string,
+  ) {
+    return this.jobsService.publish(id, user, requestId);
   }
 
   @Patch(':id/close')

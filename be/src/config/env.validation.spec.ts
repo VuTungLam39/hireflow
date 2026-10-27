@@ -26,6 +26,23 @@ describe('validateEnv', () => {
     expect(env.JWT_ACCESS_EXPIRES_IN).toBe(900);
   });
 
+  it('requires a CORS whitelist in production', () => {
+    expect(() => validateEnv({ ...base, NODE_ENV: 'production' })).toThrow(/CORS_ORIGINS/);
+    expect(() => validateEnv({ ...base, NODE_ENV: 'production', CORS_ORIGINS: '*' })).toThrow(
+      /CORS_ORIGINS/,
+    );
+    const env = validateEnv({
+      ...base,
+      NODE_ENV: 'production',
+      CORS_ORIGINS: 'https://hireflow.vercel.app, https://hireflow-git-main.vercel.app',
+    });
+    expect(env.CORS_ORIGINS).toContain('hireflow.vercel.app');
+  });
+
+  it('allows an empty CORS whitelist outside production', () => {
+    expect(validateEnv({ ...base, NODE_ENV: 'development' }).CORS_ORIGINS).toBeUndefined();
+  });
+
   it('rejects short JWT secrets', () => {
     expect(() => validateEnv({ ...base, JWT_ACCESS_SECRET: 'short' })).toThrow(/JWT_ACCESS_SECRET/);
   });

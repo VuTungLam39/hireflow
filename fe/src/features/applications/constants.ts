@@ -53,10 +53,11 @@ export const MATCH_LEVEL = {
 } as const satisfies Record<number, { label: string; tone: BadgeTone }>
 export type MatchLevel = keyof typeof MATCH_LEVEL
 
-/** Nguồn hồ sơ (API Contract 2.1). MVP 2 thêm MATCH_INVITE. */
+/** Nguồn hồ sơ (API Contract 2.1) */
 export const APPLICATION_SOURCE = {
   PUBLIC_FORM: { label: 'Trang tuyển dụng', tone: 'neutral' },
   HR_UPLOAD: { label: 'HR tải hộ', tone: 'info' },
+  MATCH_INVITE: { label: 'Mời từ gợi ý AI', tone: 'success' },
 } as const satisfies Record<string, { label: string; tone: BadgeTone }>
 export type ApplicationSource = keyof typeof APPLICATION_SOURCE
 

@@ -6,6 +6,7 @@ export const QUEUE = {
   extract: 'extract-cv',
   score: 'score',
   embed: 'embed-cv',
+  match: 'match-job',
 } as const;
 
 export interface CvJobData {
@@ -24,6 +25,12 @@ export interface RescoreJobData {
   requestId?: string;
 }
 
+export interface MatchJobData {
+  jobId: string;
+  jdVersion: number;
+  requestId?: string;
+}
+
 // Kickoff 12: jobId = <id>_<stage>_v<version>
 export const jobId = {
   parse: (cvFileId: string) => `${cvFileId}_parse_v1`,
@@ -32,6 +39,7 @@ export const jobId = {
   score: (applicationId: string, jdVersion: number) => `${applicationId}_score_v${jdVersion}`,
   rescoreJob: (jobId: string, jdVersion: number) => `${jobId}_rescore_v${jdVersion}`,
   embed: (cvFileId: string) => `${cvFileId}_embed_v1`,
+  match: (jobId: string, jdVersion: number) => `${jobId}_match_v${jdVersion}`,
 };
 
 export const DEFAULT_JOB_OPTIONS: DefaultJobOptions = {

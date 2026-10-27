@@ -100,6 +100,7 @@ function VirtualBody({ rows, requirements, savedRank }: RankingTableProps) {
     if (el) setScrollMargin(el.getBoundingClientRect().top + window.scrollY)
   }, [])
 
+  // oxlint-disable-next-line react/incompatible-library
   const virtualizer = useWindowVirtualizer({
     count: rows.length,
     estimateSize: () => ESTIMATED_ROW_HEIGHT,

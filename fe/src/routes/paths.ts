@@ -8,6 +8,7 @@ export const paths = {
   jobNew: '/manage/jobs/new',
   jobEdit: '/manage/jobs/:id/edit',
   jobRanking: '/manage/jobs/:id/ranking',
+  jobMatches: '/manage/jobs/:id/matches',
   applications: '/applications',
   applicationDetail: '/applications/:id',
   candidates: '/candidates',
@@ -34,6 +35,7 @@ const withQuery = (path: string, query?: Record<string, string | undefined>) => 
 export const links = {
   jobEdit: (id: string) => `/manage/jobs/${id}/edit`,
   jobRanking: (id: string) => `/manage/jobs/${id}/ranking`,
+  jobMatches: (id: string) => `/manage/jobs/${id}/matches`,
   applicationDetail: (id: string) => `/applications/${id}`,
   candidateDetail: (id: string) => `/candidates/${id}`,
   applications: (query?: { jobId?: string; status?: string }) =>

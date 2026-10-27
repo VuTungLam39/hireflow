@@ -49,4 +49,11 @@ export class Job extends AbstractEntity {
 
   @Column({ type: 'timestamptz', nullable: true })
   closedAt: Date | null;
+
+  // F-MATCH-01
+  @Column({ type: 'timestamptz', nullable: true })
+  matchedAt: Date | null;
+
+  @Column({ type: 'integer', nullable: true })
+  matchedJdVersion: number | null;
 }
