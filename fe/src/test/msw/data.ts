@@ -705,4 +705,73 @@ newest.slice(2, 4).forEach((app, i) => {
   })
 })
 
-export const db = { departments, users, jobs, candidates, applications, history, notes }
+// F-NOTI-01: thông báo CV chấm xong cho người tạo tin và Hiring Manager của phòng
+export interface NotificationRow {
+  id: string
+  userId: string
+  type: 'CV_SCORED' | 'CV_FAILED'
+  applicationId: string
+  readAt: string | null
+  createdAt: string
+}
+
+const notifications: NotificationRow[] = applications
+  .filter((a) => a.aiStatus === 'DONE' || a.aiStatus === 'FAILED')
+  .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  .slice(0, 30)
+  .flatMap((app, i) => {
+    const job = jobs.find((j) => j.id === app.jobId)!
+    const recipients = users.filter(
+      (u) =>
+        u.isActive &&
+        (u.role === Role.Hr ||
+          (u.role === Role.HiringManager && u.departmentId === job.departmentId)),
+    )
+    return recipients.map((u, k) => ({
+      id: uid('noti'),
+      userId: u.id,
+      type: app.aiStatus === 'FAILED' ? ('CV_FAILED' as const) : ('CV_SCORED' as const),
+      applicationId: app.id,
+      readAt: i < 3 ? null : app.createdAt,
+      createdAt: new Date(new Date(app.createdAt).getTime() + 60_000 + k).toISOString(),
+    }))
+  })
+
+// F-AUDIT-01: dựng từ lịch sử trạng thái (bỏ dòng tạo hồ sơ)
+export interface AuditRow {
+  id: string
+  actorId: string | null
+  action: string
+  entity: string
+  entityId: string | null
+  metadata: Record<string, string | number | boolean | null>
+  ip: string | null
+  requestId: string | null
+  createdAt: string
+}
+
+const auditLogs: AuditRow[] = history
+  .filter((h) => h.fromStatus !== null)
+  .map((h) => ({
+    id: uid('audit'),
+    actorId: h.changedById,
+    action: 'APPLICATION_STATUS_CHANGED',
+    entity: 'application',
+    entityId: h.applicationId,
+    metadata: { from: h.fromStatus, to: h.toStatus, reason: h.reason },
+    ip: '203.0.113.10',
+    requestId: null,
+    createdAt: h.changedAt,
+  }))
+
+export const db = {
+  departments,
+  users,
+  jobs,
+  candidates,
+  applications,
+  history,
+  notes,
+  notifications,
+  auditLogs,
+}

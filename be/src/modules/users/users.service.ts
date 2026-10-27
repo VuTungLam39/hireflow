@@ -6,6 +6,12 @@ import { PaginatedResult } from '../../common/dto/paginated-result.dto.js';
 import { Role } from '../../common/enums/role.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { FieldError } from '../../common/interfaces/api-response.interface.js';
+import { AuditService } from '../audit/audit.service.js';
+import {
+  AuditAction,
+  AuditEntity,
+  type AuditMetadata,
+} from '../audit/entities/audit-log.entity.js';
 import { DepartmentsService } from '../departments/departments.service.js';
 import { RefreshTokensService } from '../refresh-tokens/refresh-tokens.service.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
@@ -22,9 +28,10 @@ export class UsersService {
     private readonly usersRepository: Repository<User>,
     private readonly departmentsService: DepartmentsService,
     private readonly refreshTokensService: RefreshTokensService,
+    private readonly audit: AuditService,
   ) {}
 
-  async create(dto: CreateUserDto): Promise<User> {
+  async create(dto: CreateUserDto, actorId: string | null = null): Promise<User> {
     if (await this.usersRepository.existsBy({ email: dto.email })) {
       // BR-ACC-02
       throw new BusinessException(
@@ -41,6 +48,10 @@ export class UsersService {
       passwordHash: await bcrypt.hash(password, SALT_ROUNDS),
     });
     const saved = await this.usersRepository.save(user);
+    await this.record(actorId, AuditAction.UserCreated, saved.id, {
+      role: saved.role,
+      departmentId: saved.departmentId,
+    });
     return this.findById(saved.id);
   }
 
@@ -100,6 +111,7 @@ export class UsersService {
       this.assertNotSelf(id, actorId, 'Cannot change your own role');
     }
     const { password, departmentId, ...rest } = dto;
+    const before = { role: user.role, departmentId: user.departmentId };
     const role = dto.role ?? user.role;
     Object.assign(user, rest, {
       role,
@@ -113,6 +125,18 @@ export class UsersService {
       user.passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     }
     await this.usersRepository.save(user);
+    const changes: AuditMetadata = {};
+    if (user.role !== before.role)
+      Object.assign(changes, { roleFrom: before.role, roleTo: user.role });
+    if (user.departmentId !== before.departmentId) {
+      Object.assign(changes, {
+        departmentFrom: before.departmentId,
+        departmentTo: user.departmentId,
+      });
+    }
+    if (password) changes.passwordReset = true;
+    if (Object.keys(changes).length)
+      await this.record(actorId, AuditAction.UserUpdated, id, changes);
     // BR-ACC-06
     if (password) await this.refreshTokensService.revokeAllForUser(id);
     return this.findById(id);
@@ -123,6 +147,7 @@ export class UsersService {
     if (!isActive) this.assertNotSelf(id, actorId, 'Cannot disable your own account');
     await this.findById(id);
     await this.usersRepository.update(id, { isActive });
+    await this.record(actorId, AuditAction.UserUpdated, id, { isActive });
     if (!isActive) await this.refreshTokensService.revokeAllForUser(id);
     return this.findById(id);
   }
@@ -132,7 +157,24 @@ export class UsersService {
     this.assertNotSelf(id, actorId, 'Cannot delete your own account');
     await this.findById(id);
     await this.usersRepository.softDelete(id);
+    await this.record(actorId, AuditAction.UserDeleted, id, {});
     await this.refreshTokensService.revokeAllForUser(id);
+  }
+
+  // F-AUDIT-01
+  private record(
+    actorId: string | null,
+    action: AuditAction,
+    userId: string,
+    metadata: AuditMetadata,
+  ) {
+    return this.audit.record({
+      actorId,
+      action,
+      entity: AuditEntity.User,
+      entityId: userId,
+      metadata,
+    });
   }
 
   async updateLastLogin(id: string): Promise<void> {

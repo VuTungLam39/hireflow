@@ -95,6 +95,19 @@ Lọc job + trạng thái + sắp theo điểm: 28 ms → 18 ms. Xếp hạng jo
 
 `GET /dashboard/summary` dùng một query duy nhất (cộng câu kiểm tra JWT). Tổng số, số theo trạng thái và số job đang mở được cộng từ kết quả theo job trên Node, nên không cần thêm query nào. Phần còn lại (khoảng 180 ms với Admin) là quét toàn bộ 200k hồ sơ. Kickoff đã xếp cache Redis cho dashboard vào MVP 2 (mục 2.2), và đó là bước tiếp theo nếu cần nhanh hơn.
 
+#### Cache Redis (MVP 2, 27/10/2026)
+
+Kết quả tính được lưu trong Redis theo phạm vi: một khoá cho Admin và HR (toàn hệ thống), mỗi phòng ban một khoá cho Hiring Manager, nên không lộ số liệu giữa các phòng. TTL 60 giây. Mỗi khi hồ sơ được tạo, đổi trạng thái, chấm xong hoặc lỗi, hoặc tin tuyển dụng được tạo, sửa, đăng, đóng, xoá, hệ thống tăng số phiên bản trong khoá, nên lần đọc sau tính lại ngay, không phải chờ hết TTL. Redis lỗi thì đọc thẳng DB, không trả lỗi cho người dùng.
+
+Đo bằng `npm run perf:cache` trên 200.000 hồ sơ, 30 lượt mỗi kịch bản (ms, gồm cả HTTP và kiểm tra JWT):
+
+| Người dùng | Chưa có cache p50 | p95 | Trúng cache p50 | p95 |
+|---|---:|---:|---:|---:|
+| Admin | 230,5 | 276 | **9,6** | **11,8** |
+| Hiring Manager | 101,6 | 112,5 | **8,5** | **11** |
+
+Trong lần chạy: 60 lượt trúng cache, 62 lượt phải tính (gồm 60 lượt đo "chưa có cache" và 2 lượt khởi động), 0 lỗi Redis. Trúng cache nhanh hơn khoảng 24 lần với Admin và 12 lần với Hiring Manager.
+
 ## 4. Thay đổi trong code
 
 | Thay đổi | File |
@@ -126,7 +139,7 @@ Mọi index đều là partial `WHERE deleted_at IS NULL`, khớp với điều 
 
 - `COUNT(*)` toàn bảng 200k dòng (Index Only Scan song song) vẫn mất khoảng 50 ms. Dưới tải đồng thời, câu này chiếm phần lớn p95 khoảng 200 ms của bảng hồ sơ không lọc. Nếu cần nhanh hơn: ước lượng số dòng từ thống kê của Postgres, hoặc cache số đếm (MVP 2).
 - Sắp theo điểm **tăng dần** chưa có index phù hợp, vì API luôn đưa hồ sơ chưa có điểm xuống cuối. Đây là trường hợp ít dùng nên chưa thêm.
-- Dashboard Admin vẫn quét toàn bảng hồ sơ: cache Redis ở MVP 2.
+- Dashboard Admin vẫn quét toàn bảng hồ sơ ở lượt đầu sau mỗi thay đổi (khoảng 230 ms); các lượt sau trong 60 giây đọc từ cache (khoảng 10 ms).
 
 ## 7. Cách chạy lại
 
@@ -137,6 +150,7 @@ DB_DATABASE=ncc_intern_perf npm run migration:run
 DB_DATABASE=ncc_intern_perf npm run seed:perf
 npm run perf -- after                          # ghi docs/perf/after.md
 PERF_REQUESTS=200 PERF_CONCURRENCY=10 npm run perf -- after-heavy
+DB_DATABASE=ncc_intern_perf npm run perf:cache  # cache dashboard: chưa có cache / trúng cache
 ```
 
 ## 8. Gợi ý ứng viên cũ (match-job, MVP 2)

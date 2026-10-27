@@ -15,6 +15,7 @@ export const paths = {
   candidateDetail: '/candidates/:id',
   aiChat: '/ai-chat',
   aiQueue: '/admin/ai-queue',
+  auditLogs: '/admin/audit-logs',
 
   // Khách
   login: '/login',

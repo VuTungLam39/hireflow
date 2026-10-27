@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  ScrollText,
   Sparkles,
   Users,
   X,
@@ -18,6 +19,7 @@ import { useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { Avatar } from '@/components/ui'
 import { ChangePasswordDialog, useLogout, useMe } from '@/features/auth'
+import { NotificationBell, useRealtimeConnection } from '@/features/notifications'
 import { hasPermission, Permission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import { paths } from '@/routes/paths'
@@ -73,12 +75,19 @@ const navGroups: { title: string; items: NavItem[] }[] = [
         permission: Permission.DepartmentManage,
       },
       { to: paths.aiQueue, label: 'Hàng đợi AI', icon: Activity, permission: Permission.OpsManage },
+      {
+        to: paths.auditLogs,
+        label: 'Nhật ký kiểm toán',
+        icon: ScrollText,
+        permission: Permission.AuditRead,
+      },
     ],
   },
 ]
 
 export function MainLayout() {
   useMe() // làm mới thông tin user mỗi khi vào app
+  useRealtimeConnection()
   const user = useAuthStore((s) => s.user)
   const logout = useLogout()
   const [changingPassword, setChangingPassword] = useState(false)
@@ -115,6 +124,9 @@ export function MainLayout() {
           <Link to={paths.home}>
             <BrandMark />
           </Link>
+          <div className="hidden md:block">
+            <NotificationBell />
+          </div>
           <button
             type="button"
             aria-label="Đóng menu"
@@ -234,6 +246,9 @@ export function MainLayout() {
             <Menu className="size-5" />
           </button>
           <BrandMark />
+          <div className="ml-auto">
+            <NotificationBell align="right" />
+          </div>
         </header>
 
         {/* key theo đường dẫn: mỗi lần đổi trang nội dung hiện ra nhẹ nhàng */}

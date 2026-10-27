@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import { Role } from '../../common/enums/role.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import { DepartmentsService } from '../departments/departments.service.js';
+import { AuditService } from '../audit/audit.service.js';
 import { RefreshTokensService } from '../refresh-tokens/refresh-tokens.service.js';
 import type { CreateUserDto } from './dto/create-user.dto.js';
 import { User } from './entities/user.entity.js';
@@ -48,6 +49,7 @@ describe('UsersService', () => {
   };
   const departments = { exists: vi.fn() };
   const refreshTokens = { revokeAllForUser: vi.fn() };
+  const audit = { record: vi.fn() };
 
   const dto = (patch: Partial<CreateUserDto> = {}): CreateUserDto => ({
     email: 'a@b.com',
@@ -68,6 +70,7 @@ describe('UsersService', () => {
         { provide: getRepositoryToken(User), useValue: repo },
         { provide: DepartmentsService, useValue: departments },
         { provide: RefreshTokensService, useValue: refreshTokens },
+        { provide: AuditService, useValue: audit },
       ],
     }).compile();
     service = moduleRef.get(UsersService);
@@ -136,11 +139,24 @@ describe('UsersService', () => {
     it('clears the department when a hiring manager becomes HR', async () => {
       const user = await service.update('u-1', { role: Role.Hr }, 'admin-1');
       expect(user).toMatchObject({ role: Role.Hr, departmentId: null });
+      expect(audit.record).toHaveBeenCalledWith({
+        actorId: 'admin-1',
+        action: 'USER_UPDATED',
+        entity: 'user',
+        entityId: 'u-1',
+        metadata: {
+          roleFrom: Role.HiringManager,
+          roleTo: Role.Hr,
+          departmentFrom: DEPT,
+          departmentTo: null,
+        },
+      });
     });
 
     it('keeps the current department when only the name changes', async () => {
       const user = await service.update('u-1', { fullName: 'Tên mới' }, 'admin-1');
       expect(user).toMatchObject({ fullName: 'Tên mới', departmentId: DEPT });
+      expect(audit.record).not.toHaveBeenCalled();
     });
 
     it('rejects removing the department of a hiring manager', async () => {

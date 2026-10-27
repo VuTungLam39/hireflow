@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import { requestContext } from './common/context/request-context.js';
 import { requestId } from './common/middleware/request-id.js';
 import { createValidationPipe } from './common/utils/validation.util.js';
 
@@ -20,6 +21,7 @@ export function setupApp(app: INestApplication): void {
 
   // Gắn id trước mọi middleware khác để cả lỗi sớm (helmet, CORS) cũng có id trong log
   app.use(requestId);
+  app.use(requestContext);
   app.use(helmet());
   // Đọc cookie refresh token (httpOnly) cho /auth/refresh và /auth/logout
   app.use(cookieParser());

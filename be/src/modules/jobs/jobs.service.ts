@@ -22,6 +22,7 @@ import { UpdateJobDto } from './dto/update-job.dto.js';
 import { JobRequirement } from './entities/job-requirement.entity.js';
 import { Job, JobStatus } from './entities/job.entity.js';
 import { PrerenderHookService } from './prerender-hook.service.js';
+import { AppEvents } from '../../common/events/app-events.js';
 
 type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId'>;
 
@@ -102,6 +103,7 @@ export class JobsService {
     private readonly pipeline: CvPipelineService,
     private readonly prerender: PrerenderHookService,
     private readonly matching: MatchingService,
+    private readonly events: AppEvents,
   ) {}
 
   async findAll(query: QueryJobDto, user: ScopeUser): Promise<PaginatedResult<JobSummaryView>> {
@@ -156,6 +158,7 @@ export class JobsService {
     const saved = await this.jobsRepository.save(
       this.jobsRepository.create({ ...dto, status: JobStatus.Draft, createdBy: user.id }),
     );
+    this.events.emit('job.changed', { jobId: saved.id });
     return this.findOne(saved.id, user);
   }
 
@@ -166,6 +169,7 @@ export class JobsService {
     if (dto.departmentId) await this.assertDepartment(dto.departmentId);
     await this.jobsRepository.update(id, dto);
     if (job.status === JobStatus.Open) this.prerender.schedule('job.updated');
+    this.events.emit('job.changed', { jobId: id });
     return this.findOne(id, user);
   }
 
@@ -229,6 +233,7 @@ export class JobsService {
       return job.jdVersion;
     });
     this.prerender.schedule('job.published');
+    this.events.emit('job.changed', { jobId: id });
     // Kickoff 12: job.published
     await this.matching.enqueue(id, jdVersion, requestId);
     return this.findOne(id, user);
@@ -248,6 +253,7 @@ export class JobsService {
       await manager.update(Job, id, { status: JobStatus.Closed, closedAt: new Date() });
     });
     this.prerender.schedule('job.closed');
+    this.events.emit('job.changed', { jobId: id });
     return this.findOne(id, user);
   }
 
@@ -265,6 +271,7 @@ export class JobsService {
       );
     }
     await this.jobsRepository.softDelete(id);
+    this.events.emit('job.changed', { jobId: id });
   }
 
   // US-05

@@ -19,6 +19,9 @@ import {
   storageConfig,
   validateEnv,
 } from './config/index.js';
+import { AppEventsModule } from './common/events/app-events.js';
+import { RedisModule } from './common/redis/redis.module.js';
+import { AuditModule } from './modules/audit/audit.module.js';
 import { AiModule } from './modules/ai/ai.module.js';
 import { ApplicationsModule } from './modules/applications/applications.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
@@ -30,6 +33,7 @@ import { HealthModule } from './modules/health/health.module.js';
 import { JobsModule } from './modules/jobs/jobs.module.js';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module.js';
 import { MatchingModule } from './modules/matching/matching.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { PublicModule } from './modules/public/public.module.js';
 import { RagModule } from './modules/rag/rag.module.js';
 import { UsersModule } from './modules/users/users.module.js';
@@ -63,6 +67,9 @@ import { UsersModule } from './modules/users/users.module.js';
     }),
 
     // Feature modules
+    RedisModule,
+    AppEventsModule,
+    AuditModule,
     HealthModule,
     DepartmentsModule,
     UsersModule,
@@ -77,6 +84,7 @@ import { UsersModule } from './modules/users/users.module.js';
     RagModule,
     MatchingModule,
     MaintenanceModule,
+    NotificationsModule,
   ],
   providers: [
     // Guards chạy theo thứ tự đăng ký: xác thực JWT -> rate limit (theo user, chưa đăng nhập theo IP) -> phân quyền

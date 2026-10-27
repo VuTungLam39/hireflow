@@ -32,8 +32,8 @@ export class UsersController {
   @Post()
   @ApiOperation({ summary: 'Tạo user (Admin)' })
   @ResponseMessage('User created')
-  create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto);
+  create(@Body() dto: CreateUserDto, @CurrentUser('id') actorId: string) {
+    return this.usersService.create(dto, actorId);
   }
 
   @Get()
