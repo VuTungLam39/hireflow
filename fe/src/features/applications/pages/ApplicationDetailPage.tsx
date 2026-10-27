@@ -18,6 +18,8 @@ import { Can, ErrorState, PageHeader } from '@/components/shared'
 import { Avatar, Badge, Button, Card, CardTitle, PageLoader, Skeleton, Tabs } from '@/components/ui'
 import { InterviewPanel } from '@/features/interviews'
 import { usePermission } from '@/hooks/use-permission'
+import { useAuthStore } from '@/stores/auth.store'
+import { Role } from '@/types/user'
 import { Permission } from '@/lib/permissions'
 import { formatRelative } from '@/lib/utils'
 import { links } from '@/routes/paths'
@@ -51,6 +53,8 @@ export default function ApplicationDetailPage() {
   const [tab, setTab] = useState<Tab>('history')
   const [cvTextOpen, setCvTextOpen] = useState(false)
   const canReadCandidate = usePermission(Permission.CandidateRead)
+  // BR-INT-02
+  const isInterviewer = useAuthStore((s) => s.user?.role === Role.Interviewer)
 
   if (isPending) return <PageLoader />
   if (isError) return <ErrorState error={error} onRetry={refetch} />
@@ -110,97 +114,107 @@ export default function ApplicationDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
         <div className="min-w-0 space-y-6">
-          <Card className="space-y-5">
-            <CardTitle
-              icon={<Sparkles />}
-              aside={
-                <div className="flex items-center gap-2">
-                  <AiStatusBadge status={app.aiStatus} />
-                  <Can permission={Permission.AiRescore}>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      loading={rescore.isPending}
-                      disabled={app.aiStatus === 'PENDING' || app.aiStatus === 'PROCESSING'}
-                      onClick={() => rescore.mutate()}
-                    >
-                      {!rescore.isPending && <RotateCw />}
-                      Chấm lại
-                    </Button>
-                  </Can>
-                </div>
-              }
-            >
-              Điểm AI Screening
-            </CardTitle>
-
-            {(app.aiStatus === 'PENDING' || app.aiStatus === 'PROCESSING') && (
-              <div className="animate-fade-in flex items-center gap-4 rounded-xl bg-blue-50/70 p-4">
-                <div className="flex gap-1" aria-hidden>
-                  {[0, 1, 2].map((i) => (
-                    <span
-                      key={i}
-                      style={{ animationDelay: `${i * 0.2}s` }}
-                      className="animate-blink size-2 rounded-full bg-blue-500"
-                    />
-                  ))}
-                </div>
-                <p className="text-sm text-blue-900">
-                  Hệ thống đang đọc CV và chấm điểm. Trang tự cập nhật khi xong.
-                </p>
-              </div>
-            )}
-            {app.aiStatus === 'FAILED' && (
-              <div className="space-y-3 rounded-xl bg-red-50 p-4">
-                <p role="alert" className="flex items-start gap-2 text-sm text-red-700">
-                  <TriangleAlert className="mt-0.5 size-4 shrink-0" />
-                  Chấm điểm thất bại: {app.aiError ?? 'không rõ lý do'}
-                </p>
-                {app.cv?.parseStatus === 'FAILED' && (
-                  <Can permission={Permission.AiRescore}>
-                    <Button size="sm" variant="secondary" onClick={() => setCvTextOpen(true)}>
-                      <PencilLine />
-                      Nhập text CV
-                    </Button>
-                    <CvTextDialog
-                      applicationId={app.id}
-                      open={cvTextOpen}
-                      onClose={() => setCvTextOpen(false)}
-                    />
-                  </Can>
-                )}
-              </div>
-            )}
-            {app.aiStatus === 'DONE' && app.score !== null && (
-              <>
-                <div className="animate-fade-in flex flex-wrap items-center gap-5 rounded-xl bg-slate-50/80 p-4">
-                  <ScoreRing score={app.score} />
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <p className="text-sm text-slate-600">
-                      Khớp đầy đủ{' '}
-                      <span className="font-semibold text-slate-900">
-                        {matched}/{app.requirements.length}
-                      </span>{' '}
-                      tiêu chí của job. Bấm vào bằng chứng để xem đúng đoạn trong CV.
-                    </p>
-                    <ScoreFlags flags={app.flags} />
-                    {outdated && (
-                      <Badge tone="warning">
-                        Điểm theo tiêu chí phiên bản {app.scoredJdVersion}, job đang ở phiên bản{' '}
-                        {app.job.jdVersion}
-                      </Badge>
-                    )}
+          {isInterviewer ? (
+            <Card className="space-y-2">
+              <CardTitle icon={<Sparkles />}>Điểm AI Screening</CardTitle>
+              <p className="text-sm text-slate-600">
+                Điểm và bằng chứng của AI được ẩn để bạn đánh giá độc lập. Đọc CV bên dưới rồi chấm
+                theo từng tiêu chí trong phiếu đánh giá.
+              </p>
+            </Card>
+          ) : (
+            <Card className="space-y-5">
+              <CardTitle
+                icon={<Sparkles />}
+                aside={
+                  <div className="flex items-center gap-2">
+                    <AiStatusBadge status={app.aiStatus} />
+                    <Can permission={Permission.AiRescore}>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        loading={rescore.isPending}
+                        disabled={app.aiStatus === 'PENDING' || app.aiStatus === 'PROCESSING'}
+                        onClick={() => rescore.mutate()}
+                      >
+                        {!rescore.isPending && <RotateCw />}
+                        Chấm lại
+                      </Button>
+                    </Can>
                   </div>
+                }
+              >
+                Điểm AI Screening
+              </CardTitle>
+
+              {(app.aiStatus === 'PENDING' || app.aiStatus === 'PROCESSING') && (
+                <div className="animate-fade-in flex items-center gap-4 rounded-xl bg-blue-50/70 p-4">
+                  <div className="flex gap-1" aria-hidden>
+                    {[0, 1, 2].map((i) => (
+                      <span
+                        key={i}
+                        style={{ animationDelay: `${i * 0.2}s` }}
+                        className="animate-blink size-2 rounded-full bg-blue-500"
+                      />
+                    ))}
+                  </div>
+                  <p className="text-sm text-blue-900">
+                    Hệ thống đang đọc CV và chấm điểm. Trang tự cập nhật khi xong.
+                  </p>
                 </div>
-                <ScoreBreakdown
-                  requirements={app.requirements}
-                  breakdown={app.breakdown}
-                  activeEvidence={evidence}
-                  onEvidenceClick={setEvidence}
-                />
-              </>
-            )}
-          </Card>
+              )}
+              {app.aiStatus === 'FAILED' && (
+                <div className="space-y-3 rounded-xl bg-red-50 p-4">
+                  <p role="alert" className="flex items-start gap-2 text-sm text-red-700">
+                    <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+                    Chấm điểm thất bại: {app.aiError ?? 'không rõ lý do'}
+                  </p>
+                  {app.cv?.parseStatus === 'FAILED' && (
+                    <Can permission={Permission.AiRescore}>
+                      <Button size="sm" variant="secondary" onClick={() => setCvTextOpen(true)}>
+                        <PencilLine />
+                        Nhập text CV
+                      </Button>
+                      <CvTextDialog
+                        applicationId={app.id}
+                        open={cvTextOpen}
+                        onClose={() => setCvTextOpen(false)}
+                      />
+                    </Can>
+                  )}
+                </div>
+              )}
+              {app.aiStatus === 'DONE' && app.score !== null && (
+                <>
+                  <div className="animate-fade-in flex flex-wrap items-center gap-5 rounded-xl bg-slate-50/80 p-4">
+                    <ScoreRing score={app.score} />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <p className="text-sm text-slate-600">
+                        Khớp đầy đủ{' '}
+                        <span className="font-semibold text-slate-900">
+                          {matched}/{app.requirements.length}
+                        </span>{' '}
+                        tiêu chí của job. Bấm vào bằng chứng để xem đúng đoạn trong CV.
+                      </p>
+                      <ScoreFlags flags={app.flags} />
+                      {outdated && (
+                        <Badge tone="warning">
+                          Điểm theo tiêu chí phiên bản {app.scoredJdVersion}, job đang ở phiên bản{' '}
+                          {app.job.jdVersion}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <ScoreBreakdown
+                    requirements={app.requirements}
+                    breakdown={app.breakdown}
+                    activeEvidence={evidence}
+                    onEvidenceClick={setEvidence}
+                  />
+                </>
+              )}
+            </Card>
+          )}
 
           <Card className="space-y-4">
             <CardTitle icon={<CalendarClock />}>Phỏng vấn</CardTitle>

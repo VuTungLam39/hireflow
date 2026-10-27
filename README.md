@@ -77,7 +77,9 @@ HireFlow xử lý ba vấn đề của cách "gửi CV cho LLM rồi nhận đi�
 
 Đã làm: **gợi ý ứng viên cũ khi đăng tin** (tối đa 10 người từ 50 điểm, mỗi tiêu chí kèm đoạn trích đã kiểm; mời vào tin bằng một thao tác, không gọi LLM) · mở lại hồ sơ đã kết thúc (về Sàng lọc CV, bắt buộc lý do) · nhập text CV thủ công cho CV ảnh scan · job định kỳ tự ẩn danh ứng viên hết hạn lưu CV và dọn refresh token hết hạn · **thông báo realtime (SSE)** khi CV chấm xong hoặc lỗi, chuông thông báo, thay việc hỏi lại mỗi 3 giây · **nhật ký kiểm toán** (xem CV, đổi trạng thái, ẩn danh, đổi quyền; chỉ ghi thêm) · cache Redis cho dashboard (230 ms → 10 ms) · bộ đánh giá chất lượng AI (10 CV × 2 JD) · prerender trang job công khai · cấu hình deploy (Vercel + Render + Neon + R2) + CI.
 
-Còn lại: phỏng vấn và phiếu đánh giá (role Interviewer) · deploy thật · hybrid search (full-text + vector, bỏ đầu tiên nếu trễ).
+Đã làm thêm: **phỏng vấn và phiếu đánh giá** với role Interviewer (đặt lịch, chặn trùng giờ, Interviewer chỉ thấy hồ sơ được giao và chấm độc lập không thấy điểm AI, phiếu 1–5 theo tiêu chí sửa trong 24 giờ).
+
+Còn lại: tìm kiếm kết hợp (full-text + vector) · cổng chất lượng production · deploy thật.
 
 ### Không nằm trong phạm vi
 
@@ -106,7 +108,8 @@ Cập nhật 27/10/2026. Chi tiết từng feature: tài liệu "Danh mục Feat
 | Gợi ý ứng viên cũ khi đăng tin, mời vào tin (US-10) | Xong | E2E `be/test/matching.e2e-spec.ts`; tin nháp demo “Fullstack Developer (NestJS + React)” |
 | Mở lại hồ sơ đã kết thúc, nhập text CV thủ công, tự ẩn danh khi hết hạn lưu, dọn token (D5) | Xong | E2E `be/test/data-lifecycle.e2e-spec.ts`, `ai-pipeline.e2e-spec.ts` (CV scan → nhập text → có điểm) |
 | Cache dashboard, thông báo realtime (SSE), nhật ký kiểm toán (D6) | Xong | E2E `be/test/realtime-audit.e2e-spec.ts`; số đo cache ở [perf-report.md](be/docs/perf-report.md) mục 3.5 |
-| MVP 2 còn lại: phỏng vấn, deploy thật | Đang làm (28–30/10) | – |
+| Phỏng vấn, phiếu đánh giá, role Interviewer (D7) | Xong | E2E `be/test/interviews.e2e-spec.ts`; FE `fe/src/test/flows/interviews.test.tsx` |
+| MVP 2 còn lại: tìm kiếm kết hợp, cổng chất lượng production, deploy thật | Đang làm (28–30/10) | – |
 
 ---
 
@@ -276,6 +279,7 @@ Mở http://localhost:5173 (cách 2) hoặc http://localhost:8080 (cách 1). M�
 | Admin | `admin@example.com` | Toàn hệ thống, quản lý user, phòng ban, hàng đợi AI |
 | HR | `hr@hireflow.dev` | Mọi job, hồ sơ, ứng viên; đổi trạng thái, chấm lại |
 | Hiring Manager | `hm.eng@hireflow.dev` | Chỉ phòng "Phát triển phần mềm"; duyệt hoặc từ chối ở bước OFFER |
+| Người phỏng vấn | `interviewer@hireflow.dev` | Chỉ hồ sơ có buổi phỏng vấn được giao; không thấy điểm AI; gửi phiếu đánh giá |
 
 **Không dùng các tài khoản này ở môi trường thật.**
 
@@ -448,8 +452,8 @@ Trước khi mở PR, cả bốn lệnh `lint`, `typecheck`, `test`, `build` ph�
 
 **Kết quả hiện tại (27/10/2026):**
 
-- Backend: 311 unit test, 203 E2E (PostgreSQL + pgvector, Redis thật); coverage service lõi 92,7% (mục tiêu 70%, CI báo lỗi nếu tụt dưới).
-- Frontend: 94 test, gồm test hydrate trang dựng sẵn và virtualization bảng xếp hạng; contract test FE ↔ BE.
+- Backend: 317 unit test, 218 E2E (PostgreSQL + pgvector, Redis thật); coverage service lõi 92,7% (mục tiêu 70%, CI báo lỗi nếu tụt dưới).
+- Frontend: 99 test, gồm test hydrate trang dựng sẵn và virtualization bảng xếp hạng; contract test FE ↔ BE.
 - E2E phân quyền cho từng role, gồm cả chat RAG và link tải CV; tên test bắt đầu bằng mã quy tắc (ví dụ `BR-STS-02: …`).
 - Ca bắt buộc: sai quyền / sai phạm vi, chuyển trạng thái sai luồng, upload giả mime, nộp trùng, LLM trả sai schema, bằng chứng bịa bị loại, job queue lỗi và retry.
 - CI dùng LLM giả để test không tốn tiền; `npm audit` chặn lỗ hổng mức high.
@@ -553,7 +557,8 @@ Ngày 26/10/2026 lịch được rút lại: hoàn thiện cả MVP 1 và MVP 2 
 | 27/10 (D6) | Cache dashboard; thông báo realtime (SSE); nhật ký kiểm toán (kéo lên từ 28–29/10 vì chưa có tài khoản deploy) | Xong |
 | 28/10 | Deploy thật (Vercel + Render + Neon + R2), backup và thử khôi phục | |
 | 29/10 | ai-eval 30 CV | |
-| 30/10 | Phỏng vấn + role Interviewer; load test k6. Ngừng thêm tính năng cuối ngày | |
+| 27/10 (D7) | Phỏng vấn + role Interviewer; chốt các quy tắc ⚠ (BR-MATCH-01, 04, BR-NOTI-01, BR-AUDIT-01, BR-INT-01 → 03) | Xong |
+| 30/10 | Load test k6, cổng chất lượng production. Ngừng thêm tính năng cuối ngày | |
 | 31/10 | Kịch bản demo gộp MVP 1 + 2, tập demo trên bản deploy, báo cáo cuối kỳ, sửa lỗi | |
 | 01/11 | Buổi demo duy nhất | **Phát hành MVP 2** |
 

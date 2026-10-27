@@ -77,6 +77,9 @@ export interface ApplicationDetailView extends Omit<ApplicationListItemView, 'ca
   } | null;
 }
 
+// BR-INT-02: Interviewer đánh giá độc lập, không thấy điểm và bằng chứng của AI
+const blind = (user: ScopeUser) => user.role === Role.Interviewer;
+
 const escapeLike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 @Injectable()
@@ -96,6 +99,15 @@ export class ApplicationsService {
     query: QueryApplicationDto,
     user: ScopeUser,
   ): Promise<PaginatedResult<ApplicationListItemView>> {
+    // BR-INT-02: Interviewer không lọc, sắp theo điểm AI
+    if (user.role === Role.Interviewer) {
+      query = Object.assign(new QueryApplicationDto(), query, {
+        sortBy: query.sortBy === 'score' ? 'createdAt' : query.sortBy,
+        scoreMin: undefined,
+        scoreMax: undefined,
+        missingMust: undefined,
+      });
+    }
     const pageQuery = this.filteredQuery(query, user)
       .select('app.id', 'id')
       .orderBy(
@@ -119,7 +131,7 @@ export class ApplicationsService {
       : [];
     const byId = new Map(rows.map((a) => [a.id, a]));
     return new PaginatedResult(
-      ids.flatMap((id) => (byId.has(id) ? [this.toListItem(byId.get(id)!)] : [])),
+      ids.flatMap((id) => (byId.has(id) ? [this.toListItem(byId.get(id)!, user)] : [])),
       countRow?.total ?? 0,
       query.page,
       query.limit,
@@ -192,7 +204,7 @@ export class ApplicationsService {
     });
 
     return {
-      ...this.toListItem(app),
+      ...this.toListItem(app, user),
       candidate: {
         id: app.candidate!.id,
         fullName: app.candidate!.fullName,
@@ -207,8 +219,8 @@ export class ApplicationsService {
       },
       source: app.source,
       requirements,
-      breakdown: app.scoreBreakdown ?? [],
-      scoredJdVersion: app.scoredJdVersion,
+      breakdown: blind(user) ? [] : (app.scoreBreakdown ?? []),
+      scoredJdVersion: blind(user) ? null : app.scoredJdVersion,
       aiError: app.aiError,
       cv: app.cvFile
         ? {
@@ -669,13 +681,13 @@ export class ApplicationsService {
     );
   }
 
-  private toListItem(a: Application): ApplicationListItemView {
+  private toListItem(a: Application, user?: ScopeUser): ApplicationListItemView {
     return {
       id: a.id,
       status: a.status,
       aiStatus: a.aiStatus,
-      score: a.score,
-      flags: a.flags,
+      score: user && blind(user) ? null : a.score,
+      flags: user && blind(user) ? [] : a.flags,
       createdAt: a.createdAt,
       candidate: {
         id: a.candidate!.id,

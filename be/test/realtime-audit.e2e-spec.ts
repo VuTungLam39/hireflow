@@ -10,7 +10,11 @@ import { ApplicationStatus } from '../src/common/enums/application-status.enum.j
 import { Role } from '../src/common/enums/role.enum.js';
 import { makeDocx, SAMPLE_CV } from '../src/modules/ai/testing/cv-fixtures.js';
 import { Application } from '../src/modules/applications/entities/application.entity.js';
-import { AuditLog } from '../src/modules/audit/entities/audit-log.entity.js';
+import { AuditAction, AuditLog } from '../src/modules/audit/entities/audit-log.entity.js';
+import { Notification } from '../src/modules/notifications/entities/notification.entity.js';
+import { NotificationsService } from '../src/modules/notifications/notifications.service.js';
+import { RefreshTokensService } from '../src/modules/refresh-tokens/refresh-tokens.service.js';
+import { AiStatus } from '../src/common/enums/ai-status.enum.js';
 import { Candidate } from '../src/modules/candidates/entities/candidate.entity.js';
 import { DashboardCache } from '../src/modules/dashboard/dashboard-cache.service.js';
 import { Department } from '../src/modules/departments/entities/department.entity.js';
@@ -252,6 +256,20 @@ describe('Dashboard cache, realtime notifications, audit log (e2e)', () => {
       expect(after.body.data).toEqual({ unreadCount: 0 });
     });
 
+    it('BR-NOTI-01: when the job owner is no longer active, every active HR is notified instead', async () => {
+      await ds.getRepository(User).update(userIds.hr, { isActive: false });
+      try {
+        const before = await ds.getRepository(Notification).countBy({ userId: userIds.hr2 });
+        await app.get(NotificationsService).notifyAiFinished(ids.app, AiStatus.Done);
+        expect(await ds.getRepository(Notification).countBy({ userId: userIds.hr2 })).toBe(
+          before + 1,
+        );
+        expect(await ds.getRepository(Notification).countBy({ userId: userIds.hmB })).toBe(0);
+      } finally {
+        await ds.getRepository(User).update(userIds.hr, { isActive: true });
+      }
+    });
+
     it('the stream needs a valid token', async () => {
       const res = await fetch(`${base}/api/v1/notifications/stream`);
       expect(res.status).toBe(401);
@@ -351,6 +369,24 @@ describe('Dashboard cache, realtime notifications, audit log (e2e)', () => {
           departmentFrom: null,
           departmentTo: ids.depB,
         },
+      });
+    });
+
+    it('BR-AUDIT-01: reusing a revoked refresh token is recorded as a security event', async () => {
+      const tokens = app.get(RefreshTokensService);
+      const first = await tokens.issue(userIds.hr2, { userAgent: 'e2e', ip: '127.0.0.1' });
+      await tokens.rotate(first);
+      await expect(
+        tokens.rotate(first, { userAgent: 'attacker', ip: '203.0.113.9' }),
+      ).rejects.toThrow();
+      const row = await ds.getRepository(AuditLog).findOneByOrFail({
+        action: AuditAction.TokenReuseDetected,
+        entityId: userIds.hr2,
+      });
+      expect(row).toMatchObject({
+        actorId: null,
+        entity: 'user',
+        metadata: { userAgent: 'attacker' },
       });
     });
 

@@ -1,7 +1,8 @@
-import { HttpStatus, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcryptjs';
+import { createHash } from 'node:crypto';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface.js';
 import { type Permission, ROLE_PERMISSIONS } from '../../common/permissions/index.js';
@@ -24,6 +25,8 @@ export interface AuthTokens {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly usersService: UsersService,
     private readonly refreshTokensService: RefreshTokensService,
@@ -34,10 +37,12 @@ export class AuthService {
   async login(dto: LoginDto, meta: SessionMeta): Promise<{ user: User; tokens: AuthTokens }> {
     const user = await this.usersService.findByEmailWithPassword(dto.email);
     if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
+      this.loginFailed(dto.email, user ? 'wrong_password' : 'unknown_email', meta);
       throw new UnauthorizedException('Invalid email or password');
     }
     // BR-ACC-04
     if (!user.isActive) {
+      this.loginFailed(dto.email, 'account_disabled', meta);
       throw new BusinessException(
         ErrorCode.AccountDisabled,
         'Account is disabled',
@@ -89,6 +94,15 @@ export class AuthService {
     }
     await this.usersService.setPassword(userId, dto.newPassword);
     await this.refreshTokensService.revokeAllForUser(userId, currentRefreshToken);
+  }
+
+  // OWASP A09: ghi log JSON, email băm để không lộ dữ liệu cá nhân
+  private loginFailed(email: string, reason: string, meta: SessionMeta) {
+    const emailHash = createHash('sha256')
+      .update(email.trim().toLowerCase())
+      .digest('hex')
+      .slice(0, 16);
+    this.logger.warn(`login failed reason=${reason} emailHash=${emailHash} ip=${meta.ip ?? '-'}`);
   }
 
   private async withAccessToken(user: User, refreshToken: string): Promise<AuthTokens> {

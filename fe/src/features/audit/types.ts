@@ -6,6 +6,7 @@ export type AuditAction =
   | 'USER_CREATED'
   | 'USER_UPDATED'
   | 'USER_DELETED'
+  | 'TOKEN_REUSE_DETECTED'
 
 export type AuditEntity = 'cv_file' | 'application' | 'candidate' | 'user'
 
