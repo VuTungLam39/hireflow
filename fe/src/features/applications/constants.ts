@@ -31,6 +31,9 @@ export const NEXT_STATUS: Record<ApplicationStatus, ApplicationStatus[]> = {
 }
 export const REASON_REQUIRED: ApplicationStatus[] = ['REJECTED']
 
+// BR-APP-05, F-APP-10
+export const REOPENABLE: ApplicationStatus[] = ['REJECTED', 'WITHDRAWN']
+
 export const AI_STATUS = {
   PENDING: { label: 'Chờ xử lý', tone: 'neutral' },
   PROCESSING: { label: 'Đang chấm', tone: 'info' },

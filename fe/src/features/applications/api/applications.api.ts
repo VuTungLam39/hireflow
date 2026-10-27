@@ -76,6 +76,16 @@ export const applicationsApi = {
     await api.post(`/applications/${id}/rescore`)
   },
 
+  /** F-APP-10: REJECTED/WITHDRAWN → SCREENING, bắt buộc lý do */
+  reopen: async (id: string, reason: string) =>
+    (await api.patch<ApiResponse<ApplicationDetail>>(`/applications/${id}/reopen`, { reason })).data
+      .data,
+
+  /** F-FILE-02: nhập text cho CV không đọc được chữ, hệ thống chấm lại */
+  enterCvText: async (id: string, text: string) =>
+    (await api.put<ApiResponse<ApplicationDetail>>(`/applications/${id}/cv-text`, { text })).data
+      .data,
+
   /** Presigned URL xem CV gốc, hết hạn sau 5 phút */
   cvUrl: async (fileId: string) =>
     (await api.get<ApiResponse<{ url: string; expiresAt: string }>>(`/files/${fileId}/url`)).data

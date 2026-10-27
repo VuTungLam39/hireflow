@@ -18,13 +18,16 @@ import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js'
 import { applyDepartmentScope } from '../../common/utils/department-scope.js';
 import { CvPipelineService } from '../ai/pipeline/cv-pipeline.service.js';
 import { CandidatesService } from '../candidates/candidates.service.js';
+import { Candidate } from '../candidates/entities/candidate.entity.js';
 import { checkCv, type UploadedCv } from '../files/cv-file.rules.js';
+import { CvFile, CvParseStatus } from '../files/entities/cv-file.entity.js';
 import { FilesService } from '../files/files.service.js';
 import { JobRequirement } from '../jobs/entities/job-requirement.entity.js';
 import { Job, JobStatus } from '../jobs/entities/job.entity.js';
-import { assertTransition } from './application-status.js';
+import { assertReopenable, assertTransition, REOPEN_TO } from './application-status.js';
 import { ChangeStatusDto } from './dto/change-status.dto.js';
 import { CreateNoteDto } from './dto/create-note.dto.js';
+import { CvTextDto } from './dto/cv-text.dto.js';
 import { HrUploadDto } from './dto/hr-upload.dto.js';
 import { PublicApplyDto } from './dto/public-apply.dto.js';
 import { QueryApplicationDto } from './dto/query-application.dto.js';
@@ -62,7 +65,13 @@ export interface ApplicationDetailView extends Omit<ApplicationListItemView, 'ca
   breakdown: BreakdownItem[];
   scoredJdVersion: number | null;
   aiError: string | null;
-  cv: { fileId: string; fileName: string; text: string | null } | null;
+  cv: {
+    fileId: string;
+    fileName: string;
+    text: string | null;
+    parseStatus: CvParseStatus;
+    textEnteredAt: Date | null;
+  } | null;
 }
 
 const escapeLike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`);
@@ -163,6 +172,8 @@ export class ApplicationsService {
         'cvFile.id',
         'cvFile.originalName',
         'cvFile.text',
+        'cvFile.parseStatus',
+        'cvFile.textEnteredAt',
       ])
       .leftJoin('app.cvFile', 'cvFile')
       .andWhere('app.id = :id', { id })
@@ -195,7 +206,13 @@ export class ApplicationsService {
       scoredJdVersion: app.scoredJdVersion,
       aiError: app.aiError,
       cv: app.cvFile
-        ? { fileId: app.cvFile.id, fileName: app.cvFile.originalName, text: app.cvFile.text }
+        ? {
+            fileId: app.cvFile.id,
+            fileName: app.cvFile.originalName,
+            text: app.cvFile.text,
+            parseStatus: app.cvFile.parseStatus,
+            textEnteredAt: app.cvFile.textEnteredAt,
+          }
         : null,
     };
   }
@@ -286,6 +303,78 @@ export class ApplicationsService {
     await this.findWritable(id, user);
     await this.pipeline.rescore(id, requestId);
     return null;
+  }
+
+  // F-APP-10, BR-APP-05, BR-STS-06
+  async reopen(id: string, reason: string, user: ScopeUser): Promise<ApplicationDetailView> {
+    await this.findWritable(id, user);
+    await this.dataSource.transaction(async (manager) => {
+      const app = await manager.findOne(Application, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!app) throw new NotFoundException('Application not found');
+      assertReopenable(app.status);
+      const candidate = await manager.findOneByOrFail(Candidate, { id: app.candidateId });
+      if (candidate.anonymizedAt) throw this.anonymized();
+
+      const now = new Date();
+      await manager.update(Application, id, { status: REOPEN_TO, statusChangedAt: now });
+      await manager.insert(ApplicationStatusHistory, {
+        applicationId: id,
+        fromStatus: app.status,
+        toStatus: REOPEN_TO,
+        reason,
+        changedBy: user.id,
+        changedAt: now,
+      });
+    });
+    return this.findOne(id, user);
+  }
+
+  // F-FILE-02, BR-FILE-04
+  async enterCvText(
+    id: string,
+    dto: CvTextDto,
+    user: ScopeUser,
+    requestId?: string,
+  ): Promise<ApplicationDetailView> {
+    await this.findWritable(id, user);
+    const cvFileId = await this.dataSource.transaction(async (manager) => {
+      const app = await manager.findOneBy(Application, { id });
+      if (!app) throw new NotFoundException('Application not found');
+      const candidate = await manager.findOneByOrFail(Candidate, { id: app.candidateId });
+      if (candidate.anonymizedAt) throw this.anonymized();
+      const cv = app.cvFileId
+        ? await manager.findOne(CvFile, {
+            where: { id: app.cvFileId },
+            lock: { mode: 'pessimistic_write' },
+          })
+        : null;
+      if (!cv || cv.parseStatus !== CvParseStatus.Failed) {
+        throw new BusinessException(
+          ErrorCode.CvTextNotEditable,
+          'CV text can only be entered when the CV file could not be read',
+          HttpStatus.CONFLICT,
+        );
+      }
+
+      await manager.update(CvFile, cv.id, {
+        text: dto.text,
+        parseStatus: CvParseStatus.Parsed,
+        parseError: null,
+        textEnteredAt: new Date(),
+        textEnteredBy: user.id,
+      });
+      await manager.update(
+        Application,
+        { cvFileId: cv.id, aiStatus: AiStatus.Failed },
+        { aiStatus: AiStatus.Pending, aiError: null },
+      );
+      return cv.id;
+    });
+    await this.pipeline.enqueueCv(cvFileId, requestId);
+    return this.findOne(id, user);
   }
 
   // US-15, BR-APP-10
@@ -520,6 +609,14 @@ export class ApplicationsService {
     const pg =
       error instanceof QueryFailedError ? (error.driverError as { constraint?: string }) : null;
     return pg?.constraint === 'UQ_applications_job_id_candidate_id' ? this.duplicate() : error;
+  }
+
+  private anonymized() {
+    return new BusinessException(
+      ErrorCode.CandidateAnonymized,
+      'Candidate has been anonymized',
+      HttpStatus.CONFLICT,
+    );
   }
 
   private duplicate() {

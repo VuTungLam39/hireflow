@@ -67,6 +67,11 @@ export class CvPipelineService implements OnModuleInit {
     );
   }
 
+  // F-FILE-02: text CV vừa được nhập tay
+  async enqueueCv(cvFileId: string, requestId?: string): Promise<void> {
+    await this.safely(`cv ${cvFileId}`, () => this.enqueueParse(cvFileId, requestId));
+  }
+
   // BR-AI-08
   async rescore(applicationId: string, requestId?: string): Promise<void> {
     const app = await this.applications().findOne({

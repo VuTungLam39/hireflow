@@ -75,9 +75,9 @@ HireFlow xử lý ba vấn đề của cách "gửi CV cho LLM rồi nhận đi�
 
 ### MVP 2 (đến 01/11/2026)
 
-Đã làm: **gợi ý ứng viên cũ khi đăng tin** (tối đa 10 người từ 50 điểm, mỗi tiêu chí kèm đoạn trích đã kiểm; mời vào tin bằng một thao tác, không gọi LLM) · bộ đánh giá chất lượng AI (10 CV × 2 JD) · prerender trang job công khai · cấu hình deploy (Vercel + Render + Neon + R2) + CI.
+Đã làm: **gợi ý ứng viên cũ khi đăng tin** (tối đa 10 người từ 50 điểm, mỗi tiêu chí kèm đoạn trích đã kiểm; mời vào tin bằng một thao tác, không gọi LLM) · mở lại hồ sơ đã kết thúc (về Sàng lọc CV, bắt buộc lý do) · nhập text CV thủ công cho CV ảnh scan · job định kỳ tự ẩn danh ứng viên hết hạn lưu CV và dọn refresh token hết hạn · bộ đánh giá chất lượng AI (10 CV × 2 JD) · prerender trang job công khai · cấu hình deploy (Vercel + Render + Neon + R2) + CI.
 
-Còn lại: phỏng vấn và phiếu đánh giá (role Interviewer) · thông báo realtime (SSE) · audit log · cache Redis · mở lại hồ sơ đã kết thúc · nhập text CV thủ công · tự ẩn danh khi hết hạn lưu · hybrid search (full-text + vector, bỏ đầu tiên nếu trễ).
+Còn lại: phỏng vấn và phiếu đánh giá (role Interviewer) · thông báo realtime (SSE) · audit log · cache Redis · hybrid search (full-text + vector, bỏ đầu tiên nếu trễ).
 
 ### Không nằm trong phạm vi
 
@@ -87,7 +87,7 @@ Tự động loại ứng viên · lương, ký offer điện tử · SSO, mobil
 
 ## Trạng thái
 
-Cập nhật 26/10/2026. Chi tiết từng feature: tài liệu "Danh mục Feature theo Actor" (thư mục `docs/`, không đưa lên git).
+Cập nhật 27/10/2026. Chi tiết từng feature: tài liệu "Danh mục Feature theo Actor" (thư mục `docs/`, không đưa lên git).
 
 | Phần | Trạng thái | Minh chứng |
 | --- | --- | --- |
@@ -104,7 +104,8 @@ Cập nhật 26/10/2026. Chi tiết từng feature: tài liệu "Danh mục Feat
 | `docker compose up` chạy toàn hệ thống, kiểm giao diện 3 role × 3 độ rộng | Xong | [fe/docs/qa-responsive.md](fe/docs/qa-responsive.md) |
 | Cấu hình deploy Vercel + Render + Neon + R2 | Xong phần code, chưa deploy thật | Mục [Deploy](#deploy) |
 | Gợi ý ứng viên cũ khi đăng tin, mời vào tin (US-10) | Xong | E2E `be/test/matching.e2e-spec.ts`; tin nháp demo “Fullstack Developer (NestJS + React)” |
-| MVP 2 còn lại: phỏng vấn, thông báo realtime, audit log, cache, job định kỳ, deploy thật | Đang làm (27–30/10) | – |
+| Mở lại hồ sơ đã kết thúc, nhập text CV thủ công, tự ẩn danh khi hết hạn lưu, dọn token (D5) | Xong | E2E `be/test/data-lifecycle.e2e-spec.ts`, `ai-pipeline.e2e-spec.ts` (CV scan → nhập text → có điểm) |
+| MVP 2 còn lại: phỏng vấn, thông báo realtime, audit log, cache, deploy thật | Đang làm (28–30/10) | – |
 
 ---
 
@@ -119,6 +120,7 @@ prerender lúc build                  ├──▶ [Redis]        BullMQ (queue)
                                      ▼
                               [BullMQ workers]
                   parse-cv · extract-cv · embed-cv · score
+                  match-job · maintenance (02:00 ẩn danh CV hết hạn, 02:30 dọn token)
 ```
 
 **Pipeline xử lý CV (event-driven):**
@@ -175,7 +177,7 @@ hireflow/
 │   │   ├── config/         # Cấu hình theo nhóm + validate biến môi trường
 │   │   ├── common/         # Decorator, guard, interceptor, filter, DTO dùng chung
 │   │   ├── database/       # data-source, migrations, seeds
-│   │   └── modules/        # auth, users, departments, jobs, candidates, applications, files, public, ai, rag, dashboard, health
+│   │   └── modules/        # auth, users, departments, jobs, candidates, applications, files, public, ai, rag, matching, maintenance, dashboard, health
 │   ├── test/               # E2E test
 │   ├── docs/               # perf-report.md, ai-eval.md
 │   └── docker-compose.yml  # Postgres, Redis, RustFS, API, web
@@ -443,10 +445,10 @@ Chạy trong từng thư mục `be/` và `fe/`:
 
 Trước khi mở PR, cả bốn lệnh `lint`, `typecheck`, `test`, `build` phải chạy được ở cả hai thư mục.
 
-**Kết quả hiện tại (26/10/2026):**
+**Kết quả hiện tại (27/10/2026):**
 
-- Backend: 301 unit test, 186 E2E (PostgreSQL + pgvector, Redis thật); coverage service lõi 92,6% (mục tiêu 70%, CI báo lỗi nếu tụt dưới).
-- Frontend: 82 test, gồm test hydrate trang dựng sẵn và virtualization bảng xếp hạng; contract test FE ↔ BE.
+- Backend: 308 unit test, 196 E2E (PostgreSQL + pgvector, Redis thật); coverage service lõi 92,6% (mục tiêu 70%, CI báo lỗi nếu tụt dưới).
+- Frontend: 87 test, gồm test hydrate trang dựng sẵn và virtualization bảng xếp hạng; contract test FE ↔ BE.
 - E2E phân quyền cho từng role, gồm cả chat RAG và link tải CV; tên test bắt đầu bằng mã quy tắc (ví dụ `BR-STS-02: …`).
 - Ca bắt buộc: sai quyền / sai phạm vi, chuyển trạng thái sai luồng, upload giả mime, nộp trùng, LLM trả sai schema, bằng chứng bịa bị loại, job queue lỗi và retry.
 - CI dùng LLM giả để test không tốn tiền; `npm audit` chặn lỗ hổng mức high.
@@ -478,7 +480,7 @@ Trước khi mở PR, cả bốn lệnh `lint`, `typecheck`, `test`, `build` ph�
 
 **Các biện pháp khác:** mật khẩu băm bằng bcrypt; refresh token chỉ lưu hash (SHA-256) trong DB; `helmet`; CORS whitelist; rate limit (đăng nhập 5 lần/phút); validation whitelist cho mọi request; kiểm tra biến môi trường lúc khởi động. Tài khoản nội bộ do Admin tạo; endpoint đăng ký sẽ bị gỡ khi có đủ role.
 
-**Dữ liệu cá nhân** (theo Nghị định 13/2023/NĐ-CP): ứng viên phải đồng ý khi nộp CV; email và số điện thoại được che trước khi gửi cho LLM; hỗ trợ xoá / ẩn danh theo yêu cầu; thời hạn lưu CV cấu hình được. Dự án chỉ dùng CV mẫu tự soạn, không dùng CV thật của người khác.
+**Dữ liệu cá nhân** (theo Nghị định 13/2023/NĐ-CP): ứng viên phải đồng ý khi nộp CV; email và số điện thoại được che trước khi gửi cho LLM; hỗ trợ xoá / ẩn danh theo yêu cầu; thời hạn lưu CV cấu hình được (`CV_RETENTION_MONTHS`, mặc định 12 tháng); job định kỳ tự ẩn danh ứng viên quá hạn lúc 02:00 mỗi ngày. Dự án chỉ dùng CV mẫu tự soạn, không dùng CV thật của người khác.
 
 **Nội dung CV được coi là dữ liệu, không phải chỉ dẫn** cho LLM (chống prompt injection, kể cả chữ ẩn trong PDF). Không dùng giới tính, tuổi, quốc tịch, tôn giáo, tình trạng hôn nhân hay ảnh làm tiêu chí chấm điểm.
 
@@ -546,7 +548,7 @@ Ngày 26/10/2026 lịch được rút lại: hoàn thiện cả MVP 1 và MVP 2 
 | 19–25/10 | Toàn bộ tính năng MVP 1: nền tảng, ATS lõi, AI Screening, RAG, tối ưu query, hàng đợi AI, bộ đánh giá AI | Xong |
 | 26/10 (D2, D3) | Siết MVP 1 (rate limit, quyền, audit, coverage); cấu hình deploy; prerender trang công khai; virtualization + Profiler; rendering.md; compose toàn hệ thống; README + kịch bản demo; kiểm giao diện; đồng bộ tài liệu | **Mốc M4: MVP 1 hoàn chỉnh** |
 | 26/10 (D4) | Đặc tả US-10 và BR-MATCH-01 → 04; gợi ý ứng viên cũ + mời vào tin | Xong (sớm 2 ngày) |
-| 27/10 | Job định kỳ tự ẩn danh khi hết hạn lưu, dọn token; mở lại hồ sơ đã kết thúc; nhập text CV thủ công | |
+| 27/10 (D5) | Job định kỳ tự ẩn danh khi hết hạn lưu, dọn token; mở lại hồ sơ đã kết thúc; nhập text CV thủ công | Xong |
 | 28/10 | Deploy thật (Vercel + Render + Neon + R2), backup và thử khôi phục; cache dashboard | |
 | 29/10 | Thông báo realtime (SSE), audit log; ai-eval 30 CV | |
 | 30/10 | Phỏng vấn + role Interviewer; load test k6. Ngừng thêm tính năng cuối ngày | |

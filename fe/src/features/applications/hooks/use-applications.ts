@@ -136,6 +136,34 @@ export function useRescore(id: string) {
   })
 }
 
+export function useReopen(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (reason: string) => applicationsApi.reopen(id, reason),
+    onSuccess: (data) => {
+      queryClient.setQueryData(applicationKeys.detail(id), data)
+      toast.success(`Đã mở lại hồ sơ, chuyển về "${APPLICATION_STATUS.SCREENING.label}"`)
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: applicationKeys.detail(id) }),
+        queryClient.invalidateQueries({ queryKey: applicationKeys.lists() }),
+      ]),
+  })
+}
+
+export function useEnterCvText(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (text: string) => applicationsApi.enterCvText(id, text),
+    onSuccess: (data) => {
+      queryClient.setQueryData(applicationKeys.detail(id), data)
+      toast.success('Đã lưu text CV, hệ thống đang chấm điểm')
+    },
+  })
+}
+
 export function useCvUrl() {
   return useMutation({
     mutationFn: applicationsApi.cvUrl,

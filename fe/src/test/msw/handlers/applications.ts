@@ -299,6 +299,62 @@ export const applicationHandlers = [
     return ok(null, { status: 202, message: 'Rescore scheduled' })
   }),
 
+  // F-APP-10, BR-APP-05
+  http.patch(api('/applications/:id/reopen'), async ({ request, params }) => {
+    await delay()
+    const user = authorize(request, Permission.ApplicationUpdateStatus)
+    if (user instanceof Response) return user
+    const app = findApplication(user, params.id)
+    if (app instanceof Response) return app
+    if (app.status !== 'REJECTED' && app.status !== 'WITHDRAWN') {
+      return fail(409, 'INVALID_STATUS_TRANSITION', 'Only REJECTED or WITHDRAWN can be reopened')
+    }
+    if (candidateOf(app).anonymizedAt) {
+      return fail(409, 'CANDIDATE_ANONYMIZED', 'Candidate has been anonymized')
+    }
+    const { reason } = (await request.json()) as { reason?: string }
+    if (!reason?.trim()) {
+      return fail(400, 'VALIDATION_FAILED', 'Validation failed', [
+        { field: 'reason', messages: ['reason should not be empty'] },
+      ])
+    }
+    moveStatus(app, 'SCREENING', user, reason.trim())
+    return ok(toApplicationDetail(app), { message: 'Application reopened' })
+  }),
+
+  // F-FILE-02, BR-FILE-04
+  http.put(api('/applications/:id/cv-text'), async ({ request, params }) => {
+    await delay()
+    const user = authorize(request, Permission.AiRescore)
+    if (user instanceof Response) return user
+    const app = findApplication(user, params.id)
+    if (app instanceof Response) return app
+    if (candidateOf(app).anonymizedAt) {
+      return fail(409, 'CANDIDATE_ANONYMIZED', 'Candidate has been anonymized')
+    }
+    if (app.aiStatus !== 'FAILED' || app.enteredCvText) {
+      return fail(
+        409,
+        'CV_TEXT_NOT_EDITABLE',
+        'CV text can only be entered when the CV file could not be read',
+      )
+    }
+    const text = String(((await request.json()) as { text?: string }).text ?? '').trim()
+    if (text.length < 100 || text.length > 50_000) {
+      return fail(400, 'VALIDATION_FAILED', 'Validation failed', [
+        { field: 'text', messages: ['text must be between 100 and 50000 characters'] },
+      ])
+    }
+    Object.assign(app, {
+      enteredCvText: text,
+      cvTextEnteredAt: new Date().toISOString(),
+      aiStatus: 'PROCESSING',
+      aiError: null,
+      processingUntil: Date.now() + 6000,
+    })
+    return ok(toApplicationDetail(app), { message: 'CV text saved' })
+  }),
+
   // Presigned URL giả: tạo blob chứa text CV ngay trên trình duyệt
   http.get(api('/files/:fileId/url'), async ({ request, params }) => {
     await delay()

@@ -12,6 +12,8 @@ export interface SessionMeta {
   ip?: string | null;
 }
 
+export const TOKEN_PURGE_AFTER_DAYS = 30;
+
 export const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
 
 // Backend Architecture 10.5
@@ -71,6 +73,16 @@ export class RefreshTokensService {
       },
       { revokedAt: new Date() },
     );
+  }
+
+  // F-OPS-03, Database Design 6
+  async purgeExpired(): Promise<number> {
+    const result = await this.tokensRepository
+      .createQueryBuilder()
+      .delete()
+      .where(`expires_at < now() - make_interval(days => :days)`, { days: TOKEN_PURGE_AFTER_DAYS })
+      .execute();
+    return result.affected ?? 0;
   }
 
   private async revokeFamily(familyId: string): Promise<void> {

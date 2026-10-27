@@ -19,6 +19,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   JOB_NOT_OPEN: 'Tin không còn nhận hồ sơ',
   APPLICATION_DUPLICATED: 'Bạn đã nộp CV cho vị trí này',
   CANDIDATE_ANONYMIZED: 'Ứng viên đã được ẩn danh, không thể thay đổi',
+  CV_TEXT_NOT_EDITABLE: 'CV này đã đọc được chữ, không cần nhập tay',
   INVALID_STATUS_TRANSITION: 'Trạng thái hồ sơ vừa thay đổi, dữ liệu đã được tải lại',
   REJECT_REASON_REQUIRED: 'Vui lòng nhập lý do từ chối',
   FILE_TYPE_NOT_ALLOWED: 'Chỉ nhận file PDF hoặc DOCX, tối đa 5MB',

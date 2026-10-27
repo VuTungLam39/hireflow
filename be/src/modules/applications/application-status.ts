@@ -18,6 +18,19 @@ const NEXT: Record<ApplicationStatus, ApplicationStatus[]> = {
 export const canTransition = (from: ApplicationStatus, to: ApplicationStatus) =>
   NEXT[from].includes(to);
 
+// BR-APP-05, F-APP-10
+export const REOPENABLE: readonly ApplicationStatus[] = [S.Rejected, S.Withdrawn];
+export const REOPEN_TO = S.Screening;
+
+export function assertReopenable(from: ApplicationStatus): void {
+  if (REOPENABLE.includes(from)) return;
+  throw new BusinessException(
+    ErrorCode.InvalidStatusTransition,
+    `Only REJECTED or WITHDRAWN applications can be reopened (current: ${from})`,
+    HttpStatus.CONFLICT,
+  );
+}
+
 export function assertTransition(
   from: ApplicationStatus,
   to: ApplicationStatus,

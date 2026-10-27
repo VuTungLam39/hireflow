@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
   UploadedFile,
   UseInterceptors,
@@ -25,8 +26,10 @@ import { CV_UPLOAD_OPTIONS } from '../files/cv-upload.options.js';
 import { ApplicationsService } from './applications.service.js';
 import { ChangeStatusDto, DeclineOfferDto } from './dto/change-status.dto.js';
 import { CreateNoteDto } from './dto/create-note.dto.js';
+import { CvTextDto } from './dto/cv-text.dto.js';
 import { HrUploadDto } from './dto/hr-upload.dto.js';
 import { QueryApplicationDto } from './dto/query-application.dto.js';
+import { ReopenApplicationDto } from './dto/reopen-application.dto.js';
 
 // API Contract 4.5
 @ApiTags('Applications')
@@ -118,6 +121,31 @@ export class ApplicationsController {
     @RequestId() requestId?: string,
   ) {
     return this.applicationsService.rescore(id, user, requestId);
+  }
+
+  @Patch(':id/reopen')
+  @Permissions(Permission.ApplicationUpdateStatus)
+  @ApiOperation({ summary: 'Mở lại hồ sơ REJECTED/WITHDRAWN về SCREENING, bắt buộc lý do' })
+  @ResponseMessage('Application reopened')
+  reopen(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReopenApplicationDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.applicationsService.reopen(id, dto.reason, user);
+  }
+
+  @Put(':id/cv-text')
+  @Permissions(Permission.AiRescore)
+  @ApiOperation({ summary: 'Nhập text CV thủ công khi file không đọc được chữ, rồi chấm lại' })
+  @ResponseMessage('CV text saved')
+  enterCvText(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CvTextDto,
+    @CurrentUser() user: AuthUser,
+    @RequestId() requestId?: string,
+  ) {
+    return this.applicationsService.enterCvText(id, dto, user, requestId);
   }
 }
 
