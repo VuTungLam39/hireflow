@@ -24,6 +24,8 @@ export const Permission = {
   DashboardRead: 'dashboard:read',
   OpsManage: 'ops:manage',
   AuditRead: 'audit:read',
+  InterviewManage: 'interview:manage',
+  InterviewFeedback: 'interview:feedback',
 } as const
 export type Permission = (typeof Permission)[keyof typeof Permission]
 
@@ -46,6 +48,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     P.AiChat,
     P.AiRescore,
     P.DashboardRead,
+    P.InterviewManage,
   ],
   [Role.HiringManager]: [
     P.JobRead,
@@ -56,6 +59,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     P.AiChat,
     P.DashboardRead,
   ],
+  [Role.Interviewer]: [P.JobRead, P.ApplicationRead, P.CvRead, P.InterviewFeedback],
 }
 
 export function getPermissions(

@@ -7,7 +7,7 @@ const fullNameSchema = z
   .trim()
   .min(2, 'Họ tên ít nhất 2 ký tự')
   .max(100, 'Họ tên tối đa 100 ký tự')
-const roleSchema = z.enum([Role.Admin, Role.Hr, Role.HiringManager])
+const roleSchema = z.enum([Role.Admin, Role.Hr, Role.HiringManager, Role.Interviewer])
 
 /** BR-ACC-03: Hiring Manager bắt buộc thuộc một phòng ban */
 const departmentRequired = {

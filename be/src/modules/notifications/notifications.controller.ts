@@ -108,5 +108,6 @@ export function visibleTo(
   user: Pick<AuthUser, 'id' | 'role' | 'departmentId'>,
 ) {
   if (event.kind === 'notification') return event.userId === user.id;
+  if (user.role === Role.Interviewer) return false;
   return user.role !== Role.HiringManager || event.departmentId === user.departmentId;
 }

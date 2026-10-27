@@ -25,6 +25,13 @@ export interface NotificationView {
     score: number | null;
     aiError: string | null;
   } | null;
+  interview: {
+    id: string;
+    round: number;
+    scheduledAt: Date;
+    location: string;
+    cancelReason: string | null;
+  } | null;
 }
 
 @Injectable()
@@ -67,11 +74,31 @@ export class NotificationsService implements OnModuleInit {
         },
       )
       .getRawMany<{ id: string }>();
-    if (!recipients.length) return 0;
-
     const type = aiStatus === AiStatus.Done ? NotificationType.CvScored : NotificationType.CvFailed;
+    return this.notify(
+      recipients.map((r) => r.id),
+      type,
+      { applicationId },
+    );
+  }
+
+  // US-12, F-INT-01
+  async notify(
+    userIds: string[],
+    type: NotificationType,
+    target: { applicationId: string; interviewId?: string },
+  ): Promise<number> {
+    const unique = [...new Set(userIds)];
+    if (!unique.length) return 0;
     const saved = await this.repo.save(
-      recipients.map(({ id }) => this.repo.create({ userId: id, type, applicationId })),
+      unique.map((userId) =>
+        this.repo.create({
+          userId,
+          type,
+          applicationId: target.applicationId,
+          interviewId: target.interviewId ?? null,
+        }),
+      ),
     );
     const views = new Map((await this.views(saved.map((n) => n.id))).map((v) => [v.id, v]));
     for (const n of saved) {
@@ -160,6 +187,7 @@ export class NotificationsService implements OnModuleInit {
       .leftJoin('n.application', 'app')
       .leftJoin('app.candidate', 'candidate')
       .leftJoin('app.job', 'job')
+      .leftJoin('n.interview', 'iv')
       .select([
         'n.id',
         'n.type',
@@ -172,6 +200,11 @@ export class NotificationsService implements OnModuleInit {
         'candidate.fullName',
         'job.id',
         'job.title',
+        'iv.id',
+        'iv.round',
+        'iv.scheduledAt',
+        'iv.location',
+        'iv.cancelReason',
       ])
       .where('n.id IN (:...ids)', { ids })
       .orderBy('n.createdAt', 'DESC')
@@ -190,6 +223,15 @@ export class NotificationsService implements OnModuleInit {
             jobTitle: n.application.job!.title,
             score: n.application.score,
             aiError: n.application.aiError,
+          }
+        : null,
+      interview: n.interview
+        ? {
+            id: n.interview.id,
+            round: n.interview.round,
+            scheduledAt: n.interview.scheduledAt,
+            location: n.interview.location,
+            cancelReason: n.interview.cancelReason,
           }
         : null,
     }));

@@ -21,10 +21,18 @@ import { useDeleteUser, useSetUserStatus, useUsers } from '../hooks/use-users'
 const listSchema = z.object({
   ...pageFields,
   search: z.string().optional().catch(undefined),
-  role: z.enum([Role.Admin, Role.Hr, Role.HiringManager]).optional().catch(undefined),
+  role: z
+    .enum([Role.Admin, Role.Hr, Role.HiringManager, Role.Interviewer])
+    .optional()
+    .catch(undefined),
 })
 
-const ROLE_TONE = { admin: 'info', hr: 'success', hiring_manager: 'warning' } as const
+const ROLE_TONE = {
+  admin: 'info',
+  hr: 'success',
+  hiring_manager: 'warning',
+  interviewer: 'neutral',
+} as const
 
 export default function UsersPage() {
   const currentUserId = useAuthStore((s) => s.user?.id)

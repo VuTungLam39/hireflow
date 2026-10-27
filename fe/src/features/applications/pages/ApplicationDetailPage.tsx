@@ -1,5 +1,6 @@
 import {
   ArrowLeft,
+  CalendarClock,
   CalendarDays,
   ExternalLink,
   FileText,
@@ -15,6 +16,7 @@ import { lazy, Suspense, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { Can, ErrorState, PageHeader } from '@/components/shared'
 import { Avatar, Badge, Button, Card, CardTitle, PageLoader, Skeleton, Tabs } from '@/components/ui'
+import { InterviewPanel } from '@/features/interviews'
 import { usePermission } from '@/hooks/use-permission'
 import { Permission } from '@/lib/permissions'
 import { formatRelative } from '@/lib/utils'
@@ -198,6 +200,15 @@ export default function ApplicationDetailPage() {
                 />
               </>
             )}
+          </Card>
+
+          <Card className="space-y-4">
+            <CardTitle icon={<CalendarClock />}>Phỏng vấn</CardTitle>
+            <InterviewPanel
+              applicationId={app.id}
+              applicationStatus={app.status}
+              requirements={app.requirements}
+            />
           </Card>
 
           <Card className="space-y-4">

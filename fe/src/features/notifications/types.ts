@@ -1,6 +1,12 @@
 import type { AiStatus, ApplicationStatus } from '@/features/applications'
 
-export type NotificationType = 'CV_SCORED' | 'CV_FAILED'
+export type NotificationType =
+  | 'CV_SCORED'
+  | 'CV_FAILED'
+  | 'INTERVIEW_ASSIGNED'
+  | 'INTERVIEW_UPDATED'
+  | 'INTERVIEW_CANCELLED'
+  | 'FEEDBACK_SUBMITTED'
 
 export interface NotificationItem {
   id: string
@@ -14,6 +20,13 @@ export interface NotificationItem {
     jobTitle: string
     score: number | null
     aiError: string | null
+  } | null
+  interview: {
+    id: string
+    round: number
+    scheduledAt: string
+    location: string
+    cancelReason: string | null
   } | null
 }
 

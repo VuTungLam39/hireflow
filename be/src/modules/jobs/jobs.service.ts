@@ -22,6 +22,7 @@ import { UpdateJobDto } from './dto/update-job.dto.js';
 import { JobRequirement } from './entities/job-requirement.entity.js';
 import { Job, JobStatus } from './entities/job.entity.js';
 import { PrerenderHookService } from './prerender-hook.service.js';
+import { Role } from '../../common/enums/role.enum.js';
 import { AppEvents } from '../../common/events/app-events.js';
 
 type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId'>;
@@ -120,7 +121,7 @@ export class JobsService {
       .offset(query.skip)
       .limit(query.limit);
 
-    applyDepartmentScope(qb, user, 'job.departmentId');
+    applyDepartmentScope(qb, user, 'job.departmentId', { jobIdColumn: '"job"."id"' });
     if (query.status) qb.andWhere('job.status = :status', { status: query.status });
     if (query.departmentId) {
       qb.andWhere('job.departmentId = :departmentId', { departmentId: query.departmentId });
@@ -276,6 +277,8 @@ export class JobsService {
 
   // US-05
   async ranking(id: string, user: ScopeUser): Promise<RankingView> {
+    // BR-INT-02
+    if (user.role === Role.Interviewer) throw new NotFoundException('Job not found');
     const job = await this.findScoped(id, user);
     const [requirements, applications] = await Promise.all([
       this.currentRequirements(job),
@@ -435,7 +438,9 @@ export class JobsService {
       .innerJoin('job.department', 'department')
       .addSelect(['department.id', 'department.name'])
       .where('job.id = :id', { id });
-    const job = await applyDepartmentScope(qb, user, 'job.departmentId').getOne();
+    const job = await applyDepartmentScope(qb, user, 'job.departmentId', {
+      jobIdColumn: '"job"."id"',
+    }).getOne();
     if (!job) throw new NotFoundException('Job not found');
     return job;
   }

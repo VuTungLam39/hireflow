@@ -1,6 +1,7 @@
 import {
   Activity,
   Briefcase,
+  CalendarDays,
   Contact,
   Building2,
   ExternalLink,
@@ -60,6 +61,12 @@ const navGroups: { title: string; items: NavItem[] }[] = [
         label: 'Kho ứng viên',
         icon: Contact,
         permission: Permission.CandidateRead,
+      },
+      {
+        to: paths.interviews,
+        label: 'Lịch phỏng vấn',
+        icon: CalendarDays,
+        permission: Permission.ApplicationRead,
       },
       { to: paths.aiChat, label: 'Trợ lý AI', icon: Sparkles, permission: Permission.AiChat },
     ],

@@ -24,9 +24,9 @@ import {
   candidateOf,
   fail,
   includesText,
+  canSeeApplication,
   inScope,
   checkCvFile,
-  jobOf,
   notFound,
   ok,
   paginate,
@@ -40,13 +40,12 @@ import { guessTrack } from './public'
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const PHONE = /^(\+84|0)\d{9,10}$/
 
-const visible = (user: UserRow) =>
-  db.applications.filter((a) => inScope(user, jobOf(a).departmentId))
+const visible = (user: UserRow) => db.applications.filter((a) => canSeeApplication(user, a))
 
 function findApplication(user: UserRow, id: unknown): ApplicationRow | Response {
   settleProcessing()
   const app = db.applications.find((a) => a.id === id)
-  return app && inScope(user, jobOf(app).departmentId) ? app : notFound('Application')
+  return app && canSeeApplication(user, app) ? app : notFound('Application')
 }
 
 function moveStatus(app: ApplicationRow, to: ApplicationStatus, user: UserRow, reason?: string) {

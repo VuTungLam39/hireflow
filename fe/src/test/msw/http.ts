@@ -166,7 +166,20 @@ export function authorize(request: Request, permission?: Permission): UserRow | 
 
 /** Scope phòng ban: Hiring Manager chỉ thấy dữ liệu phòng mình (Backend Architecture mục 10.4) */
 export const inScope = (user: UserRow, departmentId: string) =>
-  user.role !== Role.HiringManager || user.departmentId === departmentId
+  user.role !== Role.Interviewer &&
+  (user.role !== Role.HiringManager || user.departmentId === departmentId)
+
+/** BR-INT-02: Interviewer chỉ thấy hồ sơ có buổi phỏng vấn được giao (chưa huỷ) */
+export const assignedTo = (user: UserRow, applicationId: string) =>
+  db.interviews.some(
+    (i) =>
+      i.applicationId === applicationId &&
+      i.status !== 'CANCELLED' &&
+      i.interviewerIds.includes(user.id),
+  )
+
+export const canSeeApplication = (user: UserRow, app: ApplicationRow) =>
+  user.role === Role.Interviewer ? assignedTo(user, app.id) : inScope(user, jobOf(app).departmentId)
 
 export const jobOf = (app: ApplicationRow) => db.jobs.find((j) => j.id === app.jobId)!
 export const candidateOf = (app: ApplicationRow) =>

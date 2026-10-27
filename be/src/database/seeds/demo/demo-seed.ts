@@ -28,6 +28,12 @@ import {
   CvParseStatus,
 } from '../../../modules/files/entities/cv-file.entity.js';
 import type { StorageService } from '../../../modules/files/storage/storage.service.js';
+import { InterviewAssignee } from '../../../modules/interviews/entities/interview-assignee.entity.js';
+import { InterviewFeedback } from '../../../modules/interviews/entities/interview-feedback.entity.js';
+import {
+  Interview,
+  InterviewStatus,
+} from '../../../modules/interviews/entities/interview.entity.js';
 import { JobRequirement } from '../../../modules/jobs/entities/job-requirement.entity.js';
 import { Job, JobStatus } from '../../../modules/jobs/entities/job.entity.js';
 import { RefreshToken } from '../../../modules/refresh-tokens/entities/refresh-token.entity.js';
@@ -49,6 +55,7 @@ export const demoId = (name: string) => {
 };
 
 const BUSINESS_TABLES = [
+  'interviews',
   'application_notes',
   'application_status_history',
   'applications',
@@ -108,6 +115,7 @@ export async function seedDemo(
       }
       await seedCvFiles(manager, cvs);
       await seedApplications(manager, { jobs, candidateIds, userIds, cvs });
+      await seedInterviews(manager, userIds);
     });
   } catch (error) {
     await Promise.allSettled(storedKeys.map((k) => storage.remove(k)));
@@ -570,6 +578,90 @@ async function seedApplications(
         content,
         createdAt: at(when),
         updatedAt: at(when),
+      });
+    }
+  }
+}
+
+// F-INT-01 → 03: buổi đã diễn ra (có phiếu), buổi chờ phiếu, buổi sắp tới; giờ tính theo lúc chạy seed
+async function seedInterviews(manager: EntityManager, userIds: Map<string, string>): Promise<void> {
+  const apps = await manager
+    .getRepository(Application)
+    .createQueryBuilder('app')
+    .innerJoinAndSelect('app.job', 'job')
+    .innerJoin('app.candidate', 'candidate')
+    .where('app.status = :status', { status: ApplicationStatus.Interview })
+    .andWhere('candidate.anonymizedAt IS NULL')
+    .orderBy('app.score', 'DESC', 'NULLS LAST')
+    .addOrderBy('app.id')
+    .limit(4)
+    .getMany();
+  const hr = userIds.get('hr.ha')!;
+  const khoa = userIds.get('iv.khoa')!;
+  const linh = userIds.get('iv.linh')!;
+  const day = (offset: number, hour: number) => {
+    const d = new Date(Date.now() + offset * 86_400_000);
+    const vn = new Date(d.getTime() + 7 * 3_600_000).toISOString().slice(0, 10);
+    return new Date(`${vn}T${String(hour).padStart(2, '0')}:00:00+07:00`);
+  };
+  const plans = [
+    { at: day(-2, 9), people: [khoa, linh], feedback: true, location: 'Phòng họp Hồ Gươm, tầng 5' },
+    {
+      at: day(-1, 15),
+      people: [khoa],
+      feedback: false,
+      location: 'https://meet.google.com/demo-hireflow',
+    },
+    { at: day(1, 10), people: [khoa], feedback: false, location: 'Phòng họp Sông Hồng, tầng 3' },
+    {
+      at: day(2, 14),
+      people: [linh],
+      feedback: false,
+      location: 'https://meet.google.com/demo-hireflow-2',
+    },
+  ];
+  for (const [i, app] of apps.entries()) {
+    const plan = plans[i];
+    const requirements = await manager.find(JobRequirement, {
+      where: { jobId: app.jobId, jdVersion: app.job!.jdVersion },
+      order: { position: 'ASC' },
+    });
+    const id = demoId(`interview:${app.id}`);
+    await manager.insert(Interview, {
+      id,
+      applicationId: app.id,
+      round: 1,
+      scheduledAt: plan.at,
+      durationMinutes: 60,
+      location: plan.location,
+      status: plan.feedback ? InterviewStatus.Completed : InterviewStatus.Scheduled,
+      createdBy: hr,
+      createdAt: new Date(plan.at.getTime() - 3 * 86_400_000),
+    });
+    await manager.insert(
+      InterviewAssignee,
+      plan.people.map((userId) => ({ interviewId: id, userId })),
+    );
+    if (!plan.feedback) continue;
+    for (const [k, authorId] of plan.people.entries()) {
+      const submittedAt = new Date(plan.at.getTime() + (90 + k * 30) * 60_000);
+      await manager.insert(InterviewFeedback, {
+        id: demoId(`feedback:${id}:${authorId}`),
+        interviewId: id,
+        authorId,
+        overall: 4 - k,
+        ratings: requirements.map((r, j) => ({
+          requirementId: r.id,
+          label: r.label,
+          score: Math.max(2, 5 - ((j + k) % 3)),
+        })),
+        comment:
+          k === 0
+            ? 'Nắm chắc NestJS và thiết kế API, trả lời rõ ràng phần tối ưu truy vấn. Cần hỏi thêm về kinh nghiệm vận hành.'
+            : 'Giao tiếp tốt, tư duy giải quyết vấn đề ổn; phần Docker còn ít kinh nghiệm thực tế.',
+        submittedAt,
+        updatedAt: submittedAt,
+        editableUntil: new Date(submittedAt.getTime() + 24 * 3_600_000),
       });
     }
   }
