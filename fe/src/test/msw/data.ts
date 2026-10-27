@@ -240,6 +240,9 @@ export interface ApplicationRow {
   breakdown: BreakdownItem[]
   scoredJdVersion: number | null
   cvFileName: string
+  /** F-FILE-02: text HR nhập tay cho CV không đọc được chữ */
+  enteredCvText?: string
+  cvTextEnteredAt?: string
   createdAt: string
 }
 

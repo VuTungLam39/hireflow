@@ -5,6 +5,7 @@ import {
   FileText,
   GitBranch,
   Mail,
+  PencilLine,
   Phone,
   RotateCw,
   Sparkles,
@@ -18,6 +19,7 @@ import { usePermission } from '@/hooks/use-permission'
 import { Permission } from '@/lib/permissions'
 import { formatRelative } from '@/lib/utils'
 import { links } from '@/routes/paths'
+import { CvTextDialog } from '../components/CvTextDialog'
 import { HistoryTimeline } from '../components/HistoryTimeline'
 import { NotesPanel } from '../components/NotesPanel'
 import { ScoreBreakdown } from '../components/ScoreBreakdown'
@@ -45,6 +47,7 @@ export default function ApplicationDetailPage() {
   const cvUrl = useCvUrl()
   const [evidence, setEvidence] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('history')
+  const [cvTextOpen, setCvTextOpen] = useState(false)
   const canReadCandidate = usePermission(Permission.CandidateRead)
 
   if (isPending) return <PageLoader />
@@ -146,13 +149,25 @@ export default function ApplicationDetailPage() {
               </div>
             )}
             {app.aiStatus === 'FAILED' && (
-              <p
-                role="alert"
-                className="flex items-start gap-2 rounded-xl bg-red-50 p-4 text-sm text-red-700"
-              >
-                <TriangleAlert className="mt-0.5 size-4 shrink-0" />
-                Chấm điểm thất bại: {app.aiError ?? 'không rõ lý do'}
-              </p>
+              <div className="space-y-3 rounded-xl bg-red-50 p-4">
+                <p role="alert" className="flex items-start gap-2 text-sm text-red-700">
+                  <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+                  Chấm điểm thất bại: {app.aiError ?? 'không rõ lý do'}
+                </p>
+                {app.cv?.parseStatus === 'FAILED' && (
+                  <Can permission={Permission.AiRescore}>
+                    <Button size="sm" variant="secondary" onClick={() => setCvTextOpen(true)}>
+                      <PencilLine />
+                      Nhập text CV
+                    </Button>
+                    <CvTextDialog
+                      applicationId={app.id}
+                      open={cvTextOpen}
+                      onClose={() => setCvTextOpen(false)}
+                    />
+                  </Can>
+                )}
+              </div>
             )}
             {app.aiStatus === 'DONE' && app.score !== null && (
               <>
@@ -204,7 +219,10 @@ export default function ApplicationDetailPage() {
                 )
               }
             >
-              {app.cv?.fileName ?? 'CV'}
+              <span className="flex flex-wrap items-center gap-2">
+                {app.cv?.fileName ?? 'CV'}
+                {app.cv?.textEnteredAt && <Badge tone="info">Text nhập tay</Badge>}
+              </span>
             </CardTitle>
             {!app.cv ? (
               <p className="text-sm text-slate-500">CV đã bị xoá do ứng viên yêu cầu ẩn danh.</p>

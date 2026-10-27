@@ -1,4 +1,4 @@
-import { ArrowRight, BadgeCheck, X } from 'lucide-react'
+import { ArrowRight, BadgeCheck, RotateCcw, X } from 'lucide-react'
 import { useState } from 'react'
 import { ConfirmDialog } from '@/components/shared'
 import { Button } from '@/components/ui'
@@ -8,9 +8,10 @@ import {
   APPLICATION_STATUS,
   NEXT_STATUS,
   REASON_REQUIRED,
+  REOPENABLE,
   type ApplicationStatus,
 } from '../constants'
-import { useChangeStatus } from '../hooks/use-applications'
+import { useChangeStatus, useReopen } from '../hooks/use-applications'
 
 interface StatusActionsProps {
   applicationId: string
@@ -38,7 +39,12 @@ export function StatusActions({ applicationId, status }: StatusActionsProps) {
   const options = NEXT_STATUS[status].filter(allowed)
 
   if (APPLICATION_STATUS[status].terminal) {
-    return <p className="text-sm text-slate-500">Hồ sơ đã ở trạng thái kết thúc.</p>
+    return (
+      <div className="space-y-3">
+        <p className="text-sm text-slate-500">Hồ sơ đã ở trạng thái kết thúc.</p>
+        {canUpdate && REOPENABLE.includes(status) && <ReopenAction applicationId={applicationId} />}
+      </div>
+    )
   }
   if (!options.length) {
     return <p className="text-sm text-slate-500">Bạn không có quyền đổi trạng thái hồ sơ này.</p>
@@ -107,6 +113,34 @@ export function StatusActions({ applicationId, status }: StatusActionsProps) {
           changeStatus.mutate({ status: target, reason, declineOffer })
           setTarget(null)
         }}
+      />
+    </>
+  )
+}
+
+// F-APP-10, BR-APP-05
+function ReopenAction({ applicationId }: { applicationId: string }) {
+  const reopen = useReopen(applicationId)
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>
+        <RotateCcw />
+        Mở lại hồ sơ
+      </Button>
+      <ConfirmDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Mở lại hồ sơ?"
+        description={`Hồ sơ chuyển về "${APPLICATION_STATUS.SCREENING.label}", giữ nguyên điểm AI và lịch sử.`}
+        confirmLabel="Mở lại"
+        requireReason={{
+          label: 'Lý do',
+          placeholder: 'Ví dụ: ứng viên liên hệ lại, muốn xét tiếp',
+        }}
+        loading={reopen.isPending}
+        onConfirm={(reason) => reopen.mutate(reason ?? '', { onSuccess: () => setOpen(false) })}
       />
     </>
   )

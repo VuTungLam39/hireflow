@@ -253,7 +253,9 @@ export function toApplicationDetail(app: ApplicationRow): ApplicationDetail {
       : {
           fileId: `file-${app.id}`,
           fileName: app.cvFileName,
-          text: app.aiStatus === 'FAILED' ? null : c.cvText,
+          text: app.enteredCvText ?? (app.aiStatus === 'FAILED' ? null : c.cvText),
+          parseStatus: app.aiStatus === 'FAILED' && !app.enteredCvText ? 'FAILED' : 'PARSED',
+          textEnteredAt: app.cvTextEnteredAt ?? null,
         },
   }
 }

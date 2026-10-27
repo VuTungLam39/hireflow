@@ -32,8 +32,17 @@ export interface ApplicationDetail extends ApplicationListItem {
   scoredJdVersion: number | null
   aiError: string | null
   /** null khi CV đã bị xoá do ẩn danh (BR-DATA-03) */
-  cv: { fileId: string; fileName: string; text: string | null } | null
+  cv: {
+    fileId: string
+    fileName: string
+    text: string | null
+    parseStatus: CvParseStatus
+    /** F-FILE-02: có giá trị khi text do HR nhập tay */
+    textEnteredAt: string | null
+  } | null
 }
+
+export type CvParseStatus = 'PENDING' | 'PARSED' | 'FAILED'
 
 export interface StatusHistoryItem {
   id: string
