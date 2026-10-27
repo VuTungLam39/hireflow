@@ -283,6 +283,39 @@ describe('AI pipeline (e2e, LLM giả)', () => {
     expect(again).toMatchObject({ aiStatus: AiStatus.Failed, aiError: AI_ERROR.noText });
   });
 
+  it('BR-FILE-04: HR types the text of a scanned CV, the pipeline extracts and scores it once', async () => {
+    const created = await upload(
+      ids.job,
+      `scan-manual-${run}@example.com`,
+      makePdf([]),
+      'application/pdf',
+    );
+    await waitFor(created.id, settled);
+    const before = extractCalls();
+    const text = SAMPLE_CV.join('\n');
+
+    const res = await auth(
+      request(server()).put(`/api/v1/applications/${created.id}/cv-text`).send({ text }),
+    ).expect(200);
+    expect(res.body.data).toMatchObject({
+      aiStatus: expect.stringMatching(/^(PENDING|PROCESSING|DONE)$/),
+      aiError: null,
+      cv: { text, parseStatus: 'PARSED', textEnteredAt: expect.any(String) },
+    });
+
+    const done = await waitFor(created.id, settled);
+    expect(done.aiStatus).toBe(AiStatus.Done);
+    expect(done.score).not.toBeNull();
+    for (const item of done.breakdown) {
+      if (item.evidence) expect(text).toContain(item.evidence);
+    }
+    expect(extractCalls() - before).toBe(1);
+
+    await auth(request(server()).put(`/api/v1/applications/${created.id}/cv-text`).send({ text }))
+      .expect(409)
+      .expect((r) => expect(r.body.code).toBe('CV_TEXT_NOT_EDITABLE'));
+  });
+
   it('BR-AI-07: the database refuses a FAILED application without a reason', async () => {
     const app = await ds.getRepository(Application).findOneByOrFail({});
     for (const aiError of [null, '   ']) {

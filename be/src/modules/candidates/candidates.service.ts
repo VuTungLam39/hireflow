@@ -1,12 +1,14 @@
-import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { CursorResult } from '../../common/dto/cursor-result.dto.js';
-import type { ApplicationSource } from '../../common/enums/application-source.enum.js';
+import { ApplicationSource } from '../../common/enums/application-source.enum.js';
 import type { ApplicationStatus } from '../../common/enums/application-status.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { decodeCursor, encodeCursor } from '../../common/utils/cursor.js';
+import { appConfig } from '../../config/app.config.js';
 import { applyCandidateScope, applyDepartmentScope } from '../../common/utils/department-scope.js';
 import { Application } from '../applications/entities/application.entity.js';
 import { CvFile } from '../files/entities/cv-file.entity.js';
@@ -42,6 +44,8 @@ export interface CandidateDetailView extends CandidateListItemView {
   }[];
 }
 
+const EXPIRED_BATCH = 100;
+
 const escapeLike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 @Injectable()
@@ -50,6 +54,7 @@ export class CandidatesService {
     @InjectRepository(Candidate) private readonly candidatesRepository: Repository<Candidate>,
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly filesService: FilesService,
+    @Inject(appConfig.KEY) private readonly app: ConfigType<typeof appConfig>,
   ) {}
 
   // US-14, BR-CAND-03
@@ -140,12 +145,43 @@ export class CandidatesService {
 
   // BR-DATA-03, Database Design 6
   async anonymize(id: string, user: ScopeUser): Promise<CandidateDetailView> {
+    await this.anonymizeOne(id, user.id);
+    return this.findOne(id, user);
+  }
+
+  // F-CAND-05, BR-DATA-04, BR-MATCH-04
+  async anonymizeExpired(): Promise<number> {
+    let total = 0;
+    for (;;) {
+      const rows = await this.dataSource.query<{ id: string }[]>(
+        `SELECT c.id FROM candidates c
+         WHERE c.anonymized_at IS NULL AND c.deleted_at IS NULL
+           AND c.created_at < now() - make_interval(months => $1)
+           AND NOT EXISTS (
+             SELECT 1 FROM applications a
+             WHERE a.candidate_id = c.id AND a.deleted_at IS NULL
+               AND a.source <> $2::application_source_enum
+               AND a.created_at >= now() - make_interval(months => $1)
+           )
+         ORDER BY c.created_at
+         LIMIT ${EXPIRED_BATCH}`,
+        [this.app.cvRetentionMonths, ApplicationSource.MatchInvite],
+      );
+      for (const { id } of rows) {
+        if (await this.anonymizeOne(id, null, false)) total++;
+      }
+      if (rows.length < EXPIRED_BATCH) return total;
+    }
+  }
+
+  private async anonymizeOne(id: string, actorId: string | null, strict = true): Promise<boolean> {
     const storageKeys = await this.dataSource.transaction(async (manager) => {
       const candidate = await manager.findOne(Candidate, {
         where: { id },
         lock: { mode: 'pessimistic_write' },
       });
       if (!candidate) throw new NotFoundException('Candidate not found');
+      if (candidate.anonymizedAt && !strict) return null;
       this.assertNotAnonymized(candidate);
 
       const files = await manager.find(CvFile, {
@@ -161,12 +197,13 @@ export class CandidatesService {
         email: `anon+${id}@invalid.local`,
         phone: null,
         anonymizedAt: new Date(),
-        anonymizedBy: user.id,
+        anonymizedBy: actorId,
       });
       return files.map((f) => f.storageKey);
     });
+    if (!storageKeys) return false;
     await this.filesService.removeAllStored(storageKeys);
-    return this.findOne(id, user);
+    return true;
   }
 
   findByEmail(email: string): Promise<Candidate | null> {

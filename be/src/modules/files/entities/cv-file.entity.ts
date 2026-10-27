@@ -1,6 +1,7 @@
 import { Check, Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { AbstractEntity } from '../../../common/entities/abstract.entity.js';
 import { Candidate } from '../../candidates/entities/candidate.entity.js';
+import { User } from '../../users/entities/user.entity.js';
 
 export enum CvParseStatus {
   Pending = 'PENDING',
@@ -21,6 +22,10 @@ export const CV_MAX_BYTES = 5 * 1024 * 1024;
   where: '"deleted_at" IS NULL',
 })
 @Check('CK_cv_files_mime', `"mime" IN ('${CV_MIME_TYPES.join("', '")}')`)
+@Check(
+  'CK_cv_files_text_entered',
+  `"text_entered_at" IS NULL OR ("text" IS NOT NULL AND "parse_status" = 'PARSED')`,
+)
 @Check('CK_cv_files_size_bytes', `"size_bytes" BETWEEN 1 AND ${CV_MAX_BYTES}`)
 export class CvFile extends AbstractEntity {
   @Column({ type: 'uuid' })
@@ -62,4 +67,15 @@ export class CvFile extends AbstractEntity {
 
   @Column({ type: 'text', nullable: true })
   text: string | null;
+
+  // F-FILE-02, BR-FILE-04
+  @Column({ type: 'timestamptz', nullable: true })
+  textEnteredAt: Date | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  textEnteredBy: string | null;
+
+  @ManyToOne(() => User, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'text_entered_by', foreignKeyConstraintName: 'FK_cv_files_text_entered_by' })
+  textEnteredByUser?: User;
 }

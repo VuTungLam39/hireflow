@@ -35,6 +35,7 @@ export enum ErrorCode {
   RejectReasonRequired = 'REJECT_REASON_REQUIRED',
   FileTypeNotAllowed = 'FILE_TYPE_NOT_ALLOWED',
   FileTooLarge = 'FILE_TOO_LARGE',
+  CvTextNotEditable = 'CV_TEXT_NOT_EDITABLE',
 
   // AI
   AiUnavailable = 'AI_UNAVAILABLE',

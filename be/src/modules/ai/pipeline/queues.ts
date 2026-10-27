@@ -7,6 +7,7 @@ export const QUEUE = {
   score: 'score',
   embed: 'embed-cv',
   match: 'match-job',
+  maintenance: 'maintenance',
 } as const;
 
 export interface CvJobData {

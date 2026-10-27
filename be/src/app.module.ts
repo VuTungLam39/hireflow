@@ -28,6 +28,7 @@ import { DepartmentsModule } from './modules/departments/departments.module.js';
 import { FilesModule } from './modules/files/files.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { JobsModule } from './modules/jobs/jobs.module.js';
+import { MaintenanceModule } from './modules/maintenance/maintenance.module.js';
 import { MatchingModule } from './modules/matching/matching.module.js';
 import { PublicModule } from './modules/public/public.module.js';
 import { RagModule } from './modules/rag/rag.module.js';
@@ -75,6 +76,7 @@ import { UsersModule } from './modules/users/users.module.js';
     PublicModule,
     RagModule,
     MatchingModule,
+    MaintenanceModule,
   ],
   providers: [
     // Guards chạy theo thứ tự đăng ký: xác thực JWT -> rate limit (theo user, chưa đăng nhập theo IP) -> phân quyền

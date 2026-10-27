@@ -1,6 +1,11 @@
 import { ApplicationStatus as S } from '../../common/enums/application-status.enum.js';
 import { BusinessException } from '../../common/exceptions/index.js';
-import { assertTransition, canTransition } from './application-status.js';
+import {
+  assertReopenable,
+  assertTransition,
+  canTransition,
+  REOPEN_TO,
+} from './application-status.js';
 
 const ALL = Object.values(S);
 const ALLOWED: [S, S][] = [
@@ -53,4 +58,25 @@ describe('application status flow (Kickoff 5.2)', () => {
   it('withdrawing does not need a reason', () => {
     expect(() => assertTransition(S.Interview, S.Withdrawn)).not.toThrow();
   });
+});
+
+describe('assertReopenable (F-APP-10)', () => {
+  it.each([S.Rejected, S.Withdrawn])('BR-APP-05: %s can be reopened to SCREENING', (from) => {
+    expect(() => assertReopenable(from)).not.toThrow();
+    expect(REOPEN_TO).toBe(S.Screening);
+  });
+
+  it.each([S.New, S.Screening, S.Interview, S.Offer, S.Hired])(
+    'BR-APP-05: %s cannot be reopened (INVALID_STATUS_TRANSITION)',
+    (from) => {
+      let error: BusinessException | undefined;
+      try {
+        assertReopenable(from);
+      } catch (e) {
+        error = e as BusinessException;
+      }
+      expect(error?.getStatus()).toBe(409);
+      expect(error?.code).toBe('INVALID_STATUS_TRANSITION');
+    },
+  );
 });
