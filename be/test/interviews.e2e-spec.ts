@@ -265,6 +265,32 @@ describe('Interviews (e2e)', () => {
       await as('ivB', request(server()).get(`/api/v1/applications/${apps.a}`)).expect(404);
     });
 
+    it('BR-INT-02: an interviewer assesses blind – no AI score, flags or evidence in lists, details or notifications', async () => {
+      const detail = await as(
+        'ivA',
+        request(server()).get(`/api/v1/applications/${apps.a}`),
+      ).expect(200);
+      expect(detail.body.data).toMatchObject({
+        score: null,
+        flags: [],
+        breakdown: [],
+        scoredJdVersion: null,
+      });
+      expect(detail.body.data.requirements).toHaveLength(2);
+      const list = await as(
+        'ivA',
+        request(server()).get('/api/v1/applications?sortBy=score&scoreMin=90'),
+      ).expect(200);
+      expect(list.body.data).toHaveLength(1);
+      expect(list.body.data[0]).toMatchObject({ id: apps.a, score: null, flags: [] });
+      const notes = await as('ivA', request(server()).get('/api/v1/notifications')).expect(200);
+      for (const n of notes.body.data) expect(n.application.score).toBeNull();
+      const hr = await as('hr', request(server()).get(`/api/v1/applications/${apps.a}`)).expect(
+        200,
+      );
+      expect(hr.body.data.score).toBe(80);
+    });
+
     it('BR-INT-02: no candidate pool, dashboard, AI chat, status changes or rescoring for interviewers', async () => {
       await as('ivA', request(server()).get('/api/v1/candidates')).expect(403);
       await as('ivA', request(server()).get('/api/v1/dashboard/summary')).expect(403);

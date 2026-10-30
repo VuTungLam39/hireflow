@@ -10,6 +10,7 @@ export const AUDIT_ACTION_LABEL: Record<AuditAction, string> = {
   USER_CREATED: 'Tạo người dùng',
   USER_UPDATED: 'Đổi quyền người dùng',
   USER_DELETED: 'Xoá người dùng',
+  TOKEN_REUSE_DETECTED: 'Phát hiện dùng lại phiên đăng nhập',
 }
 
 export const AUDIT_ACTIONS = Object.keys(AUDIT_ACTION_LABEL) as AuditAction[]
@@ -42,6 +43,8 @@ export function describeAudit(log: AuditLogItem): string {
       if (m.passwordReset) parts.push('Đặt lại mật khẩu')
       return parts.join(' · ') || '–'
     }
+    case 'TOKEN_REUSE_DETECTED':
+      return 'Refresh token đã thu hồi bị dùng lại; mọi phiên của chuỗi đã bị đăng xuất'
     default:
       return '–'
   }

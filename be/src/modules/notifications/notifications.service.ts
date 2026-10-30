@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, type OnModuleInit } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, IsNull, Repository } from 'typeorm';
+import { DataSource, In, IsNull, Repository } from 'typeorm';
 import { CursorResult } from '../../common/dto/cursor-result.dto.js';
 import { AiStatus } from '../../common/enums/ai-status.enum.js';
 import { Role } from '../../common/enums/role.enum.js';
@@ -34,6 +34,8 @@ export interface NotificationView {
   } | null;
 }
 
+const AI_TYPES = [NotificationType.CvScored, NotificationType.CvFailed];
+
 @Injectable()
 export class NotificationsService implements OnModuleInit {
   constructor(
@@ -59,16 +61,22 @@ export class NotificationsService implements OnModuleInit {
       relations: { job: true },
     });
     if (!app?.job) return 0;
-    const recipients = await this.dataSource
-      .getRepository(User)
+    const users = this.dataSource.getRepository(User);
+    const owner = await users.exists({
+      where: { id: app.job.createdBy, isActive: true, role: In([Role.Admin, Role.Hr]) },
+    });
+    // BR-NOTI-01: người tạo tin không còn hoạt động thì mọi HR đang hoạt động nhận thay
+    const recipients = await users
       .createQueryBuilder('u')
       .select('u.id', 'id')
       .where('u.isActive = true')
       .andWhere(
-        '((u.id = :creator AND u.role IN (:...creatorRoles)) OR (u.role = :hm AND u.departmentId = :dept))',
+        '(' +
+          (owner ? 'u.id = :creator' : 'u.role = :hr') +
+          ' OR (u.role = :hm AND u.departmentId = :dept))',
         {
           creator: app.job.createdBy,
-          creatorRoles: [Role.Admin, Role.Hr],
+          hr: Role.Hr,
           hm: Role.HiringManager,
           dept: app.job.departmentId,
         },
@@ -221,8 +229,9 @@ export class NotificationsService implements OnModuleInit {
             candidateName: n.application.candidate!.fullName,
             jobId: n.application.job!.id,
             jobTitle: n.application.job!.title,
-            score: n.application.score,
-            aiError: n.application.aiError,
+            // BR-INT-02: thông báo phỏng vấn không kèm điểm AI
+            score: AI_TYPES.includes(n.type) ? n.application.score : null,
+            aiError: AI_TYPES.includes(n.type) ? n.application.aiError : null,
           }
         : null,
       interview: n.interview

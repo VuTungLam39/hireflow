@@ -10,6 +10,7 @@ export enum AuditAction {
   UserCreated = 'USER_CREATED',
   UserUpdated = 'USER_UPDATED',
   UserDeleted = 'USER_DELETED',
+  TokenReuseDetected = 'TOKEN_REUSE_DETECTED',
 }
 
 export enum AuditEntity {

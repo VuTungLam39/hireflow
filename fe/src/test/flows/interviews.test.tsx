@@ -68,6 +68,7 @@ describe('interviews', () => {
     const iv = pastInterview()
     renderAt('interviewer@hireflow.dev', links.applicationDetail(iv.applicationId))
     fireEvent.click(await screen.findByRole('button', { name: 'Gửi phiếu đánh giá' }))
+    expect(screen.getByText(/Điểm và bằng chứng của AI được ẩn/)).toBeInTheDocument()
     const dialog = await screen.findByRole('dialog')
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi phiếu' }))

@@ -5,6 +5,8 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { IsNull, Not, Repository } from 'typeorm';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import { jwtConfig } from '../../config/jwt.config.js';
+import { AuditService } from '../audit/audit.service.js';
+import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity.js';
 import { RefreshToken } from './entities/refresh-token.entity.js';
 
 export interface SessionMeta {
@@ -23,6 +25,7 @@ export class RefreshTokensService {
     @InjectRepository(RefreshToken)
     private readonly tokensRepository: Repository<RefreshToken>,
     @Inject(jwtConfig.KEY) private readonly config: ConfigType<typeof jwtConfig>,
+    private readonly audit: AuditService,
   ) {}
 
   issue(userId: string, meta: SessionMeta = {}): Promise<string> {
@@ -36,6 +39,7 @@ export class RefreshTokensService {
     }
     if (current.revokedAt) {
       await this.revokeFamily(current.familyId);
+      await this.recordReuse(current, meta);
       throw this.reused();
     }
 
@@ -51,6 +55,7 @@ export class RefreshTokensService {
 
     if (!next) {
       await this.revokeFamily(current.familyId);
+      await this.recordReuse(current, meta);
       throw this.reused();
     }
     return { userId: current.userId, token: next };
@@ -83,6 +88,17 @@ export class RefreshTokensService {
       .where(`expires_at < now() - make_interval(days => :days)`, { days: TOKEN_PURGE_AFTER_DAYS })
       .execute();
     return result.affected ?? 0;
+  }
+
+  // BR-AUDIT-01, OWASP A09: refresh token đã thu hồi bị dùng lại
+  private recordReuse(token: RefreshToken, meta: SessionMeta) {
+    return this.audit.recordSafely({
+      actorId: null,
+      action: AuditAction.TokenReuseDetected,
+      entity: AuditEntity.User,
+      entityId: token.userId,
+      metadata: { familyId: token.familyId, userAgent: meta.userAgent?.slice(0, 200) ?? null },
+    });
   }
 
   private async revokeFamily(familyId: string): Promise<void> {
