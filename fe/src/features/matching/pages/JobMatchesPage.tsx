@@ -1,4 +1,4 @@
-import { ArrowLeft, Sparkles } from 'lucide-react'
+import { ArrowLeft, UserSearch } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 import { EmptyState, ErrorState, PageHeader } from '@/components/shared'
 import { Card, PageLoader, Spinner } from '@/components/ui'
@@ -56,7 +56,7 @@ export default function JobMatchesPage() {
 
       {job.status === 'DRAFT' ? (
         <EmptyState
-          icon={Sparkles}
+          icon={UserSearch}
           title="Tin chưa được đăng"
           description="Đăng tin để hệ thống tìm ứng viên cũ phù hợp với tiêu chí."
         />
@@ -67,7 +67,7 @@ export default function JobMatchesPage() {
         </Card>
       ) : items.length === 0 ? (
         <EmptyState
-          icon={Sparkles}
+          icon={UserSearch}
           title="Chưa có ứng viên cũ nào phù hợp"
           description="Không ai trong kho ứng viên đạt từ 50 điểm theo tiêu chí hiện tại."
         />

@@ -574,6 +574,8 @@ Ngày 26/10/2026 lịch được rút lại: hoàn thiện cả MVP 1 và MVP 2 
 | 31/10 | Kịch bản demo gộp MVP 1 + 2, tập demo trên bản deploy, báo cáo cuối kỳ, sửa lỗi | |
 | 01/11 | Buổi demo duy nhất | **Phát hành MVP 2** |
 
+Giao diện (chốt 30/10): demo dùng theme Indigo Night, bỏ icon lấp lánh và đổi "Điểm AI" thành "Mức phù hợp". Đặc tả thẩm mỹ mới "Bàn duyệt hồ sơ" (Design Spec v1.0, ước tính 4–5 ngày) làm sau buổi demo.
+
 Hybrid search chỉ làm nếu đi trước lịch. Nếu trễ: bỏ hybrid search trước, sau đó đến module phỏng vấn; luôn giữ gợi ý ứng viên cũ, deploy và bộ đánh giá AI (Kickoff 20.3).
 
 ---

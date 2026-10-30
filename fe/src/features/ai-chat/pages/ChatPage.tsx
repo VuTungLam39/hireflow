@@ -1,4 +1,4 @@
-import { SendHorizontal, Sparkles, Square } from 'lucide-react'
+import { MessageSquareText, SendHorizontal, Square } from 'lucide-react'
 import { useRef, useState, type FormEvent } from 'react'
 import { PageHeader } from '@/components/shared'
 import { Button, Card, Textarea } from '@/components/ui'
@@ -81,8 +81,8 @@ export default function ChatPage() {
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5" aria-live="polite">
           {messages.length === 0 ? (
             <div className="animate-fade-in flex h-full flex-col items-center justify-center gap-4 text-center">
-              <span className="from-primary flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br to-violet-500 text-white shadow-lg shadow-indigo-500/20">
-                <Sparkles className="size-6" />
+              <span className="bg-primary-soft text-primary flex size-14 items-center justify-center rounded-2xl">
+                <MessageSquareText className="size-6" />
               </span>
               <div>
                 <p className="font-medium text-slate-800">Bạn muốn tìm ứng viên như thế nào?</p>

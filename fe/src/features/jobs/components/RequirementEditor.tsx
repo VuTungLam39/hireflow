@@ -1,4 +1,4 @@
-import { Plus, Sparkles, Trash2 } from 'lucide-react'
+import { Info, ListChecks, Plus, Trash2 } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMemo, useState } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
@@ -68,7 +68,7 @@ export function RequirementEditor({
         </p>
         {!readOnly && (
           <Button variant="secondary" size="sm" loading={suggesting} onClick={suggest}>
-            {!suggesting && <Sparkles className="text-primary" />}
+            {!suggesting && <ListChecks className="text-primary" />}
             AI gợi ý từ JD
           </Button>
         )}
@@ -86,7 +86,7 @@ export function RequirementEditor({
 
       {showAi && (
         <div className="animate-slide-up border-primary/20 bg-primary-soft/60 flex items-start gap-2 rounded-lg border px-3 py-2.5 text-sm text-slate-700">
-          <Sparkles className="text-primary mt-0.5 size-4 shrink-0" />
+          <Info className="text-primary mt-0.5 size-4 shrink-0" />
           <span>
             Các tiêu chí dưới đây do AI tách từ JD. Hãy sửa nhãn, loại, trọng số và từ khoá cho đúng
             ý bạn rồi bấm <strong>Lưu tiêu chí</strong>.

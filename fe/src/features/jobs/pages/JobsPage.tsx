@@ -1,4 +1,4 @@
-import { Building2, MapPin, Megaphone, Plus, Sparkles, Trophy, X } from 'lucide-react'
+import { Building2, MapPin, Megaphone, Plus, Trophy, UserSearch, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import {
@@ -121,7 +121,7 @@ export default function JobsPage() {
                 to={links.jobMatches(job.id)}
                 className={buttonVariants({ variant: 'ghost', size: 'sm' })}
               >
-                <Sparkles />
+                <UserSearch />
                 Gợi ý
               </Link>
             )}
