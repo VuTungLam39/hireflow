@@ -4,6 +4,7 @@ import { S3StorageService } from '../../modules/files/storage/s3.storage.js';
 import type { StorageService } from '../../modules/files/storage/storage.service.js';
 import dataSource from '../data-source.js';
 import { seedDemo } from './demo/demo-seed.js';
+import { checkSeedTarget, DEFAULT_SEED_PASSWORD } from './seed-guard.js';
 
 async function createStorage(): Promise<StorageService> {
   const config = buildStorageConfig();
@@ -14,15 +15,13 @@ async function createStorage(): Promise<StorageService> {
 }
 
 async function seed() {
-  const reset = process.argv.includes('--reset');
-  if (reset && process.env.NODE_ENV === 'production') {
-    throw new Error('--reset is not allowed when NODE_ENV=production');
-  }
+  const { reset, password } = checkSeedTarget({ env: process.env, argv: process.argv });
   await dataSource.initialize();
-  const password = process.env.SEED_ADMIN_PASSWORD ?? 'Admin@123';
   const counts = await seedDemo(dataSource, await createStorage(), { reset, password });
   console.table(counts);
-  console.log('Mật khẩu của tài khoản mới tạo: SEED_ADMIN_PASSWORD (mặc định Admin@123)');
+  console.log(
+    `Mật khẩu của tài khoản mới tạo: ${process.env.SEED_ADMIN_PASSWORD ? 'SEED_ADMIN_PASSWORD' : DEFAULT_SEED_PASSWORD}`,
+  );
   await dataSource.destroy();
 }
 

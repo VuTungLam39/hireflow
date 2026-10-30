@@ -396,7 +396,7 @@ $env:SEED_ADMIN_PASSWORD = "<mật khẩu mạnh>"
 npm run seed
 ```
 
-Không dùng `--reset` trên database thật.
+Không dùng `--reset` trên database thật. Seed tự chặn khi DB đích không phải local: bắt buộc `SEED_ADMIN_PASSWORD` mạnh (từ 12 ký tự, có chữ và số, khác `Admin@123`), và `--reset` phải kèm `--allow-remote-reset`. URL deploy là công khai, nên mật khẩu mặc định ở README không được dùng trên đó.
 
 ### 5. Vercel (frontend)
 
@@ -414,6 +414,18 @@ Rate limit dựa vào IP người dùng (`req.ip`). Request đi qua 2 lớp: Ver
 2. Mở `https://<domain-vercel>/api/health/ip` và so `ip` với IP thật của bạn (xem ở https://api.ipify.org).
 3. Nếu khác, nhìn mảng `ips` (danh sách IP từ người dùng đến Render), tăng hoặc giảm `TRUST_PROXY` cho tới khi `ip` đúng.
 4. Đặt lại `DEBUG_CLIENT_IP=false`. Khi tắt, route trả 404.
+
+### Kiểm tra sau mỗi lần deploy
+
+```powershell
+cd be
+$env:SMOKE_EMAIL = "hr@hireflow.dev"; $env:SMOKE_PASSWORD = "<mật khẩu đã seed>"
+node scripts/smoke.mjs https://<domain-vercel>
+```
+
+Script chờ API thức dậy (tối đa 3 phút) rồi kiểm: `/api/health` có database, redis, storage đều `up`; SPA fallback; `/jobs` đã prerender; asset cache lâu; header bảo mật; 401 có mã lỗi; CORS không mở cho domain lạ; Swagger và `/health/ip` tắt; đăng nhập đặt cookie `Secure` + `SameSite=Strict`; refresh qua cookie; stream SSE đi qua rewrite của Vercel. Lỗi nào thì in lý do và thoát mã 1.
+
+Nếu `/api/health` trả HTML hoặc không phản hồi: URL Render thật khác `hireflow-api.onrender.com` (tên đã có người dùng thì Render thêm hậu tố). Sửa `destination` trong `fe/vercel.json` rồi deploy lại Vercel.
 
 ### 7. Giữ API không ngủ (tuỳ chọn)
 
