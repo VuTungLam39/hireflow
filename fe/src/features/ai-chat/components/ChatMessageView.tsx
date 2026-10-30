@@ -1,4 +1,4 @@
-import { Sparkles } from 'lucide-react'
+import { MessageSquareText } from 'lucide-react'
 import { memo } from 'react'
 import { Link } from 'react-router'
 import { cn } from '@/lib/utils'
@@ -44,8 +44,8 @@ export const ChatMessageView = memo(function ChatMessageView({
 
   return (
     <div className="animate-slide-up flex max-w-[90%] gap-3">
-      <span className="from-primary mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br to-violet-500 text-white shadow-sm">
-        <Sparkles className="size-4" />
+      <span className="bg-primary mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-white">
+        <MessageSquareText className="size-4" />
       </span>
       <div className="min-w-0 space-y-3">
         <div

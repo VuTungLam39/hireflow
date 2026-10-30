@@ -7,7 +7,7 @@ import {
   FileText,
   LayoutDashboard,
   ScrollText,
-  Sparkles,
+  MessageSquareText,
   Users,
   type LucideIcon,
 } from 'lucide-react'
@@ -58,7 +58,12 @@ export const navGroups: NavGroup[] = [
         icon: CalendarDays,
         permission: Permission.ApplicationRead,
       },
-      { to: paths.aiChat, label: 'Trợ lý AI', icon: Sparkles, permission: Permission.AiChat },
+      {
+        to: paths.aiChat,
+        label: 'Trợ lý AI',
+        icon: MessageSquareText,
+        permission: Permission.AiChat,
+      },
     ],
   },
   {

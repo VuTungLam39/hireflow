@@ -1,4 +1,4 @@
-import { ArrowLeft, Lock, Sparkles, Trash2, Upload } from 'lucide-react'
+import { ArrowLeft, Lock, Trash2, Upload, UserSearch } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
@@ -147,7 +147,7 @@ function JobFormContent({ job }: { job: Job | undefined }) {
                     to={links.jobMatches(job.id)}
                     className={buttonVariants({ variant: 'secondary' })}
                   >
-                    <Sparkles />
+                    <UserSearch />
                     Ứng viên cũ phù hợp
                   </Link>
                 )}

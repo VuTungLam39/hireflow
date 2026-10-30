@@ -7,7 +7,7 @@ import {
   Inbox,
   Loader,
   Plus,
-  Sparkles,
+  MessageSquareText,
   Star,
   type LucideIcon,
 } from 'lucide-react'
@@ -120,7 +120,7 @@ export default function DashboardPage() {
           <>
             <Can permission={Permission.AiChat}>
               <Link to={paths.aiChat} className={buttonVariants({ variant: 'secondary' })}>
-                <Sparkles className="text-primary" />
+                <MessageSquareText className="text-primary" />
                 Hỏi trợ lý AI
               </Link>
             </Can>

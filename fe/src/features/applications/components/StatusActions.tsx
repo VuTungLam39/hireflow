@@ -133,7 +133,7 @@ function ReopenAction({ applicationId }: { applicationId: string }) {
         open={open}
         onClose={() => setOpen(false)}
         title="Mở lại hồ sơ?"
-        description={`Hồ sơ chuyển về "${APPLICATION_STATUS.SCREENING.label}", giữ nguyên điểm AI và lịch sử.`}
+        description={`Hồ sơ chuyển về "${APPLICATION_STATUS.SCREENING.label}", giữ nguyên mức phù hợp và lịch sử.`}
         confirmLabel="Mở lại"
         requireReason={{
           label: 'Lý do',

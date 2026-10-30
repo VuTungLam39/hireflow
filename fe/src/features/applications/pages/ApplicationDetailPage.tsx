@@ -9,7 +9,7 @@ import {
   PencilLine,
   Phone,
   RotateCw,
-  Sparkles,
+  Gauge,
   TriangleAlert,
 } from 'lucide-react'
 import { lazy, Suspense, useState } from 'react'
@@ -116,7 +116,7 @@ export default function ApplicationDetailPage() {
         <div className="min-w-0 space-y-6">
           {isInterviewer ? (
             <Card className="space-y-2">
-              <CardTitle icon={<Sparkles />}>Điểm AI Screening</CardTitle>
+              <CardTitle icon={<Gauge />}>Mức phù hợp</CardTitle>
               <p className="text-sm text-slate-600">
                 Điểm và bằng chứng của AI được ẩn để bạn đánh giá độc lập. Đọc CV bên dưới rồi chấm
                 theo từng tiêu chí trong phiếu đánh giá.
@@ -125,7 +125,7 @@ export default function ApplicationDetailPage() {
           ) : (
             <Card className="space-y-5">
               <CardTitle
-                icon={<Sparkles />}
+                icon={<Gauge />}
                 aside={
                   <div className="flex items-center gap-2">
                     <AiStatusBadge status={app.aiStatus} />
@@ -144,7 +144,7 @@ export default function ApplicationDetailPage() {
                   </div>
                 }
               >
-                Điểm AI Screening
+                Mức phù hợp
               </CardTitle>
 
               {(app.aiStatus === 'PENDING' || app.aiStatus === 'PROCESSING') && (
