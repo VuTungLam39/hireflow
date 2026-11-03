@@ -15,7 +15,8 @@
     "test:watch": "vitest",
     "test:contract": "vitest run --config ./vitest.contract.config.ts",
     "prerender": "node scripts/prerender.mjs",
-    "build:profile": "vite build --mode profiling --outDir dist-profile"
+    "build:profile": "vite build --mode profiling --outDir dist-profile",
+    "check:design": "node scripts/check-design.mjs --strict"
   },
   "dependencies": {
     "@hookform/resolvers": "^6.0.0",

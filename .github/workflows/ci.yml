@@ -114,6 +114,8 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
       - run: npm run format:check
       - run: npm run lint
+      - name: Design Spec v1.0 – no raw colors, gradients, page animations, AI wording
+        run: npm run check:design
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
