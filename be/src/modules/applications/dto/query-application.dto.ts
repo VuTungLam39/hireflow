@@ -2,6 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEnum, IsIn, IsInt, IsOptional, IsUUID, Matches, Max, Min } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto.js';
+import { AiStatus } from '../../../common/enums/ai-status.enum.js';
 import { ApplicationStatus } from '../../../common/enums/application-status.enum.js';
 
 export const APPLICATION_SORT_FIELDS = ['createdAt', 'score'] as const;
@@ -23,6 +24,11 @@ export class QueryApplicationDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(ApplicationStatus)
   status?: ApplicationStatus;
+
+  @ApiPropertyOptional({ enum: AiStatus, description: 'Trạng thái đọc và chấm CV' })
+  @IsOptional()
+  @IsEnum(AiStatus)
+  aiStatus?: AiStatus;
 
   @ApiPropertyOptional({ minimum: 0, maximum: 100 })
   @IsOptional()

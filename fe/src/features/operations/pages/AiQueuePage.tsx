@@ -30,14 +30,14 @@ function QueueCard({ queue }: { queue: QueueCounts }) {
   return (
     <Card className="space-y-3 p-5">
       <div className="flex items-center justify-between">
-        <p className="font-medium text-slate-900">{QUEUE_LABEL[queue.name] ?? queue.name}</p>
-        <code className="text-xs text-slate-400">{queue.name}</code>
+        <p className="text-ink font-medium">{QUEUE_LABEL[queue.name] ?? queue.name}</p>
+        <code className="text-ink-faint text-xs">{queue.name}</code>
       </div>
       <dl className="grid grid-cols-3 gap-2">
         {stats.map((s) => (
           <div key={s.label}>
-            <dt className="text-xs text-slate-500">{s.label}</dt>
-            <dd className="flex items-center gap-1.5 text-lg font-semibold text-slate-900 tabular-nums">
+            <dt className="text-ink-muted text-xs">{s.label}</dt>
+            <dd className="text-ink flex items-center gap-1.5 text-lg font-semibold tabular-nums">
               {s.danger && s.value > 0 && (
                 <span aria-hidden className={cn('size-2 rounded-full', TONE_DOT.danger)} />
               )}
@@ -65,7 +65,7 @@ export default function AiQueuePage() {
       key: 'candidate',
       header: 'Ứng viên',
       cell: (i) => (
-        <Link to={links.applicationDetail(i.id)} className="hover:text-primary font-medium">
+        <Link to={links.applicationDetail(i.id)} className="hover:text-brand font-medium">
           {i.candidate.fullName}
         </Link>
       ),
@@ -85,7 +85,7 @@ export default function AiQueuePage() {
       key: 'reason',
       header: 'Lý do',
       cell: (i) => (
-        <span className="text-slate-600">
+        <span className="text-ink-2">
           {i.aiError ?? (i.stuck ? 'Chưa vào được hàng đợi xử lý' : '—')}
         </span>
       ),
@@ -93,7 +93,7 @@ export default function AiQueuePage() {
     {
       key: 'updatedAt',
       header: 'Cập nhật',
-      cell: (i) => <span className="text-slate-500">{formatDateTime(i.updatedAt)}</span>,
+      cell: (i) => <span className="text-ink-muted">{formatDateTime(i.updatedAt)}</span>,
     },
     {
       key: 'actions',
@@ -102,7 +102,7 @@ export default function AiQueuePage() {
       className: 'text-right whitespace-nowrap',
       cell: (i) => (
         <Button
-          variant="ghost"
+          variant="quiet"
           size="sm"
           disabled={retry.isPending && retry.variables === i.id}
           onClick={() => retry.mutate(i.id)}
@@ -133,13 +133,13 @@ export default function AiQueuePage() {
       >
         {queues.data
           ? queues.data.map((q) => <QueueCard key={q.name} queue={q} />)
-          : Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
+          : Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-28 rounded-md" />)}
       </section>
 
       <Card className="space-y-4">
         <CardTitle
           icon={<Activity />}
-          aside={<span className="text-sm text-slate-500 tabular-nums">{total} hồ sơ</span>}
+          aside={<span className="text-ink-muted text-sm tabular-nums">{total} hồ sơ</span>}
         >
           Hồ sơ cần xử lý
         </CardTitle>

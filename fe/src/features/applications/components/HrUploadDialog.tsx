@@ -114,7 +114,7 @@ export function HrUploadDialog({
             <Input id="upload-phone" type="tel" invalid={!!errors.phone} {...register('phone')} />
           </FormField>
         </div>
-        <p className="text-xs text-slate-500">
+        <p className="text-ink-muted text-xs">
           Email đã có trong hệ thống thì hồ sơ gắn vào ứng viên đó; họ tên và số điện thoại cũ được
           giữ nguyên.
         </p>
@@ -139,10 +139,10 @@ export function HrUploadDialog({
         </FormField>
 
         <div className="space-y-1">
-          <label className="flex items-start gap-2 text-sm text-slate-700">
+          <label className="text-ink-2 flex items-start gap-2 text-sm">
             <input
               type="checkbox"
-              className="accent-primary mt-0.5 size-4"
+              className="accent-brand mt-0.5 size-4"
               {...register('consentConfirmed')}
             />
             <span>
@@ -151,14 +151,14 @@ export function HrUploadDialog({
             </span>
           </label>
           {errors.consentConfirmed && (
-            <p role="alert" className="text-sm text-red-600">
+            <p role="alert" className="text-bad text-sm">
               {errors.consentConfirmed.message}
             </p>
           )}
         </div>
 
         {errors.root && (
-          <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+          <p role="alert" className="bg-bad-soft text-bad rounded-md p-3 text-sm">
             {errors.root.message}
           </p>
         )}

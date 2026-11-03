@@ -5,7 +5,7 @@ import { Pagination, Skeleton } from '@/components/ui'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { useListParams } from '@/hooks/use-list-params'
-import { formatDate, formatRelative, staggerStyle, VN_TIME_ZONE } from '@/lib/utils'
+import { formatDate, formatRelative, VN_TIME_ZONE } from '@/lib/utils'
 import { SITE_NAME } from '@/prerender/shared'
 import { links } from '@/routes/paths'
 import { usePublicJobs } from '../hooks/use-public-jobs'
@@ -20,17 +20,17 @@ export default function PublicJobsPage() {
 
   return (
     <div className="space-y-10">
-      <section className="from-primary-soft relative -mx-4 overflow-hidden rounded-none bg-gradient-to-b to-white px-4 py-12 text-center sm:mx-0 sm:rounded-3xl">
+      <section className="from-brand-soft relative -mx-4 overflow-hidden rounded-none px-4 py-12 text-center sm:mx-0 sm:rounded-md">
         <div
           aria-hidden
-          className="absolute -top-24 left-1/2 size-72 -translate-x-1/2 rounded-full bg-indigo-200/40 blur-3xl"
+          className="bg-brand-soft/40 absolute -top-24 left-1/2 size-72 -translate-x-1/2 rounded-full blur-3xl"
         />
-        <div className="animate-slide-up relative space-y-4">
-          <p className="text-primary text-sm font-medium">Chúng tôi đang tuyển</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+        <div className="relative space-y-4">
+          <p className="text-brand text-sm font-medium">Chúng tôi đang tuyển</p>
+          <h1 className="text-ink text-3xl font-semibold tracking-tight sm:text-4xl">
             Tìm công việc phù hợp với bạn
           </h1>
-          <p className="mx-auto max-w-md text-slate-500">
+          <p className="text-ink-muted mx-auto max-w-md">
             Nộp CV chỉ trong một phút. Mọi hồ sơ đều được đọc và phản hồi.
           </p>
           <div className="flex justify-center pt-2 [&_input]:h-11 [&_input]:sm:max-w-sm">
@@ -46,7 +46,7 @@ export default function PublicJobsPage() {
       {isPending ? (
         <div className="grid gap-4 sm:grid-cols-2">
           {Array.from({ length: 4 }, (_, i) => (
-            <Skeleton key={i} className="h-32 rounded-xl" />
+            <Skeleton key={i} className="h-32 rounded-md" />
           ))}
         </div>
       ) : isError ? (
@@ -56,20 +56,20 @@ export default function PublicJobsPage() {
       ) : (
         <>
           <ul className="grid gap-4 sm:grid-cols-2">
-            {data.items.map((job, i) => (
-              <li key={job.id} style={staggerStyle(i)} className="animate-slide-up stagger">
+            {data.items.map((job) => (
+              <li key={job.id} className=" ">
                 <Link
                   to={links.publicJobDetail(job.id)}
-                  className="group hover:border-primary/30 hover:shadow-raised flex h-full flex-col rounded-xl border border-slate-200 bg-white p-5 transition-all duration-200 hover:-translate-y-0.5"
+                  className="group hover:border-brand/30 border-line bg-surface flex h-full flex-col rounded-md border p-5 transition-all duration-200"
                 >
-                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                  <span className="text-ink-muted inline-flex items-center gap-1.5 text-xs font-medium">
                     <Building2 className="size-3.5" />
                     {job.department.name}
                   </span>
-                  <h2 className="group-hover:text-primary mt-2 text-lg font-semibold text-slate-900 transition-colors">
+                  <h2 className="group-hover:text-brand text-ink mt-2 text-lg font-semibold transition-colors">
                     {job.title}
                   </h2>
-                  <div className="mt-auto flex items-center justify-between gap-3 pt-4 text-sm text-slate-500">
+                  <div className="text-ink-muted mt-auto flex items-center justify-between gap-3 pt-4 text-sm">
                     <span className="flex flex-wrap gap-x-4 gap-y-1">
                       <span className="inline-flex items-center gap-1.5">
                         <MapPin className="size-3.5" />
@@ -82,7 +82,7 @@ export default function PublicJobsPage() {
                           : formatDate(job.publishedAt, VN_TIME_ZONE)}
                       </span>
                     </span>
-                    <ArrowRight className="text-primary size-4 -translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
+                    <ArrowRight className="text-brand size-4 -translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
                   </div>
                 </Link>
               </li>

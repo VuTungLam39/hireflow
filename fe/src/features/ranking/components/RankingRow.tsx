@@ -28,16 +28,12 @@ interface RankingRowProps {
 }
 
 /** Ba hạng đầu có màu riêng, nhẹ nhàng */
-const MEDAL = [
-  'bg-amber-100 text-amber-800',
-  'bg-slate-200 text-slate-700',
-  'bg-orange-100 text-orange-800',
-]
+const MEDAL = ['bg-warn-soft text-warn', 'bg-line text-ink-2', 'bg-warn-soft text-warn']
 
 const MATCH_DOT: Record<number, string> = {
-  1: 'bg-emerald-500',
-  0.5: 'bg-amber-400',
-  0: 'bg-slate-200 ring-1 ring-slate-300/60',
+  1: 'bg-good',
+  0.5: 'bg-warn',
+  0: 'bg-line ring-1 ring-ink-faint/60',
 }
 
 /**
@@ -56,14 +52,14 @@ export const RankingRow = memo(function RankingRow({
   measureRef,
 }: RankingRowProps) {
   countRender('RankingRow')
-  const medal = rank <= 3 ? MEDAL[rank - 1] : 'bg-slate-100 text-slate-500'
+  const medal = rank <= 3 ? MEDAL[rank - 1] : 'bg-sunken text-ink-muted'
   return (
     <tr
       ref={measureRef}
       data-index={index}
       className={cn(
         'transition-colors duration-300',
-        delta !== 0 ? 'bg-primary-soft/60' : 'hover:bg-slate-50/80',
+        delta !== 0 ? 'bg-brand-soft/60' : 'hover:bg-canvas/80',
       )}
     >
       <td className="py-2.5 pr-3 pl-4">
@@ -80,8 +76,8 @@ export const RankingRow = memo(function RankingRow({
             <span
               key={delta}
               className={cn(
-                'animate-scale-in inline-flex items-center text-xs font-medium tabular-nums',
-                delta > 0 ? 'text-emerald-600' : 'text-red-500',
+                'animate-float-in inline-flex items-center text-xs font-medium tabular-nums',
+                delta > 0 ? 'text-good' : 'text-bad',
               )}
             >
               {delta > 0 ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />}
@@ -96,7 +92,7 @@ export const RankingRow = memo(function RankingRow({
           <div className="min-w-0">
             <Link
               to={links.applicationDetail(item.applicationId)}
-              className="hover:text-primary font-medium transition-colors"
+              className="hover:text-brand font-medium transition-colors"
             >
               {item.candidateName}
             </Link>

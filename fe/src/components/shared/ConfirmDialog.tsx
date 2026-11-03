@@ -1,29 +1,31 @@
-import { useState } from 'react'
-import { Button, Dialog, FormField, Textarea } from '@/components/ui'
+import { useState, type ReactNode } from 'react'
+import { Button, Dialog, DialogFooter, FormField, Textarea, chipClass } from '@/components/ui'
 
 interface ConfirmDialogProps {
   open: boolean
   onClose: () => void
   title: string
-  description?: string
+  description?: ReactNode
   confirmLabel?: string
+  cancelLabel?: string
   tone?: 'primary' | 'danger'
   loading?: boolean
-  /** Bắt buộc nhập lý do (ví dụ chuyển sang REJECTED) */
-  requireReason?: { label: string; placeholder?: string }
+  requireReason?: { label: string; placeholder?: string; suggestions?: readonly string[] }
+  children?: ReactNode
   onConfirm: (reason?: string) => void
 }
 
-/** Hộp xác nhận dùng chung thay cho window.confirm; có biến thể bắt nhập lý do */
 export function ConfirmDialog({
   open,
   onClose,
   title,
   description,
   confirmLabel = 'Xác nhận',
+  cancelLabel = 'Huỷ',
   tone = 'primary',
   loading,
   requireReason,
+  children,
   onConfirm,
 }: ConfirmDialogProps) {
   const [reason, setReason] = useState('')
@@ -45,13 +47,28 @@ export function ConfirmDialog({
   return (
     <Dialog open={open} onClose={close} title={title}>
       <div className="space-y-4">
-        {description && <p className="text-sm text-slate-600">{description}</p>}
+        {description && <div className="text-ink-2">{description}</div>}
+        {children}
         {requireReason && (
           <FormField
             label={requireReason.label}
             htmlFor="confirm-reason"
-            error={touched && reasonMissing ? 'Vui lòng nhập lý do' : undefined}
+            error={touched && reasonMissing ? 'Nhập lý do để tiếp tục' : undefined}
           >
+            {requireReason.suggestions && requireReason.suggestions.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pb-1">
+                {requireReason.suggestions.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={chipClass(reason === s)}
+                    onClick={() => setReason(s)}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
             <Textarea
               id="confirm-reason"
               placeholder={requireReason.placeholder}
@@ -61,15 +78,15 @@ export function ConfirmDialog({
             />
           </FormField>
         )}
-        <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={close}>
-            Huỷ
-          </Button>
-          <Button variant={tone} loading={loading} onClick={confirm}>
-            {confirmLabel}
-          </Button>
-        </div>
       </div>
+      <DialogFooter>
+        <Button variant="secondary" onClick={close}>
+          {cancelLabel}
+        </Button>
+        <Button variant={tone} loading={loading} onClick={confirm}>
+          {confirmLabel}
+        </Button>
+      </DialogFooter>
     </Dialog>
   )
 }

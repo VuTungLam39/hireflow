@@ -1,23 +1,131 @@
+import { Check, ChevronDown, Search, X } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Button, Input } from '@/components/ui'
+import { Button, Input, Popover, menuItemClass } from '@/components/ui'
+import { cn } from '@/lib/utils'
+
+export interface ActiveFilter {
+  key: string
+  label: string
+  onRemove: () => void
+}
 
 interface FilterBarProps {
   children: ReactNode
-  /** Hiện nút "Xoá lọc" khi có bộ lọc đang bật */
+  active?: ActiveFilter[]
   onReset?: () => void
+  trailing?: ReactNode
 }
 
-/** Khung chứa bộ lọc. Giá trị bộ lọc nằm trên URL (useListParams), không ở đây. */
-export function FilterBar({ children, onReset }: FilterBarProps) {
+export function FilterBar({ children, active = [], onReset, trailing }: FilterBarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      {children}
-      {onReset && (
-        <Button variant="ghost" size="sm" onClick={onReset}>
-          Xoá lọc
-        </Button>
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        {children}
+        {trailing && <div className="ml-auto flex items-center gap-2">{trailing}</div>}
+      </div>
+      {(active.length > 0 || onReset) && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {active.map((f) => (
+            <span
+              key={f.key}
+              className="border-brand/25 bg-brand-soft text-brand inline-flex h-7 items-center gap-1 rounded-sm border pr-1 pl-2.5 text-[13px] font-medium"
+            >
+              {f.label}
+              <button
+                type="button"
+                aria-label={`Bỏ lọc ${f.label}`}
+                onClick={f.onRemove}
+                className="hover:bg-brand/10 rounded-xs p-0.5"
+              >
+                <X className="size-3.5" />
+              </button>
+            </span>
+          ))}
+          {onReset && (
+            <span className="type-caption ml-1">
+              {active.length > 0 && <>Đang lọc {active.length} điều kiện · </>}
+              <button
+                type="button"
+                onClick={onReset}
+                className="text-brand font-medium hover:underline"
+              >
+                Xoá lọc
+              </button>
+            </span>
+          )}
+        </div>
       )}
     </div>
+  )
+}
+
+interface FilterOption<T extends string> {
+  value: T
+  label: string
+}
+
+interface FilterMenuProps<T extends string> {
+  label: string
+  value: T | undefined
+  options: FilterOption<T>[]
+  onChange: (value: T | undefined) => void
+  allLabel?: string
+}
+
+export function FilterMenu<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+  allLabel = 'Tất cả',
+}: FilterMenuProps<T>) {
+  const [open, setOpen] = useState(false)
+  const current = options.find((o) => o.value === value)
+  const pick = (v: T | undefined) => {
+    onChange(v)
+    setOpen(false)
+  }
+  return (
+    <Popover
+      open={open}
+      onOpenChange={setOpen}
+      role="listbox"
+      label={label}
+      className="max-h-80 w-60 overflow-y-auto"
+      trigger={(props) => (
+        <button
+          type="button"
+          {...props}
+          className={cn(
+            'inline-flex h-9 items-center gap-1.5 rounded-sm border px-3 text-sm whitespace-nowrap transition-colors',
+            current
+              ? 'border-brand/30 bg-brand-soft text-brand'
+              : 'border-line bg-surface text-ink-2 hover:border-ink-faint',
+          )}
+        >
+          <span className={current ? 'text-brand/80' : 'text-ink-muted'}>{label}:</span>
+          <span className="max-w-40 truncate font-medium">{current?.label ?? allLabel}</span>
+          <ChevronDown className="size-4 opacity-70" />
+        </button>
+      )}
+    >
+      {[{ value: undefined, label: allLabel }, ...options].map((opt) => {
+        const selected = opt.value === value
+        return (
+          <button
+            key={opt.value ?? '__all'}
+            type="button"
+            role="option"
+            aria-selected={selected}
+            onClick={() => pick(opt.value as T | undefined)}
+            className={cn(menuItemClass, selected && 'text-ink font-medium')}
+          >
+            <span className="flex-1 truncate">{opt.label}</span>
+            {selected && <Check className="text-brand!" />}
+          </button>
+        )
+      })}
+    </Popover>
   )
 }
 
@@ -26,22 +134,24 @@ interface SearchInputProps {
   onChange: (value: string | undefined) => void
   placeholder?: string
   label?: string
+  size?: 'md' | 'lg'
+  className?: string
 }
 
 const DEBOUNCE_MS = 300
 
-/** Ô tìm kiếm có debounce 300ms: gõ liên tục không gửi request mỗi phím */
 export function SearchInput({
   value,
   onChange,
   placeholder,
   label = 'Tìm kiếm',
+  size = 'md',
+  className,
 }: SearchInputProps) {
   const [text, setText] = useState(value ?? '')
   const [prevValue, setPrevValue] = useState(value)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
-  // URL đổi từ bên ngoài (back/forward, Xoá lọc) → cập nhật ô nhập ngay trong lúc render
   if (value !== prevValue) {
     setPrevValue(value)
     setText(value ?? '')
@@ -56,13 +166,60 @@ export function SearchInput({
   }
 
   return (
-    <Input
-      type="search"
-      aria-label={label}
-      placeholder={placeholder}
-      className="w-full sm:max-w-xs"
-      value={text}
-      onChange={(e) => handleChange(e.target.value)}
-    />
+    <div className={cn('relative w-full', size === 'md' && 'sm:max-w-xs', className)}>
+      <Search
+        aria-hidden
+        className={cn(
+          'text-ink-muted pointer-events-none absolute top-1/2 -translate-y-1/2',
+          size === 'lg' ? 'left-3.5 size-[18px]' : 'left-3 size-4',
+        )}
+      />
+      <Input
+        type="search"
+        aria-label={label}
+        placeholder={placeholder}
+        className={size === 'lg' ? 'h-11 pl-10 text-[15px]' : 'pl-9'}
+        value={text}
+        onChange={(e) => handleChange(e.target.value)}
+      />
+    </div>
+  )
+}
+
+export function DensityToggle({
+  value,
+  onChange,
+}: {
+  value: 'comfortable' | 'compact'
+  onChange: (v: 'comfortable' | 'compact') => void
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Mật độ bảng"
+      className="bg-sunken inline-flex rounded-sm p-0.5"
+    >
+      {(
+        [
+          ['comfortable', 'Thoáng'],
+          ['compact', 'Gọn'],
+        ] as const
+      ).map(([v, label]) => (
+        <Button
+          key={v}
+          size="sm"
+          variant="quiet"
+          role="radio"
+          aria-checked={value === v}
+          onClick={() => onChange(v)}
+          className={cn(
+            'h-7 rounded-[5px] border px-2.5',
+            value === v ? 'border-line bg-surface text-ink' : 'text-ink-muted border-transparent',
+          )}
+        >
+          {label}
+        </Button>
+      ))}
+    </div>
   )
 }

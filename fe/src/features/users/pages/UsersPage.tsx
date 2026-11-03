@@ -54,7 +54,7 @@ export default function UsersPage() {
           <Avatar name={u.fullName} size="sm" className="hidden md:inline-flex" />
           <div className="min-w-0">
             <p className="font-medium">{u.fullName}</p>
-            <p className="text-xs text-slate-500">{u.email}</p>
+            <p className="text-ink-muted text-xs">{u.email}</p>
           </div>
         </div>
       ),
@@ -77,7 +77,7 @@ export default function UsersPage() {
     {
       key: 'lastLogin',
       header: 'Đăng nhập gần nhất',
-      cell: (u) => <span className="text-slate-500">{formatDateTime(u.lastLoginAt)}</span>,
+      cell: (u) => <span className="text-ink-muted">{formatDateTime(u.lastLoginAt)}</span>,
     },
     {
       key: 'actions',
@@ -87,11 +87,11 @@ export default function UsersPage() {
       // BR-ACC-05: không cho tự khoá / tự xoá chính mình
       cell: (u) => (
         <>
-          <Button variant="ghost" size="sm" onClick={() => setEditing(u)}>
+          <Button variant="quiet" size="sm" onClick={() => setEditing(u)}>
             Sửa
           </Button>
           <Button
-            variant="ghost"
+            variant="quiet"
             size="sm"
             disabled={u.id === currentUserId}
             onClick={() => setStatus.mutate({ id: u.id, isActive: !u.isActive })}
@@ -99,9 +99,9 @@ export default function UsersPage() {
             {u.isActive ? 'Khoá' : 'Mở khoá'}
           </Button>
           <Button
-            variant="ghost"
+            variant="quiet"
             size="sm"
-            className="text-red-600"
+            className="text-bad"
             disabled={u.id === currentUserId}
             onClick={() => setDeleting(u)}
           >

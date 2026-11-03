@@ -1,4 +1,4 @@
-import { ArrowLeft, UserSearch } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 import { EmptyState, ErrorState, PageHeader } from '@/components/shared'
 import { Card, PageLoader, Spinner } from '@/components/ui'
@@ -40,7 +40,7 @@ export default function JobMatchesPage() {
         actions={
           <Link
             to={links.jobEdit(job.id)}
-            className="text-primary text-sm font-medium hover:underline"
+            className="text-brand text-sm font-medium hover:underline"
           >
             Xem tin và tiêu chí →
           </Link>
@@ -48,7 +48,7 @@ export default function JobMatchesPage() {
       />
 
       {pending && items.length > 0 && (
-        <p className="flex items-center gap-2 text-sm text-slate-500" role="status">
+        <p className="text-ink-muted flex items-center gap-2 text-sm" role="status">
           <Spinner className="size-4" />
           Tiêu chí vừa thay đổi, đang tìm lại…
         </p>
@@ -56,18 +56,16 @@ export default function JobMatchesPage() {
 
       {job.status === 'DRAFT' ? (
         <EmptyState
-          icon={UserSearch}
           title="Tin chưa được đăng"
           description="Đăng tin để hệ thống tìm ứng viên cũ phù hợp với tiêu chí."
         />
       ) : searching ? (
-        <Card className="flex items-center gap-3 text-sm text-slate-600" role="status">
+        <Card className="text-ink-2 flex items-center gap-3 text-sm" role="status">
           <Spinner className="size-5" />
           Đang tìm ứng viên cũ phù hợp…
         </Card>
       ) : items.length === 0 ? (
         <EmptyState
-          icon={UserSearch}
           title="Chưa có ứng viên cũ nào phù hợp"
           description="Không ai trong kho ứng viên đạt từ 50 điểm theo tiêu chí hiện tại."
         />

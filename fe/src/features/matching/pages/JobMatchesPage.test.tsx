@@ -55,7 +55,7 @@ describe('JobMatchesPage', () => {
       .filter((n) => n <= 100)
     expect(scores.every((s) => s >= 50)).toBe(true)
 
-    const card = buttons[0].closest('.rounded-xl') as HTMLElement
+    const card = buttons[0].closest('[data-match-card]') as HTMLElement
     fireEvent.click(buttons[0])
     expect(await within(card).findByText('Đã mời')).toBeInTheDocument()
     expect(within(card).getByRole('link', { name: 'Xem hồ sơ →' })).toBeInTheDocument()

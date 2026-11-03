@@ -1,7 +1,7 @@
 import { Check, CircleDashed, Minus, Quote, ShieldX } from 'lucide-react'
 import { Badge } from '@/components/ui'
 import { RequirementTypeBadge, type Requirement } from '@/features/jobs'
-import { cn, staggerStyle } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { MATCH_LEVEL, type MatchLevel } from '../constants'
 import type { BreakdownItem } from '../types'
 
@@ -14,9 +14,9 @@ interface ScoreBreakdownProps {
 }
 
 const MATCH_ICON: Record<MatchLevel, { icon: typeof Check; className: string }> = {
-  1: { icon: Check, className: 'bg-emerald-100 text-emerald-700' },
-  0.5: { icon: CircleDashed, className: 'bg-amber-100 text-amber-700' },
-  0: { icon: Minus, className: 'bg-slate-100 text-slate-400' },
+  1: { icon: Check, className: 'bg-good-soft text-good-ink' },
+  0.5: { icon: CircleDashed, className: 'bg-warn-soft text-warn' },
+  0: { icon: Minus, className: 'bg-sunken text-ink-faint' },
 }
 
 /**
@@ -33,26 +33,22 @@ export function ScoreBreakdown({
 
   return (
     <ul className="space-y-2">
-      {requirements.map((req, index) => {
+      {requirements.map((req) => {
         const item = byId.get(req.id)
         const level = item?.match ?? 0
         const match = MATCH_LEVEL[level]
         const { icon: Icon, className: iconClass } = MATCH_ICON[level]
         return (
-          <li
-            key={req.id}
-            style={staggerStyle(index)}
-            className="animate-slide-up stagger rounded-xl border border-slate-100 bg-slate-50/50 p-3"
-          >
+          <li key={req.id} className="border-line-soft bg-canvas/50 rounded-md border p-3">
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className={cn('flex size-6 items-center justify-center rounded-full', iconClass)}
               >
                 <Icon className="size-3.5" />
               </span>
-              <span className="font-medium text-slate-800">{req.label}</span>
+              <span className="text-ink font-medium">{req.label}</span>
               <RequirementTypeBadge type={req.type} />
-              <span className="text-xs text-slate-400">
+              <span className="text-ink-faint text-xs">
                 Trọng số {req.weight}
                 {req.minYears != null && ` · tối thiểu ${req.minYears} năm`}
               </span>
@@ -67,27 +63,27 @@ export function ScoreBreakdown({
                 onClick={() => onEvidenceClick(item.evidence!)}
                 title="Xem đoạn này trong CV"
                 className={cn(
-                  'group mt-2.5 flex w-full items-start gap-2 rounded-lg border border-emerald-200/70 bg-white px-3 py-2 text-left text-sm text-slate-700 transition-all duration-150',
-                  'hover:border-emerald-300 hover:shadow-sm',
-                  activeEvidence === item.evidence && 'border-emerald-400 ring-2 ring-emerald-100',
+                  'group border-good/70 bg-surface text-ink-2 mt-2.5 flex w-full items-start gap-2 rounded-sm border px-3 py-2 text-left text-sm transition-all duration-150',
+                  'hover:border-good',
+                  activeEvidence === item.evidence && 'border-good ring-good-soft ring-2',
                 )}
               >
-                <Quote className="mt-0.5 size-3.5 shrink-0 text-emerald-500" />
+                <Quote className="text-good mt-0.5 size-3.5 shrink-0" />
                 <span className="flex-1">{item.evidence}</span>
-                <span className="shrink-0 text-xs text-emerald-600 opacity-0 transition-opacity group-hover:opacity-100">
+                <span className="text-good shrink-0 text-xs opacity-0 transition-opacity group-hover:opacity-100">
                   Xem trong CV
                 </span>
               </button>
             )}
 
             {item?.rejectedEvidence && (
-              <div className="mt-2.5 flex items-start gap-2 rounded-lg border border-red-200/70 bg-red-50/60 px-3 py-2 text-sm">
-                <ShieldX className="mt-0.5 size-3.5 shrink-0 text-red-500" />
+              <div className="border-bad/70 bg-bad-soft/60 mt-2.5 flex items-start gap-2 rounded-sm border px-3 py-2 text-sm">
+                <ShieldX className="text-bad mt-0.5 size-3.5 shrink-0" />
                 <div>
-                  <p className="text-slate-500 line-through decoration-red-300">
+                  <p className="text-ink-muted decoration-bad line-through">
                     {item.rejectedEvidence}
                   </p>
-                  <p className="mt-1 text-xs font-medium text-red-700">
+                  <p className="text-bad mt-1 text-xs font-medium">
                     Đã bị hệ thống loại: không tìm thấy đoạn này trong CV
                   </p>
                 </div>

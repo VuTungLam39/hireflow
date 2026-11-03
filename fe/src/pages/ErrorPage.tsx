@@ -1,24 +1,33 @@
+import { RotateCw } from 'lucide-react'
 import { isRouteErrorResponse, useRouteError } from 'react-router'
+import { Button } from '@/components/ui'
+import { getErrorRef } from '@/lib/errors'
 import NotFoundPage from './NotFoundPage'
+import { SystemMessage } from './SystemMessage'
 
-/** Hiển thị khi một route bị lỗi khi render (thay vì trắng trang) */
 export default function ErrorPage() {
   const error = useRouteError()
 
   if (isRouteErrorResponse(error) && error.status === 404) return <NotFoundPage />
 
+  const ref = getErrorRef(error)
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-3 p-4 text-center">
-      <h1 className="text-xl font-semibold">Đã có lỗi xảy ra</h1>
-      <p className="text-sm text-slate-500">
-        {error instanceof Error ? error.message : 'Vui lòng thử lại sau.'}
-      </p>
-      <button
-        onClick={() => window.location.reload()}
-        className="text-primary text-sm hover:underline"
-      >
-        Tải lại trang
-      </button>
-    </div>
+    <SystemMessage
+      standalone
+      code="Lỗi"
+      title="Có trục trặc khi tải trang"
+      actions={
+        <>
+          <Button onClick={() => window.location.reload()}>
+            <RotateCw />
+            Tải lại
+          </Button>
+          {ref && <span className="type-caption type-code">Mã tham chiếu {ref}</span>}
+        </>
+      }
+    >
+      Trang chưa hiển thị được. Tải lại thường sẽ khắc phục; nếu vẫn lỗi, hãy gửi mã tham chiếu cho
+      quản trị viên.
+    </SystemMessage>
   )
 }

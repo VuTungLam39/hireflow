@@ -27,11 +27,11 @@ const columns: Column<ApplicationListItem>[] = [
         <div className="min-w-0">
           <Link
             to={links.applicationDetail(a.id)}
-            className="hover:text-primary font-medium transition-colors"
+            className="hover:text-brand font-medium transition-colors"
           >
             {a.candidate.fullName}
           </Link>
-          <p className="text-xs text-slate-500">{a.candidate.email}</p>
+          <p className="text-ink-muted text-xs">{a.candidate.email}</p>
         </div>
       </div>
     ),
@@ -39,7 +39,7 @@ const columns: Column<ApplicationListItem>[] = [
   {
     key: 'job',
     header: 'Vị trí',
-    cell: (a) => <span className="text-slate-600">{a.job.title}</span>,
+    cell: (a) => <span className="text-ink-2">{a.job.title}</span>,
   },
   {
     key: 'score',
@@ -63,7 +63,7 @@ const columns: Column<ApplicationListItem>[] = [
     header: 'Ngày nộp',
     sortKey: 'createdAt',
     cell: (a) => (
-      <span className="whitespace-nowrap text-slate-500">{formatDateTime(a.createdAt)}</span>
+      <span className="text-ink-muted whitespace-nowrap">{formatDateTime(a.createdAt)}</span>
     ),
   },
 ]
@@ -100,8 +100,8 @@ export default function ApplicationsPage() {
         description="Điểm do hệ thống tính theo tiêu chí của job, mỗi tiêu chí có bằng chứng trích từ CV."
         actions={
           query.data && (
-            <span className="text-sm text-slate-500">
-              <span className="font-semibold text-slate-900 tabular-nums">
+            <span className="text-ink-muted text-sm">
+              <span className="text-ink font-semibold tabular-nums">
                 {query.data.meta.totalItems}
               </span>{' '}
               hồ sơ{hasFilter && ' khớp bộ lọc'}
@@ -146,9 +146,9 @@ export default function ApplicationsPage() {
               </option>
             ))}
           </Select>
-          <fieldset className="flex w-full min-w-0 items-center gap-1.5 text-sm text-slate-500 sm:w-auto">
+          <fieldset className="text-ink-muted flex w-full min-w-0 items-center gap-1.5 text-sm sm:w-auto">
             <legend className="sr-only">Ngày nộp</legend>
-            <CalendarDays className="size-4 text-slate-400" />
+            <CalendarDays className="text-ink-faint size-4" />
             <Input
               aria-label="Nộp từ ngày"
               type="date"
@@ -167,9 +167,9 @@ export default function ApplicationsPage() {
               onChange={(e) => setParams({ createdTo: e.target.value || null })}
             />
           </fieldset>
-          <fieldset className="flex items-center gap-1.5 text-sm text-slate-500">
+          <fieldset className="text-ink-muted flex items-center gap-1.5 text-sm">
             <legend className="sr-only">Khoảng điểm</legend>
-            <Gauge className="size-4 text-slate-400" />
+            <Gauge className="text-ink-faint size-4" />
             <Input
               aria-label="Điểm từ"
               type="number"
@@ -210,8 +210,8 @@ export default function ApplicationsPage() {
             className={cn(
               'inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors',
               params.missingMust
-                ? 'border-amber-300 bg-amber-50 text-amber-800'
-                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
+                ? 'border-warn bg-warn-soft text-warn'
+                : 'border-line bg-surface text-ink-2 hover:border-ink-faint',
             )}
           >
             <CircleAlert className="size-3.5" />

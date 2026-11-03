@@ -41,13 +41,13 @@ export function StatusActions({ applicationId, status }: StatusActionsProps) {
   if (APPLICATION_STATUS[status].terminal) {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-slate-500">Hồ sơ đã ở trạng thái kết thúc.</p>
+        <p className="text-ink-muted text-sm">Hồ sơ đã ở trạng thái kết thúc.</p>
         {canUpdate && REOPENABLE.includes(status) && <ReopenAction applicationId={applicationId} />}
       </div>
     )
   }
   if (!options.length) {
-    return <p className="text-sm text-slate-500">Bạn không có quyền đổi trạng thái hồ sơ này.</p>
+    return <p className="text-ink-muted text-sm">Bạn không có quyền đổi trạng thái hồ sơ này.</p>
   }
 
   const needReason = !!target && REASON_REQUIRED.includes(target)
@@ -60,11 +60,7 @@ export function StatusActions({ applicationId, status }: StatusActionsProps) {
             key={next}
             size="sm"
             variant={
-              next === 'REJECTED'
-                ? 'danger-outline'
-                : next === 'WITHDRAWN'
-                  ? 'secondary'
-                  : 'primary'
+              next === 'REJECTED' ? 'danger-quiet' : next === 'WITHDRAWN' ? 'secondary' : 'primary'
             }
             onClick={() => setTarget(next)}
           >

@@ -5,7 +5,6 @@ import { Button, Card, Textarea } from '@/components/ui'
 import { useStream } from '@/hooks/use-stream'
 import { ERROR_MESSAGES } from '@/lib/error-codes'
 import { getErrorMessage } from '@/lib/errors'
-import { staggerStyle } from '@/lib/utils'
 import { ChatMessageView } from '../components/ChatMessageView'
 import type { ChatMessage, ChatSource } from '../types'
 
@@ -77,25 +76,24 @@ export default function ChatPage() {
         description="Hỏi bằng ngôn ngữ tự nhiên. Mỗi ý trong câu trả lời kèm trích dẫn từ CV, chỉ trong phạm vi bạn được xem."
       />
 
-      <Card className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden bg-gradient-to-b from-white to-slate-50/80 p-0">
+      <Card className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-0">
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5" aria-live="polite">
           {messages.length === 0 ? (
-            <div className="animate-fade-in flex h-full flex-col items-center justify-center gap-4 text-center">
-              <span className="bg-primary-soft text-primary flex size-14 items-center justify-center rounded-2xl">
+            <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+              <span className="bg-brand-soft text-brand flex size-14 items-center justify-center rounded-md">
                 <MessageSquareText className="size-6" />
               </span>
               <div>
-                <p className="font-medium text-slate-800">Bạn muốn tìm ứng viên như thế nào?</p>
-                <p className="mt-1 text-sm text-slate-500">Thử một trong các câu hỏi sau:</p>
+                <p className="text-ink font-medium">Bạn muốn tìm ứng viên như thế nào?</p>
+                <p className="text-ink-muted mt-1 text-sm">Thử một trong các câu hỏi sau:</p>
               </div>
               <div className="flex max-w-xl flex-wrap justify-center gap-2">
-                {SUGGESTIONS.map((s, i) => (
+                {SUGGESTIONS.map((s) => (
                   <button
                     key={s}
                     type="button"
                     onClick={() => void ask(s)}
-                    style={staggerStyle(i + 2)}
-                    className="animate-slide-up stagger hover:border-primary/40 hover:text-primary rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm text-slate-600 shadow-sm transition-colors"
+                    className="hover:border-brand/40 hover:text-brand border-line bg-surface text-ink-2 rounded-full border px-3.5 py-1.5 text-sm transition-colors"
                   >
                     {s}
                   </button>
@@ -110,7 +108,7 @@ export default function ChatPage() {
 
         <form
           onSubmit={onSubmit}
-          className="focus-within:border-primary/50 focus-within:ring-primary/10 mx-4 mb-4 flex items-end gap-2 rounded-xl border border-slate-200 bg-white p-2 shadow-sm transition-all focus-within:ring-4"
+          className="focus-within:border-brand/50 focus-within:ring-brand/10 border-line bg-surface mx-4 mb-4 flex items-end gap-2 rounded-md border p-2 transition-all focus-within:ring-4"
         >
           <Textarea
             aria-label="Câu hỏi"

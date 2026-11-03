@@ -10,7 +10,7 @@ import {
   ScoreValue,
   type ApplicationListParams,
 } from '@/features/applications'
-import { formatRelative, staggerStyle } from '@/lib/utils'
+import { formatRelative } from '@/lib/utils'
 import { links } from '@/routes/paths'
 
 interface ApplicationQueueProps {
@@ -33,7 +33,6 @@ export function ApplicationQueue({
   params,
   viewAllHref,
   emptyTitle,
-  emptyIcon,
 }: ApplicationQueueProps) {
   const query = useQuery(applicationQueries.list({ page: 1, limit: LIMIT, ...params }))
 
@@ -44,7 +43,7 @@ export function ApplicationQueue({
         aside={
           <Link
             to={viewAllHref}
-            className="text-primary inline-flex items-center gap-1 text-sm font-medium hover:underline"
+            className="text-brand inline-flex items-center gap-1 text-sm font-medium hover:underline"
           >
             Xem tất cả
             <ArrowRight className="size-3.5" />
@@ -53,7 +52,7 @@ export function ApplicationQueue({
       >
         {title}
         {query.data && (
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 tabular-nums">
+          <span className="bg-sunken text-ink-2 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums">
             {query.data.meta.totalItems}
           </span>
         )}
@@ -68,21 +67,19 @@ export function ApplicationQueue({
       ) : query.isError ? (
         <ErrorState error={query.error} onRetry={query.refetch} />
       ) : query.data.items.length === 0 ? (
-        <EmptyState title={emptyTitle} icon={emptyIcon} />
+        <EmptyState title={emptyTitle} compact />
       ) : (
-        <ul className="-mx-2 divide-y divide-slate-100">
-          {query.data.items.map((a, i) => (
-            <li key={a.id} style={staggerStyle(i)} className="animate-slide-up stagger">
+        <ul className="divide-line-soft -mx-2 divide-y">
+          {query.data.items.map((a) => (
+            <li key={a.id} className=" ">
               <Link
                 to={links.applicationDetail(a.id)}
-                className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-slate-50"
+                className="hover:bg-canvas flex items-center gap-3 rounded-sm px-2 py-2.5 transition-colors"
               >
                 <Avatar name={a.candidate.fullName} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-slate-900">
-                    {a.candidate.fullName}
-                  </p>
-                  <p className="truncate text-xs text-slate-500">
+                  <p className="text-ink truncate text-sm font-medium">{a.candidate.fullName}</p>
+                  <p className="text-ink-muted truncate text-xs">
                     {a.job.title} · {formatRelative(a.createdAt)}
                   </p>
                 </div>

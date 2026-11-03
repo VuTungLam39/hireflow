@@ -1,14 +1,26 @@
 import { Link } from 'react-router'
+import { buttonVariants } from '@/components/ui'
 import { paths } from '@/routes/paths'
+import { SystemMessage } from './SystemMessage'
 
 export default function NotFoundPage() {
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center">
-      <p className="text-primary text-5xl font-bold">404</p>
-      <h1 className="text-xl font-semibold">Không tìm thấy trang</h1>
-      <Link to={paths.home} className="text-primary text-sm hover:underline">
-        Về trang chủ
-      </Link>
-    </div>
+    <SystemMessage
+      code="404"
+      title="Không có trang này"
+      actions={
+        <>
+          <Link to={paths.home} className={buttonVariants()}>
+            Về trang Hôm nay
+          </Link>
+          <Link to={paths.applications} className={buttonVariants({ variant: 'quiet' })}>
+            Xem hồ sơ ứng tuyển
+          </Link>
+        </>
+      }
+    >
+      Đường dẫn có thể đã cũ hoặc bị gõ nhầm. Bạn có thể quay về trang chính hoặc mở danh sách hồ
+      sơ.
+    </SystemMessage>
   )
 }

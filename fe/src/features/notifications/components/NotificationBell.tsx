@@ -59,11 +59,11 @@ export function NotificationBell({ align = 'left' }: NotificationBellProps) {
         aria-haspopup="dialog"
         title={connected ? 'Thông báo (đang cập nhật trực tiếp)' : 'Thông báo (đang kết nối lại…)'}
         onClick={() => setOpen((v) => !v)}
-        className="relative rounded-md p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
+        className="text-ink-muted hover:bg-sunken hover:text-ink relative rounded-md p-2 transition-colors"
       >
         <Bell className="size-5" />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+          <span className="bg-bad absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-xs font-semibold text-white">
             {unread > 99 ? '99+' : unread}
           </span>
         )}
@@ -74,15 +74,15 @@ export function NotificationBell({ align = 'left' }: NotificationBellProps) {
           role="dialog"
           aria-label="Thông báo"
           className={cn(
-            'animate-fade-in absolute top-full z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl',
+            'border-line bg-surface shadow-float absolute top-full z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-md border',
             align === 'left' ? 'left-0' : 'right-0',
           )}
         >
-          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <p className="text-sm font-semibold text-slate-900">Thông báo</p>
+          <div className="border-line-soft flex items-center justify-between border-b px-4 py-3">
+            <p className="text-ink text-sm font-semibold">Thông báo</p>
             <Button
               size="sm"
-              variant="ghost"
+              variant="quiet"
               disabled={!unread}
               loading={markAll.isPending}
               onClick={() => markAll.mutate()}
@@ -98,40 +98,40 @@ export function NotificationBell({ align = 'left' }: NotificationBellProps) {
                 <Spinner />
               </div>
             ) : list.isError ? (
-              <p className="p-4 text-sm text-red-600">Không tải được thông báo.</p>
+              <p className="text-bad p-4 text-sm">Không tải được thông báo.</p>
             ) : items.length === 0 ? (
-              <p className="p-6 text-center text-sm text-slate-500">
+              <p className="text-ink-muted p-6 text-center text-sm">
                 Chưa có thông báo. Khi CV của tin bạn phụ trách chấm xong, thông báo sẽ hiện ở đây.
               </p>
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-line-soft divide-y">
                 {items.map((n) => (
                   <li key={n.id}>
                     <button
                       type="button"
                       onClick={() => openItem(n)}
                       className={cn(
-                        'flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50',
-                        !n.readAt && 'bg-blue-50/50',
+                        'hover:bg-canvas flex w-full items-start gap-3 px-4 py-3 text-left transition-colors',
+                        !n.readAt && 'bg-info-soft/50',
                       )}
                     >
                       {n.type === 'CV_FAILED' || n.type === 'INTERVIEW_CANCELLED' ? (
-                        <CircleAlert className="mt-0.5 size-4 shrink-0 text-red-500" />
+                        <CircleAlert className="text-bad mt-0.5 size-4 shrink-0" />
                       ) : n.type.startsWith('INTERVIEW') ? (
-                        <CalendarClock className="mt-0.5 size-4 shrink-0 text-blue-500" />
+                        <CalendarClock className="text-info mt-0.5 size-4 shrink-0" />
                       ) : (
-                        <CircleCheck className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+                        <CircleCheck className="text-good mt-0.5 size-4 shrink-0" />
                       )}
                       <span className="min-w-0 flex-1">
-                        <span className="block text-sm text-slate-800">{notificationText(n)}</span>
-                        <span className="block truncate text-xs text-slate-500">
+                        <span className="text-ink block text-sm">{notificationText(n)}</span>
+                        <span className="text-ink-muted block truncate text-xs">
                           {n.application?.jobTitle} · {formatRelative(n.createdAt)}
                         </span>
                       </span>
                       {!n.readAt && (
                         <span
                           aria-label="Chưa đọc"
-                          className="mt-1.5 size-2 shrink-0 rounded-full bg-blue-500"
+                          className="bg-info mt-1.5 size-2 shrink-0 rounded-full"
                         />
                       )}
                     </button>
@@ -140,10 +140,10 @@ export function NotificationBell({ align = 'left' }: NotificationBellProps) {
               </ul>
             )}
             {list.hasNextPage && (
-              <div className="border-t border-slate-100 p-2">
+              <div className="border-line-soft border-t p-2">
                 <Button
                   size="sm"
-                  variant="ghost"
+                  variant="quiet"
                   className="w-full"
                   loading={list.isFetchingNextPage}
                   onClick={() => void list.fetchNextPage()}

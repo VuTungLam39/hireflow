@@ -1,13 +1,13 @@
 import {
-  Activity,
   Briefcase,
   Building2,
   CalendarDays,
   Contact,
+  FileStack,
   FileText,
-  LayoutDashboard,
-  ScrollText,
   MessageSquareText,
+  ScrollText,
+  Sun,
   Users,
   type LucideIcon,
 } from 'lucide-react'
@@ -19,8 +19,8 @@ export interface NavItem {
   label: string
   icon: LucideIcon
   permission: Permission
-  /** Chỉ active khi khớp đúng đường dẫn (trang chủ) */
   end?: boolean
+  badge?: 'pending'
 }
 
 export interface NavGroup {
@@ -30,14 +30,15 @@ export interface NavGroup {
 
 export const navGroups: NavGroup[] = [
   {
-    title: 'Tuyển dụng',
+    title: 'Công việc',
     items: [
       {
         to: paths.home,
-        label: 'Tổng quan',
-        icon: LayoutDashboard,
+        label: 'Hôm nay',
+        icon: Sun,
         permission: Permission.DashboardRead,
         end: true,
+        badge: 'pending',
       },
       { to: paths.jobs, label: 'Tin tuyển dụng', icon: Briefcase, permission: Permission.JobRead },
       {
@@ -60,7 +61,7 @@ export const navGroups: NavGroup[] = [
       },
       {
         to: paths.aiChat,
-        label: 'Trợ lý AI',
+        label: 'Hỏi kho CV',
         icon: MessageSquareText,
         permission: Permission.AiChat,
       },
@@ -76,7 +77,7 @@ export const navGroups: NavGroup[] = [
         icon: Building2,
         permission: Permission.DepartmentManage,
       },
-      { to: paths.aiQueue, label: 'Hàng đợi AI', icon: Activity, permission: Permission.OpsManage },
+      { to: paths.aiQueue, label: 'Xử lý CV', icon: FileStack, permission: Permission.OpsManage },
       {
         to: paths.auditLogs,
         label: 'Nhật ký kiểm toán',
@@ -87,7 +88,6 @@ export const navGroups: NavGroup[] = [
   },
 ]
 
-/** Mục menu ứng với đường dẫn hiện tại (khớp tiền tố dài nhất) để hiện breadcrumb trên topbar */
 export function findNavItem(pathname: string): { group: string; item: NavItem } | null {
   let best: { group: string; item: NavItem } | null = null
   for (const group of navGroups) {

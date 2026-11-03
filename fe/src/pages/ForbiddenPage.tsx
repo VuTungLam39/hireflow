@@ -1,14 +1,25 @@
 import { Link } from 'react-router'
+import { buttonVariants } from '@/components/ui'
 import { paths } from '@/routes/paths'
+import { useAuthStore } from '@/stores/auth.store'
+import { ROLE_LABELS } from '@/types/user'
+import { SystemMessage } from './SystemMessage'
 
-export default function ForbiddenPage() {
+export default function ForbiddenPage({ roles }: { roles?: string }) {
+  const user = useAuthStore((s) => s.user)
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center">
-      <p className="text-5xl font-bold text-red-600">403</p>
-      <h1 className="text-xl font-semibold">Bạn không có quyền truy cập trang này</h1>
-      <Link to={paths.home} className="text-primary text-sm hover:underline">
-        Về trang chủ
-      </Link>
-    </div>
+    <SystemMessage
+      code="403"
+      title={roles ? `Trang này dành cho ${roles}` : 'Trang này không thuộc quyền của bạn'}
+      actions={
+        <Link to={paths.home} className={buttonVariants()}>
+          Về trang chủ
+        </Link>
+      }
+    >
+      {user
+        ? `Tài khoản ${ROLE_LABELS[user.role]} của bạn chưa được cấp quyền mở trang này. Nếu bạn cần dùng, hãy liên hệ quản trị viên.`
+        : 'Bạn cần đăng nhập bằng tài khoản có quyền phù hợp.'}
+    </SystemMessage>
   )
 }

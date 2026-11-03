@@ -21,10 +21,12 @@ export function Button({
     <button
       type={type}
       disabled={disabled || loading}
-      className={cn(buttonVariants({ variant, size }), className)}
+      aria-busy={loading || undefined}
+      data-loading={loading || undefined}
+      className={cn(buttonVariants({ variant, size }), loading && '[&>svg]:hidden', className)}
       {...props}
     >
-      {loading && <Spinner className="size-4" />}
+      {loading && <Spinner className="size-3.5" />}
       {children}
     </button>
   )

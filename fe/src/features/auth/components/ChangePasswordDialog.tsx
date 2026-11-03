@@ -106,7 +106,7 @@ export function ChangePasswordDialog({ open, onClose }: Props) {
         </FormField>
 
         {errors.root && (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="text-bad text-sm">
             {errors.root.message}
           </p>
         )}

@@ -1,19 +1,21 @@
 import { cn } from '@/lib/utils'
 
-// Bảng màu dịu, đủ khác nhau để phân biệt người trong danh sách
 const palette = [
-  'bg-indigo-100 text-indigo-700',
-  'bg-sky-100 text-sky-700',
-  'bg-emerald-100 text-emerald-700',
-  'bg-amber-100 text-amber-800',
-  'bg-rose-100 text-rose-700',
-  'bg-violet-100 text-violet-700',
-  'bg-teal-100 text-teal-700',
+  'bg-earth-moss text-earth-moss-ink',
+  'bg-earth-clay text-earth-clay-ink',
+  'bg-earth-sand text-earth-sand-ink',
+  'bg-earth-stone text-earth-stone-ink',
+  'bg-earth-plum text-earth-plum-ink',
+  'bg-earth-sea text-earth-sea-ink',
 ] as const
 
-const sizes = { sm: 'size-7 text-[11px]', md: 'size-9 text-xs', lg: 'size-12 text-base' } as const
+const sizes = {
+  xs: 'size-6 text-xs',
+  sm: 'size-7 text-xs',
+  md: 'size-9 text-[13px]',
+  lg: 'size-12 text-base',
+} as const
 
-/** Chữ cái đầu của họ và tên: "Nguyễn Thu Hà" → "NH" */
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean)
   if (parts.length === 0) return '?'
@@ -34,13 +36,12 @@ interface AvatarProps {
   className?: string
 }
 
-/** Avatar chữ cái, màu cố định theo tên (cùng người luôn cùng màu) */
 export function Avatar({ name, size = 'md', className }: AvatarProps) {
   return (
     <span
       aria-hidden
       className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-full font-semibold',
+        'inline-flex shrink-0 items-center justify-center rounded-full font-semibold tracking-[0.02em]',
         sizes[size],
         colorOf(name),
         className,

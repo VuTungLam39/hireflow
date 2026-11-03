@@ -24,9 +24,9 @@ export const RankingTable = memo(function RankingTable({
 }: RankingTableProps) {
   return (
     <Profiler id="ranking-table" onRender={onProfilerRender}>
-      <div className="relative overflow-x-auto rounded-lg border border-slate-200">
+      <div className="border-line relative overflow-x-auto rounded-sm border">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50/80 text-xs tracking-wide text-slate-500 uppercase">
+          <thead className="border-line bg-canvas/80 text-ink-muted border-b text-xs tracking-wide uppercase">
             <tr>
               <th className="py-2.5 pr-3 pl-4 font-medium">Hạng</th>
               <th className="py-2.5 pr-3 font-medium">Ứng viên</th>
@@ -46,7 +46,7 @@ export const RankingTable = memo(function RankingTable({
           {rows.length > VIRTUALIZE_FROM ? (
             <VirtualBody rows={rows} requirements={requirements} savedRank={savedRank} />
           ) : (
-            <tbody className="divide-y divide-slate-100 bg-white">
+            <tbody className="divide-line-soft bg-surface divide-y">
               {rows.map((row) => (
                 <Row
                   key={row.item.id}
@@ -117,7 +117,7 @@ function VirtualBody({ rows, requirements, savedRank }: RankingTableProps) {
   const colSpan = requirements.length + 4
 
   return (
-    <tbody ref={bodyRef} className="divide-y divide-slate-100 bg-white">
+    <tbody ref={bodyRef} className="divide-line-soft bg-surface divide-y">
       {paddingTop > 0 && (
         <tr aria-hidden>
           <td colSpan={colSpan} style={{ height: paddingTop, padding: 0 }} />

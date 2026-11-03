@@ -11,7 +11,7 @@ export function getErrorCode(error: unknown): string | undefined {
 }
 
 /** Lấy thông báo lỗi dễ đọc từ lỗi API / lỗi bất kỳ */
-export function getErrorMessage(error: unknown, fallback = 'Đã có lỗi xảy ra'): string {
+export function getErrorMessage(error: unknown, fallback = 'Có trục trặc khi tải dữ liệu'): string {
   const code = getErrorCode(error)
   if (code && ERROR_MESSAGES[code]) return ERROR_MESSAGES[code]
 
@@ -40,4 +40,10 @@ export function applyServerErrors<T extends FieldValues>(
     setError(field as Path<T>, { type: 'server', message: messages[0] })
   }
   return true
+}
+
+export function getErrorRef(error: unknown): string | undefined {
+  if (!isAxiosError(error)) return undefined
+  const id = error.response?.headers?.['x-request-id']
+  return typeof id === 'string' ? id.slice(0, 8) : undefined
 }

@@ -147,6 +147,7 @@ export class ApplicationsService {
     }
     if (query.jobId) qb.andWhere('app.jobId = :jobId', { jobId: query.jobId });
     if (query.status) qb.andWhere('app.status = :status', { status: query.status });
+    if (query.aiStatus) qb.andWhere('app.aiStatus = :aiStatus', { aiStatus: query.aiStatus });
     if (query.scoreMin !== undefined)
       qb.andWhere('app.score >= :scoreMin', { scoreMin: query.scoreMin });
     if (query.scoreMax !== undefined)

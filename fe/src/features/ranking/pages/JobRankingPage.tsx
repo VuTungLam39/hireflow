@@ -88,7 +88,7 @@ function RankingView({ data }: { data: RankingData }) {
         actions={
           <Link
             to={links.applications({ jobId })}
-            className="text-primary text-sm font-medium hover:underline"
+            className="text-brand text-sm font-medium hover:underline"
           >
             Xem dạng bảng hồ sơ →
           </Link>
@@ -98,7 +98,7 @@ function RankingView({ data }: { data: RankingData }) {
       <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
         <Card className="space-y-5 self-start lg:sticky lg:top-8">
           <CardTitle icon={<SlidersHorizontal />}>Trọng số tiêu chí</CardTitle>
-          <p className="-mt-2 text-xs text-slate-500">1 = ít quan trọng · 3 = rất quan trọng</p>
+          <p className="text-ink-muted -mt-2 text-xs">1 = ít quan trọng · 3 = rất quan trọng</p>
           {data.requirements.map((req) => (
             <WeightSlider
               key={req.id}
@@ -108,7 +108,7 @@ function RankingView({ data }: { data: RankingData }) {
               onChange={onWeightChange}
             />
           ))}
-          <div className="flex gap-2 border-t border-slate-100 pt-4">
+          <div className="border-line-soft flex gap-2 border-t pt-4">
             <Button
               variant="secondary"
               size="sm"
@@ -121,7 +121,7 @@ function RankingView({ data }: { data: RankingData }) {
             <Can
               permission={Permission.JobUpdate}
               fallback={
-                <p className="flex-1 self-center text-xs text-slate-500">
+                <p className="text-ink-muted flex-1 self-center text-xs">
                   Chỉ là bản nháp để xem thử, không lưu.
                 </p>
               }
@@ -140,7 +140,7 @@ function RankingView({ data }: { data: RankingData }) {
         </Card>
 
         <Card className="min-w-0 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+          <div className="text-ink-muted flex flex-wrap items-center justify-between gap-2 text-sm">
             <CardTitle icon={<Trophy />}>Xếp hạng</CardTitle>
             <span className="text-xs">
               {scored.length} hồ sơ đã chấm

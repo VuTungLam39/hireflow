@@ -21,17 +21,17 @@ const columns: Column<CandidateListItem>[] = [
         <div className="min-w-0">
           <Link
             to={links.candidateDetail(c.id)}
-            className="hover:text-primary font-medium transition-colors"
+            className="hover:text-brand font-medium transition-colors"
           >
             {c.fullName}
           </Link>
           {c.anonymizedAt ? (
-            <p className="flex items-center gap-1 text-xs text-slate-500">
+            <p className="text-ink-muted flex items-center gap-1 text-xs">
               <ShieldOff className="size-3" />
               Đã ẩn danh {formatDate(c.anonymizedAt)}
             </p>
           ) : (
-            <p className="text-xs text-slate-500">{c.email}</p>
+            <p className="text-ink-muted text-xs">{c.email}</p>
           )}
         </div>
       </div>
@@ -40,7 +40,7 @@ const columns: Column<CandidateListItem>[] = [
   {
     key: 'phone',
     header: 'Điện thoại',
-    cell: (c) => <span className="text-slate-600 tabular-nums">{c.phone ?? '—'}</span>,
+    cell: (c) => <span className="text-ink-2 tabular-nums">{c.phone ?? '—'}</span>,
   },
   {
     key: 'applications',
@@ -55,7 +55,7 @@ const columns: Column<CandidateListItem>[] = [
     key: 'lastAppliedAt',
     header: 'Nộp gần nhất',
     cell: (c) => (
-      <span className="whitespace-nowrap text-slate-500">{formatRelative(c.lastAppliedAt)}</span>
+      <span className="text-ink-muted whitespace-nowrap">{formatRelative(c.lastAppliedAt)}</span>
     ),
   },
 ]
@@ -83,9 +83,8 @@ export default function CandidatesPage() {
         description="Mỗi người một hồ sơ theo email, kèm mọi lần nộp. Tìm lại ứng viên cũ cho vị trí mới."
         actions={
           items && (
-            <span className="text-sm text-slate-500">
-              Đã tải{' '}
-              <span className="font-semibold text-slate-900 tabular-nums">{items.length}</span> ứng
+            <span className="text-ink-muted text-sm">
+              Đã tải <span className="text-ink font-semibold tabular-nums">{items.length}</span> ứng
               viên{query.hasNextPage && ', cuộn để xem thêm'}
             </span>
           )

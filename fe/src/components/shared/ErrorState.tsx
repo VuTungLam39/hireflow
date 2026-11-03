@@ -1,30 +1,37 @@
-import { RotateCw, TriangleAlert } from 'lucide-react'
+import { RotateCw } from 'lucide-react'
 import { Button } from '@/components/ui'
-import { getErrorMessage } from '@/lib/errors'
+import { getErrorMessage, getErrorRef } from '@/lib/errors'
+import { cn } from '@/lib/utils'
 
 interface ErrorStateProps {
   error: unknown
-  /** Thường là `refetch` của useQuery */
   onRetry?: () => void
+  title?: string
+  className?: string
 }
 
-/** R8: trạng thái lỗi, luôn có nút thử lại */
-export function ErrorState({ error, onRetry }: ErrorStateProps) {
+export function ErrorState({
+  error,
+  onRetry,
+  title = 'Chưa tải được dữ liệu',
+  className,
+}: ErrorStateProps) {
+  const ref = getErrorRef(error)
   return (
-    <div
-      role="alert"
-      className="animate-fade-in flex flex-col items-center gap-3 py-12 text-center"
-    >
-      <div className="flex size-12 items-center justify-center rounded-full bg-red-50 text-red-500 ring-8 ring-red-50/40">
-        <TriangleAlert className="size-5" />
+    <div role="alert" className={cn('max-w-xl py-10', className)}>
+      <p className="type-heading">{title}</p>
+      <p className="text-ink-muted mt-1">
+        {getErrorMessage(error).replace(/[.\s]+$/, '')}. Bạn thử lại sau giây lát.
+      </p>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        {onRetry && (
+          <Button variant="secondary" size="sm" onClick={onRetry}>
+            <RotateCw />
+            Thử lại
+          </Button>
+        )}
+        {ref && <span className="type-caption type-code">Mã tham chiếu {ref}</span>}
       </div>
-      <p className="font-medium text-slate-800">{getErrorMessage(error)}</p>
-      {onRetry && (
-        <Button variant="secondary" size="sm" onClick={onRetry}>
-          <RotateCw />
-          Thử lại
-        </Button>
-      )}
     </div>
   )
 }
