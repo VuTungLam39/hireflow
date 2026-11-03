@@ -1,46 +1,43 @@
-import { ArrowDown, ArrowUp } from 'lucide-react'
 import { memo } from 'react'
-import { Link } from 'react-router'
 import { Avatar } from '@/components/ui'
-import {
-  ApplicationStatusBadge,
-  MATCH_LEVEL,
-  ScoreFlags,
-  ScoreValue,
-} from '@/features/applications'
+import { RequirementMarks, ScoreBadge, StatusPill } from '@/features/applications'
 import type { Requirement } from '@/features/jobs'
 import { countRender } from '@/lib/profiler'
 import { cn } from '@/lib/utils'
-import { links } from '@/routes/paths'
 import type { RankingItem } from '../types'
 
 interface RankingRowProps {
   item: RankingItem
-  /** requirementId → mức khớp, dựng sẵn một lần (tham chiếu ổn định) */
   matches: Record<string, number>
   requirements: Requirement[]
   rank: number
   score: number
-  /** Số bậc thay đổi so với trọng số đã lưu (dương = lên hạng) */
   delta: number
+  selected?: boolean
+  onSelect?: (id: string) => void
   index?: number
   measureRef?: (el: HTMLTableRowElement | null) => void
 }
 
-/** Ba hạng đầu có màu riêng, nhẹ nhàng */
-const MEDAL = ['bg-warn-soft text-warn', 'bg-line text-ink-2', 'bg-warn-soft text-warn']
-
-const MATCH_DOT: Record<number, string> = {
-  1: 'bg-good',
-  0.5: 'bg-warn',
-  0: 'bg-line ring-1 ring-ink-faint/60',
+export function RankDelta({ delta }: { delta: number }) {
+  if (delta === 0)
+    return (
+      <span className="text-ink-faint w-7 text-xs" aria-label="Không đổi hạng">
+        –
+      </span>
+    )
+  return (
+    <span
+      className={cn('num w-7 text-xs font-semibold', delta > 0 ? 'text-good-ink' : 'text-bad')}
+      aria-label={delta > 0 ? `Lên ${delta} hạng` : `Xuống ${-delta} hạng`}
+    >
+      {delta > 0 ? '▲' : '▼'}
+      {Math.abs(delta)}
+    </span>
+  )
 }
 
-/**
- * Một dòng của bảng xếp hạng. Bọc memo và chỉ nhận props ổn định (object từ cache
- * + số nguyên), nên khi kéo trọng số chỉ các dòng đổi điểm/hạng render lại
- * (đo bằng React Profiler – FE Architecture mục 9.1).
- */
+// FE Architecture 9.1
 export const RankingRow = memo(function RankingRow({
   item,
   matches,
@@ -48,78 +45,70 @@ export const RankingRow = memo(function RankingRow({
   rank,
   score,
   delta,
+  selected,
+  onSelect,
   index,
   measureRef,
 }: RankingRowProps) {
   countRender('RankingRow')
-  const medal = rank <= 3 ? MEDAL[rank - 1] : 'bg-sunken text-ink-muted'
   return (
     <tr
       ref={measureRef}
       data-index={index}
+      data-key={item.applicationId}
+      tabIndex={onSelect ? 0 : undefined}
+      aria-selected={onSelect ? !!selected : undefined}
+      onClick={() => onSelect?.(item.applicationId)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onSelect?.(item.applicationId)
+        }
+      }}
       className={cn(
-        'transition-colors duration-300',
-        delta !== 0 ? 'bg-brand-soft/60' : 'hover:bg-canvas/80',
+        'border-line-soft relative cursor-pointer border-b transition-colors duration-100 last:border-b-0 focus-visible:-outline-offset-2',
+        selected ? 'bg-brand-soft/60' : 'hover:bg-canvas',
       )}
     >
-      <td className="py-2.5 pr-3 pl-4">
-        <span className="flex items-center gap-1.5">
+      <td
+        className={cn(
+          'h-[52px] py-2 pr-2 pl-4',
+          selected && 'shadow-[inset_2px_0_0_var(--color-brand)]',
+        )}
+      >
+        <span className="flex items-baseline gap-2">
           <span
             className={cn(
-              'flex size-7 items-center justify-center rounded-full text-xs font-semibold tabular-nums',
-              medal,
+              'num w-7 text-right font-serif text-lg leading-6',
+              rank <= 3 ? 'text-ink font-bold' : 'text-ink-2 font-semibold',
             )}
           >
             {rank}
           </span>
-          {delta !== 0 && (
-            <span
-              key={delta}
-              className={cn(
-                'animate-float-in inline-flex items-center text-xs font-medium tabular-nums',
-                delta > 0 ? 'text-good' : 'text-bad',
-              )}
-            >
-              {delta > 0 ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />}
-              {Math.abs(delta)}
-            </span>
-          )}
+          <RankDelta delta={delta} />
         </span>
       </td>
-      <td className="py-2.5 pr-3">
+      <td className="py-2 pr-3">
         <div className="flex items-center gap-2.5">
           <Avatar name={item.candidateName} size="sm" className="hidden sm:inline-flex" />
           <div className="min-w-0">
-            <Link
-              to={links.applicationDetail(item.applicationId)}
-              className="hover:text-brand font-medium transition-colors"
-            >
+            <p className="text-ink flex items-center gap-1.5 truncate font-medium">
               {item.candidateName}
-            </Link>
-            {item.flags.length > 0 && (
-              <div className="mt-0.5">
-                <ScoreFlags flags={item.flags} compact />
-              </div>
-            )}
+              {item.flags.includes('MISSING_MUST') && (
+                <span className="text-warn" title="Thiếu tiêu chí bắt buộc">
+                  ⚑<span className="sr-only">Thiếu tiêu chí bắt buộc</span>
+                </span>
+              )}
+            </p>
+            <StatusPill status={item.status} className="text-ink-muted text-xs font-normal" />
           </div>
         </div>
       </td>
-      <td className="py-2.5 pr-3">
-        <ScoreValue score={score} />
+      <td className="hidden py-2 pr-3 sm:table-cell">
+        <RequirementMarks requirements={requirements} matches={matches} />
       </td>
-      {requirements.map((req) => {
-        const match = matches[req.id] ?? 0
-        return (
-          <td key={req.id} className="hidden py-2.5 pr-3 text-center md:table-cell">
-            <span
-              title={`${req.label}: ${MATCH_LEVEL[match as keyof typeof MATCH_LEVEL].label}`}
-              className={cn('inline-block size-2.5 rounded-full', MATCH_DOT[match])}
-            />
-          </td>
-        )
-      })}
-      <td className="py-2.5 pr-4">
-        <ApplicationStatusBadge status={item.status} />
+      <td className="py-2 pr-4 text-right">
+        <ScoreBadge score={score} />
       </td>
     </tr>
   )

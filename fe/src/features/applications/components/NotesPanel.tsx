@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { EmptyState, ErrorState } from '@/components/shared'
-import { Button, Skeleton, Textarea } from '@/components/ui'
+import { Avatar, Button, Skeleton, Textarea } from '@/components/ui'
 import { formatDateTime } from '@/lib/utils'
 import { useAddNote, useApplicationNotes } from '../hooks/use-applications'
 
+// BR-APP-09
 export function NotesPanel({ applicationId }: { applicationId: string }) {
   const { data, isPending, isError, error, refetch } = useApplicationNotes(applicationId)
   const addNote = useAddNote(applicationId)
@@ -16,16 +17,17 @@ export function NotesPanel({ applicationId }: { applicationId: string }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="max-w-2xl space-y-5">
       <form onSubmit={submit} className="space-y-2">
         <Textarea
           aria-label="Ghi chú mới"
           maxLength={2000}
-          placeholder="Ghi chú cho đồng nghiệp (ứng viên không thấy)"
+          placeholder="Ghi chú cho đồng nghiệp – ứng viên không thấy"
           value={content}
           onChange={(e) => setContent(e.target.value)}
         />
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between gap-3">
+          <span className="type-caption">Ghi chú không sửa, không xoá được sau khi thêm.</span>
           <Button type="submit" size="sm" loading={addNote.isPending} disabled={!content.trim()}>
             Thêm ghi chú
           </Button>
@@ -37,15 +39,23 @@ export function NotesPanel({ applicationId }: { applicationId: string }) {
       ) : isError ? (
         <ErrorState error={error} onRetry={refetch} />
       ) : data.length === 0 ? (
-        <EmptyState title="Chưa có ghi chú" />
+        <EmptyState
+          compact
+          title="Chưa có ghi chú"
+          description="Ghi lại nhận xét sau khi đọc CV hoặc gọi điện để cả nhóm cùng nắm."
+        />
       ) : (
-        <ul className="space-y-3">
+        <ul className="divide-line-soft divide-y">
           {data.map((note) => (
-            <li key={note.id} className="bg-canvas rounded-md p-3 text-sm">
-              <p className="whitespace-pre-wrap">{note.content}</p>
-              <p className="text-ink-muted mt-1 text-xs">
-                {note.author.fullName} · {formatDateTime(note.createdAt)}
-              </p>
+            <li key={note.id} className="flex gap-3 py-3">
+              <Avatar name={note.author.fullName} size="sm" />
+              <div className="min-w-0">
+                <p className="type-caption">
+                  <span className="text-ink font-medium">{note.author.fullName}</span> ·{' '}
+                  {formatDateTime(note.createdAt)}
+                </p>
+                <p className="type-body mt-0.5 whitespace-pre-wrap">{note.content}</p>
+              </div>
             </li>
           ))}
         </ul>

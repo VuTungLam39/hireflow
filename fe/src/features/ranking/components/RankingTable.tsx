@@ -10,52 +10,62 @@ import { RankingRow } from './RankingRow'
 export const VIRTUALIZE_FROM = 200
 const ESTIMATED_ROW_HEIGHT = 53
 const OVERSCAN = 8
+const MOVE_MS = 200
 
 interface RankingTableProps {
   rows: Ranked<RankingInput>[]
   requirements: Requirement[]
   savedRank: Map<string, number>
+  selectedId?: string | null
+  onSelect?: (id: string) => void
 }
+
+const th = 'border-line bg-sunken type-overline sticky top-14 z-10 h-9 border-b whitespace-nowrap'
 
 export const RankingTable = memo(function RankingTable({
   rows,
   requirements,
   savedRank,
+  selectedId,
+  onSelect,
 }: RankingTableProps) {
   return (
     <Profiler id="ranking-table" onRender={onProfilerRender}>
-      <div className="border-line relative overflow-x-auto rounded-sm border">
-        <table className="w-full text-left text-sm">
-          <thead className="border-line bg-canvas/80 text-ink-muted border-b text-xs tracking-wide uppercase">
+      <div className="border-line bg-surface -mx-4 border-y md:mx-0 md:rounded-md md:border">
+        <table className="w-full border-separate border-spacing-0 text-left text-sm">
+          <caption className="sr-only">Xếp hạng ứng viên theo mức phù hợp</caption>
+          <thead>
             <tr>
-              <th className="py-2.5 pr-3 pl-4 font-medium">Hạng</th>
-              <th className="py-2.5 pr-3 font-medium">Ứng viên</th>
-              <th className="py-2.5 pr-3 font-medium">Điểm</th>
-              {requirements.map((req) => (
-                <th
-                  key={req.id}
-                  className="hidden max-w-20 truncate py-2.5 pr-3 text-center font-medium normal-case md:table-cell"
-                  title={req.label}
-                >
-                  {req.label}
-                </th>
-              ))}
-              <th className="py-2.5 pr-4 font-medium">Trạng thái</th>
+              <th scope="col" className={`${th} w-24 pr-2 pl-4 md:rounded-tl-md`}>
+                #
+              </th>
+              <th scope="col" className={`${th} pr-3`}>
+                Ứng viên
+              </th>
+              <th scope="col" className={`${th} hidden pr-3 sm:table-cell`}>
+                Tiêu chí
+              </th>
+              <th scope="col" className={`${th} pr-4 text-right md:rounded-tr-md`}>
+                Điểm
+              </th>
             </tr>
           </thead>
           {rows.length > VIRTUALIZE_FROM ? (
-            <VirtualBody rows={rows} requirements={requirements} savedRank={savedRank} />
+            <VirtualBody
+              rows={rows}
+              requirements={requirements}
+              savedRank={savedRank}
+              selectedId={selectedId}
+              onSelect={onSelect}
+            />
           ) : (
-            <tbody className="divide-line-soft bg-surface divide-y">
-              {rows.map((row) => (
-                <Row
-                  key={row.item.id}
-                  row={row}
-                  requirements={requirements}
-                  savedRank={savedRank}
-                />
-              ))}
-            </tbody>
+            <FlipBody
+              rows={rows}
+              requirements={requirements}
+              savedRank={savedRank}
+              selectedId={selectedId}
+              onSelect={onSelect}
+            />
           )}
         </table>
       </div>
@@ -67,12 +77,12 @@ function Row({
   row,
   requirements,
   savedRank,
+  selectedId,
+  onSelect,
   index,
   measureRef,
-}: {
+}: Omit<RankingTableProps, 'rows'> & {
   row: Ranked<RankingInput>
-  requirements: Requirement[]
-  savedRank: Map<string, number>
   index?: number
   measureRef?: (el: HTMLTableRowElement | null) => void
 }) {
@@ -85,13 +95,55 @@ function Row({
       rank={rank}
       score={score}
       delta={(savedRank.get(item.id) ?? rank) - rank}
+      selected={selectedId === item.id}
+      onSelect={onSelect}
       index={index}
       measureRef={measureRef}
     />
   )
 }
 
-function VirtualBody({ rows, requirements, savedRank }: RankingTableProps) {
+function FlipBody(props: RankingTableProps) {
+  const bodyRef = useRef<HTMLTableSectionElement>(null)
+  const tops = useRef(new Map<string, number>())
+  const order = props.rows.map((r) => r.item.id).join('|')
+
+  useLayoutEffect(() => {
+    const body = bodyRef.current
+    if (!body) return
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    const next = new Map<string, number>()
+    const moved: HTMLElement[] = []
+    for (const el of body.querySelectorAll<HTMLElement>('tr[data-key]')) {
+      const key = el.dataset.key!
+      const top = el.offsetTop
+      next.set(key, top)
+      const prev = tops.current.get(key)
+      if (!reduce && prev !== undefined && prev !== top) {
+        el.style.transition = 'none'
+        el.style.transform = `translateY(${prev - top}px)`
+        moved.push(el)
+      }
+    }
+    tops.current = next
+    if (!moved.length) return
+    void body.offsetHeight
+    for (const el of moved) {
+      el.style.transition = `transform ${MOVE_MS}ms cubic-bezier(0.2, 0, 0, 1)`
+      el.style.transform = ''
+    }
+  }, [order])
+
+  return (
+    <tbody ref={bodyRef}>
+      {props.rows.map((row) => (
+        <Row key={row.item.id} row={row} {...props} />
+      ))}
+    </tbody>
+  )
+}
+
+function VirtualBody({ rows, ...rest }: RankingTableProps) {
   const bodyRef = useRef<HTMLTableSectionElement>(null)
   const [scrollMargin, setScrollMargin] = useState(0)
 
@@ -114,28 +166,26 @@ function VirtualBody({ rows, requirements, savedRank }: RankingTableProps) {
   const paddingBottom = items.length
     ? virtualizer.getTotalSize() - (items.at(-1)!.end - scrollMargin)
     : 0
-  const colSpan = requirements.length + 4
 
   return (
-    <tbody ref={bodyRef} className="divide-line-soft bg-surface divide-y">
+    <tbody ref={bodyRef}>
       {paddingTop > 0 && (
         <tr aria-hidden>
-          <td colSpan={colSpan} style={{ height: paddingTop, padding: 0 }} />
+          <td colSpan={4} style={{ height: paddingTop, padding: 0 }} />
         </tr>
       )}
       {items.map((virtual) => (
         <Row
           key={virtual.key}
           row={rows[virtual.index]}
-          requirements={requirements}
-          savedRank={savedRank}
+          {...rest}
           index={virtual.index}
           measureRef={virtualizer.measureElement}
         />
       ))}
       {paddingBottom > 0 && (
         <tr aria-hidden>
-          <td colSpan={colSpan} style={{ height: paddingBottom, padding: 0 }} />
+          <td colSpan={4} style={{ height: paddingBottom, padding: 0 }} />
         </tr>
       )}
     </tbody>

@@ -80,7 +80,7 @@ describe('enter CV text by hand', () => {
     const app = db.applications.find((a) => a.aiStatus === 'FAILED' && visible(a))!
     renderAs('hr@hireflow.dev', app.id)
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Nhập text CV' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Nhập nội dung CV' }))
     const dialog = await screen.findByRole('dialog')
     const box = within(dialog).getByLabelText('Nội dung CV')
     fireEvent.change(box, { target: { value: 'quá ngắn' } })
@@ -91,9 +91,9 @@ describe('enter CV text by hand', () => {
     fireEvent.change(box, { target: { value: text } })
     fireEvent.click(within(dialog).getByRole('button', { name: 'Lưu và chấm điểm' }))
 
-    expect(await screen.findByText('Text nhập tay')).toBeInTheDocument()
+    expect(await screen.findByText(/Nội dung nhập tay/)).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Nhập text CV' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Nhập nội dung CV' })).not.toBeInTheDocument()
     expect(app.enteredCvText).toBe(text.trim())
   })
 
@@ -107,7 +107,7 @@ describe('enter CV text by hand', () => {
     )!
     Object.assign(app, { aiStatus: 'FAILED', aiError: 'Không đọc được chữ trong CV', score: null })
     renderAs(hm.email, app.id)
-    expect(await screen.findByText(/Chấm điểm thất bại/)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Nhập text CV' })).not.toBeInTheDocument()
+    expect(await screen.findByText('Không đọc được CV')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Nhập nội dung CV' })).not.toBeInTheDocument()
   })
 })

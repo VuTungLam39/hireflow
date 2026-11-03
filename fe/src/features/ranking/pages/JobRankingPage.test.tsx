@@ -49,7 +49,7 @@ describe('JobRankingPage', () => {
 
     expect(screen.queryByRole('button', { name: 'Lưu trọng số' })).not.toBeInTheDocument()
     expect(screen.getByText('Chỉ là bản nháp để xem thử, không lưu.')).toBeInTheDocument()
-    const reset = screen.getByRole('button', { name: 'Đặt lại' })
+    const reset = screen.getByRole('button', { name: 'Về mặc định' })
     expect(reset).toBeEnabled()
     fireEvent.click(reset)
     expect(reset).toBeDisabled()

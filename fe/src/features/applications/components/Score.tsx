@@ -119,7 +119,7 @@ export function ScoreMeter({
               style={{ flexGrow: r.weight / total }}
               className={cn(
                 'h-full min-w-1 basis-0 first:rounded-l-full last:rounded-r-full',
-                m === 1 ? 'bg-good' : m === 0.5 ? 'bg-warn/70' : 'bg-sunken',
+                m === 1 ? 'bg-good' : m === 0.5 ? 'bg-warn/70' : 'bg-line',
               )}
             />
           )

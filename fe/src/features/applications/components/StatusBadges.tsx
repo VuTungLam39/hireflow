@@ -127,7 +127,7 @@ export function ScoreBadge({
       className={cn('inline-flex items-center justify-end gap-2', className)}
       aria-label={`Mức phù hợp ${score} trên 100, ${tone.label}${stale ? ', điểm cũ' : ''}`}
     >
-      <span aria-hidden className="bg-sunken relative h-1 w-6 overflow-hidden rounded-full">
+      <span aria-hidden className="bg-line relative h-1 w-6 overflow-hidden rounded-full">
         <span
           className={cn('absolute inset-y-0 left-0 rounded-full', tone.bar)}
           style={{ width: `${Math.max(8, score)}%` }}

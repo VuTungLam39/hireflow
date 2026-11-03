@@ -1,5 +1,11 @@
 import type { Requirement } from '@/features/jobs'
-import type { AiStatus, ApplicationStatus, MatchLevel, ScoreFlag } from './constants'
+import type {
+  AiStatus,
+  ApplicationSource,
+  ApplicationStatus,
+  MatchLevel,
+  ScoreFlag,
+} from './constants'
 
 export interface ApplicationListItem {
   id: string
@@ -26,6 +32,7 @@ export interface BreakdownItem {
 export interface ApplicationDetail extends ApplicationListItem {
   candidate: { id: string; fullName: string; email: string; phone: string | null }
   job: { id: string; title: string; jdVersion: number; departmentId: string }
+  source?: ApplicationSource
   requirements: Requirement[]
   breakdown: BreakdownItem[]
   /** Điểm được tính theo phiên bản tiêu chí nào */
