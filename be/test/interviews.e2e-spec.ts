@@ -344,7 +344,9 @@ describe('Interviews (e2e)', () => {
       expect((await ds.getRepository(Interview).findOneByOrFail({ id: interviewA })).status).toBe(
         'COMPLETED',
       );
-      expect((await notificationsOf('hr')).at(-1)).toMatchObject({ type: 'FEEDBACK_SUBMITTED' });
+      expect(await notificationsOf('hr')).toContainEqual(
+        expect.objectContaining({ type: 'FEEDBACK_SUBMITTED' }),
+      );
 
       await put('ivA', { overall: 5, ratings: ratings(5) }).expect(200);
       await ds

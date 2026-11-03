@@ -44,7 +44,9 @@ export default function LoginPage() {
   return (
     <>
       <h1 className="type-title">Đăng nhập</h1>
-      <p className="type-body text-ink-muted mt-1.5 mb-8">Dùng email công việc và mật khẩu của bạn.</p>
+      <p className="type-body text-ink-muted mt-1.5 mb-8">
+        Dùng email công việc và mật khẩu của bạn.
+      </p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <FormField label="Email" htmlFor="email" error={errors.email?.message}>
