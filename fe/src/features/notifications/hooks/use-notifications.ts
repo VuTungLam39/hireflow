@@ -46,11 +46,11 @@ export function notificationText(n: NotificationItem): string {
     case 'FEEDBACK_SUBMITTED':
       return `Có phiếu đánh giá mới cho ${name}`
   }
-  if (n.type === 'CV_FAILED') return `Chấm CV của ${name} thất bại`
+  if (n.type === 'CV_FAILED') return `Không đọc được CV của ${name}`
   const score = n.application?.score
   return score === null || score === undefined
-    ? `CV của ${name} đã chấm xong`
-    : `CV của ${name} đã chấm xong: ${score} điểm`
+    ? `${name} đã được chấm`
+    : `${name} đã được chấm: ${score}`
 }
 
 function createEventHandler(queryClient: QueryClient) {

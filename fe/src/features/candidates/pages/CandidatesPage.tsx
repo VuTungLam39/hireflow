@@ -1,11 +1,11 @@
-import { ShieldOff } from 'lucide-react'
 import { useRef } from 'react'
-import { Link } from 'react-router'
-import { DataTable, FilterBar, PageHeader, SearchInput, type Column } from '@/components/shared'
-import { Avatar, Badge, Button, Card } from '@/components/ui'
+import { Link, useNavigate } from 'react-router'
+import { DataTable, DensityToggle, PageHeader, SearchInput, type Column } from '@/components/shared'
+import { Avatar, Button } from '@/components/ui'
+import { useDensity } from '@/hooks/use-density'
 import { useListParams } from '@/hooks/use-list-params'
 import { useOnVisible } from '@/hooks/use-on-visible'
-import { formatDate, formatRelative } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import { links } from '@/routes/paths'
 import { useCandidates } from '../hooks/use-candidates'
 import { candidateListSchema } from '../schemas/candidate.schema'
@@ -17,22 +17,17 @@ const columns: Column<CandidateListItem>[] = [
     header: 'Ứng viên',
     cell: (c) => (
       <div className="flex items-center gap-3">
-        <Avatar name={c.fullName} size="sm" className="hidden md:inline-flex" />
+        <Avatar name={c.fullName} size="sm" />
         <div className="min-w-0">
           <Link
             to={links.candidateDetail(c.id)}
-            className="hover:text-brand font-medium transition-colors"
+            className="text-ink hover:text-brand font-medium transition-colors"
           >
             {c.fullName}
           </Link>
-          {c.anonymizedAt ? (
-            <p className="text-ink-muted flex items-center gap-1 text-xs">
-              <ShieldOff className="size-3" />
-              Đã ẩn danh {formatDate(c.anonymizedAt)}
-            </p>
-          ) : (
-            <p className="text-ink-muted text-xs">{c.email}</p>
-          )}
+          <p className="type-caption truncate">
+            {c.anonymizedAt ? `Đã ẩn danh ${formatDate(c.anonymizedAt)}` : c.email}
+          </p>
         </div>
       </div>
     ),
@@ -40,87 +35,93 @@ const columns: Column<CandidateListItem>[] = [
   {
     key: 'phone',
     header: 'Điện thoại',
-    cell: (c) => <span className="text-ink-2 tabular-nums">{c.phone ?? '—'}</span>,
+    hideOnMobile: true,
+    cell: (c) => <span className="text-ink-2 num">{c.phone ?? '—'}</span>,
   },
   {
     key: 'applications',
-    header: 'Số hồ sơ',
-    cell: (c) => (
-      <Badge tone={c.applicationCount > 1 ? 'info' : 'neutral'}>
-        <span className="tabular-nums">{c.applicationCount}</span> hồ sơ
-      </Badge>
-    ),
+    header: 'Số lần nộp',
+    align: 'right',
+    cell: (c) => <span className="type-num">{c.applicationCount}</span>,
   },
   {
     key: 'lastAppliedAt',
     header: 'Nộp gần nhất',
+    align: 'right',
     cell: (c) => (
-      <span className="text-ink-muted whitespace-nowrap">{formatRelative(c.lastAppliedAt)}</span>
+      <span className="type-caption whitespace-nowrap">{formatDate(c.lastAppliedAt)}</span>
     ),
   },
 ]
 
-/**
- * Kho ứng viên chỉ đọc (US-14, BR-CAND-03): cuộn vô hạn theo cursor, tìm tên/email không dấu.
- * Hiring Manager chỉ thấy ứng viên từng nộp vào phòng mình – BE lọc, FE không tự lọc.
- */
+// US-14 · BR-CAND-03 · Design Spec 6.7
 export default function CandidatesPage() {
   const [params, setParams] = useListParams(candidateListSchema)
   const query = useCandidates(params.search)
+  const navigate = useNavigate()
+  const [density, setDensity] = useDensity()
   const sentinel = useRef<HTMLDivElement>(null)
   const items = query.data?.pages.flatMap((p) => p.items)
 
   const loadMore = () => {
     if (query.hasNextPage && !query.isFetchingNextPage) void query.fetchNextPage()
   }
-  // Tắt trong lúc tải rồi bật lại: observer mới báo ngay nếu đáy danh sách vẫn đang hiện
   useOnVisible(sentinel, loadMore, !!query.hasNextPage && !query.isFetchingNextPage)
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Kho ứng viên"
-        description="Mỗi người một hồ sơ theo email, kèm mọi lần nộp. Tìm lại ứng viên cũ cho vị trí mới."
-        actions={
-          items && (
-            <span className="text-ink-muted text-sm">
-              Đã tải <span className="text-ink font-semibold tabular-nums">{items.length}</span> ứng
-              viên{query.hasNextPage && ', cuộn để xem thêm'}
-            </span>
-          )
+        description="Mỗi email là một ứng viên, kèm mọi lần nộp. Dùng để tìm lại người cũ cho vị trí mới."
+      />
+
+      <SearchInput
+        size="lg"
+        value={params.search}
+        onChange={(search) => setParams({ search })}
+        placeholder="Tìm theo tên hoặc email – gõ không dấu cũng được"
+        label="Tìm ứng viên theo tên hoặc email"
+        className="max-w-2xl"
+      />
+
+      <div className="flex items-center justify-between gap-3">
+        <p className="type-caption num">
+          {items &&
+            `Đang hiện ${items.length.toLocaleString('vi-VN')} ứng viên${query.hasNextPage ? ' · cuộn để xem thêm' : ''}`}
+        </p>
+        <DensityToggle value={density} onChange={setDensity} />
+      </div>
+
+      <DataTable
+        caption="Kho ứng viên"
+        columns={columns}
+        data={items}
+        rowKey={(c) => c.id}
+        rowLabel={(c) => c.fullName}
+        onRowOpen={(c) => void navigate(links.candidateDetail(c.id))}
+        density={density}
+        isPending={query.isPending}
+        isError={query.isError}
+        error={query.error}
+        onRetry={query.refetch}
+        isFetching={query.isFetching && !query.isPending && !query.isFetchingNextPage}
+        emptyTitle={
+          params.search ? `Không thấy ai khớp “${params.search}”` : 'Kho ứng viên còn trống'
+        }
+        emptyDescription={
+          params.search
+            ? 'Thử tìm bằng email, hoặc chỉ một phần của tên.'
+            : 'Ứng viên được thêm vào kho khi họ nộp hồ sơ hoặc khi bạn tải CV hộ.'
         }
       />
 
-      <Card className="space-y-4">
-        <FilterBar onReset={params.search ? () => setParams({ search: null }) : undefined}>
-          <SearchInput
-            value={params.search}
-            onChange={(search) => setParams({ search })}
-            placeholder="Tên hoặc email, gõ không dấu cũng được..."
-          />
-        </FilterBar>
-
-        <DataTable
-          columns={columns}
-          data={items}
-          rowKey={(c) => c.id}
-          isPending={query.isPending}
-          isError={query.isError}
-          error={query.error}
-          onRetry={query.refetch}
-          isFetching={query.isFetching && !query.isPending && !query.isFetchingNextPage}
-          emptyTitle="Không có ứng viên nào"
-          emptyDescription={params.search ? 'Thử từ khoá khác.' : undefined}
-        />
-
-        {query.hasNextPage && (
-          <div ref={sentinel} className="flex justify-center">
-            <Button variant="secondary" loading={query.isFetchingNextPage} onClick={loadMore}>
-              Tải thêm
-            </Button>
-          </div>
-        )}
-      </Card>
+      {query.hasNextPage && (
+        <div ref={sentinel} className="flex justify-center">
+          <Button variant="secondary" loading={query.isFetchingNextPage} onClick={loadMore}>
+            Tải thêm
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

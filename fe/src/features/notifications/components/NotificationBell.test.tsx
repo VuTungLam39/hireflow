@@ -46,7 +46,7 @@ describe('NotificationBell', () => {
     fireEvent.click(bell)
     const panel = await screen.findByRole('dialog', { name: 'Thông báo' })
     expect(
-      (await within(panel).findAllByText(/CV của .* đã chấm xong|Chấm CV của/)).length,
+      (await within(panel).findAllByText(/đã được chấm|Không đọc được CV của/)).length,
     ).toBeGreaterThan(0)
     expect(within(panel).getAllByLabelText('Chưa đọc')).toHaveLength(unread)
 
@@ -62,7 +62,9 @@ describe('NotificationBell', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /^Thông báo/ }))
     const panel = await screen.findByRole('dialog', { name: 'Thông báo' })
-    const items = await within(panel).findAllByRole('button', { name: /CV của|Chấm CV của/ })
+    const items = await within(panel).findAllByRole('button', {
+      name: /đã được chấm|Không đọc được CV của/,
+    })
     fireEvent.click(items[0])
 
     expect(await screen.findByText('Trang chi tiết hồ sơ')).toBeInTheDocument()

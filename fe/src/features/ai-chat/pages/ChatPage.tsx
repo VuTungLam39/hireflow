@@ -1,31 +1,35 @@
-import { MessageSquareText, SendHorizontal, Square } from 'lucide-react'
-import { useRef, useState, type FormEvent } from 'react'
-import { PageHeader } from '@/components/shared'
-import { Button, Card, Textarea } from '@/components/ui'
+import { ArrowRight, SendHorizontal, Square } from 'lucide-react'
+import { useCallback, useRef, useState, type FormEvent } from 'react'
+import { Link } from 'react-router'
+import { PageHeader, SidePanel } from '@/components/shared'
+import { Button, Textarea, buttonVariants } from '@/components/ui'
 import { useStream } from '@/hooks/use-stream'
 import { ERROR_MESSAGES } from '@/lib/error-codes'
 import { getErrorMessage } from '@/lib/errors'
+import { links } from '@/routes/paths'
 import { ChatMessageView } from '../components/ChatMessageView'
 import type { ChatMessage, ChatSource } from '../types'
 
 const SUGGESTIONS = [
+  'Ai từng làm với Kafka hoặc microservices?',
   'Ai có kinh nghiệm NestJS trên 2 năm?',
-  'Ứng viên nào từng làm với Docker và PostgreSQL?',
-  'Tìm ứng viên biết React và TypeScript',
+  'Ứng viên nào biết cả React và TypeScript?',
 ]
 
 let nextId = 0
 const newId = () => `m${++nextId}`
 
-/**
- * Chat tìm ứng viên trong kho CV (US-08). Câu trả lời stream từng phần, mỗi ý có trích dẫn.
- * BE chỉ tìm trong tập CV người hỏi được phép xem (scope phòng ban).
- */
+// US-08 · BR-AI-10 · Design Spec 6.9
 export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [question, setQuestion] = useState('')
   const { start, stop, isStreaming } = useStream()
   const bottomRef = useRef<HTMLDivElement>(null)
+  const [cited, setCited] = useState<{ source: ChatSource; index: number } | null>(null)
+  const onCite = useCallback(
+    (source: ChatSource, index: number) => setCited({ source, index }),
+    [setCited],
+  )
 
   const updateMessage = (id: string, patch: (m: ChatMessage) => Partial<ChatMessage>) =>
     setMessages((list) => list.map((m) => (m.id === id ? { ...m, ...patch(m) } : m)))
@@ -70,72 +74,101 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-7.5rem)] flex-col gap-4 md:h-[calc(100vh-4rem)]">
+    <div className="mx-auto flex h-[calc(100dvh-7.5rem)] max-w-[760px] flex-col md:h-[calc(100dvh-8rem)]">
       <PageHeader
-        title="Trợ lý AI tìm ứng viên"
-        description="Hỏi bằng ngôn ngữ tự nhiên. Mỗi ý trong câu trả lời kèm trích dẫn từ CV, chỉ trong phạm vi bạn được xem."
+        title="Hỏi kho CV"
+        description="Hỏi bằng câu thường ngày. Mỗi ý trong câu trả lời có số trích dẫn tới đúng đoạn CV."
       />
 
-      <Card className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-0">
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5" aria-live="polite">
-          {messages.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-              <span className="bg-brand-soft text-brand flex size-14 items-center justify-center rounded-md">
-                <MessageSquareText className="size-6" />
-              </span>
-              <div>
-                <p className="text-ink font-medium">Bạn muốn tìm ứng viên như thế nào?</p>
-                <p className="text-ink-muted mt-1 text-sm">Thử một trong các câu hỏi sau:</p>
-              </div>
-              <div className="flex max-w-xl flex-wrap justify-center gap-2">
-                {SUGGESTIONS.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => void ask(s)}
-                    className="hover:border-brand/40 hover:text-brand border-line bg-surface text-ink-2 rounded-full border px-3.5 py-1.5 text-sm transition-colors"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
+      <div className="min-h-0 flex-1 overflow-y-auto py-6" aria-live="polite">
+        {messages.length === 0 ? (
+          <div className="max-w-xl">
+            <p className="type-heading">Bạn đang tìm ai?</p>
+            <p className="type-body mt-1">
+              Chỉ tìm trong CV bạn có quyền xem. Thử một câu hỏi mẫu:
+            </p>
+            <div className="mt-4 flex flex-col items-start gap-1">
+              {SUGGESTIONS.map((s) => (
+                <Button
+                  key={s}
+                  variant="quiet"
+                  className="h-auto py-2 text-left whitespace-normal"
+                  onClick={() => void ask(s)}
+                >
+                  {s}
+                  <ArrowRight className="text-ink-muted" />
+                </Button>
+              ))}
             </div>
-          ) : (
-            messages.map((m) => <ChatMessageView key={m.id} message={m} />)
-          )}
-          <div ref={bottomRef} />
-        </div>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {messages.map((m) => (
+              <ChatMessageView key={m.id} message={m} onCite={onCite} />
+            ))}
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
 
-        <form
-          onSubmit={onSubmit}
-          className="focus-within:border-brand/50 focus-within:ring-brand/10 border-line bg-surface mx-4 mb-4 flex items-end gap-2 rounded-md border p-2 transition-all focus-within:ring-4"
-        >
-          <Textarea
-            aria-label="Câu hỏi"
-            rows={2}
-            className="min-h-0 resize-none border-0 shadow-none focus:ring-0"
-            placeholder="Ví dụ: Ai từng làm fintech và biết Kafka?"
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                void ask(question)
-              }
-            }}
-          />
-          {isStreaming ? (
-            <Button variant="secondary" onClick={stop} aria-label="Dừng">
-              <Square className="fill-current" />
-              Dừng
-            </Button>
-          ) : (
-            <Button type="submit" disabled={!question.trim()} aria-label="Gửi">
-              <SendHorizontal />
-            </Button>
-          )}
-        </form>
-      </Card>
+      <form
+        onSubmit={onSubmit}
+        className="border-line bg-surface focus-within:border-brand focus-within:ring-brand-soft flex items-end gap-2 rounded-md border p-2 transition-[border-color,box-shadow] focus-within:ring-3"
+      >
+        <Textarea
+          aria-label="Câu hỏi"
+          rows={2}
+          maxLength={500}
+          className="min-h-0 resize-none border-0 focus:ring-0"
+          placeholder="Ví dụ: Ai từng làm fintech và biết Kafka?"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              void ask(question)
+            }
+          }}
+        />
+        {isStreaming ? (
+          <Button variant="secondary" onClick={stop}>
+            <Square className="fill-current" />
+            Dừng
+          </Button>
+        ) : (
+          <Button type="submit" size="icon" disabled={!question.trim()} aria-label="Gửi câu hỏi">
+            <SendHorizontal />
+          </Button>
+        )}
+      </form>
+      <p className="type-caption mt-1.5">Enter để gửi · Shift + Enter xuống dòng</p>
+
+      <SidePanel
+        open={!!cited}
+        onClose={() => setCited(null)}
+        title={cited?.source.candidateName ?? ''}
+        subtitle={cited && `Nguồn [${cited.index}]`}
+        footer={
+          cited && (
+            <Link
+              to={links.applicationDetail(cited.source.applicationId)}
+              className={buttonVariants()}
+            >
+              Mở hồ sơ
+              <ArrowRight />
+            </Link>
+          )
+        }
+      >
+        {cited && (
+          <div className="border-line bg-surface rounded-md border px-5 py-6">
+            <p className="type-overline mb-2">Đoạn trong CV</p>
+            <p className="type-read">
+              <span className="mark-evidence">{cited.source.excerpt}</span>
+            </p>
+          </div>
+        )}
+      </SidePanel>
     </div>
   )
 }

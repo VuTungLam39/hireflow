@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Button, Dialog, FormField, Textarea } from '@/components/ui'
 import { getErrorMessage } from '@/lib/errors'
-import { cn } from '@/lib/utils'
+import { cn, formatDateTime } from '@/lib/utils'
 import { useSubmitFeedback } from '../hooks/use-interviews'
 import { SCORE_LABEL } from '../lib/constants'
 import type { Interview, InterviewFeedback } from '../types'
@@ -14,10 +14,20 @@ interface RatingInputProps {
 }
 
 export function RatingInput({ label, value, onChange, invalid }: RatingInputProps) {
+  const [hover, setHover] = useState<number | null>(null)
+  const shown = hover ?? value
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <span className="text-ink-2 text-sm">{label}</span>
-      <div role="radiogroup" aria-label={label} className="flex gap-1">
+      <span className="type-body-strong min-w-0 flex-1">{label}</span>
+      <span aria-hidden className="type-caption w-16 text-right">
+        {shown ? SCORE_LABEL[shown] : ''}
+      </span>
+      <div
+        role="radiogroup"
+        aria-label={label}
+        className="flex gap-1"
+        onPointerLeave={() => setHover(null)}
+      >
         {[1, 2, 3, 4, 5].map((score) => (
           <button
             key={score}
@@ -27,8 +37,9 @@ export function RatingInput({ label, value, onChange, invalid }: RatingInputProp
             aria-label={`${score} – ${SCORE_LABEL[score]}`}
             title={SCORE_LABEL[score]}
             onClick={() => onChange(score)}
+            onPointerEnter={() => setHover(score)}
             className={cn(
-              'size-9 rounded-sm border text-sm font-semibold transition-colors',
+              'num size-9 rounded-sm border text-sm font-semibold transition-colors',
               value === score
                 ? 'border-brand bg-brand text-white'
                 : invalid
@@ -96,11 +107,11 @@ export function FeedbackDialog({
       open={open}
       onClose={onClose}
       title={existing ? 'Sửa phiếu đánh giá' : 'Phiếu đánh giá'}
-      description={`Vòng ${interview.round}. Chấm 1–5 cho từng tiêu chí của tin; sửa được trong 24 giờ sau khi gửi.`}
+      description={`Vòng ${interview.round}. Chấm 1–5 cho từng tiêu chí của tin. ${existing ? `Sửa được tới ${formatDateTime(existing.editableUntil)}.` : 'Sửa được trong 24 giờ sau khi gửi.'}`}
       size="lg"
     >
       <div className="space-y-5">
-        <div className="border-line-soft space-y-3 rounded-md border p-4">
+        <div className="border-line space-y-3 rounded-md border p-4">
           {requirements.map((r) => (
             <RatingInput
               key={r.id}
