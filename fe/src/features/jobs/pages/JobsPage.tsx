@@ -1,24 +1,29 @@
-import { Building2, MapPin, Megaphone, Plus, Trophy, UserSearch, X } from 'lucide-react'
+import { MoreHorizontal, Pencil, Plus } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import {
   Can,
   ConfirmDialog,
   DataTable,
+  DensityToggle,
   FilterBar,
+  FilterMenu,
   PageHeader,
   SearchInput,
+  Summary,
+  type ActiveFilter,
   type Column,
 } from '@/components/shared'
-import { Button, buttonVariants, Card, ChipGroup, Select, TONE_DOT } from '@/components/ui'
+import { Button, Popover, Tabs, buttonVariants, menuItemClass } from '@/components/ui'
 import { useDepartmentOptions } from '@/features/departments'
+import { useDensity } from '@/hooks/use-density'
 import { useListParams } from '@/hooks/use-list-params'
 import { usePermission } from '@/hooks/use-permission'
 import { Permission } from '@/lib/permissions'
-import { formatDate, formatRelative } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import { links, paths } from '@/routes/paths'
 import { JobStatusBadge } from '../components/JobStatusBadge'
-import { PipelineBar } from '../components/PipelineBar'
+import { PipelineCounts } from '../components/PipelineBar'
 import { JOB_STATUS, type JobStatus } from '../constants'
 import { useCloseJob, useJobs, usePublishJob } from '../hooks/use-jobs'
 import { jobListSchema } from '../schemas/job.schema'
@@ -26,207 +31,181 @@ import type { JobSummary } from '../types'
 
 type PendingAction = { type: 'publish' | 'close'; job: JobSummary } | null
 
-const statusOptions = (Object.keys(JOB_STATUS) as JobStatus[]).map((value) => ({
-  value,
-  label: JOB_STATUS[value].label,
-  dotClass: TONE_DOT[JOB_STATUS[value].tone],
-}))
+const TABS = [
+  { id: 'all', label: 'Tất cả' },
+  { id: 'OPEN', label: 'Đang tuyển' },
+  { id: 'DRAFT', label: 'Nháp' },
+  { id: 'CLOSED', label: 'Đã đóng' },
+] as const
 
+const daysSince = (iso: string) =>
+  Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000))
+
+// F-JOB-01 · Design Spec 6.5
 export default function JobsPage() {
   const [params, setParams] = useListParams(jobListSchema)
   const query = useJobs(params)
   const departments = useDepartmentOptions()
   const canUpdate = usePermission(Permission.JobUpdate)
+  const navigate = useNavigate()
+  const [density, setDensity] = useDensity()
+  const [pending, setPending] = useState<PendingAction>(null)
   const publish = usePublishJob()
   const close = useCloseJob()
-  const [pending, setPending] = useState<PendingAction>(null)
+  const action = pending?.type === 'publish' ? publish : close
 
-  const hasFilter = !!(params.search || params.status || params.departmentId)
+  const dept = departments.data?.find((d) => d.id === params.departmentId)
+  const active: ActiveFilter[] = dept
+    ? [
+        {
+          key: 'dept',
+          label: `Phòng ban: ${dept.name}`,
+          onRemove: () => setParams({ departmentId: null }),
+        },
+      ]
+    : []
+
+  const openTarget = (job: JobSummary) =>
+    job.status === 'DRAFT' && canUpdate ? links.jobEdit(job.id) : links.jobRanking(job.id)
 
   const columns: Column<JobSummary>[] = [
     {
       key: 'title',
-      header: 'Vị trí',
+      header: 'Tin',
       sortKey: 'title',
       cell: (job) => (
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <Link
-              to={canUpdate ? links.jobEdit(job.id) : links.jobRanking(job.id)}
-              className="hover:text-brand text-ink font-medium transition-colors"
-            >
-              {job.title}
-            </Link>
-            <JobStatusBadge status={job.status} />
-          </div>
-          <p className="text-ink-muted mt-1 flex flex-wrap gap-x-3 text-xs">
-            <span className="inline-flex items-center gap-1">
-              <Building2 className="size-3" />
-              {job.department.name}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <MapPin className="size-3" />
-              {job.location}
-            </span>
+          <Link
+            to={openTarget(job)}
+            className="text-ink hover:text-brand font-semibold transition-colors"
+          >
+            {job.title}
+          </Link>
+          <p className="type-caption truncate">
+            {job.department.name} · {job.location}
           </p>
         </div>
       ),
     },
     {
+      key: 'status',
+      header: 'Trạng thái',
+      hideOnMobile: true,
+      cell: (job) => <JobStatusBadge status={job.status} />,
+    },
+    {
       key: 'pipeline',
-      header: 'Hồ sơ',
+      header: 'Hồ sơ theo bước',
       cell: (job) => (
-        <Link
-          to={links.applications({ jobId: job.id })}
-          className="group flex items-center gap-3"
-          aria-label={`Xem ${job.applicationCount} hồ sơ của ${job.title}`}
-        >
-          <span className="group-hover:text-brand text-ink w-8 text-lg font-semibold tabular-nums transition-colors">
-            {job.applicationCount}
-          </span>
-          <PipelineBar pipeline={job.pipeline} total={job.applicationCount} />
-        </Link>
+        <PipelineCounts pipeline={job.pipeline} total={job.applicationCount} jobId={job.id} />
       ),
     },
     {
       key: 'publishedAt',
-      header: 'Ngày đăng',
+      header: 'Đã đăng',
       sortKey: 'publishedAt',
+      align: 'right',
       cell: (job) =>
         job.publishedAt ? (
-          <span className="text-ink-2" title={formatDate(job.publishedAt)}>
-            {formatRelative(job.publishedAt)}
+          <span className="type-caption num" title={formatDate(job.publishedAt)}>
+            {daysSince(job.publishedAt) === 0 ? 'hôm nay' : `${daysSince(job.publishedAt)} ngày`}
           </span>
         ) : (
-          <span className="text-ink-faint">Chưa đăng</span>
+          <span className="type-caption">Chưa đăng</span>
         ),
-    },
-    {
-      key: 'actions',
-      header: '',
-      isAction: true,
-      className: 'text-right whitespace-nowrap',
-      cell: (job) => (
-        <div className="inline-flex gap-1">
-          <Link
-            to={links.jobRanking(job.id)}
-            className={buttonVariants({ variant: 'quiet', size: 'sm' })}
-          >
-            <Trophy />
-            Xếp hạng
-          </Link>
-          <Can permission={Permission.ApplicationCreate}>
-            {job.status !== 'DRAFT' && (
-              <Link
-                to={links.jobMatches(job.id)}
-                className={buttonVariants({ variant: 'quiet', size: 'sm' })}
-              >
-                <UserSearch />
-                Gợi ý
-              </Link>
-            )}
-          </Can>
-          <Can permission={Permission.JobPublish}>
-            {job.status === 'DRAFT' && (
-              <Button
-                variant="quiet"
-                size="sm"
-                className="text-brand"
-                onClick={() => setPending({ type: 'publish', job })}
-              >
-                <Megaphone />
-                Đăng tin
-              </Button>
-            )}
-            {job.status === 'OPEN' && (
-              <Button
-                variant="quiet"
-                size="sm"
-                className="text-ink-muted hover:text-bad"
-                onClick={() => setPending({ type: 'close', job })}
-              >
-                <X />
-                Đóng
-              </Button>
-            )}
-          </Can>
-        </div>
-      ),
     },
   ]
 
-  const action = pending?.type === 'publish' ? publish : close
+  const counts = query.data?.meta.totalItems
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Tin tuyển dụng"
-        description="Tạo job từ JD, để AI gợi ý tiêu chí, chỉnh lại rồi đăng. Thanh màu cho biết hồ sơ của mỗi job đang ở đâu."
+        description={
+          counts !== undefined && (
+            <Summary
+              items={[
+                `${counts.toLocaleString('vi-VN')} tin${params.status ? ` ${JOB_STATUS[params.status].label.toLowerCase()}` : ''}`,
+              ]}
+            />
+          )
+        }
         actions={
           <Can permission={Permission.JobCreate}>
             <Link to={paths.jobNew} className={buttonVariants()}>
               <Plus />
-              Tạo job
+              Tạo tin
             </Link>
           </Can>
         }
       />
 
-      <Card className="space-y-4">
-        <FilterBar
-          onReset={
-            hasFilter
-              ? () => setParams({ search: null, status: null, departmentId: null })
-              : undefined
-          }
-        >
-          <SearchInput
-            value={params.search}
-            onChange={(search) => setParams({ search })}
-            placeholder="Tìm theo tiêu đề..."
-          />
-          <Select
-            aria-label="Lọc theo phòng ban"
-            className="w-48"
-            value={params.departmentId ?? ''}
-            onChange={(e) => setParams({ departmentId: e.target.value || null })}
-          >
-            <option value="">Tất cả phòng ban</option>
-            {departments.data?.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </Select>
-        </FilterBar>
-        <ChipGroup
-          label="Lọc theo trạng thái"
-          options={statusOptions}
-          value={params.status}
-          onChange={(status) => setParams({ status: status ?? null })}
-        />
+      <Tabs
+        label="Lọc theo trạng thái tin"
+        tabs={TABS.map((t) => ({ id: t.id, label: t.label }))}
+        value={params.status ?? 'all'}
+        onChange={(id) => setParams({ status: id === 'all' ? null : (id as JobStatus) })}
+      />
 
-        <DataTable
-          columns={columns}
-          data={query.data?.items}
-          rowKey={(job) => job.id}
-          isPending={query.isPending}
-          isError={query.isError}
-          error={query.error}
-          onRetry={query.refetch}
-          isFetching={query.isFetching && !query.isPending}
-          emptyTitle="Chưa có tin tuyển dụng"
-          emptyDescription={hasFilter ? 'Thử bỏ bớt bộ lọc.' : undefined}
-          sort={{
-            sortBy: params.sortBy,
-            order: params.order,
-            onChange: (sortBy, order) =>
-              setParams({ sortBy: sortBy as typeof params.sortBy, order }),
-          }}
-          meta={query.data?.meta}
-          onPageChange={(page) => setParams({ page })}
+      <FilterBar
+        active={active}
+        onReset={active.length ? () => setParams({ departmentId: null }) : undefined}
+        trailing={<DensityToggle value={density} onChange={setDensity} />}
+      >
+        <SearchInput
+          value={params.search}
+          onChange={(search) => setParams({ search })}
+          placeholder="Tìm theo tên tin"
+          label="Tìm theo tên tin"
         />
-      </Card>
+        <FilterMenu
+          label="Phòng ban"
+          value={params.departmentId}
+          options={(departments.data ?? []).map((d) => ({ value: d.id, label: d.name }))}
+          onChange={(departmentId) => setParams({ departmentId: departmentId ?? null })}
+        />
+      </FilterBar>
+
+      <DataTable
+        caption="Danh sách tin tuyển dụng"
+        columns={columns}
+        data={query.data?.items}
+        rowKey={(job) => job.id}
+        rowLabel={(job) => job.title}
+        isPending={query.isPending}
+        isError={query.isError}
+        error={query.error}
+        onRetry={query.refetch}
+        isFetching={query.isFetching && !query.isPending}
+        density={density}
+        onRowOpen={(job) => void navigate(openTarget(job))}
+        rowActions={(job) => <RowMenu job={job} onAction={setPending} />}
+        emptyTitle={
+          params.search || params.status || dept
+            ? 'Không có tin khớp bộ lọc'
+            : 'Chưa có tin tuyển dụng'
+        }
+        emptyDescription={
+          params.search || params.status || dept
+            ? 'Thử đổi tab hoặc bỏ bớt điều kiện lọc.'
+            : 'Tạo tin từ mô tả công việc, đặt tiêu chí chấm rồi đăng để bắt đầu nhận hồ sơ.'
+        }
+        emptyAction={
+          <Can permission={Permission.JobCreate}>
+            <Link to={paths.jobNew} className={buttonVariants({ variant: 'secondary' })}>
+              Tạo tin
+            </Link>
+          </Can>
+        }
+        sort={{
+          sortBy: params.sortBy,
+          order: params.order,
+          onChange: (sortBy, order) => setParams({ sortBy: sortBy as typeof params.sortBy, order }),
+        }}
+        meta={query.data?.meta}
+        onPageChange={(page) => setParams({ page })}
+      />
 
       <ConfirmDialog
         open={!!pending}
@@ -234,8 +213,8 @@ export default function JobsPage() {
         title={pending?.type === 'publish' ? 'Đăng tin tuyển dụng?' : 'Đóng tin tuyển dụng?'}
         description={
           pending?.type === 'publish'
-            ? `"${pending.job.title}" sẽ hiện ngay trên trang tuyển dụng công khai.`
-            : `"${pending?.job.title}" sẽ không nhận thêm hồ sơ.`
+            ? `“${pending.job.title}” sẽ hiện ngay trên trang tuyển dụng công khai.`
+            : `“${pending?.job.title}” sẽ ngừng nhận hồ sơ mới; hồ sơ đã có vẫn xử lý bình thường. Tin đã đóng không mở lại được.`
         }
         confirmLabel={pending?.type === 'publish' ? 'Đăng tin' : 'Đóng tin'}
         tone={pending?.type === 'close' ? 'danger' : 'primary'}
@@ -245,5 +224,79 @@ export default function JobsPage() {
         }
       />
     </div>
+  )
+}
+
+function RowMenu({ job, onAction }: { job: JobSummary; onAction: (a: PendingAction) => void }) {
+  const [open, setOpen] = useState(false)
+  const canUpdate = usePermission(Permission.JobUpdate)
+  const canPublish = usePermission(Permission.JobPublish)
+  const canInvite = usePermission(Permission.ApplicationCreate)
+  const go = () => setOpen(false)
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={setOpen}
+      align="end"
+      role="menu"
+      label={`Thao tác với ${job.title}`}
+      className="w-60"
+      trigger={(props) => (
+        <Button variant="quiet" size="icon-sm" aria-label={`Thao tác với ${job.title}`} {...props}>
+          <MoreHorizontal />
+        </Button>
+      )}
+    >
+      <Link role="menuitem" to={links.jobEdit(job.id)} className={menuItemClass} onClick={go}>
+        <Pencil />
+        {canUpdate && job.status !== 'CLOSED' ? 'Sửa tin và tiêu chí' : 'Xem tin và tiêu chí'}
+      </Link>
+      <Link role="menuitem" to={links.jobRanking(job.id)} className={menuItemClass} onClick={go}>
+        Xếp hạng ứng viên
+      </Link>
+      <Link
+        role="menuitem"
+        to={links.applications({ jobId: job.id })}
+        className={menuItemClass}
+        onClick={go}
+      >
+        Bảng hồ sơ của tin
+      </Link>
+      {canInvite && job.status !== 'DRAFT' && (
+        <Link role="menuitem" to={links.jobMatches(job.id)} className={menuItemClass} onClick={go}>
+          Ứng viên cũ phù hợp
+        </Link>
+      )}
+      {canPublish && job.status === 'DRAFT' && (
+        <button
+          type="button"
+          role="menuitem"
+          className={menuItemClass}
+          onClick={() => {
+            go()
+            onAction({ type: 'publish', job })
+          }}
+        >
+          Đăng tin
+        </button>
+      )}
+      {canPublish && job.status === 'OPEN' && (
+        <>
+          <div className="border-line-soft my-1 border-t" />
+          <button
+            type="button"
+            role="menuitem"
+            className={`${menuItemClass} text-bad hover:text-bad`}
+            onClick={() => {
+              go()
+              onAction({ type: 'close', job })
+            }}
+          >
+            Đóng tin
+          </button>
+        </>
+      )}
+    </Popover>
   )
 }

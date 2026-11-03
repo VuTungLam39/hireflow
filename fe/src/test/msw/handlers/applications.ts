@@ -83,6 +83,7 @@ export const applicationHandlers = [
       return (
         (!p.get('jobId') || a.jobId === p.get('jobId')) &&
         (!p.get('status') || a.status === p.get('status')) &&
+        (!p.get('aiStatus') || a.aiStatus === p.get('aiStatus')) &&
         (!scoreMin || (a.score ?? -1) >= Number(scoreMin)) &&
         (!scoreMax || (a.score !== null && a.score <= Number(scoreMax))) &&
         (!p.get('missingMust') || a.flags.includes('MISSING_MUST')) &&

@@ -1,41 +1,12 @@
-import { Check, CircleCheck, CircleDashed, CircleMinus, UserPlus } from 'lucide-react'
+import { Check, UserPlus } from 'lucide-react'
 import { Link } from 'react-router'
 import { Can } from '@/components/shared'
-import { Badge, Button, Card } from '@/components/ui'
-import { ScoreFlags, ScoreValue } from '@/features/applications'
-import { RequirementTypeBadge } from '@/features/jobs'
+import { Avatar, Button } from '@/components/ui'
+import { RequirementMarks, ScoreBadge, ScoreFlags } from '@/features/applications'
 import { Permission } from '@/lib/permissions'
-import { formatDate, formatRelative } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import { links } from '@/routes/paths'
-import type { JobMatch, MatchReason } from '../types'
-
-const MATCH_ICON = {
-  1: { icon: CircleCheck, className: 'text-good', label: 'Khớp' },
-  0.5: { icon: CircleDashed, className: 'text-warn', label: 'Khớp một phần' },
-  0: { icon: CircleMinus, className: 'text-ink-faint', label: 'Không khớp' },
-} as const
-
-function Reason({ reason }: { reason: MatchReason }) {
-  const { icon: Icon, className, label } = MATCH_ICON[reason.match]
-  return (
-    <li className="flex gap-2">
-      <Icon className={`mt-0.5 size-4 shrink-0 ${className}`} aria-label={label} />
-      <div className="min-w-0 space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={reason.match ? 'text-ink font-medium' : 'text-ink-muted'}>
-            {reason.label}
-          </span>
-          <RequirementTypeBadge type={reason.type} />
-        </div>
-        {reason.evidence && (
-          <blockquote className="border-line text-ink-2 border-l-2 pl-2 text-xs italic">
-            “{reason.evidence}”
-          </blockquote>
-        )}
-      </div>
-    </li>
-  )
-}
+import type { JobMatch } from '../types'
 
 interface MatchCardProps {
   match: JobMatch
@@ -44,53 +15,63 @@ interface MatchCardProps {
   onInvite: (candidateId: string) => void
 }
 
-// US-10
+// US-10 · Design Spec 6.6
 export function MatchCard({ match, canInvite, inviting, onInvite }: MatchCardProps) {
   const { candidate } = match
+  const quote =
+    match.reasons.find((r) => r.match === 1 && r.evidence) ?? match.reasons.find((r) => r.evidence)
+  const matches = Object.fromEntries(match.reasons.map((r) => [r.requirementId, r.match]))
+
   return (
-    <Card data-match-card className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link
-            to={links.candidateDetail(candidate.id)}
-            className="text-ink font-semibold hover:underline"
-          >
-            {candidate.fullName}
-          </Link>
-          <p className="text-ink-muted truncate text-sm">{candidate.email}</p>
-          <p className="text-ink-muted text-xs" title={formatDate(match.lastAppliedAt)}>
-            Nộp gần nhất {formatRelative(match.lastAppliedAt)}
+    <li
+      data-match-card
+      className="grid gap-x-6 gap-y-2 px-5 py-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
+    >
+      <div className="flex min-w-0 gap-3">
+        <Avatar name={candidate.fullName} size="sm" className="mt-0.5" />
+        <div className="min-w-0 space-y-1">
+          <p className="flex flex-wrap items-baseline gap-x-2">
+            <Link
+              to={links.candidateDetail(candidate.id)}
+              className="type-subheading hover:text-brand transition-colors"
+            >
+              {candidate.fullName}
+            </Link>
+            <span className="type-caption">nộp gần nhất {formatDate(match.lastAppliedAt)}</span>
           </p>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <ScoreValue score={match.score} />
-          <ScoreFlags flags={match.flags} />
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <ScoreBadge score={match.score} />
+            <RequirementMarks
+              requirements={match.reasons.map((r) => ({ id: r.requirementId, label: r.label }))}
+              matches={matches}
+            />
+            <ScoreFlags flags={match.flags} />
+          </div>
+          {quote?.evidence && (
+            <p className="type-body text-[13px] italic">
+              <span className="text-ink-muted not-italic">{quote.label}: </span>“
+              <span className="mark-evidence not-italic">{quote.evidence}</span>”
+            </p>
+          )}
         </div>
       </div>
 
-      <ul className="space-y-2 text-sm">
-        {match.reasons.map((reason) => (
-          <Reason key={reason.requirementId} reason={reason} />
-        ))}
-      </ul>
-
-      <div className="border-line-soft flex flex-wrap items-center justify-end gap-2 border-t pt-3">
+      <div className="flex items-center gap-2 md:justify-end">
         {match.applicationId ? (
-          <>
-            <Badge tone="success">
-              <Check className="size-3" />
-              Đã mời
-            </Badge>
+          <span className="type-caption flex items-center gap-1.5">
+            <Check className="text-good size-4" />
+            <span className="text-good-ink font-medium">Đã mời</span>·
             <Link
               to={links.applicationDetail(match.applicationId)}
-              className="text-brand text-sm font-medium hover:underline"
+              className="text-brand font-medium hover:underline"
             >
               Xem hồ sơ →
             </Link>
-          </>
+          </span>
         ) : (
           <Can permission={Permission.ApplicationCreate}>
             <Button
+              variant="secondary"
               size="sm"
               disabled={!canInvite}
               loading={inviting}
@@ -102,6 +83,6 @@ export function MatchCard({ match, canInvite, inviting, onInvite }: MatchCardPro
           </Can>
         )}
       </div>
-    </Card>
+    </li>
   )
 }

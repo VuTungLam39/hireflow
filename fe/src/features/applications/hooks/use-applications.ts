@@ -197,3 +197,29 @@ export function useUploadForCandidate(jobId: string) {
   })
   return { ...mutation, progress }
 }
+
+export function useBulkChangeStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ ids, status }: { ids: string[]; status: ApplicationStatus }) => {
+      const failed: string[] = []
+      for (const id of ids) {
+        try {
+          await applicationsApi.changeStatus(id, { status })
+        } catch {
+          failed.push(id)
+        }
+      }
+      return { done: ids.length - failed.length, failed }
+    },
+    onSuccess: ({ done, failed }, { status }) => {
+      const label = APPLICATION_STATUS[status].label
+      if (failed.length === 0) toast.success(`Đã chuyển ${done} hồ sơ sang “${label}”`)
+      else
+        toast.error(
+          `${done}/${done + failed.length} hồ sơ đã chuyển sang “${label}”. ${failed.length} hồ sơ vừa được người khác đổi – tải lại để xem.`,
+        )
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: applicationKeys.all }),
+  })
+}
