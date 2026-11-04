@@ -31,6 +31,7 @@ export interface CandidateListItemView {
   phone: string | null;
   applicationCount: number;
   lastAppliedAt: Date | null;
+  lastJob: { title: string; status: ApplicationStatus } | null;
   anonymizedAt: Date | null;
   createdAt: Date;
 }
@@ -45,6 +46,20 @@ export interface CandidateDetailView extends CandidateListItemView {
     createdAt: Date;
   }[];
 }
+
+interface ApplicationStat {
+  count: number;
+  lastAppliedAt: Date | null;
+  lastJobTitle: string | null;
+  lastStatus: ApplicationStatus | null;
+}
+
+const EMPTY_STAT: ApplicationStat = {
+  count: 0,
+  lastAppliedAt: null,
+  lastJobTitle: null,
+  lastStatus: null,
+};
 
 const EXPIRED_BATCH = 100;
 
@@ -68,8 +83,7 @@ export class CandidatesService {
     const qb = this.candidatesRepository
       .createQueryBuilder('candidate')
       .orderBy('candidate.createdAt', 'DESC')
-      .addOrderBy('candidate.id', 'DESC')
-      .limit(query.limit + 1);
+      .addOrderBy('candidate.id', 'DESC');
 
     applyCandidateScope(qb, user, '"candidate"."id"');
     if (query.search) {
@@ -78,6 +92,8 @@ export class CandidatesService {
         { search: escapeLike(query.search) },
       );
     }
+    const totalItems = query.cursor ? undefined : await qb.clone().getCount();
+    qb.limit(query.limit + 1);
     if (query.cursor) {
       const { createdAt, id } = decodeCursor(query.cursor);
       qb.andWhere('(candidate.createdAt, candidate.id) < (:cursorCreatedAt, :cursorId)', {
@@ -97,6 +113,7 @@ export class CandidatesService {
       page.map((c) => this.toListItem(c, stats.get(c.id))),
       query.limit,
       rows.length > query.limit && last ? encodeCursor(last) : null,
+      totalItems,
     );
   }
 
@@ -123,6 +140,8 @@ export class CandidatesService {
       ...this.toListItem(candidate, {
         count: applications.length,
         lastAppliedAt: applications[0]?.createdAt ?? null,
+        lastJobTitle: applications[0]?.job?.title ?? null,
+        lastStatus: applications[0]?.status ?? null,
       }),
       applications: applications.map((a) => ({
         id: a.id,
@@ -255,7 +274,7 @@ export class CandidatesService {
   private async applicationStats(
     candidateIds: string[],
     user: ScopeUser,
-  ): Promise<Map<string, { count: number; lastAppliedAt: Date | null }>> {
+  ): Promise<Map<string, ApplicationStat>> {
     if (!candidateIds.length) return new Map();
     const qb = this.dataSource
       .getRepository(Application)
@@ -264,20 +283,17 @@ export class CandidatesService {
       .select('app.candidateId', 'candidateId')
       .addSelect('COUNT(*)::int', 'count')
       .addSelect('MAX(app.createdAt)', 'lastAppliedAt')
+      .addSelect('(array_agg(job.title ORDER BY app.createdAt DESC))[1]', 'lastJobTitle')
+      .addSelect('(array_agg(app.status ORDER BY app.createdAt DESC))[1]', 'lastStatus')
       .where('app.candidateId IN (:...candidateIds)', { candidateIds })
       .groupBy('app.candidateId');
-    const rows = await applyDepartmentScope(qb, user, 'job.departmentId').getRawMany<{
-      candidateId: string;
-      count: number;
-      lastAppliedAt: Date | null;
-    }>();
+    const rows = await applyDepartmentScope(qb, user, 'job.departmentId').getRawMany<
+      { candidateId: string } & ApplicationStat
+    >();
     return new Map(rows.map(({ candidateId, ...stat }) => [candidateId, stat]));
   }
 
-  private toListItem(
-    c: Candidate,
-    stat: { count: number; lastAppliedAt: Date | null } = { count: 0, lastAppliedAt: null },
-  ): CandidateListItemView {
+  private toListItem(c: Candidate, stat: ApplicationStat = EMPTY_STAT): CandidateListItemView {
     return {
       id: c.id,
       fullName: c.fullName,
@@ -285,6 +301,10 @@ export class CandidatesService {
       phone: c.phone,
       applicationCount: stat.count,
       lastAppliedAt: stat.lastAppliedAt,
+      lastJob:
+        stat.lastJobTitle && stat.lastStatus
+          ? { title: stat.lastJobTitle, status: stat.lastStatus }
+          : null,
       anonymizedAt: c.anonymizedAt,
       createdAt: c.createdAt,
     };

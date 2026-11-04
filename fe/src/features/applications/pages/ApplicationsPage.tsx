@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
-import { ChevronDown, Upload } from 'lucide-react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { Upload } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import {
@@ -8,18 +8,19 @@ import {
   DensityToggle,
   FilterBar,
   FilterMenu,
+  DateRangeFilter,
   PageHeader,
   SearchInput,
   Summary,
   type ActiveFilter,
   type Column,
 } from '@/components/shared'
-import { Avatar, Button, Input, Popover, Tabs, menuItemClass } from '@/components/ui'
+import { Avatar, Button, Popover, Tabs, menuItemClass } from '@/components/ui'
 import { useJobOptions } from '@/features/jobs'
 import { useDensity } from '@/hooks/use-density'
 import { useListParams } from '@/hooks/use-list-params'
 import { Permission } from '@/lib/permissions'
-import { cn, formatDate, formatDateTime } from '@/lib/utils'
+import { formatDate, formatDateTime, formatTime } from '@/lib/utils'
 import { links } from '@/routes/paths'
 import { useAuthStore } from '@/stores/auth.store'
 import { Role } from '@/types/user'
@@ -37,8 +38,10 @@ import {
   type ApplicationStatus,
 } from '../constants'
 import { applicationQueries, useApplications, useBulkChangeStatus } from '../hooks/use-applications'
+import { useMyFeedback } from '../hooks/use-my-feedback'
+import { MyFeedbackStatus } from '../components/MyFeedbackStatus'
 import type { ReviewState } from '../hooks/use-review-navigation'
-import { applicationListSchema } from '../schemas/application.schema'
+import { applicationListSchema, type ApplicationListParams } from '../schemas/application.schema'
 import type { ApplicationListItem } from '../types'
 
 const SCORE_BANDS = [
@@ -68,19 +71,15 @@ export default function ApplicationsPage() {
   const jobs = useJobOptions()
   const [density, setDensity] = useDensity()
   const isInterviewer = useAuthStore((s) => s.user?.role === Role.Interviewer)
+  const myFeedback = useMyFeedback(isInterviewer)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [peek, setPeek] = useState<string | null>(null)
   const bulk = useBulkChangeStatus()
-  const pending = useQuery({
-    ...applicationQueries.list({
-      page: 1,
-      limit: 1,
-      status: 'NEW',
-      sortBy: 'createdAt',
-      order: 'DESC',
-    }),
-    enabled: !isInterviewer,
-  })
+  const scope = { jobId: params.jobId, search: params.search }
+  const viewCounts = {
+    new: useViewCount({ ...scope, status: 'NEW' }, !isInterviewer),
+    failed: useViewCount({ ...scope, aiStatus: 'FAILED' }, !isInterviewer),
+  }
 
   const listQuery = searchParams.toString()
   const clear = Object.fromEntries(FILTER_KEYS.map((k) => [k, null]))
@@ -180,7 +179,13 @@ export default function ApplicationsPage() {
       ),
     },
     ...(isInterviewer
-      ? []
+      ? [
+          {
+            key: 'myFeedback',
+            header: 'Phiếu của bạn',
+            cell: (a: ApplicationListItem) => <MyFeedbackStatus value={myFeedback.get(a.id)} />,
+          },
+        ]
       : [
           {
             key: 'score',
@@ -195,11 +200,45 @@ export default function ApplicationsPage() {
       header: 'Nộp lúc',
       sortKey: 'createdAt',
       align: 'right',
-      cell: (a) => (
-        <span className="type-caption whitespace-nowrap">{formatDateTime(a.createdAt)}</span>
-      ),
+      cell: (a) =>
+        density === 'compact' ? (
+          <span className="type-caption whitespace-nowrap">{formatDateTime(a.createdAt)}</span>
+        ) : (
+          <span className="block text-[13px] leading-5 whitespace-nowrap">
+            <span className="text-ink-2 block">{formatDate(a.createdAt)}</span>
+            <span className="text-ink-muted block">{formatTime(a.createdAt)}</span>
+          </span>
+        ),
     },
   ]
+
+  // App Screens 7.1, 7.4
+  const mobileRow = (a: ApplicationListItem) => (
+    <div className="flex gap-3">
+      <Avatar name={a.candidate.fullName} size="sm" className="mt-0.5" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="text-ink truncate font-medium">{a.candidate.fullName}</p>
+          {isInterviewer ? (
+            <span className="shrink-0">
+              <MyFeedbackStatus value={myFeedback.get(a.id)} />
+            </span>
+          ) : (
+            <ScoreBadge score={a.score} className="shrink-0" />
+          )}
+        </div>
+        <div className="mt-0.5 flex items-baseline justify-between gap-3">
+          <p className="type-caption truncate">{a.job.title}</p>
+          <span className="type-caption num shrink-0">{formatDate(a.createdAt)}</span>
+        </div>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+          <StatusPill status={a.status} />
+          {a.aiStatus !== 'DONE' && <AiStatusBadge status={a.aiStatus} />}
+          {!isInterviewer && a.flags.length > 0 && <ScoreFlags flags={a.flags} compact />}
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <div className="space-y-6">
@@ -210,7 +249,6 @@ export default function ApplicationsPage() {
             <Summary
               items={[
                 `${query.data.meta.totalItems.toLocaleString('vi-VN')} hồ sơ${active.length || params.search ? ' khớp bộ lọc' : ''}`,
-                pending.data && `${pending.data.meta.totalItems.toLocaleString('vi-VN')} chờ xem`,
               ]}
             />
           )
@@ -225,7 +263,12 @@ export default function ApplicationsPage() {
       {!isInterviewer && (
         <Tabs
           label="Bộ lọc đã lưu"
-          tabs={APPLICATION_VIEWS.map((v) => ({ id: v.id, label: v.label }))}
+          tabs={APPLICATION_VIEWS.map((v) => ({
+            id: v.id,
+            label: v.label,
+            count: v.id === 'new' || v.id === 'failed' ? viewCounts[v.id] : undefined,
+            tone: v.id === 'new' ? 'marker' : v.id === 'failed' ? 'bad' : undefined,
+          }))}
           value={activeView}
           onChange={(id) => {
             const view = APPLICATION_VIEWS.find((v) => v.id === id)!
@@ -272,7 +315,8 @@ export default function ApplicationsPage() {
             }}
           />
         )}
-        <DateFilter
+        <DateRangeFilter
+          label="Ngày nộp"
           from={params.createdFrom}
           to={params.createdTo}
           onChange={(createdFrom, createdTo) =>
@@ -319,6 +363,7 @@ export default function ApplicationsPage() {
           setSelected(new Set())
         }}
         activeRowKey={peek ?? undefined}
+        mobileRow={mobileRow}
         onRowClick={(a) => setPeek(a.id)}
         onRowOpen={open}
         selection={isInterviewer ? undefined : { selected, onChange: (next) => setSelected(next) }}
@@ -370,64 +415,21 @@ export default function ApplicationsPage() {
   )
 }
 
-function DateFilter({
-  from,
-  to,
-  onChange,
-}: {
-  from?: string
-  to?: string
-  onChange: (from: string, to: string) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const on = !!(from || to)
-  return (
-    <Popover
-      open={open}
-      onOpenChange={setOpen}
-      label="Lọc theo ngày nộp"
-      className="w-72 p-3"
-      trigger={(props) => (
-        <button
-          type="button"
-          {...props}
-          className={cn(
-            'inline-flex h-9 items-center gap-1.5 rounded-sm border px-3 text-sm whitespace-nowrap transition-colors',
-            on
-              ? 'border-brand/30 bg-brand-soft text-brand'
-              : 'border-line bg-surface text-ink-2 hover:border-ink-faint',
-          )}
-        >
-          <span className={on ? 'text-brand/80' : 'text-ink-muted'}>Ngày nộp:</span>
-          <span className="font-medium">{on ? 'Đang lọc' : 'Bất kỳ'}</span>
-          <ChevronDown className="size-4 opacity-70" />
-        </button>
-      )}
-    >
-      <div className="grid grid-cols-2 gap-2">
-        <label className="type-label space-y-1">
-          Từ ngày
-          <Input
-            type="date"
-            aria-label="Nộp từ ngày"
-            max={to}
-            value={from ?? ''}
-            onChange={(e) => onChange(e.target.value, to ?? '')}
-          />
-        </label>
-        <label className="type-label space-y-1">
-          Đến ngày
-          <Input
-            type="date"
-            aria-label="Nộp đến ngày"
-            min={from}
-            value={to ?? ''}
-            onChange={(e) => onChange(from ?? '', e.target.value)}
-          />
-        </label>
-      </div>
-    </Popover>
-  )
+// Số trên tab = số hồ sơ sẽ thấy khi bấm tab, cùng phạm vi tin và ô tìm
+function useViewCount(filter: Partial<ApplicationListParams>, enabled: boolean) {
+  const query = useQuery({
+    ...applicationQueries.list({
+      page: 1,
+      limit: 1,
+      sortBy: 'createdAt',
+      order: 'DESC',
+      ...filter,
+    }),
+    enabled,
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
+  })
+  return query.data?.meta.totalItems
 }
 
 function UploadForJob({

@@ -1,8 +1,18 @@
+import { Fragment } from 'react'
 import { Link } from 'react-router'
-import { links } from '@/routes/paths'
 import { cn } from '@/lib/utils'
+import { links } from '@/routes/paths'
 import { PIPELINE_STAGES } from '../constants'
 import type { JobPipeline } from '../types'
+
+type Stage = keyof JobPipeline
+
+const STAGE: Record<Stage, { status?: string; tone: string }> = {
+  new: { status: 'NEW', tone: 'bg-marker text-ink rounded-xs px-1 font-medium' },
+  inProgress: { tone: '' },
+  hired: { status: 'HIRED', tone: 'text-good-ink font-medium' },
+  closed: { tone: '' },
+}
 
 interface PipelineCountsProps {
   pipeline: JobPipeline
@@ -11,47 +21,64 @@ interface PipelineCountsProps {
   className?: string
 }
 
-const STAGE_STATUS: Record<keyof JobPipeline, string | undefined> = {
-  new: 'NEW',
-  inProgress: undefined,
-  hired: 'HIRED',
-  closed: undefined,
-}
-
+// Design Spec 6.5 · App Screens 7.4
 export function PipelineCounts({ pipeline, total, jobId, className }: PipelineCountsProps) {
-  if (total === 0) return <span className="type-caption">Chưa có hồ sơ</span>
-  const summary = PIPELINE_STAGES.map((s) => `${s.label}: ${pipeline[s.key]}`).join(' · ')
+  if (total === 0) {
+    return <span className={cn('num text-ink-faint block text-right', className)}>0</span>
+  }
+  const parts = PIPELINE_STAGES.filter((s) => pipeline[s.key] > 0)
+  const totalText = total.toLocaleString('vi-VN')
+
   return (
-    <span className={cn('num inline-flex gap-4 text-[13px]', className)} aria-label={summary}>
-      {PIPELINE_STAGES.map((s) => {
-        const value = pipeline[s.key]
-        const status = STAGE_STATUS[s.key]
-        const body = (
-          <>
-            <span className={cn('font-semibold', value ? 'text-ink' : 'text-ink-faint')}>
-              {value.toLocaleString('vi-VN')}
-            </span>{' '}
-            <span className="text-ink-muted">{s.short}</span>
-          </>
-        )
-        return jobId && status && value > 0 ? (
+    <div className={cn('num text-right', className)}>
+      <span className="sr-only">
+        {`${totalText} hồ sơ: ${parts.map((s) => `${pipeline[s.key]} ${s.short}`).join(', ')}`}
+      </span>
+      <div aria-hidden>
+        {jobId ? (
           <Link
-            key={s.key}
-            aria-hidden
             tabIndex={-1}
-            to={links.applications({ jobId, status })}
-            className="hover:[&>span:first-child]:text-brand whitespace-nowrap"
+            to={links.applications({ jobId })}
+            title={`Xem ${totalText} hồ sơ của tin`}
+            className="text-ink hover:text-brand font-semibold transition-colors"
           >
-            {body}
+            {totalText}
           </Link>
         ) : (
-          <span key={s.key} aria-hidden className="whitespace-nowrap">
-            {body}
-          </span>
-        )
-      })}
-    </span>
+          <span className="text-ink font-semibold">{totalText}</span>
+        )}
+      </div>
+      <p aria-hidden className="type-caption mt-0.5">
+        {parts.map((s, i) => {
+          const value = pipeline[s.key]
+          const { status, tone } = STAGE[s.key]
+          const label = (
+            <span className={tone}>
+              {value.toLocaleString('vi-VN')} {s.short}
+            </span>
+          )
+          return (
+            <Fragment key={s.key}>
+              {i > 0 && ' '}
+              <span className="whitespace-nowrap">
+                {i > 0 && <span className="text-ink-faint mr-1">·</span>}
+                {jobId && status ? (
+                  <Link
+                    tabIndex={-1}
+                    to={links.applications({ jobId, status })}
+                    title={`Xem ${value} hồ sơ ${s.label.toLowerCase()}`}
+                    className="hover:text-ink hover:underline"
+                  >
+                    {label}
+                  </Link>
+                ) : (
+                  label
+                )}
+              </span>
+            </Fragment>
+          )
+        })}
+      </p>
+    </div>
   )
 }
-
-export const PipelineBar = PipelineCounts

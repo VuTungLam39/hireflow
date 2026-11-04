@@ -3,7 +3,14 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 
 export type Density = 'comfortable' | 'compact'
 
+export interface Crumb {
+  title: string
+  back?: string
+}
+
 interface UiState {
+  crumb: Crumb | null
+  setCrumb: (crumb: Crumb | null) => void
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
   commandOpen: boolean
@@ -23,6 +30,8 @@ const safeStorage = createJSONStorage(() => {
 export const useUiStore = create<UiState>()(
   persist(
     (set) => ({
+      crumb: null,
+      setCrumb: (crumb) => set({ crumb }),
       sidebarOpen: false,
       setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
       commandOpen: false,

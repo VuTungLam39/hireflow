@@ -1,6 +1,14 @@
-import { MoreHorizontal, Pencil, Plus } from 'lucide-react'
+import {
+  Inbox,
+  ListChecks,
+  ListOrdered,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  UserSearch,
+} from 'lucide-react'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link } from 'react-router'
 import {
   Can,
   ConfirmDialog,
@@ -16,12 +24,14 @@ import {
 } from '@/components/shared'
 import { Button, Popover, Tabs, buttonVariants, menuItemClass } from '@/components/ui'
 import { useDepartmentOptions } from '@/features/departments'
+import { useAuthStore } from '@/stores/auth.store'
+import { Role } from '@/types/user'
 import { useDensity } from '@/hooks/use-density'
+import { useDetailLink, useOpenDetail } from '@/hooks/use-detail'
 import { useListParams } from '@/hooks/use-list-params'
 import { usePermission } from '@/hooks/use-permission'
 import { Permission } from '@/lib/permissions'
-import { formatDate } from '@/lib/utils'
-import { links, paths } from '@/routes/paths'
+import { formatDate, formatDaysAgo } from '@/lib/utils'
 import { JobStatusBadge } from '../components/JobStatusBadge'
 import { PipelineCounts } from '../components/PipelineBar'
 import { JOB_STATUS, type JobStatus } from '../constants'
@@ -38,23 +48,57 @@ const TABS = [
   { id: 'CLOSED', label: 'Đã đóng' },
 ] as const
 
-const daysSince = (iso: string) =>
-  Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000))
+// App Screens 7.1, 7.4
+function JobMobileRow({ job }: { job: JobSummary }) {
+  const newCount = job.pipeline.new
+  return (
+    <div className="min-w-0">
+      <p className="text-ink truncate font-semibold">{job.title}</p>
+      <div className="mt-0.5 flex items-baseline justify-between gap-3">
+        <p className="type-caption truncate">
+          {job.department.name} · {job.location}
+        </p>
+        {job.status !== 'DRAFT' && (
+          <span className="num shrink-0 text-[13px]">
+            <span className={job.applicationCount ? 'text-ink font-semibold' : 'text-ink-faint'}>
+              {job.applicationCount.toLocaleString('vi-VN')}
+            </span>
+            <span className="text-ink-muted"> hồ sơ</span>
+            {newCount > 0 && (
+              <span className="bg-marker text-ink ml-1.5 rounded-xs px-1 font-medium">
+                {newCount.toLocaleString('vi-VN')} mới
+              </span>
+            )}
+          </span>
+        )}
+      </div>
+      <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+        <JobStatusBadge status={job.status} />
+        <span className="type-caption">
+          · {job.publishedAt ? `đăng ${formatDaysAgo(job.publishedAt)}` : 'chưa đăng'}
+        </span>
+      </p>
+    </div>
+  )
+}
 
 // F-JOB-01 · Design Spec 6.5
 export default function JobsPage() {
   const [params, setParams] = useListParams(jobListSchema)
-  const query = useJobs(params)
   const departments = useDepartmentOptions()
-  const canUpdate = usePermission(Permission.JobUpdate)
-  const navigate = useNavigate()
+  const ownDepartmentOnly = useAuthStore((s) => s.user?.role === Role.HiringManager)
+  const query = useJobs(ownDepartmentOnly ? { ...params, departmentId: undefined } : params)
+  const detailLink = useDetailLink()
+  const openDetail = useOpenDetail()
   const [density, setDensity] = useDensity()
   const [pending, setPending] = useState<PendingAction>(null)
   const publish = usePublishJob()
   const close = useCloseJob()
   const action = pending?.type === 'publish' ? publish : close
 
-  const dept = departments.data?.find((d) => d.id === params.departmentId)
+  const dept = ownDepartmentOnly
+    ? undefined
+    : departments.data?.find((d) => d.id === params.departmentId)
   const active: ActiveFilter[] = dept
     ? [
         {
@@ -65,9 +109,6 @@ export default function JobsPage() {
       ]
     : []
 
-  const openTarget = (job: JobSummary) =>
-    job.status === 'DRAFT' && canUpdate ? links.jobEdit(job.id) : links.jobRanking(job.id)
-
   const columns: Column<JobSummary>[] = [
     {
       key: 'title',
@@ -76,7 +117,7 @@ export default function JobsPage() {
       cell: (job) => (
         <div className="min-w-0">
           <Link
-            to={openTarget(job)}
+            to={detailLink('job', job.id)}
             className="text-ink hover:text-brand font-semibold transition-colors"
           >
             {job.title}
@@ -95,10 +136,17 @@ export default function JobsPage() {
     },
     {
       key: 'pipeline',
-      header: 'Hồ sơ theo bước',
-      cell: (job) => (
-        <PipelineCounts pipeline={job.pipeline} total={job.applicationCount} jobId={job.id} />
-      ),
+      header: 'Hồ sơ',
+      align: 'right',
+      className: 'w-60',
+      cell: (job) =>
+        job.status === 'DRAFT' ? (
+          <span className="text-ink-faint" title="Tin nháp chưa nhận hồ sơ">
+            —
+          </span>
+        ) : (
+          <PipelineCounts pipeline={job.pipeline} total={job.applicationCount} jobId={job.id} />
+        ),
     },
     {
       key: 'publishedAt',
@@ -108,10 +156,10 @@ export default function JobsPage() {
       cell: (job) =>
         job.publishedAt ? (
           <span className="type-caption num" title={formatDate(job.publishedAt)}>
-            {daysSince(job.publishedAt) === 0 ? 'hôm nay' : `${daysSince(job.publishedAt)} ngày`}
+            {formatDaysAgo(job.publishedAt)}
           </span>
         ) : (
-          <span className="type-caption">Chưa đăng</span>
+          <span className="type-caption">chưa đăng</span>
         ),
     },
   ]
@@ -133,7 +181,7 @@ export default function JobsPage() {
         }
         actions={
           <Can permission={Permission.JobCreate}>
-            <Link to={paths.jobNew} className={buttonVariants()}>
+            <Link to={detailLink('job', 'new')} className={buttonVariants()}>
               <Plus />
               Tạo tin
             </Link>
@@ -159,12 +207,14 @@ export default function JobsPage() {
           placeholder="Tìm theo tên tin"
           label="Tìm theo tên tin"
         />
-        <FilterMenu
-          label="Phòng ban"
-          value={params.departmentId}
-          options={(departments.data ?? []).map((d) => ({ value: d.id, label: d.name }))}
-          onChange={(departmentId) => setParams({ departmentId: departmentId ?? null })}
-        />
+        {!ownDepartmentOnly && (
+          <FilterMenu
+            label="Phòng ban"
+            value={params.departmentId}
+            options={(departments.data ?? []).map((d) => ({ value: d.id, label: d.name }))}
+            onChange={(departmentId) => setParams({ departmentId: departmentId ?? null })}
+          />
+        )}
       </FilterBar>
 
       <DataTable
@@ -173,13 +223,14 @@ export default function JobsPage() {
         data={query.data?.items}
         rowKey={(job) => job.id}
         rowLabel={(job) => job.title}
+        mobileRow={(job) => <JobMobileRow job={job} />}
         isPending={query.isPending}
         isError={query.isError}
         error={query.error}
         onRetry={query.refetch}
         isFetching={query.isFetching && !query.isPending}
         density={density}
-        onRowOpen={(job) => void navigate(openTarget(job))}
+        onRowClick={(job) => openDetail('job', job.id)}
         rowActions={(job) => <RowMenu job={job} onAction={setPending} />}
         emptyTitle={
           params.search || params.status || dept
@@ -193,7 +244,10 @@ export default function JobsPage() {
         }
         emptyAction={
           <Can permission={Permission.JobCreate}>
-            <Link to={paths.jobNew} className={buttonVariants({ variant: 'secondary' })}>
+            <Link
+              to={detailLink('job', 'new')}
+              className={buttonVariants({ variant: 'secondary' })}
+            >
               Tạo tin
             </Link>
           </Can>
@@ -232,6 +286,8 @@ function RowMenu({ job, onAction }: { job: JobSummary; onAction: (a: PendingActi
   const canUpdate = usePermission(Permission.JobUpdate)
   const canPublish = usePermission(Permission.JobPublish)
   const canInvite = usePermission(Permission.ApplicationCreate)
+  const detailLink = useDetailLink()
+  const editable = canUpdate && job.status !== 'CLOSED'
   const go = () => setOpen(false)
 
   return (
@@ -248,25 +304,57 @@ function RowMenu({ job, onAction }: { job: JobSummary; onAction: (a: PendingActi
         </Button>
       )}
     >
-      <Link role="menuitem" to={links.jobEdit(job.id)} className={menuItemClass} onClick={go}>
-        <Pencil />
-        {canUpdate && job.status !== 'CLOSED' ? 'Sửa tin và tiêu chí' : 'Xem tin và tiêu chí'}
-      </Link>
-      <Link role="menuitem" to={links.jobRanking(job.id)} className={menuItemClass} onClick={go}>
-        Xếp hạng ứng viên
-      </Link>
       <Link
         role="menuitem"
-        to={links.applications({ jobId: job.id })}
+        to={detailLink('job', job.id, 'content')}
         className={menuItemClass}
         onClick={go}
       >
-        Bảng hồ sơ của tin
+        <Pencil />
+        {editable ? 'Sửa nội dung tin' : 'Xem nội dung tin'}
       </Link>
-      {canInvite && job.status !== 'DRAFT' && (
-        <Link role="menuitem" to={links.jobMatches(job.id)} className={menuItemClass} onClick={go}>
-          Ứng viên cũ phù hợp
-        </Link>
+      <Link
+        role="menuitem"
+        to={detailLink('job', job.id, 'criteria')}
+        className={menuItemClass}
+        onClick={go}
+      >
+        <ListChecks />
+        {editable ? 'Sửa tiêu chí chấm' : 'Xem tiêu chí chấm'}
+      </Link>
+      {job.status !== 'DRAFT' && (
+        <>
+          <div className="border-line-soft my-1 border-t" />
+          <Link
+            role="menuitem"
+            to={detailLink('job', job.id, 'applications')}
+            className={menuItemClass}
+            onClick={go}
+          >
+            <Inbox />
+            Hồ sơ của tin
+          </Link>
+          <Link
+            role="menuitem"
+            to={detailLink('job', job.id, 'ranking')}
+            className={menuItemClass}
+            onClick={go}
+          >
+            <ListOrdered />
+            Xếp hạng ứng viên
+          </Link>
+          {canInvite && (
+            <Link
+              role="menuitem"
+              to={detailLink('job', job.id, 'matches')}
+              className={menuItemClass}
+              onClick={go}
+            >
+              <UserSearch />
+              Ứng viên cũ phù hợp
+            </Link>
+          )}
+        </>
       )}
       {canPublish && job.status === 'DRAFT' && (
         <button

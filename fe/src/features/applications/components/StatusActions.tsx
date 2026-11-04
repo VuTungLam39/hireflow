@@ -1,7 +1,7 @@
-import { ArrowRight, Check, RotateCcw } from 'lucide-react'
+import { ArrowRight, Check, MoreHorizontal, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 import { ConfirmDialog } from '@/components/shared'
-import { Button } from '@/components/ui'
+import { Button, Popover, menuItemClass } from '@/components/ui'
 import { usePermission } from '@/hooks/use-permission'
 import { Permission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
@@ -36,6 +36,7 @@ export function StatusActions({ applicationId, status, className }: StatusAction
   const canApprove = usePermission(Permission.ApplicationApproveOffer)
   const changeStatus = useChangeStatus(applicationId)
   const [target, setTarget] = useState<ApplicationStatus | null>(null)
+  const [menu, setMenu] = useState(false)
 
   const allowed = (next: ApplicationStatus) => {
     if (next === 'HIRED') return canApprove
@@ -56,22 +57,71 @@ export function StatusActions({ applicationId, status, className }: StatusAction
 
   const forward = options.filter((s) => s !== 'REJECTED' && s !== 'WITHDRAWN')
   const needReason = !!target && REASON_REQUIRED.includes(target)
+  const secondary = [
+    ...forward.slice(1),
+    ...options.filter((s) => s === 'WITHDRAWN' || s === 'REJECTED'),
+  ]
 
   return (
     <>
       <div className={cn('flex flex-wrap items-center gap-2', className)}>
+        {secondary.length > 0 && (
+          <span className="lg:hidden">
+            <Popover
+              open={menu}
+              onOpenChange={setMenu}
+              side="top"
+              role="menu"
+              label="Thao tác khác với hồ sơ"
+              className="w-60"
+              trigger={(props) => (
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  aria-label="Thao tác khác với hồ sơ"
+                  {...props}
+                >
+                  <MoreHorizontal />
+                </Button>
+              )}
+            >
+              {secondary.map((next) => (
+                <button
+                  key={next}
+                  type="button"
+                  role="menuitem"
+                  className={cn(menuItemClass, next === 'REJECTED' && 'text-bad hover:text-bad')}
+                  onClick={() => {
+                    setMenu(false)
+                    setTarget(next)
+                  }}
+                >
+                  {label(next)}
+                </button>
+              ))}
+            </Popover>
+          </span>
+        )}
         {options.includes('WITHDRAWN') && (
-          <Button variant="quiet" onClick={() => setTarget('WITHDRAWN')}>
+          <Button variant="quiet" className="max-lg:hidden" onClick={() => setTarget('WITHDRAWN')}>
             {label('WITHDRAWN')}
           </Button>
         )}
         {options.includes('REJECTED') && (
-          <Button variant="danger-quiet" onClick={() => setTarget('REJECTED')}>
+          <Button
+            variant="danger-quiet"
+            className="max-lg:hidden"
+            onClick={() => setTarget('REJECTED')}
+          >
             {label('REJECTED')}
           </Button>
         )}
-        {forward.map((next) => (
-          <Button key={next} onClick={() => setTarget(next)}>
+        {forward.map((next, i) => (
+          <Button
+            key={next}
+            className={cn(i === 0 ? 'max-lg:flex-1' : 'max-lg:hidden')}
+            onClick={() => setTarget(next)}
+          >
             {next === 'HIRED' && <Check />}
             {label(next)}
             {next !== 'HIRED' && <ArrowRight />}

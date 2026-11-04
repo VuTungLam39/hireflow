@@ -1,4 +1,4 @@
-import { UserPlus } from 'lucide-react'
+import { Lock, LockOpen, Pencil, Trash2, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { z } from 'zod'
 import {
@@ -7,12 +7,14 @@ import {
   FilterBar,
   FilterMenu,
   PageHeader,
+  RowMenu,
+  Summary,
   SearchInput,
   type Column,
 } from '@/components/shared'
-import { Avatar, Button, Tooltip } from '@/components/ui'
+import { Avatar, Button } from '@/components/ui'
 import { pageFields, useListParams } from '@/hooks/use-list-params'
-import { cn, formatDateTime } from '@/lib/utils'
+import { cn, formatDateTime, formatDaysAgo } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
 import { Role, ROLE_LABELS, type User } from '@/types/user'
 import { CreateUserDialog } from '../components/CreateUserDialog'
@@ -73,20 +75,7 @@ export default function UsersPage() {
     {
       key: 'status',
       header: 'Trạng thái',
-      cell: (u) => (
-        <span
-          className={cn(
-            'inline-flex items-center gap-1.5 text-[13px] font-medium',
-            u.isActive ? 'text-good-ink' : 'text-bad',
-          )}
-        >
-          <span
-            aria-hidden
-            className={cn('size-2 rounded-full', u.isActive ? 'bg-good' : 'bg-bad')}
-          />
-          {u.isActive ? 'Hoạt động' : 'Đã khoá'}
-        </span>
-      ),
+      cell: (u) => <UserStatus user={u} />,
     },
     {
       key: 'lastLogin',
@@ -105,8 +94,14 @@ export default function UsersPage() {
       <PageHeader
         title="Người dùng"
         description={
-          total !== undefined &&
-          `${total.toLocaleString('vi-VN')} tài khoản nội bộ · không có trang tự đăng ký`
+          total !== undefined && (
+            <Summary
+              items={[
+                `${total.toLocaleString('vi-VN')} tài khoản nội bộ`,
+                'không có trang tự đăng ký',
+              ]}
+            />
+          )
         }
         actions={
           <Button onClick={() => setCreating(true)}>
@@ -150,6 +145,7 @@ export default function UsersPage() {
         data={query.data?.items}
         rowKey={(u) => u.id}
         rowLabel={(u) => u.fullName}
+        onRowClick={(u) => setEditing(u)}
         isPending={query.isPending}
         isError={query.isError}
         error={query.error}
@@ -159,37 +155,30 @@ export default function UsersPage() {
         emptyDescription="Thử tìm bằng email đầy đủ hoặc bỏ lọc vai trò."
         meta={query.data?.meta}
         onPageChange={(page) => setParams({ page })}
+        mobileRow={(u) => <UserMobileRow user={u} isSelf={self(u)} />}
         rowActions={(u) => (
-          <>
-            <Button variant="quiet" size="sm" onClick={() => setEditing(u)}>
-              Sửa
-            </Button>
-            {/* BR-ACC-05 */}
-            <Tooltip label="Bạn không thể tự khoá tài khoản của mình" disabled={!self(u)}>
-              <Button
-                variant={u.isActive ? 'danger-quiet' : 'quiet'}
-                size="sm"
-                aria-disabled={self(u) || undefined}
-                onClick={() => {
-                  if (self(u)) return
-                  if (u.isActive) setLocking(u)
-                  else setStatus.mutate({ id: u.id, isActive: true })
-                }}
-              >
-                {u.isActive ? 'Khoá' : 'Mở khoá'}
-              </Button>
-            </Tooltip>
-            <Tooltip label="Bạn không thể tự xoá tài khoản của mình" disabled={!self(u)}>
-              <Button
-                variant="danger-quiet"
-                size="sm"
-                aria-disabled={self(u) || undefined}
-                onClick={() => !self(u) && setDeleting(u)}
-              >
-                Xoá
-              </Button>
-            </Tooltip>
-          </>
+          <RowMenu
+            label={`Thao tác với ${u.fullName}`}
+            items={[
+              { label: 'Sửa thông tin', icon: <Pencil />, onSelect: () => setEditing(u) },
+              {
+                label: u.isActive ? 'Khoá tài khoản' : 'Mở khoá tài khoản',
+                icon: u.isActive ? <Lock /> : <LockOpen />,
+                disabled: self(u),
+                onSelect: () =>
+                  u.isActive ? setLocking(u) : setStatus.mutate({ id: u.id, isActive: true }),
+              },
+              {
+                label: 'Xoá người dùng',
+                icon: <Trash2 />,
+                danger: true,
+                separated: true,
+                disabled: self(u),
+                onSelect: () => setDeleting(u),
+              },
+            ]}
+            note={self(u) && 'Bạn không thể tự khoá hoặc xoá tài khoản của mình.'}
+          />
         )}
       />
 
@@ -230,6 +219,50 @@ export default function UsersPage() {
           deleting && deleteUser.mutate(deleting.id, { onSettled: () => setDeleting(null) })
         }
       />
+    </div>
+  )
+}
+
+// App Screens 7.6
+function UserStatus({ user }: { user: User }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 text-[13px] whitespace-nowrap',
+        user.isActive ? 'text-ink-2' : 'text-bad font-medium',
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn('size-1.5 rounded-full', user.isActive ? 'bg-ink-faint' : 'bg-bad')}
+      />
+      {user.isActive ? 'Hoạt động' : 'Đã khoá'}
+    </span>
+  )
+}
+
+// App Screens 7.1
+function UserMobileRow({ user: u, isSelf }: { user: User; isSelf: boolean }) {
+  return (
+    <div className="flex gap-3">
+      <Avatar name={u.fullName} size="sm" className="mt-0.5" />
+      <div className="min-w-0 flex-1">
+        <p className="text-ink font-medium">
+          {u.fullName}
+          {isSelf && <span className="type-caption"> · bạn</span>}
+        </p>
+        <p className="type-caption break-all">{u.email}</p>
+        <p className="text-ink-2 mt-1 text-[13px]">
+          {ROLE_LABELS[u.role]}
+          {u.department && <span className="text-ink-muted"> · {u.department.name}</span>}
+        </p>
+        <p className="mt-1 flex flex-wrap items-center gap-x-1.5">
+          <UserStatus user={u} />
+          <span className="type-caption whitespace-nowrap">
+            · {u.lastLoginAt ? `đăng nhập ${formatDaysAgo(u.lastLoginAt)}` : 'chưa đăng nhập'}
+          </span>
+        </p>
+      </div>
     </div>
   )
 }

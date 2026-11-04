@@ -4,6 +4,7 @@ import { Kbd } from '@/components/ui'
 import { NotificationBell } from '@/features/notifications'
 import { useUiStore } from '@/stores/ui.store'
 import { BrandMark } from './BrandMark'
+import { QUICK_SEARCH_LABEL, useQuickSearchScope } from './quick-search-scope'
 import { findNavItem } from './nav-config'
 import { UserMenu } from './UserMenu'
 
@@ -13,11 +14,13 @@ export function Topbar() {
   const { pathname } = useLocation()
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen)
   const setCommandOpen = useUiStore((s) => s.setCommandOpen)
+  const crumb = useUiStore((s) => s.crumb)
+  const searchLabel = QUICK_SEARCH_LABEL[useQuickSearchScope()]
   const current = findNavItem(pathname)
   const isDetail = !!current && pathname !== current.item.to
 
   return (
-    <header className="border-line bg-surface sticky top-0 z-20 border-b">
+    <header className="bg-canvas sticky top-0 z-20">
       <div className="flex h-14 items-center gap-3 px-4 md:px-6 lg:px-8">
         <button
           type="button"
@@ -41,15 +44,18 @@ export function Topbar() {
               {isDetail ? (
                 <>
                   <li className="truncate">
-                    <Link to={current.item.to} className="hover:text-ink transition-colors">
+                    <Link
+                      to={crumb?.back ?? current.item.to}
+                      className="hover:text-ink transition-colors"
+                    >
                       {current.item.label}
                     </Link>
                   </li>
                   <li aria-hidden className="text-ink-faint">
                     /
                   </li>
-                  <li aria-current="page" className="text-ink truncate">
-                    Chi tiết
+                  <li aria-current="page" className="text-ink max-w-80 truncate">
+                    {crumb?.title ?? 'Chi tiết'}
                   </li>
                 </>
               ) : (
@@ -65,15 +71,15 @@ export function Topbar() {
           <button
             type="button"
             onClick={() => setCommandOpen(true)}
-            className="border-line bg-canvas text-ink-muted hover:border-ink-faint hidden h-9 w-64 items-center gap-2 rounded-sm border pr-1.5 pl-3 text-sm transition-colors lg:flex xl:w-72"
+            className="border-line-strong bg-surface text-ink-muted hover:border-ink-faint hidden h-9 w-64 items-center gap-2 rounded-sm border pr-1.5 pl-3 text-sm transition-colors lg:flex xl:w-72"
           >
             <Search className="size-4" />
-            <span className="flex-1 text-left">Tìm ứng viên</span>
+            <span className="flex-1 text-left">{searchLabel}</span>
             <Kbd>{isMac ? '⌘' : 'Ctrl'} K</Kbd>
           </button>
           <button
             type="button"
-            aria-label="Tìm ứng viên"
+            aria-label={searchLabel}
             onClick={() => setCommandOpen(true)}
             className="text-ink-2 hover:bg-sunken rounded-sm p-2 lg:hidden"
           >

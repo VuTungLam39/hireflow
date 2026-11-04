@@ -3,6 +3,7 @@ import { useCallback, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { PageHeader, SidePanel } from '@/components/shared'
 import { Button, Textarea, buttonVariants } from '@/components/ui'
+import { useMediaQuery } from '@/hooks/use-media-query'
 import { useStream } from '@/hooks/use-stream'
 import { ERROR_MESSAGES } from '@/lib/error-codes'
 import { getErrorMessage } from '@/lib/errors'
@@ -23,6 +24,7 @@ const newId = () => `m${++nextId}`
 export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [question, setQuestion] = useState('')
+  const touch = useMediaQuery('(pointer: coarse)')
   const { start, stop, isStreaming } = useStream()
   const bottomRef = useRef<HTMLDivElement>(null)
   const [cited, setCited] = useState<{ source: ChatSource; index: number } | null>(null)
@@ -77,30 +79,31 @@ export default function ChatPage() {
     <div className="mx-auto flex h-[calc(100dvh-7.5rem)] max-w-[760px] flex-col md:h-[calc(100dvh-8rem)]">
       <PageHeader
         title="Hỏi kho CV"
-        description="Hỏi bằng câu thường ngày. Mỗi ý trong câu trả lời có số trích dẫn tới đúng đoạn CV."
+        description="Chỉ tìm trong CV bạn có quyền xem · mỗi ý trả lời kèm số trích dẫn tới đúng đoạn CV"
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto py-6" aria-live="polite">
         {messages.length === 0 ? (
-          <div className="max-w-xl">
-            <p className="type-heading">Bạn đang tìm ai?</p>
-            <p className="type-body mt-1">
-              Chỉ tìm trong CV bạn có quyền xem. Thử một câu hỏi mẫu:
-            </p>
-            <div className="mt-4 flex flex-col items-start gap-1">
+          <section aria-labelledby="chat-suggestions">
+            <h2 id="chat-suggestions" className="type-heading">
+              Bạn đang tìm ai?
+            </h2>
+            <p className="type-body mt-1">Hỏi bằng câu thường ngày, hoặc bắt đầu từ một câu mẫu.</p>
+            <ul className="border-line divide-line-soft mt-4 divide-y rounded-md border">
               {SUGGESTIONS.map((s) => (
-                <Button
-                  key={s}
-                  variant="quiet"
-                  className="h-auto py-2 text-left whitespace-normal"
-                  onClick={() => void ask(s)}
-                >
-                  {s}
-                  <ArrowRight className="text-ink-muted" />
-                </Button>
+                <li key={s}>
+                  <button
+                    type="button"
+                    onClick={() => void ask(s)}
+                    className="group hover:bg-canvas text-ink flex w-full items-center justify-between gap-4 px-4 py-3.5 text-left transition-colors first:rounded-t-md last:rounded-b-md"
+                  >
+                    {s}
+                    <ArrowRight className="text-ink-muted group-hover:text-brand size-4 shrink-0 transition-colors" />
+                  </button>
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
+          </section>
         ) : (
           <div className="space-y-8">
             {messages.map((m) => (
@@ -123,8 +126,9 @@ export default function ChatPage() {
           placeholder="Ví dụ: Ai từng làm fintech và biết Kafka?"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
+          enterKeyHint={touch ? 'enter' : 'send'}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            if (e.key === 'Enter' && !e.shiftKey && !touch && !e.nativeEvent.isComposing) {
               e.preventDefault()
               void ask(question)
             }
@@ -141,7 +145,7 @@ export default function ChatPage() {
           </Button>
         )}
       </form>
-      <p className="type-caption mt-1.5">Enter để gửi · Shift + Enter xuống dòng</p>
+      {!touch && <p className="type-caption mt-1.5">Enter để gửi · Shift + Enter xuống dòng</p>}
 
       <SidePanel
         open={!!cited}

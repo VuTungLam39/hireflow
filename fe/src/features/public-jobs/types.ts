@@ -12,3 +12,9 @@ export interface PublicJob {
 }
 
 export type PublicJobSummary = Omit<PublicJob, 'jdText' | 'requirements'>
+
+export interface PublicDepartmentCount {
+  id: string
+  name: string
+  count: number
+}

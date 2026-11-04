@@ -1,3 +1,4 @@
+import { CircleSlash, Flag } from 'lucide-react'
 import { Spinner } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { scoreTone } from '../lib/score-tone'
@@ -86,7 +87,7 @@ export function ScoreFlags({ flags, compact }: { flags: ScoreFlag[]; compact?: b
   return (
     <span className="inline-flex flex-wrap gap-x-3 gap-y-1">
       {flags.map((flag) => {
-        const { label } = SCORE_FLAGS[flag]
+        const { label, short } = SCORE_FLAGS[flag]
         const danger = flag === 'UNVERIFIED_EVIDENCE'
         return (
           <span
@@ -97,8 +98,19 @@ export function ScoreFlags({ flags, compact }: { flags: ScoreFlag[]; compact?: b
               danger ? 'text-bad' : 'text-warn',
             )}
           >
-            <span aria-hidden>{danger ? '⊘' : '⚑'}</span>
-            <span className={compact ? 'sr-only' : undefined}>{label}</span>
+            {danger ? (
+              <CircleSlash aria-hidden className="size-3.5 shrink-0" />
+            ) : (
+              <Flag aria-hidden className="size-3.5 shrink-0" />
+            )}
+            {compact ? (
+              <>
+                <span aria-hidden>{short}</span>
+                <span className="sr-only">{label}</span>
+              </>
+            ) : (
+              label
+            )}
           </span>
         )
       })}

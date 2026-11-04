@@ -8,7 +8,9 @@ export class CursorResult<T> {
     readonly items: T[],
     limit: number,
     nextCursor: string | null,
+    totalItems?: number,
   ) {
     this.meta = { limit, nextCursor, hasNextPage: nextCursor !== null };
+    if (totalItems !== undefined) this.meta.totalItems = totalItems;
   }
 }

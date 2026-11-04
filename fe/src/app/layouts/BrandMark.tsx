@@ -62,7 +62,7 @@ export function BrandMark({
         <span className="flex flex-col leading-none">
           <span
             className={cn(
-              'font-serif font-semibold tracking-[-0.015em]',
+              'font-display font-semibold tracking-[-0.015em]',
               sizes[size].word,
               dark ? 'text-rail-text' : 'text-ink',
             )}
@@ -72,7 +72,7 @@ export function BrandMark({
           {tagline && (
             <span
               className={cn(
-                'mt-1 text-xs font-medium tracking-[0.06em] uppercase',
+                'mt-0.5 text-[13px] font-medium',
                 dark ? 'text-rail-muted' : 'text-ink-muted',
               )}
             >

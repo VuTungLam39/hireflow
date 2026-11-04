@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Button, Dialog, FormField, Textarea } from '@/components/ui'
 import { getErrorMessage } from '@/lib/errors'
-import { cn, formatDateTime } from '@/lib/utils'
+import { cn, formatTimeOnDate } from '@/lib/utils'
 import { useSubmitFeedback } from '../hooks/use-interviews'
 import { SCORE_LABEL } from '../lib/constants'
 import type { Interview, InterviewFeedback } from '../types'
@@ -107,7 +107,7 @@ export function FeedbackDialog({
       open={open}
       onClose={onClose}
       title={existing ? 'Sửa phiếu đánh giá' : 'Phiếu đánh giá'}
-      description={`Vòng ${interview.round}. Chấm 1–5 cho từng tiêu chí của tin. ${existing ? `Sửa được tới ${formatDateTime(existing.editableUntil)}.` : 'Sửa được trong 24 giờ sau khi gửi.'}`}
+      description={`Vòng ${interview.round}. Chấm 1–5 cho từng tiêu chí của tin. ${existing ? `Sửa được tới ${formatTimeOnDate(existing.editableUntil)}.` : 'Sửa được trong 24 giờ sau khi gửi.'}`}
       size="lg"
     >
       <div className="space-y-5">

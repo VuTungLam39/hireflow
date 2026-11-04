@@ -10,7 +10,7 @@ interface PaginationProps {
 const n = (v: number) => v.toLocaleString('vi-VN')
 
 export function Pagination({ meta, onPageChange }: PaginationProps) {
-  if (meta.totalItems === 0) return null
+  if (meta.totalItems === 0 || (!meta.hasPreviousPage && !meta.hasNextPage)) return null
 
   const from = (meta.page - 1) * meta.limit + 1
   const to = Math.min(meta.page * meta.limit, meta.totalItems)

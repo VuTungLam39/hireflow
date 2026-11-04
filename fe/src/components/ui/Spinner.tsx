@@ -30,7 +30,7 @@ export function PageLoader() {
     <div className="bg-canvas min-h-dvh">
       <TopProgress />
       <div className="flex min-h-dvh items-center justify-center">
-        <span className="text-ink-muted font-serif text-lg font-semibold">HireFlow</span>
+        <span className="text-ink-muted font-display text-lg font-semibold">HireFlow</span>
       </div>
     </div>
   )

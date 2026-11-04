@@ -21,6 +21,9 @@ export type {
   MatchLevel,
   ScoreFlag,
 } from './constants'
+export { ApplicationDialog } from './components/ApplicationDialog'
+export { JobApplicationHighlights } from './components/JobApplicationHighlights'
+export { JobApplicationsList } from './components/JobApplicationsList'
 export { HrUploadDialog } from './components/HrUploadDialog'
 export { applicationKeys, applicationQueries } from './hooks/use-applications'
 export { applicationListSchema } from './schemas/application.schema'

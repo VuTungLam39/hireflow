@@ -1,34 +1,35 @@
 import { ArrowRight } from 'lucide-react'
-import { Link, useSearchParams } from 'react-router'
+import { Link } from 'react-router'
 import { EmptyState, ErrorState, SearchInput } from '@/components/shared'
 import { ChipGroup, Pagination, Skeleton } from '@/components/ui'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { useListParams } from '@/hooks/use-list-params'
-import { formatDate, formatRelative, VN_TIME_ZONE } from '@/lib/utils'
+import { formatDate, formatDaysAgo } from '@/lib/utils'
 import { SITE_NAME } from '@/prerender/shared'
 import { links } from '@/routes/paths'
-import { usePublicJobs } from '../hooks/use-public-jobs'
+import { usePublicDepartments, usePublicJobs } from '../hooks/use-public-jobs'
 import { publicJobsListSchema } from '../schemas'
 
 // F-PUB-01, F-PUB-04 · Design Spec 6.11
 export default function PublicJobsPage() {
   const [params, setParams] = useListParams(publicJobsListSchema)
-  const [search, setSearch] = useSearchParams()
   const { data, isPending, isError, error, refetch } = usePublicJobs(params)
   const hydrated = useHydrated()
   useDocumentTitle(`Việc làm đang tuyển – ${SITE_NAME}`)
 
-  const dept = search.get('dept') ?? undefined
-  const departments = [
-    ...new Map((data?.items ?? []).map((j) => [j.department.name, j.department.name])),
-  ]
-  const items = (data?.items ?? []).filter((j) => !dept || j.department.name === dept)
+  const facets = usePublicDepartments(params.search)
+  const departments = (facets.data ?? []).map((d) => ({
+    value: d.id,
+    label: d.name,
+    count: d.count,
+  }))
+  const dept = facets.data?.find((d) => d.id === params.departmentId)
+  const items = data?.items ?? []
 
   return (
     <div className="space-y-10">
       <header className="max-w-2xl space-y-5">
-        <p className="type-overline text-brand">Việc làm</p>
         <h1 className="type-display">Cơ hội nghề nghiệp tại HireFlow</h1>
         <p className="type-read-lg">
           Chúng tôi đọc mọi hồ sơ và phản hồi trong vòng 7 ngày làm việc. Nộp CV chỉ mất khoảng một
@@ -46,19 +47,12 @@ export default function PublicJobsPage() {
           <ChipGroup
             label="Lọc theo phòng ban"
             allLabel="Mọi phòng ban"
-            options={departments.map(([value, label]) => ({ value, label }))}
-            value={dept}
-            onChange={(v) =>
-              setSearch(
-                (prev) => {
-                  const next = new URLSearchParams(prev)
-                  if (v) next.set('dept', v)
-                  else next.delete('dept')
-                  return next
-                },
-                { replace: true },
-              )
-            }
+            options={departments}
+            allCount={facets.data?.reduce((sum, d) => sum + d.count, 0)}
+            limit={5}
+            moreLabel={(n) => `+${n} phòng ban khác`}
+            value={params.departmentId}
+            onChange={(departmentId) => setParams({ departmentId: departmentId ?? null })}
           />
         )}
       </header>
@@ -87,6 +81,7 @@ export default function PublicJobsPage() {
         <>
           <p className="type-caption">
             {data.meta.totalItems.toLocaleString('vi-VN')} vị trí đang tuyển
+            {dept && ` ở ${dept.name}`}
           </p>
           <ul className="border-line divide-line-soft -mt-6 divide-y border-y">
             {items.map((job) => (
@@ -102,8 +97,8 @@ export default function PublicJobsPage() {
                     <span className="type-body text-ink-muted block">
                       {job.department.name} · {job.location} ·{' '}
                       {hydrated
-                        ? `đăng ${formatRelative(job.publishedAt)}`
-                        : formatDate(job.publishedAt, VN_TIME_ZONE)}
+                        ? `đăng ${formatDaysAgo(job.publishedAt, undefined, { hoursToday: true })}`
+                        : formatDate(job.publishedAt)}
                     </span>
                   </span>
                   <ArrowRight className="text-ink-muted group-hover:text-brand size-5 shrink-0 transition-colors" />

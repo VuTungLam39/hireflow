@@ -55,7 +55,7 @@ export function SidePanel({
             <div className="min-w-0">
               <h2
                 id={titleId}
-                className="text-ink truncate font-serif text-lg leading-6 font-semibold"
+                className="text-ink font-display truncate text-lg leading-6 font-semibold"
               >
                 {title}
               </h2>

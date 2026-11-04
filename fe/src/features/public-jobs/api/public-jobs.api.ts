@@ -1,7 +1,8 @@
 import type { AxiosProgressEvent } from 'axios'
 import { api } from '@/lib/api-client'
-import type { ApiResponse, Paginated, PaginationParams } from '@/types/api'
-import type { PublicJob, PublicJobSummary } from '../types'
+import type { ApiResponse, Paginated } from '@/types/api'
+import type { PublicJobsListParams } from '../schemas'
+import type { PublicDepartmentCount, PublicJob, PublicJobSummary } from '../types'
 
 export interface ApplyInput {
   fullName: string
@@ -14,10 +15,17 @@ export interface ApplyInput {
 }
 
 export const publicJobsApi = {
-  list: async (params: PaginationParams): Promise<Paginated<PublicJobSummary>> => {
+  list: async (params: PublicJobsListParams): Promise<Paginated<PublicJobSummary>> => {
     const res = await api.get<ApiResponse<PublicJobSummary[]>>('/public/jobs', { params })
     return { items: res.data.data, meta: res.data.meta! }
   },
+
+  departments: async (search?: string) =>
+    (
+      await api.get<ApiResponse<PublicDepartmentCount[]>>('/public/jobs/departments', {
+        params: { search },
+      })
+    ).data.data,
 
   get: async (id: string) =>
     (await api.get<ApiResponse<PublicJob>>(`/public/jobs/${id}`)).data.data,

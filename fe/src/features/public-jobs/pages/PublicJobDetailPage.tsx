@@ -1,10 +1,10 @@
 import { ArrowLeft, Check } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import { Link, useParams } from 'react-router'
 import { ErrorState } from '@/components/shared'
-import { Skeleton } from '@/components/ui'
+import { Skeleton, buttonVariants } from '@/components/ui'
 import { useDocumentTitle } from '@/hooks/use-document-title'
-import { formatDate, VN_TIME_ZONE } from '@/lib/utils'
+import { cn, formatDate, formatDaysAgo } from '@/lib/utils'
 import { jobTitle } from '@/prerender/shared'
 import { paths } from '@/routes/paths'
 import { ApplyForm } from '../components/ApplyForm'
@@ -15,6 +15,8 @@ export default function PublicJobDetailPage() {
   const { id = '' } = useParams()
   const { data: job, isPending, isError, error, refetch } = usePublicJob(id)
   const [submitted, setSubmitted] = useState(false)
+  const formRef = useRef<HTMLElement>(null)
+  const formInView = useInView(formRef)
   useDocumentTitle(job ? jobTitle(job.title) : undefined)
 
   if (isPending)
@@ -31,7 +33,7 @@ export default function PublicJobDetailPage() {
   const nice = job.requirements.filter((r) => r.type === 'NICE')
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-20 lg:pb-0">
       <Link
         to={paths.publicJobs}
         className="type-caption hover:text-ink inline-flex items-center gap-1.5 transition-colors"
@@ -40,14 +42,19 @@ export default function PublicJobDetailPage() {
         Tất cả vị trí
       </Link>
 
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,680px)_1fr]">
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
         <article className="min-w-0 space-y-8">
-          <header className="space-y-2">
-            <p className="type-overline">
-              {job.department.name} · {job.location}
-            </p>
+          <header className="space-y-3">
             <h1 className="type-display">{job.title}</h1>
-            <p className="type-caption">Đăng {formatDate(job.publishedAt, VN_TIME_ZONE)}</p>
+            <p className="text-ink-2 text-[15px] leading-6">
+              {job.department.name} · {job.location}{' '}
+              <span className="text-ink-muted whitespace-nowrap">
+                · đăng{' '}
+                <time dateTime={job.publishedAt ?? undefined} title={formatDate(job.publishedAt)}>
+                  {formatDaysAgo(job.publishedAt, undefined, { hoursToday: true })}
+                </time>
+              </span>
+            </p>
           </header>
 
           {job.requirements.length > 0 && (
@@ -72,7 +79,12 @@ export default function PublicJobDetailPage() {
           </section>
         </article>
 
-        <aside className="lg:sticky lg:top-24 lg:self-start">
+        <aside
+          ref={formRef}
+          id="ung-tuyen"
+          aria-label="Ứng tuyển"
+          className="scroll-mt-20 lg:sticky lg:top-24 lg:self-start"
+        >
           <div className="border-line bg-surface rounded-md border p-5 sm:p-6">
             {submitted ? (
               <div role="status" className="space-y-3">
@@ -87,7 +99,9 @@ export default function PublicJobDetailPage() {
               </div>
             ) : (
               <>
-                <h2 className="text-ink font-serif text-xl font-semibold">Ứng tuyển vị trí này</h2>
+                <h2 className="text-ink font-display text-xl font-semibold">
+                  Ứng tuyển vị trí này
+                </h2>
                 <p className="type-caption mt-1 mb-5">Chỉ mất khoảng một phút.</p>
                 <ApplyForm jobId={job.id} onSuccess={() => setSubmitted(true)} />
               </>
@@ -95,6 +109,46 @@ export default function PublicJobDetailPage() {
           </div>
         </aside>
       </div>
+
+      {!submitted && (
+        <div
+          className={cn(
+            'border-line bg-surface fixed inset-x-0 bottom-0 z-20 border-t px-4 py-3 transition-transform duration-200 lg:hidden',
+            formInView && 'translate-y-full',
+          )}
+          aria-hidden={formInView || undefined}
+        >
+          <a
+            href="#ung-tuyen"
+            tabIndex={formInView ? -1 : undefined}
+            className={cn(buttonVariants({ size: 'lg' }), 'w-full')}
+            onClick={(e) => {
+              e.preventDefault()
+              formRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+              formRef.current
+                ?.querySelector<HTMLInputElement>('input')
+                ?.focus({ preventScroll: true })
+            }}
+          >
+            Ứng tuyển vị trí này
+          </a>
+        </div>
+      )}
     </div>
   )
+}
+
+// F-PUB-03
+function useInView(ref: RefObject<HTMLElement | null>) {
+  const [inView, setInView] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), {
+      threshold: 0.15,
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [ref])
+  return inView
 }

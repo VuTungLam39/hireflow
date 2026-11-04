@@ -5,8 +5,8 @@ import { Avatar, Button } from '@/components/ui'
 import { RequirementMarks, ScoreBadge, ScoreFlags } from '@/features/applications'
 import { Permission } from '@/lib/permissions'
 import { formatDate } from '@/lib/utils'
-import { links } from '@/routes/paths'
 import type { JobMatch } from '../types'
+import { useDetailLink } from '@/hooks/use-detail'
 
 interface MatchCardProps {
   match: JobMatch
@@ -18,6 +18,7 @@ interface MatchCardProps {
 // US-10 · Design Spec 6.6
 export function MatchCard({ match, canInvite, inviting, onInvite }: MatchCardProps) {
   const { candidate } = match
+  const detailLink = useDetailLink()
   const quote =
     match.reasons.find((r) => r.match === 1 && r.evidence) ?? match.reasons.find((r) => r.evidence)
   const matches = Object.fromEntries(match.reasons.map((r) => [r.requirementId, r.match]))
@@ -32,7 +33,7 @@ export function MatchCard({ match, canInvite, inviting, onInvite }: MatchCardPro
         <div className="min-w-0 space-y-1">
           <p className="flex flex-wrap items-baseline gap-x-2">
             <Link
-              to={links.candidateDetail(candidate.id)}
+              to={detailLink('candidate', candidate.id)}
               className="type-subheading hover:text-brand transition-colors"
             >
               {candidate.fullName}
@@ -62,7 +63,7 @@ export function MatchCard({ match, canInvite, inviting, onInvite }: MatchCardPro
             <Check className="text-good size-4" />
             <span className="text-good-ink font-medium">Đã mời</span>·
             <Link
-              to={links.applicationDetail(match.applicationId)}
+              to={detailLink('application', match.applicationId)}
               className="text-brand font-medium hover:underline"
             >
               Xem hồ sơ →

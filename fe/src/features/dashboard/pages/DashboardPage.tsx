@@ -5,12 +5,15 @@ import { ErrorState, KpiStrip, Summary, type Kpi } from '@/components/shared'
 import { Skeleton } from '@/components/ui'
 import { ScoreBadge } from '@/features/applications'
 import { PipelineCounts, useJobOptions } from '@/features/jobs'
-import { cn } from '@/lib/utils'
+import { cn, VN_TIME_ZONE } from '@/lib/utils'
 import { links, paths } from '@/routes/paths'
 import { useAuthStore } from '@/stores/auth.store'
 import { Role } from '@/types/user'
 import { useDashboardSummary } from '../hooks/use-dashboard'
 import { useToday } from '../hooks/use-today'
+import { useDetailLink } from '@/hooks/use-detail'
+import { usePermission } from '@/hooks/use-permission'
+import { Permission } from '@/lib/permissions'
 
 interface Todo {
   key: string
@@ -27,13 +30,19 @@ const n = (v: number) => v.toLocaleString('vi-VN')
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user)
   const isHm = user?.role === Role.HiringManager
+  const canOps = usePermission(Permission.OpsManage)
   const summary = useDashboardSummary()
   const t = useToday()
   const jobs = useJobOptions()
+  const detailLink = useDetailLink()
   const [today] = useState(() =>
-    new Intl.DateTimeFormat('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' }).format(
-      new Date(),
-    ),
+    new Intl.DateTimeFormat('vi-VN', {
+      weekday: 'long',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: VN_TIME_ZONE,
+    }).format(new Date()),
   )
 
   const todos: Todo[] = [
@@ -59,7 +68,7 @@ export default function DashboardPage() {
       key: 'decide',
       count: t.awaitingDecision,
       text: (c) => `${n(c)} buổi phỏng vấn đã có phiếu, chờ quyết định`,
-      to: links.applications({ status: 'INTERVIEW' }),
+      to: paths.interviews,
       action: 'Xem',
     },
     {
@@ -70,18 +79,37 @@ export default function DashboardPage() {
       to: `${paths.applications}?status=NEW&missingMust=true`,
       action: 'Xem',
     },
-    ...(!isHm
+    {
+      key: 'otherNew',
+      count: t.otherNew,
+      text: (c) => `${n(c)} hồ sơ mới khác chờ xem`,
+      hint: 'Điểm dưới 70 hoặc chưa chấm xong',
+      to: links.applications({ status: 'NEW' }),
+      action: 'Xem',
+    },
+    ...(canOps
       ? [
           {
-            key: 'failed',
-            count: t.failed,
-            text: (c: number) => `${n(c)} CV không đọc được`,
-            hint: 'Thường là ảnh scan – nhập nội dung CV để chấm',
-            to: `${paths.applications}?aiStatus=FAILED`,
+            key: 'aiIssues',
+            count: t.aiIssues,
+            text: (c: number) => `${n(c)} hồ sơ lỗi hoặc kẹt ở bước xử lý CV`,
+            hint: 'Chạy lại khi dịch vụ đọc CV ổn định, hoặc nhập nội dung CV cho ảnh scan',
+            to: paths.aiQueue,
             action: 'Xử lý',
           },
         ]
-      : []),
+      : !isHm
+        ? [
+            {
+              key: 'failed',
+              count: t.failed,
+              text: (c: number) => `${n(c)} CV không đọc được`,
+              hint: 'Thường là ảnh scan – nhập nội dung CV để chấm',
+              to: `${paths.applications}?aiStatus=FAILED`,
+              action: 'Xử lý',
+            },
+          ]
+        : []),
   ]
   const loadingTodos = todos.some((x) => x.count === undefined)
   const visibleTodos = todos.filter((x) => (x.count ?? 0) > 0)
@@ -152,8 +180,13 @@ export default function DashboardPage() {
       </header>
 
       <section aria-labelledby="todo-title">
-        <h2 id="todo-title" className="type-overline mb-2">
+        <h2 id="todo-title" className="type-heading mb-3">
           Cần làm
+          {visibleTodos.length > 0 && (
+            <span className="num text-ink-muted ml-2 text-sm font-medium">
+              {n(visibleTodos.length)}
+            </span>
+          )}
         </h2>
         <div className="border-line bg-surface rounded-md border">
           {loadingTodos && visibleTodos.length === 0 ? (
@@ -199,9 +232,14 @@ export default function DashboardPage() {
       )}
 
       <section aria-labelledby="jobs-title">
-        <div className="mb-2 flex items-baseline justify-between gap-3">
-          <h2 id="jobs-title" className="type-overline">
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <h2 id="jobs-title" className="type-heading">
             Tin đang tuyển
+            {openJobs.length > 0 && (
+              <span className="num text-ink-muted ml-2 text-sm font-medium">
+                {n(openJobs.length)}
+              </span>
+            )}
           </h2>
           <Link to={paths.jobs} className="text-brand text-[13px] font-medium hover:underline">
             Tất cả tin
@@ -219,33 +257,44 @@ export default function DashboardPage() {
               Chưa có tin nào đang tuyển. Đăng một tin để bắt đầu nhận hồ sơ.
             </p>
           ) : (
-            <ul className="divide-line-soft divide-y">
-              {openJobs.map((job) => (
-                <li
-                  key={job.id}
-                  className="flex flex-col gap-1.5 px-5 py-3.5 md:flex-row md:items-center md:gap-6"
-                >
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      to={links.jobRanking(job.id)}
-                      className="type-subheading hover:text-brand transition-colors"
-                    >
-                      {job.title}
-                    </Link>
-                    <p className="type-caption">{job.department.name}</p>
-                  </div>
-                  <PipelineCounts
-                    pipeline={job.pipeline}
-                    total={job.applicationCount}
-                    jobId={job.id}
-                  />
-                  <span className={cn('flex items-center gap-2 md:w-28 md:justify-end')}>
-                    <span className="type-caption md:hidden">Điểm TB</span>
-                    <ScoreBadge score={avgByJob.get(job.id) ?? null} />
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <>
+              <div
+                aria-hidden
+                className="type-overline border-line hidden h-10 items-center gap-6 border-b px-5 md:flex"
+              >
+                <span className="flex-1">Tin</span>
+                <span className="w-56 text-right">Hồ sơ</span>
+                <span className="w-28 text-right">Điểm TB</span>
+              </div>
+              <ul className="divide-line-soft divide-y">
+                {openJobs.map((job) => (
+                  <li
+                    key={job.id}
+                    className="flex flex-col gap-1.5 px-5 py-3.5 md:flex-row md:items-center md:gap-6"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        to={detailLink('job', job.id)}
+                        className="type-subheading hover:text-brand transition-colors"
+                      >
+                        {job.title}
+                      </Link>
+                      <p className="type-caption">{job.department.name}</p>
+                    </div>
+                    <PipelineCounts
+                      pipeline={job.pipeline}
+                      total={job.applicationCount}
+                      jobId={job.id}
+                      className="text-left md:w-56 md:text-right"
+                    />
+                    <span className={cn('flex items-center gap-2 md:w-28 md:justify-end')}>
+                      <span className="type-caption md:hidden">Điểm TB</span>
+                      <ScoreBadge score={avgByJob.get(job.id) ?? null} />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </div>
       </section>

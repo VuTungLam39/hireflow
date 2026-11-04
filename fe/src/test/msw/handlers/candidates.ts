@@ -31,6 +31,7 @@ function findCandidate(user: UserRow, id: unknown): CandidateRow | Response {
 
 function toListItem(user: UserRow, c: CandidateRow): CandidateListItem {
   const apps = visibleApps(user, c)
+  const last = [...apps].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
   return {
     id: c.id,
     fullName: c.fullName,
@@ -41,6 +42,7 @@ function toListItem(user: UserRow, c: CandidateRow): CandidateListItem {
       (max, a) => (max === null || a.createdAt > max ? a.createdAt : max),
       null,
     ),
+    lastJob: last ? { title: jobOf(last).title, status: last.status } : null,
     anonymizedAt: c.anonymizedAt,
     createdAt: c.createdAt,
   }
@@ -115,6 +117,7 @@ export const candidateHandlers = [
       limit,
       nextCursor: hasNextPage ? encodeCursor(items[items.length - 1]) : null,
       hasNextPage,
+      ...(cursor ? {} : { totalItems: rows.length }),
     }
     return ok(
       items.map((c) => toListItem(user, c)),

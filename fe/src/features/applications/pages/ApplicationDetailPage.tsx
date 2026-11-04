@@ -5,31 +5,29 @@ import {
   Download,
   FileText,
   MoreHorizontal,
-  PencilLine,
   RotateCw,
   UserRound,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { Can, ErrorState, SidePanel } from '@/components/shared'
+import { ErrorState, SidePanel } from '@/components/shared'
 import { Button, Kbd, Popover, Skeleton, Tabs, Tooltip, menuItemClass } from '@/components/ui'
 import { InterviewPanel, useApplicationInterviews } from '@/features/interviews'
+import { useDetailLink } from '@/hooks/use-detail'
+import { useCrumb } from '@/hooks/use-crumb'
 import { useHotkeys } from '@/hooks/use-hotkeys'
 import { usePermission } from '@/hooks/use-permission'
 import { Permission } from '@/lib/permissions'
 import { formatDate } from '@/lib/utils'
-import { links } from '@/routes/paths'
 import { useAuthStore } from '@/stores/auth.store'
 import { Role } from '@/types/user'
 import { APPLICATION_SOURCE } from '../constants'
-import { CvSheet } from '../components/CvSheet'
-import { CvTextDialog } from '../components/CvTextDialog'
 import { HistoryTimeline } from '../components/HistoryTimeline'
 import { NotesPanel } from '../components/NotesPanel'
-import { RequirementList } from '../components/RequirementList'
-import { ScoreMeter } from '../components/Score'
 import { StatusActions } from '../components/StatusActions'
-import { ScoreFlags, StatusPill } from '../components/StatusBadges'
+import { CvPanel, ScorePanel } from '../components/ReviewPanels'
+import { useEvidenceMarks } from '../hooks/use-evidence-marks'
+import { StatusPill } from '../components/StatusBadges'
 import {
   useApplication,
   useApplicationNotes,
@@ -37,7 +35,6 @@ import {
   useRescore,
 } from '../hooks/use-applications'
 import { useReviewNavigation } from '../hooks/use-review-navigation'
-import { foundMarkIds, type EvidenceMarkInput } from '../lib/evidence'
 import type { ApplicationDetail } from '../types'
 
 type Tab = 'history' | 'notes' | 'interviews'
@@ -59,19 +56,8 @@ export default function ApplicationDetailPage() {
     Escape: () => void navigate(nav.backTo),
   })
 
-  const marks = useMemo<EvidenceMarkInput[]>(() => {
-    if (!app || isInterviewer) return []
-    const byId = new Map(app.breakdown.map((b) => [b.requirementId, b]))
-    return app.requirements.flatMap((r, i) => {
-      const quote = byId.get(r.id)?.evidence
-      return quote ? [{ id: r.id, n: i + 1, quote }] : []
-    })
-  }, [app, isInterviewer])
-
-  const locatable = useMemo(
-    () => (app?.cv?.text ? foundMarkIds(app.cv.text, marks) : new Set<string>()),
-    [app, marks],
-  )
+  const { marks, locatable } = useEvidenceMarks(app, isInterviewer)
+  useCrumb(app?.candidate.fullName, nav.backTo)
 
   if (isPending) return <ReviewSkeleton />
   if (isError) return <ErrorState title="Chưa mở được hồ sơ" error={error} onRetry={refetch} />
@@ -93,11 +79,11 @@ export default function ApplicationDetailPage() {
 
   return (
     <div className="pb-20 lg:pb-0">
-      <header className="border-line -mx-4 -mt-6 border-b px-4 pt-4 pb-5 md:-mx-6 md:-mt-8 md:px-6 md:pt-5 lg:-mx-8 lg:px-8">
-        <div className="flex items-center justify-between gap-3">
+      <header className="border-line relative -mx-4 -mt-6 border-b px-4 pt-4 pb-5 md:-mx-6 md:-mt-8 md:px-6 md:pt-5 lg:-mx-8 lg:px-8">
+        <div className="flex items-center justify-between gap-3 md:absolute md:top-6 md:right-6 lg:right-8">
           <Link
             to={nav.backTo}
-            className="type-caption hover:text-ink inline-flex items-center gap-1.5 transition-colors"
+            className="type-caption hover:text-ink inline-flex items-center gap-1.5 transition-colors md:hidden"
           >
             <ArrowLeft className="size-4" />
             Hồ sơ ứng tuyển
@@ -150,7 +136,7 @@ export default function ApplicationDetailPage() {
           </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+        <div className="mt-3 flex flex-wrap items-start justify-between gap-x-6 gap-y-3 md:mt-0 md:pr-44">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <h1 className="type-title">{app.candidate.fullName}</h1>
@@ -168,7 +154,7 @@ export default function ApplicationDetailPage() {
           <StatusActions
             applicationId={app.id}
             status={app.status}
-            className="bg-surface border-line fixed inset-x-0 bottom-0 z-20 justify-end border-t px-4 py-3 lg:static lg:border-0 lg:bg-transparent lg:p-0 [&:empty]:hidden"
+            className="bg-surface border-line fixed inset-x-0 bottom-0 z-20 justify-end border-t px-4 py-3 md:left-[var(--rail-w)] lg:static lg:border-0 lg:bg-transparent lg:p-0 [&:empty]:hidden"
           />
         </div>
       </header>
@@ -180,7 +166,7 @@ export default function ApplicationDetailPage() {
         >
           {isInterviewer ? (
             <>
-              <h2 className="type-overline mb-3">Phiếu đánh giá của bạn</h2>
+              <h2 className="type-heading mb-3">Phiếu đánh giá của bạn</h2>
               <p className="type-body mb-4">
                 Mức phù hợp được ẩn để bạn chấm độc lập. Đọc CV rồi chấm từng tiêu chí của tin.
               </p>
@@ -226,154 +212,6 @@ export default function ApplicationDetailPage() {
   )
 }
 
-function ScorePanel({
-  app,
-  activeId,
-  locatable,
-  onSelect,
-}: {
-  app: ApplicationDetail
-  activeId: string | null
-  locatable: ReadonlySet<string>
-  onSelect: (id: string) => void
-}) {
-  const [cvTextOpen, setCvTextOpen] = useState(false)
-  const matches = Object.fromEntries(app.breakdown.map((b) => [b.requirementId, b.match]))
-  const outdated = app.scoredJdVersion !== null && app.scoredJdVersion !== app.job.jdVersion
-  const busy = app.aiStatus === 'PENDING' || app.aiStatus === 'PROCESSING'
-
-  return (
-    <div>
-      <h2 className="type-overline mb-3">Mức phù hợp</h2>
-
-      {busy && (
-        <div aria-live="polite">
-          <Skeleton className="h-9 w-28" />
-          <Skeleton className="mt-3 h-2 w-full" />
-          <p className="type-body mt-3">
-            <span className="text-ink font-medium">Đang đọc CV</span> · thường mất dưới 1 phút.
-            Trang tự cập nhật khi xong.
-          </p>
-        </div>
-      )}
-
-      {app.aiStatus === 'FAILED' && (
-        <div role="alert" className="bg-bad-soft rounded-sm px-4 py-3">
-          <p className="text-bad type-subheading">Không đọc được CV</p>
-          <p className="type-body mt-0.5">
-            {app.aiError ?? 'Tệp có thể là ảnh scan nên không lấy được chữ.'}
-          </p>
-          {app.cv?.parseStatus === 'FAILED' && (
-            <Can permission={Permission.AiRescore}>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="mt-3"
-                onClick={() => setCvTextOpen(true)}
-              >
-                <PencilLine />
-                Nhập nội dung CV
-              </Button>
-              <CvTextDialog
-                applicationId={app.id}
-                open={cvTextOpen}
-                onClose={() => setCvTextOpen(false)}
-              />
-            </Can>
-          )}
-        </div>
-      )}
-
-      {app.aiStatus === 'DONE' && app.score !== null && (
-        <>
-          <ScoreMeter score={app.score} requirements={app.requirements} matches={matches} />
-          <p className="type-caption mt-3">
-            Tính tự động từ CV theo {app.requirements.length} tiêu chí của tin – bạn là người quyết
-            định.
-          </p>
-          {(app.flags.length > 0 || outdated) && (
-            <div className="mt-3 space-y-1">
-              <ScoreFlags flags={app.flags} />
-              {outdated && (
-                <p className="text-warn text-[13px]">
-                  Điểm theo tiêu chí phiên bản {app.scoredJdVersion}; tin đang ở phiên bản{' '}
-                  {app.job.jdVersion}.
-                </p>
-              )}
-            </div>
-          )}
-          <div className="mt-5">
-            <RequirementList
-              requirements={app.requirements}
-              breakdown={app.breakdown}
-              activeId={activeId}
-              locatable={locatable}
-              onSelect={onSelect}
-            />
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
-function CvPanel({
-  app,
-  marks,
-  activeId,
-  onMarkClick,
-  className,
-}: {
-  app: ApplicationDetail
-  marks: EvidenceMarkInput[]
-  activeId: string | null
-  onMarkClick: (id: string) => void
-  className?: string
-}) {
-  if (!app.cv)
-    return (
-      <div className="border-line bg-surface h-full rounded-md border p-8">
-        <p className="type-heading">CV đã được xoá</p>
-        <p className="type-body mt-1">
-          Ứng viên đã yêu cầu ẩn danh nên tệp và nội dung CV không còn.
-        </p>
-      </div>
-    )
-  if (!app.cv.text)
-    return (
-      <div className="border-line bg-surface h-full rounded-md border p-8">
-        <p className="type-heading">Chưa có nội dung CV</p>
-        <p className="type-body mt-1">
-          {app.cv.parseStatus === 'FAILED'
-            ? 'Không lấy được chữ từ tệp. Bạn có thể nhập nội dung CV ở cột bên trái.'
-            : 'Hệ thống đang đọc tệp CV.'}
-        </p>
-      </div>
-    )
-  return (
-    <CvSheet
-      text={app.cv.text}
-      marks={marks}
-      activeId={activeId}
-      onMarkClick={onMarkClick}
-      className={className}
-      header={
-        <p className="type-caption mb-6 flex flex-wrap items-center justify-between gap-2">
-          <span>
-            Tờ CV · {app.cv.fileName}
-            {app.cv.textEnteredAt && ' · Nội dung nhập tay'}
-          </span>
-          {marks.length > 0 && (
-            <span>
-              <span className="mark-evidence">dạ quang</span> = căn cứ cho tiêu chí
-            </span>
-          )}
-        </p>
-      }
-    />
-  )
-}
-
 function MoreMenu({ app }: { app: ApplicationDetail }) {
   const [open, setOpen] = useState(false)
   const rescore = useRescore(app.id)
@@ -381,6 +219,7 @@ function MoreMenu({ app }: { app: ApplicationDetail }) {
   const canRescore = usePermission(Permission.AiRescore)
   const canCv = usePermission(Permission.CvRead)
   const canCandidate = usePermission(Permission.CandidateRead)
+  const detailLink = useDetailLink()
   const busy = app.aiStatus === 'PENDING' || app.aiStatus === 'PROCESSING'
 
   if (!canRescore && !canCv && !canCandidate) return null
@@ -416,8 +255,9 @@ function MoreMenu({ app }: { app: ApplicationDetail }) {
       {canCandidate && (
         <Link
           role="menuitem"
-          to={links.candidateDetail(app.candidate.id)}
+          to={detailLink('candidate', app.candidate.id)}
           className={menuItemClass}
+          onClick={() => setOpen(false)}
         >
           <UserRound />
           Mọi lần nộp của ứng viên
