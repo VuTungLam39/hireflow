@@ -19,7 +19,15 @@ import { QueryJobDto } from './dto/query-job.dto.js';
 import { SaveRequirementsDto } from './dto/save-requirements.dto.js';
 import { UpdateJobDto } from './dto/update-job.dto.js';
 import { JobRequirement } from './entities/job-requirement.entity.js';
-import { Job, JobStatus } from './entities/job.entity.js';
+import {
+  EmploymentType,
+  Job,
+  JobLevel,
+  JobStatus,
+  SalaryVisibility,
+  WorkMode,
+} from './entities/job.entity.js';
+import { notExpiredSql, vnToday } from '../../common/utils/vn-date.js';
 import { PrerenderHookService } from './prerender-hook.service.js';
 import { Role } from '../../common/enums/role.enum.js';
 import { AppEvents } from '../../common/events/app-events.js';
@@ -52,15 +60,32 @@ export interface JobSummaryView {
   applicationCount: number;
   pipeline: JobPipeline;
   publishedAt: Date | null;
+  deadline: string | null;
   createdAt: Date;
 }
 
-export interface JobView extends JobSummaryView {
+export interface JobDetailsView {
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryVisibility: SalaryVisibility;
+  level: JobLevel | null;
+  employmentType: EmploymentType;
+  workMode: WorkMode;
+  headcount: number;
+  deadline: string | null;
+  benefits: string;
+}
+
+export interface JobView extends JobSummaryView, JobDetailsView {
   jdText: string;
   jdVersion: number;
   requirements: RequirementView[];
   updatedAt: Date;
 }
+
+// BR-JOB-08: ứng viên chỉ thấy số khi RANGE
+export type PublicSalary =
+  { mode: 'RANGE'; min: number | null; max: number | null } | { mode: 'NEGOTIABLE' } | null;
 
 export interface RankingView {
   job: { id: string; title: string; status: JobStatus; jdVersion: number };
@@ -81,14 +106,34 @@ export interface PublicJobSummaryView {
   location: string;
   department: { name: string };
   publishedAt: Date;
+  salary: PublicSalary;
+  level: JobLevel | null;
+  employmentType: EmploymentType;
+  workMode: WorkMode;
+  headcount: number;
+  deadline: string | null;
 }
 
 export interface PublicJobView extends PublicJobSummaryView {
+  /** BR-JOB-10: quá hạn nộp thì vẫn xem được tin nhưng không nhận hồ sơ */
+  expired: boolean;
+  benefits: string;
   jdText: string;
   requirements: { label: string; type: JobRequirement['type'] }[];
 }
 
 const EMPTY_PIPELINE: JobPipeline = { new: 0, inProgress: 0, hired: 0, closed: 0 };
+
+// BR-JOB-08
+export function publicSalary(
+  job: Pick<Job, 'salaryVisibility' | 'salaryMin' | 'salaryMax'>,
+): PublicSalary {
+  if (job.salaryVisibility === SalaryVisibility.Hidden) return null;
+  if (job.salaryVisibility === SalaryVisibility.Range && (job.salaryMin || job.salaryMax)) {
+    return { mode: 'RANGE', min: job.salaryMin, max: job.salaryMax };
+  }
+  return { mode: 'NEGOTIABLE' };
+}
 
 const escapeLike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`);
 
@@ -146,6 +191,14 @@ export class JobsService {
     ]);
     return {
       ...this.toSummary(job, pipelines.get(job.id)),
+      salaryMin: job.salaryMin,
+      salaryMax: job.salaryMax,
+      salaryVisibility: job.salaryVisibility,
+      level: job.level,
+      employmentType: job.employmentType,
+      workMode: job.workMode,
+      headcount: job.headcount,
+      benefits: job.benefits,
       jdText: job.jdText,
       jdVersion: job.jdVersion,
       requirements,
@@ -153,8 +206,30 @@ export class JobsService {
     };
   }
 
+  // BR-JOB-08, BR-JOB-10
+  private assertDetails(dto: UpdateJobDto, current?: Job) {
+    const errors: { field: string; messages: string[] }[] = [];
+    const min = dto.salaryMin !== undefined ? dto.salaryMin : (current?.salaryMin ?? null);
+    const max = dto.salaryMax !== undefined ? dto.salaryMax : (current?.salaryMax ?? null);
+    if (min !== null && max !== null && min > max) {
+      errors.push({ field: 'salaryMax', messages: ['Lương đến phải lớn hơn hoặc bằng lương từ'] });
+    }
+    if (dto.deadline && dto.deadline !== current?.deadline && dto.deadline < vnToday()) {
+      errors.push({ field: 'deadline', messages: ['Hạn nộp không được ở quá khứ'] });
+    }
+    if (errors.length) {
+      throw new BusinessException(
+        ErrorCode.ValidationFailed,
+        'Validation failed',
+        HttpStatus.BAD_REQUEST,
+        errors,
+      );
+    }
+  }
+
   // BR-JOB-01
   async create(dto: CreateJobDto, user: ScopeUser): Promise<JobView> {
+    this.assertDetails(dto);
     await this.assertDepartment(dto.departmentId);
     const saved = await this.jobsRepository.save(
       this.jobsRepository.create({ ...dto, status: JobStatus.Draft, createdBy: user.id }),
@@ -167,6 +242,7 @@ export class JobsService {
   async update(id: string, dto: UpdateJobDto, user: ScopeUser): Promise<JobView> {
     const job = await this.getOrFail(id);
     this.assertEditable(job);
+    this.assertDetails(dto, job);
     if (dto.departmentId) await this.assertDepartment(dto.departmentId);
     await this.jobsRepository.update(id, dto);
     if (job.status === JobStatus.Open) this.prerender.schedule('job.updated');
@@ -327,9 +403,17 @@ export class JobsService {
       .offset(query.skip)
       .limit(query.limit);
     this.applyPublicSearch(qb, query.search);
+    qb.andWhere(notExpiredSql('job'));
     if (query.departmentId) {
       qb.andWhere('job.departmentId = :departmentId', { departmentId: query.departmentId });
     }
+    if (query.level) qb.andWhere('job.level = :level', { level: query.level });
+    if (query.employmentType) {
+      qb.andWhere('job.employmentType = :employmentType', {
+        employmentType: query.employmentType,
+      });
+    }
+    if (query.workMode) qb.andWhere('job.workMode = :workMode', { workMode: query.workMode });
     const [jobs, total] = await qb.getManyAndCount();
     return new PaginatedResult(
       jobs.map((j) => this.toPublicSummary(j)),
@@ -348,6 +432,7 @@ export class JobsService {
       .addSelect('department.name', 'name')
       .addSelect('COUNT(*)::int', 'count')
       .where('job.status = :open', { open: JobStatus.Open })
+      .andWhere(notExpiredSql('job'))
       .groupBy('department.id')
       .addGroupBy('department.name')
       .orderBy('count', 'DESC')
@@ -366,9 +451,13 @@ export class JobsService {
   // BR-APP-02, BR-JOB-07
   async findPublicOne(id: string): Promise<PublicJobView> {
     const job = await this.publicQuery()
-      .addSelect('job.jdText')
+      .addSelect(['job.jdText', 'job.benefits'])
+      .addSelect(`NOT ${notExpiredSql('job')}`, 'expired')
       .andWhere('job.id = :id', { id })
-      .getOne();
+      .getRawAndEntities()
+      .then(({ entities, raw }) =>
+        entities[0] ? Object.assign(entities[0], { expired: !!raw[0]?.expired }) : null,
+      );
     if (!job) throw new NotFoundException('Job not found');
     const requirements = await this.requirementsRepository.find({
       select: ['label', 'type'],
@@ -377,6 +466,8 @@ export class JobsService {
     });
     return {
       ...this.toPublicSummary(job),
+      expired: job.expired,
+      benefits: job.benefits,
       jdText: job.jdText,
       requirements: requirements.map((r) => ({ label: r.label, type: r.type })),
     };
@@ -392,6 +483,14 @@ export class JobsService {
         'job.location',
         'job.publishedAt',
         'job.jdVersion',
+        'job.salaryMin',
+        'job.salaryMax',
+        'job.salaryVisibility',
+        'job.level',
+        'job.employmentType',
+        'job.workMode',
+        'job.headcount',
+        'job.deadline',
         'department.id',
         'department.name',
       ])
@@ -405,6 +504,12 @@ export class JobsService {
       location: job.location,
       department: { name: job.department!.name },
       publishedAt: job.publishedAt!,
+      salary: publicSalary(job),
+      level: job.level,
+      employmentType: job.employmentType,
+      workMode: job.workMode,
+      headcount: job.headcount,
+      deadline: job.deadline,
     };
   }
 
@@ -450,6 +555,7 @@ export class JobsService {
       applicationCount: pipeline.new + pipeline.inProgress + pipeline.hired + pipeline.closed,
       pipeline,
       publishedAt: job.publishedAt,
+      deadline: job.deadline,
       createdAt: job.createdAt,
     };
   }

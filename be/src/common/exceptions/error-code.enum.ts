@@ -27,6 +27,7 @@ export enum ErrorCode {
   JobNotEditable = 'JOB_NOT_EDITABLE',
   JobNotDeletable = 'JOB_NOT_DELETABLE',
   JobNotOpen = 'JOB_NOT_OPEN',
+  JobExpired = 'JOB_EXPIRED',
 
   // Hồ sơ, ứng viên, file
   ApplicationDuplicated = 'APPLICATION_DUPLICATED',

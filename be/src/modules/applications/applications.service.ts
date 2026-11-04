@@ -18,6 +18,7 @@ import { ScoreFlag } from '../../common/enums/score-flag.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { applyDepartmentScope } from '../../common/utils/department-scope.js';
+import { vnToday } from '../../common/utils/vn-date.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity.js';
 import { CvPipelineService } from '../ai/pipeline/cv-pipeline.service.js';
@@ -456,10 +457,18 @@ export class ApplicationsService {
     file: UploadedCv | undefined,
     requestId?: string,
   ): Promise<null> {
-    const open = await this.dataSource
+    const job = await this.dataSource
       .getRepository(Job)
-      .existsBy({ id: jobId, status: JobStatus.Open });
-    if (!open) throw new NotFoundException('Job not found');
+      .findOne({ select: ['id', 'deadline'], where: { id: jobId, status: JobStatus.Open } });
+    if (!job) throw new NotFoundException('Job not found');
+    // BR-JOB-10
+    if (job.deadline && job.deadline < vnToday()) {
+      throw new BusinessException(
+        ErrorCode.JobExpired,
+        'The application deadline has passed',
+        HttpStatus.CONFLICT,
+      );
+    }
     // BR-APP-06
     if (dto.website) return null;
     const applicationId = await this.submit(

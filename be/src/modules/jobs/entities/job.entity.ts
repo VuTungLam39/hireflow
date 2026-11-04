@@ -9,10 +9,50 @@ export enum JobStatus {
   Closed = 'CLOSED',
 }
 
+// BR-JOB-08
+export enum SalaryVisibility {
+  Range = 'RANGE',
+  Negotiable = 'NEGOTIABLE',
+  Hidden = 'HIDDEN',
+}
+
+export enum JobLevel {
+  Intern = 'INTERN',
+  Fresher = 'FRESHER',
+  Junior = 'JUNIOR',
+  Middle = 'MIDDLE',
+  Senior = 'SENIOR',
+  Lead = 'LEAD',
+  Manager = 'MANAGER',
+}
+
+export enum EmploymentType {
+  FullTime = 'FULL_TIME',
+  PartTime = 'PART_TIME',
+  Contract = 'CONTRACT',
+  Internship = 'INTERNSHIP',
+}
+
+export enum WorkMode {
+  Onsite = 'ONSITE',
+  Hybrid = 'HYBRID',
+  Remote = 'REMOTE',
+}
+
 @Entity('jobs')
 @Check('CK_jobs_title_length', `length("title") >= 5`)
 @Check('CK_jobs_jd_version', `"jd_version" >= 1`)
 @Check('CK_jobs_published_at', `"status" = 'DRAFT' OR "published_at" IS NOT NULL`)
+@Check(
+  'CK_jobs_salary_range',
+  `"salary_min" IS NULL OR "salary_max" IS NULL OR "salary_min" <= "salary_max"`,
+)
+@Check(
+  'CK_jobs_salary_positive',
+  `("salary_min" IS NULL OR "salary_min" > 0) AND ("salary_max" IS NULL OR "salary_max" > 0)`,
+)
+@Check('CK_jobs_headcount', `"headcount" BETWEEN 1 AND 999`)
+@Check('CK_jobs_benefits_length', `length("benefits") <= 5000`)
 export class Job extends AbstractEntity {
   @Column({ type: 'varchar', length: 200 })
   title: string;
@@ -56,4 +96,32 @@ export class Job extends AbstractEntity {
 
   @Column({ type: 'integer', nullable: true })
   matchedJdVersion: number | null;
+
+  // F-JOB-10, F-JOB-11 · BR-JOB-08 → 10
+  @Column({ type: 'integer', nullable: true })
+  salaryMin: number | null;
+
+  @Column({ type: 'integer', nullable: true })
+  salaryMax: number | null;
+
+  @Column({ type: 'enum', enum: SalaryVisibility, default: SalaryVisibility.Negotiable })
+  salaryVisibility: SalaryVisibility;
+
+  @Column({ type: 'enum', enum: JobLevel, nullable: true })
+  level: JobLevel | null;
+
+  @Column({ type: 'enum', enum: EmploymentType, default: EmploymentType.FullTime })
+  employmentType: EmploymentType;
+
+  @Column({ type: 'enum', enum: WorkMode, default: WorkMode.Onsite })
+  workMode: WorkMode;
+
+  @Column({ type: 'smallint', default: 1 })
+  headcount: number;
+
+  @Column({ type: 'date', nullable: true })
+  deadline: string | null;
+
+  @Column({ type: 'text', default: '' })
+  benefits: string;
 }

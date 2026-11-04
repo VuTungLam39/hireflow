@@ -174,6 +174,12 @@ describe('Public jobs, CV files, dashboard (e2e)', () => {
         location: 'Đà Nẵng',
         department: { name: expect.any(String) },
         publishedAt: expect.any(String),
+        salary: { mode: 'NEGOTIABLE' },
+        level: null,
+        employmentType: 'FULL_TIME',
+        workMode: 'ONSITE',
+        headcount: 1,
+        deadline: null,
       });
     });
 
