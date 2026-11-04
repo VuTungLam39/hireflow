@@ -361,6 +361,26 @@ describe('Interviews (e2e)', () => {
       expect(edit.body.code).toBe('INTERVIEW_NOT_EDITABLE');
     });
 
+    it('open=true finds a long-past interview still awaiting a decision, however old it is', async () => {
+      const repo = ds.getRepository(Interview);
+      const { scheduledAt } = await repo.findOneByOrFail({ id: interviewA });
+      await repo.update(interviewA, { scheduledAt: new Date(Date.now() - 90 * 86_400_000) });
+      try {
+        const query = `from=2000-01-01T00:00:00.000Z&to=${new Date(Date.now() - 30 * 86_400_000).toISOString()}`;
+        const open = await as('hr', request(server()).get(`/api/v1/interviews?${query}&open=true`));
+        expect(open.body.data.map((i: { id: string }) => i.id)).toContain(interviewA);
+        await ds.getRepository(Application).update(apps.a, { status: ApplicationStatus.Offer });
+        const decided = await as(
+          'hr',
+          request(server()).get(`/api/v1/interviews?${query}&open=true`),
+        );
+        expect(decided.body.data.map((i: { id: string }) => i.id)).not.toContain(interviewA);
+      } finally {
+        await ds.getRepository(Application).update(apps.a, { status: ApplicationStatus.Interview });
+        await repo.update(interviewA, { scheduledAt });
+      }
+    });
+
     it('BR-INT-03: HR and the department manager read every feedback; an interviewer reads only their own', async () => {
       const second = await schedule('hr', apps.a, {
         scheduledAt: inDays(3),

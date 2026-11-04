@@ -112,6 +112,14 @@ export class InterviewsService implements OnModuleInit {
     if (!query.includeCancelled) {
       qb.andWhere('iv.status <> :cancelled', { cancelled: InterviewStatus.Cancelled });
     }
+    if (query.open) {
+      qb.andWhere('iv.status <> :cancelled', { cancelled: InterviewStatus.Cancelled })
+        .andWhere('iv.scheduledAt <= now()')
+        .andWhere('(iv.status = :scheduled OR app.status = :interview)', {
+          scheduled: InterviewStatus.Scheduled,
+          interview: ApplicationStatus.Interview,
+        });
+    }
     if (query.mine || user.role === Role.Interviewer) {
       qb.andWhere(
         'EXISTS (SELECT 1 FROM interview_assignees ia WHERE ia.interview_id = iv.id AND ia.user_id = :me)',
