@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { useEffect, useId, useRef, useState, type RefObject } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { tabId } from './tab-id'
 
 function useOverflowEdges(ref: RefObject<HTMLDivElement | null>) {
   const [edges, setEdges] = useState({ start: false, end: false })
@@ -39,9 +40,19 @@ interface TabsProps<T extends string> {
   onChange: (id: T) => void
   className?: string
   label?: string
+  idPrefix?: string
 }
 
-export function Tabs<T extends string>({ tabs, value, onChange, className, label }: TabsProps<T>) {
+export function Tabs<T extends string>({
+  tabs,
+  value,
+  onChange,
+  className,
+  label,
+  idPrefix,
+}: TabsProps<T>) {
+  const autoId = useId()
+  const prefix = idPrefix ?? autoId
   const listRef = useRef<HTMLDivElement>(null)
   const edges = useOverflowEdges(listRef)
 
@@ -63,7 +74,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, className, label
     const next = tabs[(from + delta + tabs.length) % tabs.length]
     onChange(next.id)
     requestAnimationFrame(() =>
-      document.getElementById(`tab-${next.id}`)?.focus({ preventScroll: true }),
+      document.getElementById(tabId(prefix, next.id))?.focus({ preventScroll: true }),
     )
   }
 
@@ -80,7 +91,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, className, label
           return (
             <button
               key={tab.id}
-              id={`tab-${tab.id}`}
+              id={tabId(prefix, tab.id)}
               type="button"
               role="tab"
               aria-selected={active}

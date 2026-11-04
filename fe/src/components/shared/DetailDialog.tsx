@@ -1,6 +1,6 @@
 import { X } from 'lucide-react'
-import { useEffect, useId, useRef, type ReactNode } from 'react'
-import { Tabs } from '@/components/ui'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { Tabs, tabId } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
 interface DetailTab<T extends string> {
@@ -26,6 +26,8 @@ interface DetailDialogProps<T extends string> {
   fit?: boolean
 }
 
+let shownDialogs = 0
+
 export function DetailDialog<T extends string>({
   open,
   onClose,
@@ -39,14 +41,16 @@ export function DetailDialog<T extends string>({
   children,
   label,
   size = 'md',
-  fit = false,
+  fit = true,
 }: DetailDialogProps<T>) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
+  const tabsId = useId()
   const bodyRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLHeadingElement>(null)
+  const [replacing] = useState(() => shownDialogs > 0)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const dialog = ref.current
     if (!dialog) return
     if (open && !dialog.open) {
@@ -54,6 +58,14 @@ export function DetailDialog<T extends string>({
       titleRef.current?.focus()
     }
     if (!open && dialog.open) dialog.close()
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    shownDialogs += 1
+    return () => {
+      shownDialogs -= 1
+    }
   }, [open])
 
   useEffect(() => {
@@ -87,13 +99,18 @@ export function DetailDialog<T extends string>({
       className={cn(
         'bg-surface text-ink-2 border-line shadow-float backdrop:bg-ink/40 m-auto max-h-none max-w-none p-0 open:flex open:flex-col',
         'h-dvh w-full sm:rounded-md sm:border',
-        size === 'md'
-          ? 'sm:w-[min(800px,calc(100%-3rem))]'
-          : 'sm:h-[calc(100dvh-4rem)] sm:w-[min(1200px,calc(100%-3rem))]',
-        size === 'md' &&
-          (fit
-            ? 'sm:h-fit sm:max-h-[min(720px,calc(100dvh-4rem))] sm:min-h-[max(var(--fit-min,0px),min(420px,calc(100dvh-4rem)))]'
-            : 'sm:h-[min(720px,calc(100dvh-4rem))]'),
+        replacing && 'animate-none backdrop:animate-none',
+        size === 'md' ? 'sm:w-[min(800px,calc(100%-3rem))]' : 'sm:w-[min(1200px,calc(100%-3rem))]',
+        fit
+          ? cn(
+              'sm:h-fit sm:min-h-[max(var(--fit-min,0px),min(420px,calc(100dvh-4rem)))]',
+              size === 'md'
+                ? 'sm:max-h-[min(720px,calc(100dvh-4rem))]'
+                : 'sm:max-h-[calc(100dvh-4rem)]',
+            )
+          : size === 'md'
+            ? 'sm:h-[min(720px,calc(100dvh-4rem))]'
+            : 'sm:h-[calc(100dvh-4rem)]',
       )}
     >
       {open && (
@@ -124,7 +141,14 @@ export function DetailDialog<T extends string>({
               </button>
             </div>
             {tabs && tab && onTab ? (
-              <Tabs tabs={tabs} value={tab} onChange={onTab} label={label} className="mt-4" />
+              <Tabs
+                tabs={tabs}
+                value={tab}
+                onChange={onTab}
+                label={label}
+                idPrefix={tabsId}
+                className="mt-4"
+              />
             ) : (
               <div className="border-line mt-4 border-b" />
             )}
@@ -132,7 +156,7 @@ export function DetailDialog<T extends string>({
           <div
             ref={bodyRef}
             role={tabs ? 'tabpanel' : undefined}
-            aria-labelledby={tabs && tab ? `tab-${tab}` : undefined}
+            aria-labelledby={tabs && tab ? tabId(tabsId, tab) : undefined}
             className="min-h-0 flex-1 overflow-y-auto px-5 py-5 [--sticky-top:0px] sm:px-6"
           >
             {children}
