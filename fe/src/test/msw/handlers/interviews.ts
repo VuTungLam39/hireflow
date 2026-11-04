@@ -95,6 +95,10 @@ export const interviewHandlers = [
           t >= from &&
           t < to &&
           (p.get('includeCancelled') === 'true' || iv.status !== 'CANCELLED') &&
+          (p.get('open') !== 'true' ||
+            (iv.status !== 'CANCELLED' &&
+              t <= Date.now() &&
+              (iv.status === 'SCHEDULED' || app.status === 'INTERVIEW'))) &&
           canSeeApplication(user, app) &&
           (user.role !== Role.Interviewer || iv.interviewerIds.includes(user.id))
         )

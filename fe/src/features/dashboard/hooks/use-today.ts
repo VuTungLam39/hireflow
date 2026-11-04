@@ -1,36 +1,31 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { applicationQueries, type ApplicationListParams } from '@/features/applications'
+import { SCORE_GOOD, applicationQueries, type ApplicationListParams } from '@/features/applications'
 import { useAiIssueCount } from '@/features/operations'
-import { PENDING_LOOKBACK_DAYS, isAwaitingDecision, useInterviews } from '@/features/interviews'
+import {
+  PENDING_LOOKBACK_DAYS,
+  isAwaitingDecision,
+  useInterviewBacklog,
+  useInterviews,
+} from '@/features/interviews'
 import { usePermission } from '@/hooks/use-permission'
 import { Permission } from '@/lib/permissions'
 
-const day = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+const DAY_MS = 86_400_000
+const VN_OFFSET_MS = 7 * 3_600_000
+const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10)
 
-function weekBounds(now: Date) {
-  const start = new Date(now)
-  start.setHours(0, 0, 0, 0)
-  start.setDate(start.getDate() - ((start.getDay() + 6) % 7))
-  const prevStart = new Date(start)
-  prevStart.setDate(prevStart.getDate() - 7)
-  const prevEnd = new Date(start)
-  prevEnd.setDate(prevEnd.getDate() - 1)
-  const dayStart = new Date(now)
-  dayStart.setHours(0, 0, 0, 0)
-  const dayEnd = new Date(now)
-  dayEnd.setHours(23, 59, 59, 999)
-  const monthAgo = new Date(now)
-  monthAgo.setDate(monthAgo.getDate() - PENDING_LOOKBACK_DAYS)
+export function weekBounds(nowMs: number) {
+  const today = Math.floor((nowMs + VN_OFFSET_MS) / DAY_MS) * DAY_MS
+  const monday = today - ((new Date(today).getUTCDay() + 6) % 7) * DAY_MS
   return {
-    week: day(start),
-    prevWeekFrom: day(prevStart),
-    prevWeekTo: day(prevEnd),
-    dayFrom: dayStart.toISOString(),
-    dayTo: dayEnd.toISOString(),
-    monthAgo: monthAgo.toISOString(),
-    now: now.toISOString(),
+    week: isoDay(monday),
+    prevWeekFrom: isoDay(monday - 7 * DAY_MS),
+    prevWeekTo: isoDay(monday - DAY_MS),
+    dayFrom: new Date(today - VN_OFFSET_MS).toISOString(),
+    dayTo: new Date(today - VN_OFFSET_MS + DAY_MS - 1).toISOString(),
+    monthAgo: new Date(nowMs - PENDING_LOOKBACK_DAYS * DAY_MS).toISOString(),
+    now: new Date(nowMs).toISOString(),
   }
 }
 
@@ -50,30 +45,33 @@ function useCount(filter: Partial<ApplicationListParams>, enabled = true) {
 }
 
 export function useToday() {
-  const [b] = useState(() => weekBounds(new Date()))
+  const [b] = useState(() => weekBounds(Date.now()))
   const canRead = usePermission(Permission.ApplicationRead)
   const canOps = usePermission(Permission.OpsManage)
   const aiIssues = useAiIssueCount(canOps)
 
   const pending = useCount({ status: 'NEW' }, canRead)
-  const highNew = useCount({ status: 'NEW', scoreMin: 70 }, canRead)
+  const highNew = useCount({ status: 'NEW', scoreMin: SCORE_GOOD }, canRead)
   const failed = useCount({ aiStatus: 'FAILED' }, canRead)
-  const missingNew = useCount({ status: 'NEW', missingMust: 'true' }, canRead)
-  const highMissing = useCount({ status: 'NEW', scoreMin: 70, missingMust: 'true' }, canRead)
+  const missingNew = useCount(
+    { status: 'NEW', scoreMax: SCORE_GOOD - 1, missingMust: 'true' },
+    canRead,
+  )
   const otherNew =
-    pending === undefined ||
-    highNew === undefined ||
-    missingNew === undefined ||
-    highMissing === undefined
+    pending === undefined || highNew === undefined || missingNew === undefined
       ? undefined
-      : pending - highNew - missingNew + highMissing
+      : Math.max(0, pending - highNew - missingNew)
   const offers = useCount({ status: 'OFFER' }, canRead)
   const thisWeek = useCount({ createdFrom: b.week }, canRead)
   const lastWeek = useCount({ createdFrom: b.prevWeekFrom, createdTo: b.prevWeekTo }, canRead)
 
   const today = useInterviews({ from: b.dayFrom, to: b.dayTo })
   const recent = useInterviews({ from: b.monthAgo, to: b.now })
-  const awaitingDecision = recent.data?.filter(isAwaitingDecision).length
+  const backlog = useInterviewBacklog(b.monthAgo)
+  const awaitingDecision =
+    recent.data && backlog.data
+      ? [...backlog.data, ...recent.data].filter(isAwaitingDecision).length
+      : undefined
 
   return {
     pending,
@@ -85,6 +83,7 @@ export function useToday() {
     offers,
     thisWeek,
     lastWeek,
+    weekStart: b.week,
     interviewsToday: today.data?.filter((i) => i.status !== 'CANCELLED').length,
     awaitingDecision,
   }

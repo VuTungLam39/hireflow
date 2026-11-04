@@ -57,4 +57,5 @@ export interface InterviewListParams {
   to?: string
   mine?: boolean
   includeCancelled?: boolean
+  open?: boolean
 }

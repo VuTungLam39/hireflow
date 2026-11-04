@@ -9,7 +9,7 @@ import { links } from '@/routes/paths'
 import { useAuthStore } from '@/stores/auth.store'
 import { Role } from '@/types/user'
 import { useNow } from '../hooks/use-now'
-import { useInterviews } from '../hooks/use-interviews'
+import { useInterviewBacklog, useInterviews } from '../hooks/use-interviews'
 import { formatDay, formatTime, isLink, vnDay } from '../lib/format'
 import { PENDING_LOOKBACK_DAYS, pendingOf, type PendingKind } from '../lib/pending'
 import type { Interview } from '../types'
@@ -72,6 +72,7 @@ export default function InterviewsPage() {
       ? { includeCancelled, from: week.from, to: week.to }
       : { includeCancelled, from: lookbackFrom },
   )
+  const backlog = useInterviewBacklog(lookbackFrom, { enabled: view === 'list' })
   const now = useNow()
 
   const patch = (changes: Record<string, string | null>) =>
@@ -90,7 +91,10 @@ export default function InterviewsPage() {
   const pendingOfIv = (iv: Interview) => pendingOf(iv, { now, userId, isInterviewer })
   const needsFeedback = (iv: Interview) => pendingOfIv(iv) === 'my-feedback'
 
-  const items = query.data ?? []
+  const items = useMemo(
+    () => (view === 'list' ? [...(backlog.data ?? []), ...(query.data ?? [])] : (query.data ?? [])),
+    [view, backlog.data, query.data],
+  )
   const todayKey = vnDay(new Date(now).toISOString())
   const pending = items.filter((iv) => pendingOfIv(iv) !== null)
   const upcoming = items.filter(
