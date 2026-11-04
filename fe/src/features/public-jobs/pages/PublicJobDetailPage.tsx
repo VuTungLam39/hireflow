@@ -7,6 +7,8 @@ import { useDocumentTitle } from '@/hooks/use-document-title'
 import { cn, formatDate, formatDaysAgo } from '@/lib/utils'
 import { jobTitle } from '@/prerender/shared'
 import { paths } from '@/routes/paths'
+import { JobFacts } from '@/features/jobs'
+import { useHydrated } from '@/hooks/use-hydrated'
 import { ApplyForm } from '../components/ApplyForm'
 import { usePublicJob } from '../hooks/use-public-jobs'
 
@@ -17,6 +19,7 @@ export default function PublicJobDetailPage() {
   const [submitted, setSubmitted] = useState(false)
   const formRef = useRef<HTMLElement>(null)
   const formInView = useInView(formRef)
+  const hydrated = useHydrated()
   useDocumentTitle(job ? jobTitle(job.title) : undefined)
 
   if (isPending)
@@ -55,6 +58,7 @@ export default function PublicJobDetailPage() {
                 </time>
               </span>
             </p>
+            <JobFacts job={job} relativeDeadline={hydrated} className="mt-5" />
           </header>
 
           {job.requirements.length > 0 && (
@@ -77,6 +81,21 @@ export default function PublicJobDetailPage() {
             <h2 className="type-heading">Mô tả công việc</h2>
             <p className="type-read-lg whitespace-pre-wrap">{job.jdText}</p>
           </section>
+
+          {job.benefits && (
+            <section className="space-y-3">
+              <h2 className="type-heading">Quyền lợi</h2>
+              <ul className="type-read-lg list-disc space-y-1 pl-5">
+                {job.benefits
+                  .split('\n')
+                  .map((line) => line.trim())
+                  .filter(Boolean)
+                  .map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+              </ul>
+            </section>
+          )}
         </article>
 
         <aside
@@ -86,7 +105,18 @@ export default function PublicJobDetailPage() {
           className="scroll-mt-20 lg:sticky lg:top-24 lg:self-start"
         >
           <div className="border-line bg-surface rounded-md border p-5 sm:p-6">
-            {submitted ? (
+            {job.expired ? (
+              <div role="status" className="space-y-2">
+                <h2 className="type-heading text-xl">Đã hết hạn nhận hồ sơ</h2>
+                <p className="type-body">
+                  Vị trí này đã qua hạn nộp ngày {formatDate(job.deadline)}. Bạn có thể xem các vị
+                  trí khác đang tuyển.
+                </p>
+                <Link to={paths.publicJobs} className={buttonVariants({ variant: 'secondary' })}>
+                  Xem vị trí đang tuyển
+                </Link>
+              </div>
+            ) : submitted ? (
               <div role="status" className="space-y-3">
                 <span className="bg-good-soft text-good flex size-10 items-center justify-center rounded-full">
                   <Check className="size-5" />
@@ -110,7 +140,7 @@ export default function PublicJobDetailPage() {
         </aside>
       </div>
 
-      {!submitted && (
+      {!submitted && !job.expired && (
         <div
           className={cn(
             'border-line bg-surface fixed inset-x-0 bottom-0 z-20 border-t px-4 py-3 transition-transform duration-200 lg:hidden',

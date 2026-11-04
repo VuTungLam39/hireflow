@@ -1,5 +1,7 @@
 import { delay, http } from 'msw'
 import type { PublicJob, PublicJobSummary } from '@/features/public-jobs'
+import { salaryOf } from '@/features/jobs'
+import { todayIsoDay } from '@/lib/vn-day'
 import { addApplication, createCandidate, db, uid, type JobRow } from '../data'
 import {
   api,
@@ -19,11 +21,20 @@ const toPublicSummary = (job: JobRow): PublicJobSummary => ({
   location: job.location,
   department: { name: db.departments.find((d) => d.id === job.departmentId)?.name ?? '' },
   publishedAt: job.publishedAt!,
+  salary: salaryOf(job),
+  level: job.level,
+  employmentType: job.employmentType,
+  workMode: job.workMode,
+  headcount: job.headcount,
+  deadline: job.deadline,
 })
 
-/** Trang công khai: chỉ job OPEN, không có trọng số/từ khoá nội bộ */
+/** BR-JOB-10: quá ngày hạn nộp theo giờ Việt Nam */
+const isExpired = (job: JobRow) => !!job.deadline && job.deadline < todayIsoDay()
+
+/** Trang công khai: chỉ job OPEN chưa quá hạn, không có trọng số/từ khoá nội bộ */
 const openJobs = (search: string | null) =>
-  db.jobs.filter((j) => j.status === 'OPEN' && includesText(j.title, search))
+  db.jobs.filter((j) => j.status === 'OPEN' && !isExpired(j) && includesText(j.title, search))
 
 export const publicHandlers = [
   http.get(api('/public/jobs'), async ({ request }) => {
@@ -31,6 +42,11 @@ export const publicHandlers = [
     const params = searchParams(request)
     const rows = openJobs(params.get('search'))
       .filter((j) => !params.get('departmentId') || j.departmentId === params.get('departmentId'))
+      .filter((j) => !params.get('level') || j.level === params.get('level'))
+      .filter(
+        (j) => !params.get('employmentType') || j.employmentType === params.get('employmentType'),
+      )
+      .filter((j) => !params.get('workMode') || j.workMode === params.get('workMode'))
       .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''))
     const { items, meta } = paginate(rows, params)
     return ok(items.map(toPublicSummary), { meta })
@@ -54,6 +70,8 @@ export const publicHandlers = [
     if (!job) return notFound('Job')
     const data: PublicJob = {
       ...toPublicSummary(job),
+      expired: isExpired(job),
+      benefits: job.benefits,
       jdText: job.jdText,
       requirements: job.requirements.map((r) => ({ label: r.label, type: r.type })),
     }
@@ -64,6 +82,7 @@ export const publicHandlers = [
     await latency(800)
     const job = db.jobs.find((j) => j.id === params.id && j.status === 'OPEN')
     if (!job) return notFound('Job')
+    if (isExpired(job)) return fail(409, 'JOB_EXPIRED', 'The application deadline has passed')
 
     const form = await request.formData()
     const get = (key: string) => String(form.get(key) ?? '').trim()

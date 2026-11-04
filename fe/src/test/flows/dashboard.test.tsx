@@ -75,7 +75,10 @@ describe('dashboard', () => {
       expect(missingTodo.closest('a')!.getAttribute('href')).toContain('scoreMax=69')
     }
     expect(
-      screen.getByText(/hồ sơ mới khác chờ xem$/).closest('a')!.getAttribute('href'),
+      screen
+        .getByText(/hồ sơ mới khác chờ xem$/)
+        .closest('a')!
+        .getAttribute('href'),
     ).toBe('/applications?status=NEW&bucket=other')
     const decide = screen.queryByText(/chờ quyết định$/)
     if (decide) {

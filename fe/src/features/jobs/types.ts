@@ -1,4 +1,11 @@
-import type { JobStatus, RequirementType } from './constants'
+import type {
+  EmploymentType,
+  JobLevel,
+  JobStatus,
+  RequirementType,
+  SalaryVisibility,
+  WorkMode,
+} from './constants'
 
 export interface Requirement {
   id: string
@@ -23,8 +30,28 @@ export interface JobSummary {
   /** Phân bố hồ sơ theo nhóm trạng thái (một câu COUNT FILTER ở BE) */
   pipeline: JobPipeline
   publishedAt: string | null
+  /** YYYY-MM-DD giờ Việt Nam (BR-JOB-10) */
+  deadline: string | null
   createdAt: string
 }
+
+/** Thông tin hiển thị cho ứng viên (F-JOB-10, F-JOB-11) – không vào điểm, không đổi jdVersion */
+export interface JobDetails {
+  /** VND/tháng */
+  salaryMin: number | null
+  salaryMax: number | null
+  salaryVisibility: SalaryVisibility
+  level: JobLevel | null
+  employmentType: EmploymentType
+  workMode: WorkMode
+  headcount: number
+  deadline: string | null
+  benefits: string
+}
+
+/** BR-JOB-08: ứng viên chỉ thấy số khi RANGE */
+export type PublicSalary =
+  { mode: 'RANGE'; min: number | null; max: number | null } | { mode: 'NEGOTIABLE' } | null
 
 /**
  * new = NEW · inProgress = SCREENING + INTERVIEW + OFFER · hired = HIRED
@@ -37,7 +64,7 @@ export interface JobPipeline {
   closed: number
 }
 
-export interface Job extends JobSummary {
+export interface Job extends JobSummary, JobDetails {
   jdText: string
   /** Tăng 1 mỗi lần lưu tiêu chí; điểm được tính lại theo phiên bản này */
   jdVersion: number
@@ -45,7 +72,7 @@ export interface Job extends JobSummary {
   updatedAt: string
 }
 
-export interface JobInput {
+export interface JobInput extends Partial<JobDetails> {
   title: string
   departmentId: string
   location: string

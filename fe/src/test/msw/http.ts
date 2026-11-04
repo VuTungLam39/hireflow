@@ -221,6 +221,7 @@ export function toJobSummary(job: JobRow): JobSummary {
       closed: apps.filter((a) => a.status === 'REJECTED' || a.status === 'WITHDRAWN').length,
     },
     publishedAt: job.publishedAt,
+    deadline: job.deadline,
     createdAt: job.createdAt,
   }
 }
@@ -228,6 +229,14 @@ export function toJobSummary(job: JobRow): JobSummary {
 export function toJob(job: JobRow): Job {
   return {
     ...toJobSummary(job),
+    salaryMin: job.salaryMin,
+    salaryMax: job.salaryMax,
+    salaryVisibility: job.salaryVisibility,
+    level: job.level,
+    employmentType: job.employmentType,
+    workMode: job.workMode,
+    headcount: job.headcount,
+    benefits: job.benefits,
     jdText: job.jdText,
     jdVersion: job.jdVersion,
     requirements: job.requirements,

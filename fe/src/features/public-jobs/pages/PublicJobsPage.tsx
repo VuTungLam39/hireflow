@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router'
-import { EmptyState, ErrorState, SearchInput } from '@/components/shared'
+import { EmptyState, ErrorState, FilterMenu, SearchInput } from '@/components/shared'
+import { EMPLOYMENT_TYPE, JOB_LEVEL, WORK_MODE, deadlineState, formatSalary } from '@/features/jobs'
 import { ChipGroup, Pagination, Skeleton } from '@/components/ui'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useHydrated } from '@/hooks/use-hydrated'
@@ -10,6 +11,27 @@ import { SITE_NAME } from '@/prerender/shared'
 import { links } from '@/routes/paths'
 import { usePublicDepartments, usePublicJobs } from '../hooks/use-public-jobs'
 import { publicJobsListSchema } from '../schemas'
+import type { PublicJobSummary } from '../types'
+
+const options = <T extends string>(labels: Record<T, string>) =>
+  (Object.entries(labels) as [T, string][]).map(([value, label]) => ({ value, label }))
+
+// F-PUB-05 · Design Spec 11.1: lương · cấp bậc · chế độ · hạn nộp trên thẻ tin
+function JobCardFacts({ job, hydrated }: { job: PublicJobSummary; hydrated: boolean }) {
+  const salary = formatSalary(job.salary)
+  const deadline = job.deadline && (hydrated ? deadlineState(job.deadline) : null)
+  const parts = [salary, job.level && JOB_LEVEL[job.level], WORK_MODE[job.workMode]].filter(Boolean)
+  return (
+    <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm">
+      <span className="text-ink-2 font-medium">{parts.join(' · ')}</span>
+      {job.deadline && (
+        <span className={deadline && deadline.tone !== 'muted' ? 'text-warn' : 'text-ink-muted'}>
+          {deadline ? deadline.text : `Hạn ${formatDate(job.deadline)}`}
+        </span>
+      )}
+    </span>
+  )
+}
 
 // F-PUB-01, F-PUB-04 · Design Spec 6.11
 export default function PublicJobsPage() {
@@ -55,6 +77,26 @@ export default function PublicJobsPage() {
             onChange={(departmentId) => setParams({ departmentId: departmentId ?? null })}
           />
         )}
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Lọc thêm">
+          <FilterMenu
+            label="Cấp bậc"
+            value={params.level}
+            options={options(JOB_LEVEL)}
+            onChange={(level) => setParams({ level: level ?? null })}
+          />
+          <FilterMenu
+            label="Hình thức"
+            value={params.employmentType}
+            options={options(EMPLOYMENT_TYPE)}
+            onChange={(employmentType) => setParams({ employmentType: employmentType ?? null })}
+          />
+          <FilterMenu
+            label="Làm việc"
+            value={params.workMode}
+            options={options(WORK_MODE)}
+            onChange={(workMode) => setParams({ workMode: workMode ?? null })}
+          />
+        </div>
       </header>
 
       {isPending ? (
@@ -100,6 +142,7 @@ export default function PublicJobsPage() {
                         ? `đăng ${formatDaysAgo(job.publishedAt, undefined, { hoursToday: true })}`
                         : formatDate(job.publishedAt)}
                     </span>
+                    <JobCardFacts job={job} hydrated={hydrated} />
                   </span>
                   <ArrowRight className="text-ink-muted group-hover:text-brand size-5 shrink-0 transition-colors" />
                 </Link>

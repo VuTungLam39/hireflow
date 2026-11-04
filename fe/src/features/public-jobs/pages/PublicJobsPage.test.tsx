@@ -66,4 +66,19 @@ describe('PublicJobsPage', () => {
       screen.getByText(new RegExp(`${byDept.get(name)} vị trí đang tuyển ở ${name}`)),
     ).toBeInTheDocument()
   })
+
+  it('F-PUB-05: filters by work mode and shows salary and level on each card', async () => {
+    const remote = db.jobs.filter((j) => j.status === 'OPEN' && j.workMode === 'REMOTE')
+    renderPage()
+    await screen.findByRole('radiogroup', { name: 'Lọc theo phòng ban' })
+    fireEvent.click(screen.getByRole('button', { name: /^Làm việc/ }))
+    fireEvent.click(await screen.findByRole('option', { name: 'Từ xa' }))
+    expect(
+      await screen.findByText(`${remote.length} vị trí đang tuyển`, undefined, { timeout: 4000 }),
+    ).toBeInTheDocument()
+    for (const job of remote) {
+      const card = screen.getByText(job.title).closest('a')!
+      expect(card).toHaveTextContent('Từ xa')
+    }
+  })
 })

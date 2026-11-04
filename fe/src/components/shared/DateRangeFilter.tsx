@@ -1,35 +1,14 @@
 import { useState } from 'react'
 import { Input, Popover } from '@/components/ui'
 import { cn, formatDate } from '@/lib/utils'
+import {
+  isoDayToVnText as toVn,
+  shiftIsoDay as shift,
+  todayIsoDay as todayIso,
+  vnTextToIsoDay as toIso,
+  withDaySlashes as withSlashes,
+} from '@/lib/vn-day'
 import { FilterTrigger } from './FilterBar'
-
-const VN_DATE = /^(\d{2})\/(\d{2})\/(\d{4})$/
-
-const toIso = (text: string) => {
-  const m = VN_DATE.exec(text.trim())
-  if (!m) return null
-  const [, d, mo, y] = m
-  const date = new Date(Date.UTC(+y, +mo - 1, +d))
-  return date.getUTCDate() === +d && date.getUTCMonth() === +mo - 1 ? `${y}-${mo}-${d}` : null
-}
-
-const toVn = (iso: string | undefined) => (iso ? iso.split('-').reverse().join('/') : '')
-
-const withSlashes = (raw: string) => {
-  const digits = raw.replace(/\D/g, '').slice(0, 8)
-  return [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4)].filter(Boolean).join('/')
-}
-
-function todayIso() {
-  const [d, m, y] = formatDate(new Date().toISOString()).split('/')
-  return `${y}-${m}-${d}`
-}
-
-const shift = (iso: string, days: number) => {
-  const date = new Date(`${iso}T00:00:00Z`)
-  date.setUTCDate(date.getUTCDate() + days)
-  return date.toISOString().slice(0, 10)
-}
 
 const PRESETS = [
   { label: 'Hôm nay', range: (t: string) => [t, t] },

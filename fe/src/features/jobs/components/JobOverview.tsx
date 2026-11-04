@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { cn, formatDate } from '@/lib/utils'
 import { PIPELINE_STAGES } from '../constants'
+import { salaryOf } from '../lib/job-details'
+import { JobFacts } from './JobFacts'
 import type { Job } from '../types'
 
 const STAGE_STATUS: Partial<Record<keyof Job['pipeline'], string>> = { new: 'NEW', hired: 'HIRED' }
@@ -88,6 +90,13 @@ export function JobOverview({ job, onOpenApplications, highlights }: JobOverview
       </section>
 
       {job.status !== 'DRAFT' && job.applicationCount > 0 && highlights}
+
+      <section aria-labelledby="job-candidate-facts" className="space-y-3">
+        <h3 id="job-candidate-facts" className="type-heading">
+          Ứng viên sẽ thấy
+        </h3>
+        <JobFacts job={{ ...job, salary: salaryOf(job) }} />
+      </section>
 
       <dl
         aria-label="Thông tin chung"
