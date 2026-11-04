@@ -1,3 +1,4 @@
+import { DeadlineTag } from '../components/DeadlineTag'
 import {
   Inbox,
   ListChecks,
@@ -78,6 +79,7 @@ function JobMobileRow({ job }: { job: JobSummary }) {
           · {job.publishedAt ? `đăng ${formatDaysAgo(job.publishedAt)}` : 'chưa đăng'}
         </span>
       </p>
+      <DeadlineTag job={job} className="mt-1 block" />
     </div>
   )
 }
@@ -132,7 +134,12 @@ export default function JobsPage() {
       key: 'status',
       header: 'Trạng thái',
       hideOnMobile: true,
-      cell: (job) => <JobStatusBadge status={job.status} />,
+      cell: (job) => (
+        <div className="flex flex-col items-start gap-0.5">
+          <JobStatusBadge status={job.status} />
+          <DeadlineTag job={job} />
+        </div>
+      ),
     },
     {
       key: 'pipeline',

@@ -87,7 +87,7 @@ export function JobInfoSection({
       <p className="text-ink-2 mt-1 text-sm">
         {deptName ?? 'Phòng ban'} · {draft.location || 'Địa điểm'}
       </p>
-      {draftFacts && <JobFacts job={draftFacts} className="mt-4 sm:grid-cols-2" />}
+      {draftFacts && <JobFacts job={draftFacts} columns={2} className="mt-4" />}
       <p className="type-read mt-3 line-clamp-6 whitespace-pre-line">
         {draft.jdText || 'Mô tả công việc sẽ hiện ở đây.'}
       </p>
