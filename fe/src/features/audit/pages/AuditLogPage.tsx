@@ -1,27 +1,35 @@
 import { Link, useSearchParams } from 'react-router'
-import { EmptyState, ErrorState, PageHeader } from '@/components/shared'
-import { Badge, Button, Card, FormField, Input, Select, Skeleton } from '@/components/ui'
+import {
+  DateRangeFilter,
+  EmptyState,
+  ErrorState,
+  FilterBar,
+  FilterMenu,
+  PageHeader,
+} from '@/components/shared'
+import { Button, Skeleton } from '@/components/ui'
 import { formatDateTime } from '@/lib/utils'
-import { links } from '@/routes/paths'
 import { useAuditLogs } from '../hooks/use-audit-logs'
-import { AUDIT_ACTION_LABEL, AUDIT_ACTIONS, describeAudit } from '../audit-format'
+import { AUDIT_ACTION_LABEL, AUDIT_ACTIONS, describeAudit, formatIp } from '../audit-format'
 import type { AuditLogItem, AuditLogParams } from '../types'
+import { useDetailLink } from '@/hooks/use-detail'
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/
 
 function Target({ log }: { log: AuditLogItem }) {
-  if (!log.entityId) return <span className="text-ink-faint">–</span>
+  const detailLink = useDetailLink()
+  if (!log.entityId) return null
   const short = log.entityId.slice(0, 8)
   if (log.entity === 'application') {
     return (
-      <Link className="text-brand hover:underline" to={links.applicationDetail(log.entityId)}>
+      <Link className="text-brand hover:underline" to={detailLink('application', log.entityId)}>
         Hồ sơ {short}
       </Link>
     )
   }
   if (log.entity === 'candidate') {
     return (
-      <Link className="text-brand hover:underline" to={links.candidateDetail(log.entityId)}>
+      <Link className="text-brand hover:underline" to={detailLink('candidate', log.entityId)}>
         Ứng viên {short}
       </Link>
     )
@@ -67,104 +75,135 @@ export default function AuditLogPage() {
         description="Ai đã xem CV, đổi trạng thái hồ sơ, ẩn danh ứng viên hay đổi quyền người dùng. Nhật ký chỉ ghi thêm, không sửa được."
       />
 
-      <Card className="grid gap-4 p-4 sm:grid-cols-3">
-        <FormField label="Hành động" htmlFor="audit-action">
-          <Select
-            id="audit-action"
-            className="w-full"
-            value={action ?? ''}
-            onChange={(e) => setFilter('action', e.target.value)}
-          >
-            <option value="">Tất cả</option>
-            {AUDIT_ACTIONS.map((a) => (
-              <option key={a} value={a}>
-                {AUDIT_ACTION_LABEL[a]}
-              </option>
-            ))}
-          </Select>
-        </FormField>
-        <FormField label="Từ ngày" htmlFor="audit-from">
-          <Input
-            id="audit-from"
-            type="date"
-            value={from}
-            max={to || undefined}
-            onChange={(e) => setFilter('from', e.target.value)}
-          />
-        </FormField>
-        <FormField label="Đến ngày" htmlFor="audit-to">
-          <Input
-            id="audit-to"
-            type="date"
-            value={to}
-            min={from || undefined}
-            onChange={(e) => setFilter('to', e.target.value)}
-          />
-        </FormField>
-      </Card>
+      <FilterBar
+        active={[
+          ...(action
+            ? [
+                {
+                  key: 'action',
+                  label: AUDIT_ACTION_LABEL[action],
+                  onRemove: () => setFilter('action', ''),
+                },
+              ]
+            : []),
+          ...(from || to
+            ? [
+                {
+                  key: 'date',
+                  label: 'Ngày',
+                  onRemove: () =>
+                    setSearch(
+                      (prev) => {
+                        const next = new URLSearchParams(prev)
+                        next.delete('from')
+                        next.delete('to')
+                        return next
+                      },
+                      { replace: true },
+                    ),
+                },
+              ]
+            : []),
+        ]}
+        onReset={
+          action || from || to
+            ? () => setSearch(new URLSearchParams(), { replace: true })
+            : undefined
+        }
+      >
+        <FilterMenu
+          label="Hành động"
+          value={action}
+          options={AUDIT_ACTIONS.map((a) => ({ value: a, label: AUDIT_ACTION_LABEL[a] }))}
+          onChange={(value) => setFilter('action', value ?? '')}
+        />
+        <DateRangeFilter
+          label="Ngày"
+          from={from || undefined}
+          to={to || undefined}
+          onChange={(f, t) =>
+            setSearch(
+              (prev) => {
+                const next = new URLSearchParams(prev)
+                for (const [key, value] of [
+                  ['from', f],
+                  ['to', t],
+                ]) {
+                  if (value) next.set(key, value)
+                  else next.delete(key)
+                }
+                return next
+              },
+              { replace: true },
+            )
+          }
+        />
+      </FilterBar>
 
       {query.isPending ? (
-        <Card className="space-y-3 p-4">
+        <div className="space-y-2">
           {Array.from({ length: 6 }, (_, i) => (
             <Skeleton key={i} className="h-12" />
           ))}
-        </Card>
+        </div>
       ) : query.isError ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : logs.length === 0 ? (
-        <Card>
-          <EmptyState
-            title="Chưa có hành động nào"
-            description="Thử bỏ bớt bộ lọc hoặc chọn khoảng ngày khác."
-          />
-        </Card>
+        <EmptyState
+          title="Chưa có hành động nào"
+          description="Thử bỏ bớt bộ lọc hoặc chọn khoảng ngày khác."
+        />
       ) : (
-        <Card className="overflow-hidden p-0">
+        <div className="border-line bg-surface -mx-4 overflow-hidden border-y md:mx-0 md:rounded-md md:border">
           <ul className="divide-line-soft divide-y">
             {logs.map((log) => (
               <li
                 key={log.id}
-                className="grid gap-1 px-4 py-3 text-sm md:grid-cols-[10rem_12rem_1fr_9rem] md:items-start md:gap-4"
+                className="grid gap-1 px-4 py-2.5 md:grid-cols-[9.5rem_12rem_1fr_9rem] md:items-start md:gap-4"
               >
-                <span className="text-ink-muted text-xs tabular-nums md:text-sm">
-                  {formatDateTime(log.createdAt)}
-                </span>
+                <span className="num text-ink-2 text-[13px]">{formatDateTime(log.createdAt)}</span>
                 <span className="min-w-0">
                   <span className="text-ink block truncate font-medium">
                     {log.actor?.fullName ?? (log.actorId ? 'Người dùng đã xoá' : 'Hệ thống')}
                   </span>
                   {log.actor && (
-                    <span className="text-ink-muted block truncate text-xs">{log.actor.email}</span>
+                    <span className="type-caption block truncate">{log.actor.email}</span>
                   )}
                 </span>
                 <span className="min-w-0 space-y-1">
                   <span className="flex flex-wrap items-center gap-2">
-                    <Badge tone={log.action === 'CANDIDATE_ANONYMIZED' ? 'danger' : 'neutral'}>
+                    <span
+                      className={
+                        log.action === 'CANDIDATE_ANONYMIZED'
+                          ? 'text-bad font-semibold'
+                          : 'text-ink font-semibold'
+                      }
+                    >
                       {AUDIT_ACTION_LABEL[log.action] ?? log.action}
-                    </Badge>
+                    </span>
                     <Target log={log} />
                   </span>
-                  <span className="text-ink-2 block break-words">{describeAudit(log)}</span>
+                  {describeAudit(log) && (
+                    <span className="type-caption block break-words">{describeAudit(log)}</span>
+                  )}
                 </span>
-                <span className="text-ink-faint text-xs md:text-right">
-                  {log.ip ? `IP ${log.ip}` : '–'}
-                </span>
+                <span className="type-caption num md:text-right">{formatIp(log.ip)}</span>
               </li>
             ))}
           </ul>
           {query.hasNextPage && (
-            <div className="border-line-soft border-t p-3 text-center">
+            <div className="border-line-soft border-t p-2 text-center">
               <Button
                 variant="secondary"
                 size="sm"
                 loading={query.isFetchingNextPage}
                 onClick={() => void query.fetchNextPage()}
               >
-                Xem thêm
+                Tải thêm
               </Button>
             </div>
           )}
-        </Card>
+        </div>
       )}
     </div>
   )

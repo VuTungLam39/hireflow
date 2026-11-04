@@ -49,7 +49,12 @@ describe('candidate pages', () => {
     renderAt(paths.candidates)
     // DataTable vẽ cả bảng (desktop) và card (mobile) nên mỗi link có 2 bản
     expect(await screen.findAllByRole('link', { name: first.fullName })).not.toHaveLength(0)
-    expect(screen.getByRole('button', { name: 'Tải thêm' })).toBeInTheDocument()
+    const total = db.candidates.filter((c) =>
+      db.applications.some((a) => a.candidateId === c.id),
+    ).length
+    expect(screen.getByText(total.toLocaleString('vi-VN'))).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: `Tải thêm (còn ${total - 20})` })).toBeInTheDocument()
+    expect(screen.getAllByText(first.lastJob!.title).length).toBeGreaterThan(0)
   })
 
   it('shows the anonymize action to admin only (BR-DATA-03)', async () => {

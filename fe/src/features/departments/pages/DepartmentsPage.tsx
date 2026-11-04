@@ -1,17 +1,17 @@
-import { Building2, Plus } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { z } from 'zod'
 import {
   ConfirmDialog,
   DataTable,
-  FilterBar,
   PageHeader,
+  RowMenu,
   SearchInput,
+  Summary,
   type Column,
 } from '@/components/shared'
-import { Button, Card } from '@/components/ui'
+import { Button } from '@/components/ui'
 import { pageFields, useListParams } from '@/hooks/use-list-params'
-import { formatDate } from '@/lib/utils'
 import { DepartmentFormDialog } from '../components/DepartmentFormDialog'
 import { useDeleteDepartment, useDepartments } from '../hooks/use-departments'
 import type { Department } from '../types'
@@ -21,54 +21,52 @@ const listSchema = z.object({
   search: z.string().optional().catch(undefined),
 })
 
+// F-DEPT-01 → 03 · BR-ACC-08 · Design Spec 6.13
 export default function DepartmentsPage() {
   const [params, setParams] = useListParams(listSchema)
   const query = useDepartments(params)
   const remove = useDeleteDepartment()
-  // undefined = đóng, null = tạo mới, có giá trị = sửa
   const [editing, setEditing] = useState<Department | null | undefined>(undefined)
   const [deleting, setDeleting] = useState<Department | null>(null)
 
   const columns: Column<Department>[] = [
     {
       key: 'name',
-      header: 'Tên',
-      cell: (d) => (
-        <span className="flex items-center gap-3">
-          <span className="bg-brand-soft text-brand hidden size-8 items-center justify-center rounded-sm md:flex">
-            <Building2 className="size-4" />
-          </span>
-          <span className="font-medium">{d.name}</span>
-        </span>
-      ),
+      header: 'Phòng ban',
+      cell: (d) => <span className="text-ink font-medium">{d.name}</span>,
     },
-    { key: 'code', header: 'Mã', cell: (d) => <code className="text-xs">{d.code}</code> },
-    { key: 'users', header: 'Người dùng', cell: (d) => d.userCount },
-    { key: 'jobs', header: 'Tin tuyển dụng', cell: (d) => d.jobCount },
-    { key: 'createdAt', header: 'Ngày tạo', cell: (d) => formatDate(d.createdAt) },
     {
-      key: 'actions',
-      header: '',
-      isAction: true,
-      className: 'text-right whitespace-nowrap',
-      cell: (d) => (
-        <>
-          <Button variant="quiet" size="sm" onClick={() => setEditing(d)}>
-            Sửa
-          </Button>
-          <Button variant="quiet" size="sm" className="text-bad" onClick={() => setDeleting(d)}>
-            Xoá
-          </Button>
-        </>
-      ),
+      key: 'code',
+      header: 'Mã',
+      cell: (d) => <span className="type-code text-ink-2">{d.code}</span>,
+    },
+    {
+      key: 'users',
+      header: 'Số người',
+      align: 'right',
+      cell: (d) => <span className="type-num">{d.userCount}</span>,
+    },
+    {
+      key: 'jobs',
+      header: 'Số tin',
+      align: 'right',
+      cell: (d) => <span className="type-num">{d.jobCount}</span>,
     },
   ]
+
+  const total = query.data?.meta.totalItems
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Phòng ban"
-        description="Hiring Manager chỉ thấy tin tuyển dụng và hồ sơ thuộc phòng ban của mình."
+        description={
+          total !== undefined && (
+            <Summary
+              items={[`${total} phòng ban`, 'Hiring Manager chỉ thấy tin và hồ sơ của phòng mình']}
+            />
+          )
+        }
         actions={
           <Button onClick={() => setEditing(null)}>
             <Plus />
@@ -77,28 +75,50 @@ export default function DepartmentsPage() {
         }
       />
 
-      <Card className="space-y-4">
-        <FilterBar>
-          <SearchInput
-            value={params.search}
-            onChange={(search) => setParams({ search })}
-            placeholder="Tìm theo tên hoặc mã..."
-          />
-        </FilterBar>
-        <DataTable
-          columns={columns}
-          data={query.data?.items}
-          rowKey={(d) => d.id}
-          isPending={query.isPending}
-          isError={query.isError}
-          error={query.error}
-          onRetry={query.refetch}
-          isFetching={query.isFetching && !query.isPending}
-          emptyTitle="Chưa có phòng ban"
-          meta={query.data?.meta}
-          onPageChange={(page) => setParams({ page })}
-        />
-      </Card>
+      <SearchInput
+        value={params.search}
+        onChange={(search) => setParams({ search })}
+        placeholder="Tên hoặc mã phòng ban"
+        label="Tìm phòng ban"
+      />
+
+      <DataTable
+        caption="Danh sách phòng ban"
+        columns={columns}
+        data={query.data?.items}
+        rowKey={(d) => d.id}
+        rowLabel={(d) => d.name}
+        onRowClick={(d) => setEditing(d)}
+        isPending={query.isPending}
+        isError={query.isError}
+        error={query.error}
+        onRetry={query.refetch}
+        isFetching={query.isFetching && !query.isPending}
+        emptyTitle={params.search ? 'Không có phòng ban khớp tìm kiếm' : 'Chưa có phòng ban'}
+        emptyDescription="Tạo phòng ban trước khi thêm Hiring Manager hoặc tin tuyển dụng."
+        meta={query.data?.meta}
+        onPageChange={(page) => setParams({ page })}
+        rowActions={(d) => {
+          const inUse = d.userCount + d.jobCount > 0
+          return (
+            <RowMenu
+              label={`Thao tác với ${d.name}`}
+              items={[
+                { label: 'Sửa phòng ban', icon: <Pencil />, onSelect: () => setEditing(d) },
+                {
+                  label: 'Xoá phòng ban',
+                  icon: <Trash2 />,
+                  danger: true,
+                  separated: true,
+                  disabled: inUse,
+                  onSelect: () => setDeleting(d),
+                },
+              ]}
+              note={inUse && 'Còn người dùng hoặc tin tuyển dụng nên chưa xoá được.'}
+            />
+          )
+        }}
+      />
 
       <DepartmentFormDialog
         open={editing !== undefined}
@@ -108,9 +128,9 @@ export default function DepartmentsPage() {
       <ConfirmDialog
         open={!!deleting}
         onClose={() => setDeleting(null)}
-        title="Xoá phòng ban?"
-        description={`Phòng ban "${deleting?.name}" sẽ bị xoá. Không xoá được nếu còn người dùng hoặc tin tuyển dụng.`}
-        confirmLabel="Xoá"
+        title={`Xoá phòng ban ${deleting?.name ?? ''}?`}
+        description="Phòng ban không còn người dùng và tin tuyển dụng nên xoá được."
+        confirmLabel="Xoá phòng ban"
         tone="danger"
         loading={remove.isPending}
         onConfirm={() =>

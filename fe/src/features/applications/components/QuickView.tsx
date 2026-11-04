@@ -68,7 +68,7 @@ export function QuickView({ id, listQuery, hideScore, onClose }: QuickViewProps)
 
             {!hideScore && app.aiStatus === 'DONE' && app.score !== null && (
               <section>
-                <h3 className="type-overline mb-2">Mức phù hợp</h3>
+                <h3 className="type-heading mb-2">Mức phù hợp</h3>
                 <ScoreMeter
                   compact
                   score={app.score}

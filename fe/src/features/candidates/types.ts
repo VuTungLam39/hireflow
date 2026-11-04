@@ -9,6 +9,7 @@ export interface CandidateListItem {
   /** Số hồ sơ người xem được thấy (Hiring Manager: chỉ phòng mình) */
   applicationCount: number
   lastAppliedAt: string | null
+  lastJob: { title: string; status: ApplicationStatus } | null
   /** Khác null = đã ẩn danh (BR-DATA-03) */
   anonymizedAt: string | null
   createdAt: string

@@ -184,6 +184,27 @@ describe('Public jobs, CV files, dashboard (e2e)', () => {
       expect(res.body.data.map((j: { id: string }) => j.id)).toEqual([ids.open]);
     });
 
+    it('filters by department and counts open jobs per department for the same search', async () => {
+      const byDept = await request(server())
+        .get(`/api/v1/public/jobs?search=${run}&departmentId=${ids.depB}`)
+        .expect(200);
+      expect(byDept.body.data.map((j: { title: string }) => j.title)).toEqual([
+        `Job phòng B ${run}`,
+      ]);
+      expect(byDept.body.meta.totalItems).toBe(1);
+
+      const facets = await request(server())
+        .get(`/api/v1/public/jobs/departments?search=${run}`)
+        .expect(200);
+      expect(facets.body.data).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: ids.depA, count: 1 }),
+          expect.objectContaining({ id: ids.depB, count: 1 }),
+        ]),
+      );
+      await request(server()).get('/api/v1/public/jobs?departmentId=abc').expect(400);
+    });
+
     it('shows requirement label and type only', async () => {
       const res = await request(server()).get(`/api/v1/public/jobs/${ids.open}`).expect(200);
       expect(res.body.data.requirements).toEqual([{ label: 'NestJS', type: 'MUST' }]);

@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { applicationQueries, type ApplicationListParams } from '@/features/applications'
-import { useInterviews } from '@/features/interviews'
+import { useAiIssueCount } from '@/features/operations'
+import { PENDING_LOOKBACK_DAYS, isAwaitingDecision, useInterviews } from '@/features/interviews'
 import { usePermission } from '@/hooks/use-permission'
 import { Permission } from '@/lib/permissions'
 
@@ -21,7 +22,7 @@ function weekBounds(now: Date) {
   const dayEnd = new Date(now)
   dayEnd.setHours(23, 59, 59, 999)
   const monthAgo = new Date(now)
-  monthAgo.setDate(monthAgo.getDate() - 30)
+  monthAgo.setDate(monthAgo.getDate() - PENDING_LOOKBACK_DAYS)
   return {
     week: day(start),
     prevWeekFrom: day(prevStart),
@@ -51,27 +52,36 @@ function useCount(filter: Partial<ApplicationListParams>, enabled = true) {
 export function useToday() {
   const [b] = useState(() => weekBounds(new Date()))
   const canRead = usePermission(Permission.ApplicationRead)
+  const canOps = usePermission(Permission.OpsManage)
+  const aiIssues = useAiIssueCount(canOps)
 
   const pending = useCount({ status: 'NEW' }, canRead)
   const highNew = useCount({ status: 'NEW', scoreMin: 70 }, canRead)
   const failed = useCount({ aiStatus: 'FAILED' }, canRead)
   const missingNew = useCount({ status: 'NEW', missingMust: 'true' }, canRead)
+  const highMissing = useCount({ status: 'NEW', scoreMin: 70, missingMust: 'true' }, canRead)
+  const otherNew =
+    pending === undefined ||
+    highNew === undefined ||
+    missingNew === undefined ||
+    highMissing === undefined
+      ? undefined
+      : pending - highNew - missingNew + highMissing
   const offers = useCount({ status: 'OFFER' }, canRead)
   const thisWeek = useCount({ createdFrom: b.week }, canRead)
   const lastWeek = useCount({ createdFrom: b.prevWeekFrom, createdTo: b.prevWeekTo }, canRead)
 
   const today = useInterviews({ from: b.dayFrom, to: b.dayTo })
   const recent = useInterviews({ from: b.monthAgo, to: b.now })
-  const awaitingDecision = recent.data?.filter(
-    (i) =>
-      i.status !== 'CANCELLED' && i.feedbacks.length > 0 && i.application?.status === 'INTERVIEW',
-  ).length
+  const awaitingDecision = recent.data?.filter(isAwaitingDecision).length
 
   return {
     pending,
     highNew,
     failed,
     missingNew,
+    otherNew,
+    aiIssues,
     offers,
     thisWeek,
     lastWeek,

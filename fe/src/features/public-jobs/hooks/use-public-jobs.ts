@@ -1,20 +1,30 @@
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import type { PaginationParams } from '@/types/api'
+import type { PublicJobsListParams } from '../schemas'
 import { publicJobsApi, type ApplyInput } from '../api/public-jobs.api'
 
 export const publicJobKeys = {
   all: ['public-jobs'] as const,
-  list: (params: PaginationParams) => [...publicJobKeys.all, 'list', params] as const,
+  list: (params: PublicJobsListParams) => [...publicJobKeys.all, 'list', params] as const,
+  departments: (search?: string) => [...publicJobKeys.all, 'departments', search ?? ''] as const,
   detail: (id: string) => [...publicJobKeys.all, 'detail', id] as const,
 }
 
 const MINUTE = 60_000
 
-export function usePublicJobs(params: PaginationParams) {
+export function usePublicJobs(params: PublicJobsListParams) {
   return useQuery({
     queryKey: publicJobKeys.list(params),
     queryFn: () => publicJobsApi.list(params),
+    placeholderData: keepPreviousData,
+    staleTime: MINUTE,
+  })
+}
+
+export function usePublicDepartments(search?: string) {
+  return useQuery({
+    queryKey: publicJobKeys.departments(search),
+    queryFn: () => publicJobsApi.departments(search),
     placeholderData: keepPreviousData,
     staleTime: MINUTE,
   })

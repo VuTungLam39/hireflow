@@ -30,6 +30,6 @@ export const ERROR_MESSAGES: Record<string, string> = {
   FILE_TYPE_NOT_ALLOWED: 'Chỉ nhận file PDF hoặc DOCX, tối đa 5MB',
   FILE_TOO_LARGE: 'File lớn hơn 5MB',
   TOO_MANY_REQUESTS: 'Bạn thao tác quá nhanh, thử lại sau ít phút',
-  AI_UNAVAILABLE: 'Dịch vụ AI đang bận, vui lòng thử lại sau',
+  AI_UNAVAILABLE: 'Hệ thống đọc CV đang bận. Thử lại sau ít phút.',
   INTERNAL_ERROR: 'Máy chủ gặp lỗi, vui lòng thử lại sau',
 }

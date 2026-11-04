@@ -42,7 +42,7 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
             <div className="min-w-0">
               <h2
                 id={titleId}
-                className="text-ink font-serif text-xl leading-7 font-semibold tracking-[-0.01em]"
+                className="text-ink font-display text-xl leading-7 font-semibold tracking-[-0.01em]"
               >
                 {title}
               </h2>

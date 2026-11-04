@@ -1,89 +1,107 @@
-import { ArrowRight, Building2, Clock, MapPin } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router'
 import { EmptyState, ErrorState, SearchInput } from '@/components/shared'
-import { Pagination, Skeleton } from '@/components/ui'
+import { ChipGroup, Pagination, Skeleton } from '@/components/ui'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { useListParams } from '@/hooks/use-list-params'
-import { formatDate, formatRelative, VN_TIME_ZONE } from '@/lib/utils'
+import { formatDate, formatDaysAgo } from '@/lib/utils'
 import { SITE_NAME } from '@/prerender/shared'
 import { links } from '@/routes/paths'
-import { usePublicJobs } from '../hooks/use-public-jobs'
+import { usePublicDepartments, usePublicJobs } from '../hooks/use-public-jobs'
 import { publicJobsListSchema } from '../schemas'
 
-/** Danh sách job đang tuyển, prerender lúc build để có SEO (F-PUB-04, FE Architecture mục 2). */
+// F-PUB-01, F-PUB-04 · Design Spec 6.11
 export default function PublicJobsPage() {
   const [params, setParams] = useListParams(publicJobsListSchema)
   const { data, isPending, isError, error, refetch } = usePublicJobs(params)
   const hydrated = useHydrated()
   useDocumentTitle(`Việc làm đang tuyển – ${SITE_NAME}`)
 
+  const facets = usePublicDepartments(params.search)
+  const departments = (facets.data ?? []).map((d) => ({
+    value: d.id,
+    label: d.name,
+    count: d.count,
+  }))
+  const dept = facets.data?.find((d) => d.id === params.departmentId)
+  const items = data?.items ?? []
+
   return (
     <div className="space-y-10">
-      <section className="from-brand-soft relative -mx-4 overflow-hidden rounded-none px-4 py-12 text-center sm:mx-0 sm:rounded-md">
-        <div
-          aria-hidden
-          className="bg-brand-soft/40 absolute -top-24 left-1/2 size-72 -translate-x-1/2 rounded-full blur-3xl"
+      <header className="max-w-2xl space-y-5">
+        <h1 className="type-display">Cơ hội nghề nghiệp tại HireFlow</h1>
+        <p className="type-read-lg">
+          Chúng tôi đọc mọi hồ sơ và phản hồi trong vòng 7 ngày làm việc. Nộp CV chỉ mất khoảng một
+          phút.
+        </p>
+        <SearchInput
+          size="lg"
+          value={params.search}
+          onChange={(value) => setParams({ search: value })}
+          placeholder="Tìm vị trí, ví dụ: Backend, Marketing"
+          label="Tìm vị trí"
+          className="max-w-md"
         />
-        <div className="relative space-y-4">
-          <p className="text-brand text-sm font-medium">Chúng tôi đang tuyển</p>
-          <h1 className="text-ink text-3xl font-semibold tracking-tight sm:text-4xl">
-            Tìm công việc phù hợp với bạn
-          </h1>
-          <p className="text-ink-muted mx-auto max-w-md">
-            Nộp CV chỉ trong một phút. Mọi hồ sơ đều được đọc và phản hồi.
-          </p>
-          <div className="flex justify-center pt-2 [&_input]:h-11 [&_input]:sm:max-w-sm">
-            <SearchInput
-              value={params.search}
-              onChange={(search) => setParams({ search })}
-              placeholder="Tìm vị trí, ví dụ: Backend"
-            />
-          </div>
-        </div>
-      </section>
+        {departments.length > 1 && (
+          <ChipGroup
+            label="Lọc theo phòng ban"
+            allLabel="Mọi phòng ban"
+            options={departments}
+            allCount={facets.data?.reduce((sum, d) => sum + d.count, 0)}
+            limit={5}
+            moreLabel={(n) => `+${n} phòng ban khác`}
+            value={params.departmentId}
+            onChange={(departmentId) => setParams({ departmentId: departmentId ?? null })}
+          />
+        )}
+      </header>
 
       {isPending ? (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="border-line divide-line-soft divide-y border-y">
           {Array.from({ length: 4 }, (_, i) => (
-            <Skeleton key={i} className="h-32 rounded-md" />
+            <div key={i} className="space-y-2 py-5">
+              <Skeleton className="h-5 w-72 max-w-full" />
+              <Skeleton className="h-4 w-48" />
+            </div>
           ))}
         </div>
       ) : isError ? (
-        <ErrorState error={error} onRetry={refetch} />
-      ) : data.items.length === 0 ? (
-        <EmptyState title="Chưa có vị trí phù hợp" description="Hãy quay lại sau nhé." />
+        <ErrorState title="Chưa tải được danh sách việc làm" error={error} onRetry={refetch} />
+      ) : items.length === 0 ? (
+        <EmptyState
+          title={
+            params.search
+              ? `Chưa có vị trí khớp “${params.search}”`
+              : 'Hiện chưa có vị trí đang tuyển'
+          }
+          description="Bạn có thể quay lại sau – các vị trí mới được đăng thường xuyên."
+        />
       ) : (
         <>
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {data.items.map((job) => (
-              <li key={job.id} className=" ">
+          <p className="type-caption">
+            {data.meta.totalItems.toLocaleString('vi-VN')} vị trí đang tuyển
+            {dept && ` ở ${dept.name}`}
+          </p>
+          <ul className="border-line divide-line-soft -mt-6 divide-y border-y">
+            {items.map((job) => (
+              <li key={job.id}>
                 <Link
                   to={links.publicJobDetail(job.id)}
-                  className="group hover:border-brand/30 border-line bg-surface flex h-full flex-col rounded-md border p-5 transition-all duration-200"
+                  className="group hover:bg-canvas -mx-4 flex items-center gap-4 px-4 py-5 transition-colors"
                 >
-                  <span className="text-ink-muted inline-flex items-center gap-1.5 text-xs font-medium">
-                    <Building2 className="size-3.5" />
-                    {job.department.name}
-                  </span>
-                  <h2 className="group-hover:text-brand text-ink mt-2 text-lg font-semibold transition-colors">
-                    {job.title}
-                  </h2>
-                  <div className="text-ink-muted mt-auto flex items-center justify-between gap-3 pt-4 text-sm">
-                    <span className="flex flex-wrap gap-x-4 gap-y-1">
-                      <span className="inline-flex items-center gap-1.5">
-                        <MapPin className="size-3.5" />
-                        {job.location}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <Clock className="size-3.5" />
-                        {hydrated
-                          ? formatRelative(job.publishedAt)
-                          : formatDate(job.publishedAt, VN_TIME_ZONE)}
-                      </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="text-ink group-hover:text-brand block text-lg leading-7 font-semibold transition-colors">
+                      {job.title}
                     </span>
-                    <ArrowRight className="text-brand size-4 -translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
-                  </div>
+                    <span className="type-body text-ink-muted block">
+                      {job.department.name} · {job.location} ·{' '}
+                      {hydrated
+                        ? `đăng ${formatDaysAgo(job.publishedAt, undefined, { hoursToday: true })}`
+                        : formatDate(job.publishedAt)}
+                    </span>
+                  </span>
+                  <ArrowRight className="text-ink-muted group-hover:text-brand size-5 shrink-0 transition-colors" />
                 </Link>
               </li>
             ))}

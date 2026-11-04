@@ -43,8 +43,23 @@ describe('AuditLogPage', () => {
   it('filters by action from the URL and shows an empty state', async () => {
     renderPage(`${paths.auditLogs}?action=CV_VIEWED`)
     expect(await screen.findByText('Chưa có hành động nào')).toBeInTheDocument()
-    fireEvent.change(screen.getByLabelText('Hành động'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Bỏ lọc Hành động' }))
     expect((await screen.findAllByRole('link', { name: /^Hồ sơ / })).length).toBeGreaterThan(0)
+  })
+
+  it('takes dates as dd/mm/yyyy whatever the browser language (Design Spec 8)', async () => {
+    renderPage(paths.auditLogs)
+    fireEvent.click(await screen.findByRole('button', { name: /^Ngày/ }))
+    const from = screen.getByLabelText('Từ ngày')
+    expect(from).toHaveAttribute('placeholder', 'dd/mm/yyyy')
+    fireEvent.change(from, { target: { value: '01012026' } })
+    expect(from).toHaveValue('01/01/2026')
+    fireEvent.blur(from)
+    expect(await screen.findByText('từ 01/01/2026')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Đến ngày'), { target: { value: '31/02/2026' } })
+    fireEvent.blur(screen.getByLabelText('Đến ngày'))
+    expect(screen.getByText('Ngày không hợp lệ')).toBeInTheDocument()
   })
 
   it('describes each action in Vietnamese', () => {

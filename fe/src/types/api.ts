@@ -46,6 +46,7 @@ export interface CursorMeta {
   /** Chuỗi mờ: FE chỉ gửi lại đúng giá trị này để lấy trang sau */
   nextCursor: string | null
   hasNextPage: boolean
+  totalItems?: number
 }
 
 export interface CursorPage<T> {

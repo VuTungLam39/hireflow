@@ -79,7 +79,7 @@ export function Sidebar() {
         <nav className="flex-1 space-y-6 overflow-y-auto px-2.5 py-4" aria-label="Điều hướng chính">
           {groups.map((group) => (
             <div key={group.title}>
-              <p className="text-rail-muted mb-1.5 px-2.5 text-xs font-semibold tracking-[0.08em] uppercase md:sr-only lg:not-sr-only">
+              <p className="text-rail-muted mb-1.5 px-2.5 text-[13px] font-medium md:max-lg:sr-only">
                 {group.title}
               </p>
               <ul className="space-y-0.5">
@@ -117,7 +117,7 @@ export function Sidebar() {
                                   isActive ? 'text-white' : 'text-rail-muted',
                                 )}
                               />
-                              <span className="truncate md:sr-only lg:not-sr-only">{label}</span>
+                              <span className="truncate md:max-lg:sr-only">{label}</span>
                               {count != null && count > 0 && (
                                 <span className="num text-rail-muted ml-auto text-xs md:absolute md:top-0.5 md:right-1 md:ml-0 lg:static lg:ml-auto">
                                   {count > 999 ? '999+' : count.toLocaleString('vi-VN')}
@@ -142,7 +142,7 @@ export function Sidebar() {
             className="text-rail-muted hover:bg-rail-hover/70 flex h-9 items-center gap-3 rounded-sm px-2.5 text-sm transition-colors hover:text-white md:justify-center md:px-0 lg:justify-start lg:px-2.5"
           >
             <ArrowUpRight className="size-[18px] shrink-0" />
-            <span className="md:sr-only lg:not-sr-only">Trang tuyển dụng</span>
+            <span className="md:max-lg:sr-only">Trang tuyển dụng</span>
           </Link>
         </div>
       </aside>

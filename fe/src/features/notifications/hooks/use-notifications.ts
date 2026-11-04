@@ -11,6 +11,7 @@ import { dashboardKeys } from '@/features/dashboard'
 import { interviewKeys } from '@/features/interviews'
 import { jobKeys } from '@/features/jobs'
 import { getErrorMessage } from '@/lib/errors'
+import { formatTimeOnDate } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
 import { useRealtimeStore } from '@/stores/realtime.store'
 import { notificationsApi } from '../api/notifications.api'
@@ -24,14 +25,7 @@ export const notificationKeys = {
 
 export const LIST_REFRESH_DEBOUNCE_MS = 500
 
-const when = (iso: string) =>
-  new Intl.DateTimeFormat('vi-VN', {
-    hour: '2-digit',
-    minute: '2-digit',
-    day: '2-digit',
-    month: '2-digit',
-    timeZone: 'Asia/Ho_Chi_Minh',
-  }).format(new Date(iso))
+const when = formatTimeOnDate
 
 export function notificationText(n: NotificationItem): string {
   const name = n.application?.candidateName ?? 'Ứng viên'

@@ -35,12 +35,13 @@ describe('AiQueuePage', () => {
     const failed = db.applications.filter((a) => a.aiStatus === 'FAILED')
     renderAsAdmin()
 
-    expect(await screen.findByText(`${failed.length} hồ sơ`)).toBeInTheDocument()
+    expect(await screen.findByText(`${failed.length} hồ sơ cần xử lý`)).toBeInTheDocument()
+    expect(screen.queryByText(`${failed.length} hồ sơ`)).not.toBeInTheDocument()
     expect(
       screen.getAllByText('Không đọc được nội dung PDF (có thể là file scan)').length,
     ).toBeGreaterThan(0)
     const queues = screen.getByRole('region', { name: 'Số việc trong hàng đợi' })
-    for (const label of ['Đọc CV', 'Trích xuất', 'Chấm điểm', 'Embedding']) {
+    for (const label of ['Đọc CV', 'Trích xuất', 'Chấm điểm', 'Lập chỉ mục tìm kiếm', 'Tổng']) {
       expect(within(queues).getByText(label)).toBeInTheDocument()
     }
   })
@@ -48,13 +49,12 @@ describe('AiQueuePage', () => {
   it('retries every failed application after confirmation', async () => {
     const user = userEvent.setup()
     renderAsAdmin()
-    await screen.findByText(/^\d+ hồ sơ$/)
-
-    await user.click(screen.getByRole('button', { name: 'Chạy lại tất cả' }))
+    await user.click(await screen.findByRole('button', { name: /^Chạy lại \d+ hồ sơ$/ }))
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Chạy lại' }))
 
-    expect(await screen.findByText('0 hồ sơ')).toBeInTheDocument()
+    expect(await screen.findByText('Không có hồ sơ nào cần xử lý')).toBeInTheDocument()
+    expect(screen.queryByText(/hồ sơ cần xử lý$/)).not.toBeInTheDocument()
     expect(db.applications.some((a) => a.aiStatus === 'FAILED')).toBe(false)
-    expect(screen.getByRole('button', { name: 'Chạy lại tất cả' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /^Chạy lại \d+ hồ sơ$/ })).not.toBeInTheDocument()
   })
 })

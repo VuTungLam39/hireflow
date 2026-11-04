@@ -28,7 +28,7 @@ export const WeightSlider = memo(function WeightSlider({
         </label>
         <span
           className={cn(
-            'num shrink-0 font-serif text-base leading-5 font-bold',
+            'num font-display shrink-0 text-base leading-5 font-bold',
             changed ? 'text-brand' : 'text-ink',
           )}
         >
