@@ -29,6 +29,12 @@ export function useInterviews(params: InterviewListParams, options: { enabled?: 
   })
 }
 
+const BACKLOG_FROM = '2000-01-01T00:00:00.000Z'
+
+export function useInterviewBacklog(before: string, options: { enabled?: boolean } = {}) {
+  return useInterviews({ open: true, from: BACKLOG_FROM, to: before }, options)
+}
+
 export function useInterviewers(enabled: boolean) {
   return useQuery({
     queryKey: interviewKeys.interviewers(),

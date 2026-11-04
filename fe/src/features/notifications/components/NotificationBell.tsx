@@ -1,9 +1,8 @@
 import { Bell } from 'lucide-react'
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
 import { Button, Popover, Skeleton } from '@/components/ui'
-import { cn, formatRelative } from '@/lib/utils'
-import { links } from '@/routes/paths'
+import { useOpenDetail } from '@/hooks/use-detail'
+import { cn, formatDate, formatRelative } from '@/lib/utils'
 import { useRealtimeStore } from '@/stores/realtime.store'
 import {
   notificationText,
@@ -17,7 +16,7 @@ interface NotificationBellProps {
   align?: 'left' | 'right'
 }
 
-const isToday = (iso: string) => new Date(iso).toDateString() === new Date().toDateString()
+const isToday = (iso: string) => formatDate(iso) === formatDate(new Date().toISOString())
 
 function Sentence({ n }: { n: NotificationItem }) {
   const text = notificationText(n)
@@ -41,7 +40,7 @@ export function NotificationBell({ align = 'left' }: NotificationBellProps) {
   const list = useNotifications(open)
   const markRead = useMarkRead()
   const markAll = useMarkAllRead()
-  const navigate = useNavigate()
+  const openDetail = useOpenDetail()
 
   const items = list.data?.pages.flatMap((p) => p.items) ?? []
   const groups = [
@@ -52,7 +51,7 @@ export function NotificationBell({ align = 'left' }: NotificationBellProps) {
   const openItem = (n: NotificationItem) => {
     if (!n.readAt) markRead.mutate(n.id)
     setOpen(false)
-    if (n.application) void navigate(links.applicationDetail(n.application.id))
+    if (n.application) openDetail('application', n.application.id)
   }
 
   return (

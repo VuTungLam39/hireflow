@@ -40,7 +40,7 @@ export const links = {
   jobMatches: (id: string) => `/manage/jobs/${id}/matches`,
   applicationDetail: (id: string) => `/applications/${id}`,
   candidateDetail: (id: string) => `/candidates/${id}`,
-  applications: (query?: { jobId?: string; status?: string }) =>
+  applications: (query?: { jobId?: string; status?: string; createdFrom?: string }) =>
     withQuery(paths.applications, query),
   publicJobDetail: (id: string) => `/jobs/${id}`,
 }

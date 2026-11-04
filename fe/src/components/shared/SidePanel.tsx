@@ -45,8 +45,8 @@ export function SidePanel({
       className={cn(
         'bg-surface text-ink-2 border-line backdrop:bg-ink/30 m-0 max-h-none max-w-none p-0',
         sheet
-          ? 'inset-x-0 top-auto bottom-0 max-h-[85dvh] w-full rounded-t-md border-t'
-          : 'inset-y-0 right-0 left-auto h-dvh w-full border-l sm:w-(--panel-w)',
+          ? 'animate-slide-in-up inset-x-0 top-auto bottom-0 max-h-[85dvh] w-full rounded-t-md border-t'
+          : 'animate-slide-in-right inset-y-0 right-0 left-auto h-dvh w-full border-l sm:w-(--panel-w)',
       )}
     >
       {open && (

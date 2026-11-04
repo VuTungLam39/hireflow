@@ -18,7 +18,6 @@ export function CandidateDialog({ id, onClose }: { id: string; onClose: () => vo
   return (
     <DetailDialog
       open
-      fit
       onClose={onClose}
       label="Nội dung ứng viên"
       title={candidate?.fullName ?? 'Ứng viên'}

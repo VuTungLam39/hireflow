@@ -9,7 +9,6 @@ export function JobCreateDialog({ onClose }: { id: string; onClose: () => void }
   return (
     <DetailDialog
       open
-      fit
       onClose={onClose}
       label="Tạo tin tuyển dụng"
       title="Tạo tin tuyển dụng"

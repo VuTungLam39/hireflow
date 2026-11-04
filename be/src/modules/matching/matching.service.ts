@@ -124,7 +124,16 @@ export class MatchingService {
           .orIgnore()
           .execute();
       }
-      await manager.update(Job, jobId, { matchedAt: new Date(), matchedJdVersion: jdVersion });
+      await manager
+        .createQueryBuilder()
+        .update(Job)
+        .set({
+          matchedAt: new Date(),
+          matchedJdVersion: jdVersion,
+          updatedAt: () => '"updated_at"',
+        })
+        .where('id = :jobId', { jobId })
+        .execute();
     });
     return ranked.length;
   }

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { ErrorState, KpiStrip, Summary, type Kpi } from '@/components/shared'
 import { Skeleton } from '@/components/ui'
-import { ScoreBadge } from '@/features/applications'
+import { SCORE_GOOD, ScoreBadge } from '@/features/applications'
 import { PipelineCounts, useJobOptions } from '@/features/jobs'
 import { cn, VN_TIME_ZONE } from '@/lib/utils'
 import { links, paths } from '@/routes/paths'
@@ -25,6 +25,8 @@ interface Todo {
 }
 
 const n = (v: number) => v.toLocaleString('vi-VN')
+
+const JOB_LIMIT = 5
 
 // F-DASH-01 · Design Spec 6.3
 export default function DashboardPage() {
@@ -60,8 +62,8 @@ export default function DashboardPage() {
     {
       key: 'high',
       count: t.highNew,
-      text: (c) => `${n(c)} hồ sơ mới từ 70 điểm chưa xem`,
-      to: `${paths.applications}?status=NEW&scoreMin=70&sortBy=score&order=DESC`,
+      text: (c) => `${n(c)} hồ sơ mới từ ${SCORE_GOOD} điểm chưa xem`,
+      to: `${paths.applications}?status=NEW&scoreMin=${SCORE_GOOD}&sortBy=score&order=DESC`,
       action: 'Xem',
     },
     {
@@ -75,15 +77,15 @@ export default function DashboardPage() {
       key: 'missing',
       count: t.missingNew,
       text: (c) => `${n(c)} hồ sơ mới thiếu tiêu chí bắt buộc`,
-      hint: 'Nên xem nhanh để từ chối sớm hoặc giữ lại',
-      to: `${paths.applications}?status=NEW&missingMust=true`,
+      hint: `Điểm dưới ${SCORE_GOOD} – nên xem nhanh để từ chối sớm hoặc giữ lại`,
+      to: `${paths.applications}?status=NEW&scoreMax=${SCORE_GOOD - 1}&missingMust=true`,
       action: 'Xem',
     },
     {
       key: 'otherNew',
       count: t.otherNew,
       text: (c) => `${n(c)} hồ sơ mới khác chờ xem`,
-      hint: 'Điểm dưới 70 hoặc chưa chấm xong',
+      hint: `Điểm dưới ${SCORE_GOOD} hoặc chưa chấm xong`,
       to: links.applications({ status: 'NEW' }),
       action: 'Xem',
     },
@@ -127,7 +129,7 @@ export default function DashboardPage() {
             ? 'bằng tuần trước'
             : `${delta > 0 ? '+' : '−'}${n(Math.abs(delta))} so với tuần trước`,
       compareTone: delta === null || delta === 0 ? 'muted' : delta > 0 ? 'good' : 'bad',
-      to: links.applications(),
+      to: links.applications({ createdFrom: t.weekStart }),
     },
     {
       label: 'Đang phỏng vấn',
@@ -151,6 +153,9 @@ export default function DashboardPage() {
 
   const avgByJob = new Map(summary.data?.byJob.map((j) => [j.jobId, j.avgScore]) ?? [])
   const openJobs = (jobs.data ?? []).filter((j) => j.status === 'OPEN')
+  const topJobs = [...openJobs]
+    .sort((a, b) => b.applicationCount - a.applicationCount)
+    .slice(0, JOB_LIMIT)
 
   return (
     <div className="space-y-10">
@@ -241,8 +246,11 @@ export default function DashboardPage() {
               </span>
             )}
           </h2>
-          <Link to={paths.jobs} className="text-brand text-[13px] font-medium hover:underline">
-            Tất cả tin
+          <Link
+            to={`${paths.jobs}?status=OPEN`}
+            className="text-brand text-[13px] font-medium hover:underline"
+          >
+            {openJobs.length > JOB_LIMIT ? `Xem cả ${n(openJobs.length)} tin` : 'Tất cả tin'}
           </Link>
         </div>
         <div className="border-line bg-surface -mx-4 border-y md:mx-0 md:rounded-md md:border">
@@ -267,7 +275,7 @@ export default function DashboardPage() {
                 <span className="w-28 text-right">Điểm TB</span>
               </div>
               <ul className="divide-line-soft divide-y">
-                {openJobs.map((job) => (
+                {topJobs.map((job) => (
                   <li
                     key={job.id}
                     className="flex flex-col gap-1.5 px-5 py-3.5 md:flex-row md:items-center md:gap-6"

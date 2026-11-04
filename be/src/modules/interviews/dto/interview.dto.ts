@@ -85,6 +85,14 @@ export class QueryInterviewDto {
   @Transform(({ value }) => value === true || value === 'true')
   @IsBoolean()
   includeCancelled?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Chỉ buổi đã diễn ra còn việc: chưa đủ phiếu hoặc hồ sơ còn ở bước Phỏng vấn',
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  open?: boolean;
 }
 
 export class RatingDto {
