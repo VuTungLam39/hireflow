@@ -13,6 +13,7 @@ export interface CursorMeta {
   limit: number;
   nextCursor: string | null;
   hasNextPage: boolean;
+  totalItems?: number;
 }
 
 export interface ApiResponse<T = unknown> {

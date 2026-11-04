@@ -187,7 +187,7 @@ describe('Candidates (e2e)', () => {
   describe('list with cursor', () => {
     it('pages without gaps or duplicates, newest first', async () => {
       const first = await list('hr', `search=${run}&limit=2`).expect(200);
-      expect(first.body.meta).toMatchObject({ limit: 2, hasNextPage: true });
+      expect(first.body.meta).toMatchObject({ limit: 2, hasNextPage: true, totalItems: 3 });
       expect(first.body.meta.nextCursor).toEqual(expect.any(String));
 
       const second = await list(
@@ -232,6 +232,11 @@ describe('Candidates (e2e)', () => {
       const res = await list('hmA', `search=${run}`).expect(200);
       expect(res.body.data.map((c: { id: string }) => c.id)).toEqual([ids.quan, ids.tung]);
       expect(res.body.data[0].applicationCount).toBe(1);
+      expect(res.body.data[0].lastJob).toEqual({
+        title: expect.stringContaining('Job A'),
+        status: ApplicationStatus.Interview,
+      });
+      expect(res.body.meta.totalItems).toBe(2);
     });
 
     it('a candidate outside the scope is 404; inside, only in-scope applications', async () => {
