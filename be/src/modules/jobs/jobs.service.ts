@@ -306,6 +306,15 @@ export class JobsService {
           HttpStatus.CONFLICT,
         );
       }
+      // BR-JOB-10: không đăng tin đã quá hạn nộp (sẽ không ai thấy trên trang công khai)
+      if (job.deadline && job.deadline < vnToday()) {
+        throw new BusinessException(
+          ErrorCode.JobNotPublishable,
+          'The application deadline has already passed',
+          HttpStatus.CONFLICT,
+          [{ field: 'deadline', messages: ['Hạn nộp đã qua. Đổi hạn nộp trước khi đăng tin'] }],
+        );
+      }
       await manager.update(Job, id, { status: JobStatus.Open, publishedAt: new Date() });
       return job.jdVersion;
     });
