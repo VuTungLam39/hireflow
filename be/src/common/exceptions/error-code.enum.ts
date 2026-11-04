@@ -29,6 +29,12 @@ export enum ErrorCode {
   JobNotOpen = 'JOB_NOT_OPEN',
   JobExpired = 'JOB_EXPIRED',
 
+  // Hồ sơ công ty, ảnh công khai (Mở rộng MVP 2 – E3)
+  MediaTypeNotAllowed = 'MEDIA_TYPE_NOT_ALLOWED',
+  MediaTooLarge = 'MEDIA_TOO_LARGE',
+  GalleryFull = 'GALLERY_FULL',
+  CompanyProfileIncomplete = 'COMPANY_PROFILE_INCOMPLETE',
+
   // Hồ sơ, ứng viên, file
   ApplicationDuplicated = 'APPLICATION_DUPLICATED',
   CandidateAnonymized = 'CANDIDATE_ANONYMIZED',

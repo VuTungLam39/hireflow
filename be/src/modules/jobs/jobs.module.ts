@@ -18,6 +18,6 @@ import { PrerenderHookService } from './prerender-hook.service.js';
   ],
   controllers: [JobsController],
   providers: [JobsService, PrerenderHookService],
-  exports: [JobsService],
+  exports: [JobsService, PrerenderHookService],
 })
 export class JobsModule {}
