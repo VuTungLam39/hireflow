@@ -1,3 +1,4 @@
+import { Flag } from 'lucide-react'
 import { memo } from 'react'
 import { Avatar } from '@/components/ui'
 import { RequirementMarks, ScoreBadge, StatusPill } from '@/features/applications'
@@ -79,7 +80,7 @@ export const RankingRow = memo(function RankingRow({
         <span className="flex items-baseline gap-2">
           <span
             className={cn(
-              'num w-7 text-right font-serif text-lg leading-6',
+              'num font-display w-7 text-right text-lg leading-6',
               rank <= 3 ? 'text-ink font-bold' : 'text-ink-2 font-semibold',
             )}
           >
@@ -95,8 +96,9 @@ export const RankingRow = memo(function RankingRow({
             <p className="text-ink flex items-center gap-1.5 truncate font-medium">
               {item.candidateName}
               {item.flags.includes('MISSING_MUST') && (
-                <span className="text-warn" title="Thiếu tiêu chí bắt buộc">
-                  ⚑<span className="sr-only">Thiếu tiêu chí bắt buộc</span>
+                <span className="text-warn inline-flex" title="Thiếu tiêu chí bắt buộc">
+                  <Flag aria-hidden className="size-3.5" />
+                  <span className="sr-only">Thiếu tiêu chí bắt buộc</span>
                 </span>
               )}
             </p>

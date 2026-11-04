@@ -46,9 +46,9 @@ export const AI_STATUS = {
 export type AiStatus = keyof typeof AI_STATUS
 
 export const SCORE_FLAGS = {
-  MISSING_MUST: { label: 'Thiếu tiêu chí bắt buộc', tone: 'warning' },
-  UNVERIFIED_EVIDENCE: { label: 'Có bằng chứng bị loại', tone: 'danger' },
-} as const satisfies Record<string, { label: string; tone: BadgeTone }>
+  MISSING_MUST: { label: 'Thiếu tiêu chí bắt buộc', short: 'thiếu bắt buộc', tone: 'warning' },
+  UNVERIFIED_EVIDENCE: { label: 'Có bằng chứng bị loại', short: 'căn cứ bị loại', tone: 'danger' },
+} as const satisfies Record<string, { label: string; short: string; tone: BadgeTone }>
 export type ScoreFlag = keyof typeof SCORE_FLAGS
 
 /** Mức khớp của một tiêu chí (kickoff mục 8.4) */

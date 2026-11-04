@@ -20,7 +20,8 @@ interface RankingTableProps {
   onSelect?: (id: string) => void
 }
 
-const th = 'border-line bg-sunken type-overline sticky top-14 z-10 h-9 border-b whitespace-nowrap'
+const th =
+  'border-line bg-surface type-overline sticky top-[var(--sticky-top,3.5rem)] z-10 h-10 border-b whitespace-nowrap'
 
 export const RankingTable = memo(function RankingTable({
   rows,

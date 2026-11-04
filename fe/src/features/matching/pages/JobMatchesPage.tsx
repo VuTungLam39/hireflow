@@ -1,12 +1,14 @@
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, RotateCw } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { EmptyState, ErrorState, PageHeader, Summary } from '@/components/shared'
-import { Skeleton, Spinner, buttonVariants } from '@/components/ui'
+import { Button, Skeleton, Spinner, buttonVariants } from '@/components/ui'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { formatDateTime } from '@/lib/utils'
 import { links, paths } from '@/routes/paths'
 import { MatchCard } from '../components/MatchCard'
 import { useInviteMatch, useJobMatches } from '../hooks/use-matching'
+import { useCrumb } from '@/hooks/use-crumb'
 
 function SearchingSkeleton() {
   return (
@@ -32,14 +34,44 @@ function SearchingSkeleton() {
 // US-10 · F-MATCH-01, F-MATCH-02 · Design Spec 6.6
 export default function JobMatchesPage() {
   const { id = '' } = useParams()
-  const { data, isPending, isError, error, refetch } = useJobMatches(id)
-  const invite = useInviteMatch(id)
-  useDocumentTitle(data ? `Ứng viên cũ phù hợp · ${data.job.title}` : 'Ứng viên cũ phù hợp')
+  return <JobMatchesView jobId={id} />
+}
+
+const SLOW_MS = 30_000
+
+function useSlowWait(waiting: boolean, attempt: number) {
+  const [slowAttempt, setSlowAttempt] = useState<number | null>(null)
+  useEffect(() => {
+    if (!waiting) return
+    const timer = window.setTimeout(() => setSlowAttempt(attempt), SLOW_MS)
+    return () => window.clearTimeout(timer)
+  }, [waiting, attempt])
+  return waiting && slowAttempt === attempt
+}
+
+export function JobMatchesView({ jobId, embedded }: { jobId: string; embedded?: boolean }) {
+  const [attempt, setAttempt] = useState(0)
+  const [waiting, setWaiting] = useState(false)
+  const slow = useSlowWait(waiting, attempt)
+  const { data, isPending, isError, error, refetch, isFetching } = useJobMatches(jobId, {
+    poll: !slow,
+  })
+  const nowWaiting = !!data && data.job.status !== 'DRAFT' && data.pending
+  if (nowWaiting !== waiting) setWaiting(nowWaiting)
+  const retry = () => {
+    setAttempt((a) => a + 1)
+    void refetch()
+  }
+  const invite = useInviteMatch(jobId)
+  useCrumb(embedded || !data ? undefined : `Ứng viên cũ · ${data.job.title}`)
+  useDocumentTitle(
+    embedded ? undefined : data ? `Ứng viên cũ phù hợp · ${data.job.title}` : 'Ứng viên cũ phù hợp',
+  )
 
   if (isPending)
     return (
       <div className="space-y-6">
-        <Skeleton className="h-10 w-96 max-w-full" />
+        {!embedded && <Skeleton className="h-10 w-96 max-w-full" />}
         <SearchingSkeleton />
       </div>
     )
@@ -49,45 +81,65 @@ export default function JobMatchesPage() {
   const searching = job.status !== 'DRAFT' && pending && items.length === 0
   const invited = items.filter((m) => m.applicationId).length
 
+  const facts = [
+    !searching && `${items.length} người từ 50 điểm`,
+    invited > 0 && `${invited} đã mời`,
+    data.computedAt && `cập nhật ${formatDateTime(data.computedAt)}`,
+  ]
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        breadcrumb={
-          <Link to={paths.jobs}>
-            <ArrowLeft className="size-4" />
-            Tin tuyển dụng
-          </Link>
-        }
-        title="Ứng viên cũ phù hợp"
-        description={
-          <Summary
-            items={[
-              <span key="j" className="text-ink-2 font-medium">
-                {job.title}
-              </span>,
-              !searching && `${items.length} người từ 50 điểm`,
-              invited > 0 && `${invited} đã mời`,
-              data.computedAt && `cập nhật ${formatDateTime(data.computedAt)}`,
-            ]}
-          />
-        }
-        actions={
-          <Link to={links.jobEdit(job.id)} className={buttonVariants({ variant: 'secondary' })}>
-            Xem tin và tiêu chí
-          </Link>
-        }
-      />
-
-      <p className="type-caption max-w-2xl">
-        Người từng nộp hồ sơ (còn trong hạn lưu CV) được chấm theo tiêu chí hiện hành của tin, cùng
-        công thức và bằng chứng như hồ sơ thường. Hiện tối đa 10 người.
-      </p>
+      {embedded ? (
+        <p className="text-ink-muted num">
+          <Summary items={facts} />
+        </p>
+      ) : (
+        <PageHeader
+          breadcrumb={
+            <Link to={paths.jobs}>
+              <ArrowLeft className="size-4" />
+              Tin tuyển dụng
+            </Link>
+          }
+          title="Ứng viên cũ phù hợp"
+          description={
+            <Summary
+              items={[
+                <span key="j" className="text-ink-2 font-medium">
+                  {job.title}
+                </span>,
+                ...facts,
+              ]}
+            />
+          }
+          actions={
+            <Link to={links.jobEdit(job.id)} className={buttonVariants({ variant: 'secondary' })}>
+              Xem tin và tiêu chí
+            </Link>
+          }
+        />
+      )}
 
       {pending && items.length > 0 && (
-        <p className="type-body flex items-center gap-2" role="status">
-          <Spinner className="size-3.5" />
-          Tiêu chí vừa thay đổi, đang tìm lại…
-        </p>
+        <div role="status" className="type-body flex flex-wrap items-center gap-x-3 gap-y-1">
+          {slow ? (
+            <>
+              <span>
+                <span className="text-ink font-medium">Tìm lại đang lâu hơn bình thường.</span> Danh
+                sách dưới đây theo tiêu chí cũ.
+              </span>
+              <Button variant="secondary" size="sm" loading={isFetching} onClick={retry}>
+                <RotateCw />
+                Thử lại
+              </Button>
+            </>
+          ) : (
+            <span className="flex items-center gap-2">
+              <Spinner className="size-3.5" />
+              Tiêu chí vừa thay đổi, đang tìm lại…
+            </span>
+          )}
+        </div>
       )}
 
       {job.status === 'DRAFT' ? (
@@ -98,6 +150,17 @@ export default function JobMatchesPage() {
             <Link to={links.jobEdit(job.id)} className={buttonVariants({ variant: 'secondary' })}>
               Mở tin để đăng
             </Link>
+          }
+        />
+      ) : searching && slow ? (
+        <EmptyState
+          title="Đang lâu hơn bình thường"
+          description="Việc tìm trong hồ sơ cũ thường xong trong vài giây. Dịch vụ tìm kiếm có thể đang bận hoặc vừa khởi động lại – thử lại sau ít phút."
+          action={
+            <Button variant="secondary" loading={isFetching} onClick={retry}>
+              <RotateCw />
+              Thử lại
+            </Button>
           }
         />
       ) : searching ? (

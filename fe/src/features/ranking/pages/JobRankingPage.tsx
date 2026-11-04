@@ -16,11 +16,22 @@ import { useRanking, useSaveWeights } from '../hooks/use-ranking'
 import { rankByWeights, type Ranked } from '../lib/score'
 import { useJobDraft, useRankingDraft } from '../store'
 import type { RankingData, RankingInput } from '../types'
+import { useCrumb } from '@/hooks/use-crumb'
 
 // US-05 · Design Spec 6.2
 export default function JobRankingPage() {
   const { id = '' } = useParams()
-  const { data, isPending, isError, error, refetch } = useRanking(id)
+  return <RankingWorkspace jobId={id} />
+}
+
+interface WorkspaceProps {
+  jobId: string
+  embedded?: boolean
+  onOpenApplications?: () => void
+}
+
+export function RankingWorkspace({ jobId, embedded, onOpenApplications }: WorkspaceProps) {
+  const { data, isPending, isError, error, refetch } = useRanking(jobId)
 
   if (isPending)
     return (
@@ -31,11 +42,16 @@ export default function JobRankingPage() {
       </div>
     )
   if (isError) return <ErrorState title="Chưa tải được xếp hạng" error={error} onRetry={refetch} />
-  return <RankingView data={data} />
+  return <RankingView data={data} embedded={embedded} onOpenApplications={onOpenApplications} />
 }
 
-function RankingView({ data }: { data: RankingData }) {
+function RankingView({
+  data,
+  embedded,
+  onOpenApplications,
+}: { data: RankingData } & Omit<WorkspaceProps, 'jobId'>) {
   const jobId = data.job.id
+  useCrumb(embedded ? undefined : `Xếp hạng · ${data.job.title}`)
   const draft = useJobDraft(jobId)
   const setWeight = useRankingDraft((s) => s.setWeight)
   const resetDraft = useRankingDraft((s) => s.reset)
@@ -102,38 +118,44 @@ function RankingView({ data }: { data: RankingData }) {
     />
   )
 
+  const summary = (
+    <Summary
+      items={[
+        `${scored.length.toLocaleString('vi-VN')} hồ sơ đã chấm`,
+        notScored > 0 && `${notScored.toLocaleString('vi-VN')} đang đọc hoặc chưa đọc được`,
+        isDirty && (
+          <span key="draft" className="text-brand font-medium">
+            đang thử trọng số (chưa lưu)
+          </span>
+        ),
+      ]}
+    />
+  )
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        breadcrumb={
-          <Link to={paths.jobs}>
-            <ArrowLeft className="size-4" />
-            Tin tuyển dụng
-          </Link>
-        }
-        title={data.job.title}
-        description={
-          <Summary
-            items={[
-              `${scored.length.toLocaleString('vi-VN')} hồ sơ đã chấm`,
-              notScored > 0 && `${notScored.toLocaleString('vi-VN')} đang đọc hoặc chưa đọc được`,
-              isDirty && (
-                <span key="draft" className="text-brand font-medium">
-                  đang thử trọng số (chưa lưu)
-                </span>
-              ),
-            ]}
-          />
-        }
-        actions={
-          <Link
-            to={links.applications({ jobId })}
-            className={buttonVariants({ variant: 'secondary' })}
-          >
-            Xem dạng bảng hồ sơ
-          </Link>
-        }
-      />
+      {embedded ? (
+        <p className="text-ink-muted num">{summary}</p>
+      ) : (
+        <PageHeader
+          breadcrumb={
+            <Link to={paths.jobs}>
+              <ArrowLeft className="size-4" />
+              Tin tuyển dụng
+            </Link>
+          }
+          title={data.job.title}
+          description={summary}
+          actions={
+            <Link
+              to={links.applications({ jobId })}
+              className={buttonVariants({ variant: 'secondary' })}
+            >
+              Xem dạng bảng hồ sơ
+            </Link>
+          }
+        />
+      )}
 
       <div className="hidden md:block">{weightBlock}</div>
       <Button variant="secondary" className="w-full md:hidden" onClick={() => setWeightsOpen(true)}>
@@ -146,9 +168,13 @@ function RankingView({ data }: { data: RankingData }) {
           title="Chưa có hồ sơ nào được chấm cho tin này"
           description="Hồ sơ sẽ hiện ở đây ngay khi hệ thống đọc xong CV. Bạn có thể tải CV hộ ứng viên từ bảng hồ sơ."
           action={
-            <Link to={links.applications({ jobId })} className={buttonVariants()}>
-              Mở bảng hồ sơ
-            </Link>
+            onOpenApplications ? (
+              <Button onClick={onOpenApplications}>Mở danh sách hồ sơ</Button>
+            ) : (
+              <Link to={links.applications({ jobId })} className={buttonVariants()}>
+                Mở bảng hồ sơ
+              </Link>
+            )
           }
         />
       ) : (
@@ -161,7 +187,10 @@ function RankingView({ data }: { data: RankingData }) {
             onSelect={onSelect}
           />
           {wide && (
-            <aside aria-label="Vì sao xếp hạng" className="lg:sticky lg:top-[72px] lg:self-start">
+            <aside
+              aria-label="Vì sao xếp hạng"
+              className={cn('lg:sticky lg:self-start', embedded ? 'lg:top-0' : 'lg:top-[72px]')}
+            >
               <WhyPanel
                 jobId={jobId}
                 selected={selected}
@@ -221,9 +250,11 @@ function WeightBlock({
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="type-overline">
+        <h2 className="type-heading">
           Trọng số{' '}
-          <span className="tracking-normal normal-case">· 1 ít quan trọng, 3 rất quan trọng</span>
+          <span className="text-ink-muted text-[13px] font-normal">
+            · 1 ít quan trọng, 3 rất quan trọng
+          </span>
         </h2>
         <div className="flex items-center gap-2">
           {isDirty && <span className="type-caption text-brand">Đang thử – chưa lưu</span>}
@@ -291,7 +322,7 @@ function WhyPanel({
   return (
     <div className={cn(!bare && 'border-line bg-surface rounded-md border px-5 py-4')}>
       {!bare && (
-        <h2 className="type-overline">
+        <h2 className="type-heading">
           Vì sao {selected.item.name} #{selected.rank}
         </h2>
       )}

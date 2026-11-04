@@ -12,13 +12,13 @@ export const matchingKeys = {
 const POLL_MS = 2_000
 
 // F-MATCH-01
-export function useJobMatches(jobId: string) {
+export function useJobMatches(jobId: string, { poll = true }: { poll?: boolean } = {}) {
   return useQuery({
     queryKey: matchingKeys.job(jobId),
     queryFn: () => matchingApi.get(jobId),
     refetchInterval: (query) => {
       const data = query.state.data
-      if (!data || data.job.status === 'DRAFT') return false
+      if (!poll || !data || data.job.status === 'DRAFT') return false
       return data.pending ? POLL_MS : false
     },
   })

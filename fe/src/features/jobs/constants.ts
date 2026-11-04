@@ -29,3 +29,22 @@ export const PIPELINE_STAGES = [
   { key: 'hired', label: 'Đã nhận', short: 'nhận' },
   { key: 'closed', label: 'Đã loại', short: 'loại' },
 ] as const
+
+export const JOB_CONFIRM = {
+  publish: {
+    title: 'Đăng tin tuyển dụng?',
+    description: 'Tin sẽ hiện ngay trên trang tuyển dụng công khai và bắt đầu nhận hồ sơ.',
+    label: 'Đăng tin',
+  },
+  close: {
+    title: 'Đóng tin tuyển dụng?',
+    description:
+      'Tin ngừng nhận hồ sơ mới và không mở lại được; hồ sơ đã có vẫn xử lý bình thường. Cần tuyển tiếp thì tạo tin mới.',
+    label: 'Đóng tin',
+  },
+  delete: {
+    title: 'Xoá tin nháp?',
+    description: 'Tin chưa có hồ sơ nào nên xoá được. Tin sẽ biến mất khỏi danh sách.',
+    label: 'Xoá tin nháp',
+  },
+} as const

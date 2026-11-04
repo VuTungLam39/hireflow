@@ -1,46 +1,25 @@
 import { ArrowLeft, MoreHorizontal, Trash2, Upload } from 'lucide-react'
-import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router'
 import { ConfirmDialog, ErrorState, PageHeader, Summary } from '@/components/shared'
-import {
-  Button,
-  FormField,
-  Input,
-  Popover,
-  Select,
-  Skeleton,
-  Textarea,
-  buttonVariants,
-  menuItemClass,
-} from '@/components/ui'
+import { Button, Popover, Skeleton, buttonVariants, menuItemClass } from '@/components/ui'
 import { HrUploadDialog } from '@/features/applications'
-import { useDepartmentOptions } from '@/features/departments'
 import { usePermission } from '@/hooks/use-permission'
-import { applyServerErrors, getErrorMessage } from '@/lib/errors'
 import { Permission } from '@/lib/permissions'
 import { formatDate } from '@/lib/utils'
 import { links, paths } from '@/routes/paths'
 import { JobStatusBadge } from '../components/JobStatusBadge'
-import { RequirementEditor } from '../components/RequirementEditor'
-import { REQUIREMENT_TYPE } from '../constants'
-import {
-  useCloseJob,
-  useDeleteJob,
-  useJob,
-  usePublishJob,
-  useSaveJob,
-  useSaveRequirements,
-  useSuggestRequirements,
-} from '../hooks/use-jobs'
-import { jobInfoSchema, type JobInfoForm } from '../schemas/job.schema'
+import { JobInfoSection, JobRequirementsSection } from '../components/JobSections'
+import { JOB_CONFIRM } from '../constants'
+import { useCloseJob, useDeleteJob, useJob, usePublishJob } from '../hooks/use-jobs'
 import type { Job } from '../types'
+import { useCrumb } from '@/hooks/use-crumb'
 
 // F-JOB-02 → 09 · BR-JOB-04 · Design Spec 6.5
 export default function JobFormPage() {
   const { id } = useParams()
   const job = useJob(id)
+  useCrumb(id ? job.data?.title : 'Tạo tin')
 
   if (id && job.isPending)
     return (
@@ -66,11 +45,6 @@ function JobFormContent({ job }: { job: Job | undefined }) {
   const canPublish = usePermission(Permission.JobPublish)
   const canUpload = usePermission(Permission.ApplicationCreate)
   const closed = job?.status === 'CLOSED'
-  const canEdit = hasEditPermission && !closed
-  const departments = useDepartmentOptions()
-  const saveJob = useSaveJob()
-  const suggest = useSuggestRequirements()
-  const saveRequirements = useSaveRequirements()
   const publish = usePublishJob()
   const close = useCloseJob()
   const remove = useDeleteJob()
@@ -78,42 +52,10 @@ function JobFormContent({ job }: { job: Job | undefined }) {
   const [menu, setMenu] = useState(false)
   const [uploadOpen, setUploadOpen] = useState(false)
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    setError,
-    formState: { errors, isDirty },
-  } = useForm<JobInfoForm>({
-    resolver: zodResolver(jobInfoSchema),
-    values: {
-      title: job?.title ?? '',
-      departmentId: job?.department.id ?? '',
-      location: job?.location ?? '',
-      jdText: job?.jdText ?? '',
-    },
-  })
-  const draft = useWatch({ control })
-
-  const onSubmit = handleSubmit((input) =>
-    saveJob.mutate(
-      { id: job?.id, input },
-      {
-        onSuccess: (saved) => !job && navigate(links.jobEdit(saved.id), { replace: true }),
-        onError: (error) => {
-          if (!applyServerErrors(error, setError)) {
-            setError('root', { message: getErrorMessage(error) })
-          }
-        },
-      },
-    ),
-  )
-
   const action = confirm === 'publish' ? publish : confirm === 'delete' ? remove : close
   const deletable = job?.status === 'DRAFT' && job.applicationCount === 0 && hasEditPermission
   const canPublishNow = !!job && job.status === 'DRAFT' && canPublish
   const noRequirements = !!job && job.requirements.length === 0
-  const deptName = departments.data?.find((d) => d.id === draft.departmentId)?.name
 
   const hasMenu =
     !!job &&
@@ -237,144 +179,21 @@ function JobFormContent({ job }: { job: Job | undefined }) {
         }
       />
 
-      <div className="grid gap-10 lg:grid-cols-2">
-        <section aria-labelledby="job-info" className="min-w-0 space-y-6">
-          <h2 id="job-info" className="type-heading">
-            Nội dung tin
-          </h2>
-          <form onSubmit={onSubmit} className="space-y-4" noValidate>
-            <FormField label="Tên vị trí" htmlFor="job-title" error={errors.title?.message}>
-              <Input
-                id="job-title"
-                placeholder="Ví dụ: Backend Developer (NestJS)"
-                disabled={!canEdit}
-                invalid={!!errors.title}
-                {...register('title')}
-              />
-            </FormField>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField label="Phòng ban" htmlFor="job-dept" error={errors.departmentId?.message}>
-                <Select
-                  id="job-dept"
-                  className="w-full"
-                  disabled={!canEdit}
-                  {...register('departmentId')}
-                >
-                  <option value="">Chọn phòng ban</option>
-                  {departments.data?.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </Select>
-              </FormField>
-              <FormField label="Địa điểm" htmlFor="job-location" error={errors.location?.message}>
-                <Input
-                  id="job-location"
-                  placeholder="Hà Nội · Remote"
-                  disabled={!canEdit}
-                  invalid={!!errors.location}
-                  {...register('location')}
-                />
-              </FormField>
-            </div>
-            <FormField
-              label="Mô tả công việc"
-              htmlFor="job-jd"
-              error={errors.jdText?.message}
-              hint="Gồm mô tả, yêu cầu, quyền lợi. Bạn có thể gợi ý tiêu chí từ mô tả này ở cột bên phải."
-            >
-              <Textarea
-                id="job-jd"
-                rows={14}
-                className="type-read max-w-none"
-                placeholder="Dán mô tả công việc vào đây"
-                disabled={!canEdit}
-                invalid={!!errors.jdText}
-                {...register('jdText')}
-              />
-            </FormField>
-            {errors.root && (
-              <p role="alert" className="text-bad type-label">
-                {errors.root.message}
-              </p>
-            )}
-            {canEdit && (
-              <div className="flex justify-end">
-                <Button
-                  type="submit"
-                  variant={job ? 'secondary' : 'primary'}
-                  loading={saveJob.isPending}
-                  disabled={!!job && !isDirty}
-                >
-                  {job ? 'Lưu nội dung tin' : 'Lưu nháp'}
-                </Button>
-              </div>
-            )}
-          </form>
-
-          <details className="border-line group rounded-md border">
-            <summary className="type-subheading flex cursor-pointer items-center justify-between px-4 py-3">
-              Ứng viên sẽ thấy
-              <span className="type-caption group-open:hidden">Mở xem trước</span>
-            </summary>
-            <div className="border-line bg-surface border-t px-5 py-5">
-              <p className="type-overline">
-                {deptName ?? 'Phòng ban'} · {draft.location || 'Địa điểm'}
-              </p>
-              <p className="text-ink mt-1 font-serif text-2xl font-semibold">
-                {draft.title || 'Tên vị trí'}
-              </p>
-              <p className="type-read mt-3 line-clamp-6 whitespace-pre-line">
-                {draft.jdText || 'Mô tả công việc sẽ hiện ở đây.'}
-              </p>
-              {job && job.requirements.length > 0 && (
-                <ul className="mt-4 space-y-1">
-                  {job.requirements.map((r) => (
-                    <li key={r.id} className="type-body">
-                      {r.label}
-                      <span className="text-ink-muted">
-                        {' '}
-                        · {REQUIREMENT_TYPE[r.type].label.toLowerCase()}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <p className="type-caption mt-4">Không hiện trọng số và từ khoá cho ứng viên.</p>
-            </div>
-          </details>
-        </section>
-
-        <section aria-labelledby="job-req" className="min-w-0 space-y-4">
-          <h2 id="job-req" className="type-heading">
-            Tiêu chí chấm
-          </h2>
-          {job ? (
-            <RequirementEditor
-              initial={job.requirements}
-              readOnly={!canEdit}
-              saving={saveRequirements.isPending}
-              recalcCount={job.status === 'OPEN' ? job.applicationCount : undefined}
-              onSave={(requirements) => saveRequirements.mutate({ id: job.id, requirements })}
-              suggesting={suggest.isPending}
-              onSuggest={() => suggest.mutateAsync(job.id)}
-            />
-          ) : (
-            <p className="border-line type-body rounded-md border border-dashed px-4 py-5">
-              Lưu nháp nội dung tin trước. Sau đó bạn đặt tiêu chí ở đây, hoặc gợi ý tiêu chí từ mô
-              tả công việc đã lưu.
-            </p>
-          )}
-        </section>
+      <div className={job ? 'grid gap-10 lg:grid-cols-2' : undefined}>
+        <JobInfoSection
+          job={job}
+          split={!job}
+          onCreated={(id) => void navigate(links.jobEdit(id), { replace: true })}
+        />
+        {job && <JobRequirementsSection job={job} />}
       </div>
 
       <ConfirmDialog
         open={!!confirm}
         onClose={() => setConfirm(null)}
-        title={confirm ? CONFIRM_TEXT[confirm].title : ''}
-        description={confirm ? CONFIRM_TEXT[confirm].description : undefined}
-        confirmLabel={confirm ? CONFIRM_TEXT[confirm].label : undefined}
+        title={confirm ? JOB_CONFIRM[confirm].title : ''}
+        description={confirm ? JOB_CONFIRM[confirm].description : undefined}
+        confirmLabel={confirm ? JOB_CONFIRM[confirm].label : undefined}
         tone={confirm === 'publish' ? 'primary' : 'danger'}
         loading={action.isPending}
         onConfirm={() =>
@@ -398,22 +217,3 @@ function JobFormContent({ job }: { job: Job | undefined }) {
     </div>
   )
 }
-
-const CONFIRM_TEXT = {
-  publish: {
-    title: 'Đăng tin tuyển dụng?',
-    description: 'Tin sẽ hiện ngay trên trang tuyển dụng công khai và bắt đầu nhận hồ sơ.',
-    label: 'Đăng tin',
-  },
-  close: {
-    title: 'Đóng tin tuyển dụng?',
-    description:
-      'Tin ngừng nhận hồ sơ mới và không mở lại được; hồ sơ đã có vẫn xử lý bình thường. Cần tuyển tiếp thì tạo tin mới.',
-    label: 'Đóng tin',
-  },
-  delete: {
-    title: 'Xoá tin nháp?',
-    description: 'Tin chưa có hồ sơ nào nên xoá được. Tin sẽ biến mất khỏi danh sách.',
-    label: 'Xoá tin nháp',
-  },
-} as const
