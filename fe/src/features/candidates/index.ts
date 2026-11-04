@@ -6,3 +6,4 @@ export type {
   CandidateListItem,
   CandidateUpdateInput,
 } from './types'
+export { CandidateDialog } from './components/CandidateDialog'
