@@ -167,6 +167,12 @@ export const routes: RouteObject[] = [
                   lazy: page(() => import('@/features/operations/pages/AiQueuePage')),
                 },
               ]),
+              requires(Permission.CompanyManage, [
+                {
+                  path: paths.company,
+                  lazy: page(() => import('@/features/company/pages/CompanyPage')),
+                },
+              ]),
               requires(Permission.AuditRead, [
                 {
                   path: paths.auditLogs,

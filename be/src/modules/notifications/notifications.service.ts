@@ -98,15 +98,14 @@ export class NotificationsService implements OnModuleInit {
   ): Promise<number> {
     const unique = [...new Set(userIds)];
     if (!unique.length) return 0;
-    const saved = await this.repo.save(
-      unique.map((userId) =>
-        this.repo.create({
-          userId,
-          type,
-          applicationId: target.applicationId,
-          interviewId: target.interviewId ?? null,
-        }),
-      ),
+    // Chỉ chèn cho user còn tồn tại ngay lúc ghi: user vừa bị xoá thì bỏ qua thay vì làm lỗi
+    // khoá ngoại cả lô (những người nhận khác vẫn nhận thông báo)
+    const saved = await this.repo.manager.query<{ id: string; userId: string }[]>(
+      `INSERT INTO notifications (user_id, type, application_id, interview_id)
+       SELECT u.id, $2, $3, $4 FROM users u
+       WHERE u.id = ANY($1::uuid[]) AND u.deleted_at IS NULL
+       RETURNING id, user_id AS "userId"`,
+      [unique, type, target.applicationId, target.interviewId ?? null],
     );
     const views = new Map((await this.views(saved.map((n) => n.id))).map((v) => [v.id, v]));
     for (const n of saved) {

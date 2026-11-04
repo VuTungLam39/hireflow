@@ -20,4 +20,5 @@ export enum Permission {
   AuditRead = 'audit:read',
   InterviewManage = 'interview:manage',
   InterviewFeedback = 'interview:feedback',
+  CompanyManage = 'company:manage',
 }

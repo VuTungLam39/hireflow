@@ -11,6 +11,9 @@ export enum AuditAction {
   UserUpdated = 'USER_UPDATED',
   UserDeleted = 'USER_DELETED',
   TokenReuseDetected = 'TOKEN_REUSE_DETECTED',
+  CompanyProfileUpdated = 'COMPANY_PROFILE_UPDATED',
+  CompanyMediaAdded = 'COMPANY_MEDIA_ADDED',
+  CompanyMediaRemoved = 'COMPANY_MEDIA_REMOVED',
 }
 
 export enum AuditEntity {
@@ -18,6 +21,8 @@ export enum AuditEntity {
   Application = 'application',
   Candidate = 'candidate',
   User = 'user',
+  Company = 'company',
+  Media = 'media',
 }
 
 // F-AUDIT-01 · Database Design 9: chỉ thêm, không sửa (trigger chặn UPDATE)

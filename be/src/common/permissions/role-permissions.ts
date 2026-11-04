@@ -21,6 +21,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     P.AiRescore,
     P.DashboardRead,
     P.InterviewManage,
+    // BR-ORG-01
+    P.CompanyManage,
   ],
   [Role.HiringManager]: [
     P.JobRead,

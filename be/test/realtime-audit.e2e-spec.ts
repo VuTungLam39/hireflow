@@ -11,7 +11,10 @@ import { Role } from '../src/common/enums/role.enum.js';
 import { makeDocx, SAMPLE_CV } from '../src/modules/ai/testing/cv-fixtures.js';
 import { Application } from '../src/modules/applications/entities/application.entity.js';
 import { AuditAction, AuditLog } from '../src/modules/audit/entities/audit-log.entity.js';
-import { Notification } from '../src/modules/notifications/entities/notification.entity.js';
+import {
+  Notification,
+  NotificationType,
+} from '../src/modules/notifications/entities/notification.entity.js';
 import { NotificationsService } from '../src/modules/notifications/notifications.service.js';
 import { RefreshTokensService } from '../src/modules/refresh-tokens/refresh-tokens.service.js';
 import { AiStatus } from '../src/common/enums/ai-status.enum.js';
@@ -268,6 +271,17 @@ describe('Dashboard cache, realtime notifications, audit log (e2e)', () => {
       } finally {
         await ds.getRepository(User).update(userIds.hr, { isActive: true });
       }
+    });
+
+    it('skips a recipient deleted in the meantime instead of failing the whole batch', async () => {
+      const before = await ds.getRepository(Notification).countBy({ userId: userIds.hr2 });
+      const sent = await app
+        .get(NotificationsService)
+        .notify([userIds.hr2, randomUUID()], NotificationType.CvScored, { applicationId: ids.app });
+      expect(sent).toBe(1);
+      expect(await ds.getRepository(Notification).countBy({ userId: userIds.hr2 })).toBe(
+        before + 1,
+      );
     });
 
     it('the stream needs a valid token', async () => {

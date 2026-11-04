@@ -31,6 +31,7 @@ import { DepartmentsModule } from './modules/departments/departments.module.js';
 import { FilesModule } from './modules/files/files.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { InterviewsModule } from './modules/interviews/interviews.module.js';
+import { CompanyModule } from './modules/company/company.module.js';
 import { JobsModule } from './modules/jobs/jobs.module.js';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module.js';
 import { MatchingModule } from './modules/matching/matching.module.js';
@@ -76,6 +77,7 @@ import { UsersModule } from './modules/users/users.module.js';
     UsersModule,
     AuthModule,
     JobsModule,
+    CompanyModule,
     CandidatesModule,
     FilesModule,
     ApplicationsModule,

@@ -1,6 +1,7 @@
 import {
   Briefcase,
   Building2,
+  Landmark,
   CalendarDays,
   Contact,
   FileStack,
@@ -70,6 +71,12 @@ export const navGroups: NavGroup[] = [
   {
     title: 'Quản trị',
     items: [
+      {
+        to: paths.company,
+        label: 'Hồ sơ công ty',
+        icon: Landmark,
+        permission: Permission.CompanyManage,
+      },
       { to: paths.users, label: 'Người dùng', icon: Users, permission: Permission.UserManage },
       {
         to: paths.departments,

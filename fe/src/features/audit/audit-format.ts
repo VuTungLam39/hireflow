@@ -11,6 +11,9 @@ export const AUDIT_ACTION_LABEL: Record<AuditAction, string> = {
   USER_UPDATED: 'Đổi quyền người dùng',
   USER_DELETED: 'Xoá người dùng',
   TOKEN_REUSE_DETECTED: 'Phát hiện dùng lại phiên đăng nhập',
+  COMPANY_PROFILE_UPDATED: 'Sửa hồ sơ công ty',
+  COMPANY_MEDIA_ADDED: 'Thêm ảnh công ty',
+  COMPANY_MEDIA_REMOVED: 'Xoá ảnh công ty',
 }
 
 export const AUDIT_ACTIONS = Object.keys(AUDIT_ACTION_LABEL) as AuditAction[]
