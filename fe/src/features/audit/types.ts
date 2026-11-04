@@ -7,8 +7,11 @@ export type AuditAction =
   | 'USER_UPDATED'
   | 'USER_DELETED'
   | 'TOKEN_REUSE_DETECTED'
+  | 'COMPANY_PROFILE_UPDATED'
+  | 'COMPANY_MEDIA_ADDED'
+  | 'COMPANY_MEDIA_REMOVED'
 
-export type AuditEntity = 'cv_file' | 'application' | 'candidate' | 'user'
+export type AuditEntity = 'cv_file' | 'application' | 'candidate' | 'user' | 'company' | 'media'
 
 export interface AuditLogItem {
   id: string

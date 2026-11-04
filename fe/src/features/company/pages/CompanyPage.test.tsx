@@ -1,0 +1,110 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import { setupServer } from 'msw/node'
+import { createMemoryRouter, RouterProvider } from 'react-router'
+import { paths } from '@/routes/paths'
+import { useAuthStore } from '@/stores/auth.store'
+import { db } from '@/test/msw/data'
+import { allHandlers } from '@/test/msw/handlers'
+import { companyState } from '@/test/msw/handlers/company'
+import { tokenFor, toUser } from '@/test/msw/http'
+import CompanyPage from './CompanyPage'
+
+const server = setupServer(...allHandlers)
+beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
+afterAll(() => server.close())
+beforeEach(() => {
+  companyState.media = []
+})
+
+const png = (name = 'logo.png') =>
+  new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], name, { type: 'image/png' })
+
+function renderPage() {
+  const row = db.users.find((u) => u.email === 'hr@hireflow.dev')!
+  useAuthStore.getState().setSession(toUser(row), tokenFor(row))
+  const router = createMemoryRouter([{ path: paths.company, element: <CompanyPage /> }], {
+    initialEntries: [paths.company],
+  })
+  render(
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  )
+}
+
+// F-ORG-01 · BR-ORG-01, BR-ORG-02, BR-MEDIA-01
+describe('CompanyPage', () => {
+  it('BR-ORG-01: says the public page is hidden until there is a logo, then shows it once uploaded', async () => {
+    renderPage()
+    const status = await screen.findByRole('status')
+    expect(status).toHaveTextContent('Trang công ty chưa hiện công khai')
+    expect(status).toHaveTextContent('Logo: còn thiếu')
+
+    const brand = screen.getByRole('region', { name: 'Logo và ảnh bìa' })
+    const [logoInput] = brand.querySelectorAll<HTMLInputElement>('input[type="file"]')
+    fireEvent.change(logoInput, { target: { files: [png()] } })
+
+    expect(
+      await screen.findByText('Trang công ty đang hiện công khai trên trang tuyển dụng'),
+    ).toBeInTheDocument()
+    expect(within(brand).getByRole('img', { name: 'Logo' })).toHaveAttribute(
+      'src',
+      expect.stringMatching(/\/api\/v1\/public\/media\/[0-9]{64}\.png$/),
+    )
+  })
+
+  it('rejects a non-image before uploading and an http:// link before saving (BR-MEDIA-01, BR-ORG-02)', async () => {
+    renderPage()
+    const brand = await screen.findByRole('region', { name: 'Logo và ảnh bìa' })
+    const [logoInput] = brand.querySelectorAll<HTMLInputElement>('input[type="file"]')
+    fireEvent.change(logoInput, {
+      target: { files: [new File(['<svg/>'], 'logo.svg', { type: 'image/svg+xml' })] },
+    })
+    expect(await within(brand).findByRole('alert')).toHaveTextContent(
+      'không phải ảnh JPEG, PNG hoặc WebP',
+    )
+    expect(companyState.media).toHaveLength(0)
+
+    const website = screen.getByLabelText('Website')
+    fireEvent.change(website, { target: { value: 'http://insecure.example.com' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu thông tin chung' }))
+    expect(await screen.findByText('Đường dẫn phải bắt đầu bằng https://')).toBeInTheDocument()
+    expect(companyState.profile.website).toBe('https://hireflow.example.com')
+  })
+
+  it('adds a gallery image only with a description', async () => {
+    renderPage()
+    const gallery = await screen.findByRole('region', { name: 'Thư viện ảnh' })
+    fireEvent.change(within(gallery).getByLabelText('Ảnh'), {
+      target: { files: [png('office.png')] },
+    })
+    fireEvent.click(within(gallery).getByRole('button', { name: 'Thêm ảnh' }))
+    expect(within(gallery).getByRole('alert')).toHaveTextContent('Mô tả ngắn nội dung ảnh')
+
+    fireEvent.change(within(gallery).getByLabelText('Mô tả ảnh'), {
+      target: { value: 'Phòng họp tầng 5' },
+    })
+    fireEvent.click(within(gallery).getByRole('button', { name: 'Thêm ảnh' }))
+    expect(
+      await within(gallery).findByRole('img', { name: 'Phòng họp tầng 5' }),
+    ).toBeInTheDocument()
+    expect(companyState.media).toEqual([
+      expect.objectContaining({ kind: 'GALLERY', alt: 'Phòng họp tầng 5' }),
+    ])
+  })
+
+  it('saves the benefits block on its own', async () => {
+    renderPage()
+    const block = await screen.findByRole('region', { name: 'Phúc lợi' })
+    fireEvent.click(within(block).getByRole('button', { name: 'Thêm phúc lợi' }))
+    const titles = within(block).getAllByLabelText('Phúc lợi')
+    fireEvent.change(titles.at(-1)!, { target: { value: 'Review lương 2 lần/năm' } })
+    fireEvent.click(within(block).getByRole('button', { name: 'Lưu phúc lợi' }))
+    await vi.waitFor(() =>
+      expect(companyState.profile.benefits.map((b) => b.title)).toContain('Review lương 2 lần/năm'),
+    )
+  })
+})

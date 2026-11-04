@@ -4,6 +4,7 @@ import { aiHandlers } from './ai'
 import { applicationHandlers } from './applications'
 import { authHandlers } from './auth'
 import { candidateHandlers } from './candidates'
+import { companyHandlers } from './company'
 import { jobHandlers } from './jobs'
 import { matchingHandlers } from './matching'
 import { operationHandlers } from './operations'
@@ -25,4 +26,5 @@ export const allHandlers: HttpHandler[] = [
   ...notificationHandlers,
   ...auditHandlers,
   ...interviewHandlers,
+  ...companyHandlers,
 ]
