@@ -4,7 +4,7 @@ import type { AuditAction, AuditLogItem } from './types'
 
 export const AUDIT_ACTION_LABEL: Record<AuditAction, string> = {
   CV_VIEWED: 'Xem CV gốc',
-  CV_TEXT_ENTERED: 'Nhập text CV',
+  CV_TEXT_ENTERED: 'Nhập nội dung CV',
   APPLICATION_STATUS_CHANGED: 'Đổi trạng thái hồ sơ',
   CANDIDATE_ANONYMIZED: 'Ẩn danh ứng viên',
   USER_CREATED: 'Tạo người dùng',
@@ -41,11 +41,17 @@ export function describeAudit(log: AuditLogItem): string {
       if ('departmentTo' in m) parts.push('Đổi phòng ban')
       if ('isActive' in m) parts.push(m.isActive ? 'Mở khoá tài khoản' : 'Khoá tài khoản')
       if (m.passwordReset) parts.push('Đặt lại mật khẩu')
-      return parts.join(' · ') || '–'
+      return parts.join(' · ')
     }
     case 'TOKEN_REUSE_DETECTED':
-      return 'Refresh token đã thu hồi bị dùng lại; mọi phiên của chuỗi đã bị đăng xuất'
+      return 'Phiên đăng nhập đã thu hồi bị dùng lại; mọi phiên liên quan đã bị đăng xuất'
     default:
-      return '–'
+      return ''
   }
+}
+
+export function formatIp(ip: string | null | undefined) {
+  if (!ip) return null
+  const v4 = ip.replace(/^::ffff:/, '')
+  return v4 === '::1' || v4 === '127.0.0.1' ? 'máy nội bộ' : `IP ${v4}`
 }

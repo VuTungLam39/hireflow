@@ -19,6 +19,16 @@ export function useAiIssues(params: PaginationParams) {
   })
 }
 
+export function useAiIssueCount(enabled: boolean) {
+  return useQuery({
+    queryKey: operationKeys.issues({ page: 1, limit: 1 }),
+    queryFn: () => operationsApi.issues({ page: 1, limit: 1 }),
+    select: (data) => data.meta.totalItems,
+    enabled,
+    staleTime: 60_000,
+  }).data
+}
+
 export function useQueueCounts() {
   return useQuery({
     queryKey: operationKeys.queues(),

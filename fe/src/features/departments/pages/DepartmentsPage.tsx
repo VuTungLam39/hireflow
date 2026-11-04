@@ -1,8 +1,16 @@
-import { Plus } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { z } from 'zod'
-import { ConfirmDialog, DataTable, PageHeader, SearchInput, type Column } from '@/components/shared'
-import { Button, Tooltip } from '@/components/ui'
+import {
+  ConfirmDialog,
+  DataTable,
+  PageHeader,
+  RowMenu,
+  SearchInput,
+  Summary,
+  type Column,
+} from '@/components/shared'
+import { Button } from '@/components/ui'
 import { pageFields, useListParams } from '@/hooks/use-list-params'
 import { DepartmentFormDialog } from '../components/DepartmentFormDialog'
 import { useDeleteDepartment, useDepartments } from '../hooks/use-departments'
@@ -53,8 +61,11 @@ export default function DepartmentsPage() {
       <PageHeader
         title="Phòng ban"
         description={
-          total !== undefined &&
-          `${total} phòng ban · Hiring Manager chỉ thấy tin và hồ sơ của phòng mình`
+          total !== undefined && (
+            <Summary
+              items={[`${total} phòng ban`, 'Hiring Manager chỉ thấy tin và hồ sơ của phòng mình']}
+            />
+          )
         }
         actions={
           <Button onClick={() => setEditing(null)}>
@@ -77,7 +88,7 @@ export default function DepartmentsPage() {
         data={query.data?.items}
         rowKey={(d) => d.id}
         rowLabel={(d) => d.name}
-        onRowOpen={(d) => setEditing(d)}
+        onRowClick={(d) => setEditing(d)}
         isPending={query.isPending}
         isError={query.isError}
         error={query.error}
@@ -90,24 +101,21 @@ export default function DepartmentsPage() {
         rowActions={(d) => {
           const inUse = d.userCount + d.jobCount > 0
           return (
-            <>
-              <Button variant="quiet" size="sm" onClick={() => setEditing(d)}>
-                Sửa
-              </Button>
-              <Tooltip
-                label="Còn người dùng hoặc tin tuyển dụng nên chưa xoá được"
-                disabled={!inUse}
-              >
-                <Button
-                  variant="danger-quiet"
-                  size="sm"
-                  aria-disabled={inUse || undefined}
-                  onClick={() => !inUse && setDeleting(d)}
-                >
-                  Xoá
-                </Button>
-              </Tooltip>
-            </>
+            <RowMenu
+              label={`Thao tác với ${d.name}`}
+              items={[
+                { label: 'Sửa phòng ban', icon: <Pencil />, onSelect: () => setEditing(d) },
+                {
+                  label: 'Xoá phòng ban',
+                  icon: <Trash2 />,
+                  danger: true,
+                  separated: true,
+                  disabled: inUse,
+                  onSelect: () => setDeleting(d),
+                },
+              ]}
+              note={inUse && 'Còn người dùng hoặc tin tuyển dụng nên chưa xoá được.'}
+            />
           )
         }}
       />
