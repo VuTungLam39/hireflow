@@ -1,8 +1,8 @@
 import { ArrowLeft, ArrowRight, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Button, FormField, Input } from '@/components/ui'
 import { mediaSrc } from '../api/company.api'
-import { useRemoveMedia, useUpdateMedia, useUploadMedia } from '../hooks/use-company'
+import { useRemoveMedia, useSwapMedia, useUpdateMedia, useUploadMedia } from '../hooks/use-company'
 import { GALLERY_MAX, type CompanyMedia } from '../types'
 import { checkImageFile } from '../lib/check-image'
 
@@ -16,12 +16,17 @@ function GalleryItem({
   items: CompanyMedia[]
 }) {
   const update = useUpdateMedia()
+  const swap = useSwapMedia()
   const remove = useRemoveMedia()
   const [alt, setAlt] = useState(media.alt)
-  const move = (delta: -1 | 1) => {
-    const other = items[index + delta]
-    update.mutate({ id: media.id, position: other.position })
-    update.mutate({ id: other.id, position: media.position })
+  const [altError, setAltError] = useState<string | null>(null)
+  const move = (delta: -1 | 1) => swap.mutate({ a: media, b: items[index + delta] })
+  const saveAlt = () => {
+    const value = alt.trim()
+    if (value === media.alt) return setAltError(null)
+    if (value.length < 2) return setAltError('Mô tả ít nhất 2 ký tự')
+    setAltError(null)
+    update.mutate({ id: media.id, alt: value })
   }
 
   return (
@@ -42,10 +47,15 @@ function GalleryItem({
         value={alt}
         maxLength={200}
         onChange={(e) => setAlt(e.target.value)}
-        onBlur={() =>
-          alt.trim().length >= 2 && alt !== media.alt && update.mutate({ id: media.id, alt })
-        }
+        aria-invalid={altError ? true : undefined}
+        aria-describedby={altError ? `alt-${media.id}-error` : undefined}
+        onBlur={saveAlt}
       />
+      {altError && (
+        <p id={`alt-${media.id}-error`} role="alert" className="text-bad text-xs">
+          {altError}
+        </p>
+      )}
       <div className="flex items-center justify-between">
         <span className="flex gap-1">
           <Button
@@ -53,7 +63,7 @@ function GalleryItem({
             variant="quiet"
             size="icon-sm"
             aria-label={`Đưa ảnh ${index + 1} lên trước`}
-            disabled={index === 0 || update.isPending}
+            disabled={index === 0 || swap.isPending}
             onClick={() => move(-1)}
           >
             <ArrowLeft />
@@ -63,7 +73,7 @@ function GalleryItem({
             variant="quiet"
             size="icon-sm"
             aria-label={`Đưa ảnh ${index + 1} ra sau`}
-            disabled={index === items.length - 1 || update.isPending}
+            disabled={index === items.length - 1 || swap.isPending}
             onClick={() => move(1)}
           >
             <ArrowRight />
@@ -87,6 +97,7 @@ function GalleryItem({
 // F-ORG-01 · BR-MEDIA-01: tối đa 8 ảnh, alt bắt buộc
 export function GallerySection({ gallery }: { gallery: CompanyMedia[] }) {
   const upload = useUploadMedia()
+  const fileRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
   const [alt, setAlt] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -101,6 +112,7 @@ export function GallerySection({ gallery }: { gallery: CompanyMedia[] }) {
       {
         onSuccess: () => {
           setFile(null)
+          if (fileRef.current) fileRef.current.value = ''
           setAlt('')
         },
       },
@@ -112,7 +124,7 @@ export function GallerySection({ gallery }: { gallery: CompanyMedia[] }) {
       {gallery.length > 0 ? (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {gallery.map((m, i) => (
-            <GalleryItem key={m.id} media={m} index={i} items={gallery} />
+            <GalleryItem key={`${m.id}:${m.alt}`} media={m} index={i} items={gallery} />
           ))}
         </ul>
       ) : (
@@ -127,6 +139,7 @@ export function GallerySection({ gallery }: { gallery: CompanyMedia[] }) {
         <div className="border-line grid gap-3 rounded-md border border-dashed p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] sm:items-end">
           <FormField label="Ảnh" htmlFor="gallery-file" hint="JPEG, PNG hoặc WebP, tối đa 3 MB">
             <input
+              ref={fileRef}
               id="gallery-file"
               type="file"
               accept="image/jpeg,image/png,image/webp"
