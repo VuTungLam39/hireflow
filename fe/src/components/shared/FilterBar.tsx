@@ -1,5 +1,5 @@
 import { Check, ChevronDown, Search, X } from 'lucide-react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { Button, Input, Popover, menuItemClass } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
@@ -18,44 +18,72 @@ interface FilterBarProps {
 
 export function FilterBar({ children, active = [], onReset, trailing }: FilterBarProps) {
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2">
-        {children}
-        {trailing && <div className="ml-auto flex items-center gap-2">{trailing}</div>}
-      </div>
-      {(active.length > 0 || onReset) && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          {active.map((f) => (
-            <span
-              key={f.key}
-              className="border-brand/25 bg-brand-soft text-brand inline-flex h-7 items-center gap-1 rounded-sm border pr-1 pl-2.5 text-[13px] font-medium"
-            >
-              {f.label}
-              <button
-                type="button"
-                aria-label={`Bỏ lọc ${f.label}`}
-                onClick={f.onRemove}
-                className="hover:bg-brand/10 rounded-xs p-0.5"
-              >
-                <X className="size-3.5" />
-              </button>
-            </span>
-          ))}
-          {onReset && (
-            <span className="type-caption ml-1">
-              {active.length > 0 && <>Đang lọc {active.length} điều kiện · </>}
-              <button
-                type="button"
-                onClick={onReset}
-                className="text-brand font-medium hover:underline"
-              >
-                Xoá lọc
-              </button>
-            </span>
-          )}
-        </div>
+    <div className="flex flex-wrap items-center gap-2">
+      {children}
+      {active.length > 0 && onReset && (
+        <button
+          type="button"
+          onClick={onReset}
+          className="text-ink-muted hover:text-ink hover:bg-sunken inline-flex h-9 items-center gap-1 rounded-sm px-2 text-sm font-medium transition-colors"
+        >
+          <X className="size-4" />
+          Xoá lọc
+          <span className="num text-ink-faint font-normal">{active.length}</span>
+        </button>
       )}
+      {trailing && <div className="ml-auto flex items-center gap-2">{trailing}</div>}
     </div>
+  )
+}
+
+type FilterTriggerProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  label: string
+  value?: string
+  onClear?: () => void
+}
+
+export function FilterTrigger({ label, value, onClear, className, ...props }: FilterTriggerProps) {
+  if (value == null) {
+    return (
+      <button
+        type="button"
+        {...props}
+        className={cn(
+          'group border-line-strong bg-surface text-ink-2 hover:border-ink-faint hover:text-ink aria-expanded:border-ink-faint aria-expanded:text-ink inline-flex h-9 items-center gap-1.5 rounded-sm border pr-2.5 pl-3 text-sm font-medium whitespace-nowrap transition-colors',
+          className,
+        )}
+      >
+        {label}
+        <ChevronDown className="text-ink-muted size-4 transition-transform group-aria-expanded:rotate-180" />
+      </button>
+    )
+  }
+  return (
+    <span className="border-brand/40 bg-brand-soft inline-flex h-9 items-stretch rounded-sm border">
+      <button
+        type="button"
+        {...props}
+        className={cn(
+          'group hover:bg-brand/5 inline-flex items-center gap-1.5 rounded-l-[5px] pr-2 pl-3 text-sm whitespace-nowrap transition-colors',
+          !onClear && 'rounded-r-[5px]',
+          className,
+        )}
+      >
+        <span className="text-brand">{label}:</span>
+        <span className="text-ink max-w-40 truncate font-semibold">{value}</span>
+        <ChevronDown className="text-brand size-4 transition-transform group-aria-expanded:rotate-180" />
+      </button>
+      {onClear && (
+        <button
+          type="button"
+          aria-label={`Bỏ lọc ${label}`}
+          onClick={onClear}
+          className="border-brand/20 text-brand hover:bg-brand/10 inline-flex w-8 items-center justify-center rounded-r-[5px] border-l transition-colors"
+        >
+          <X className="size-3.5" />
+        </button>
+      )}
+    </span>
   )
 }
 
@@ -93,20 +121,12 @@ export function FilterMenu<T extends string>({
       label={label}
       className="max-h-80 w-60 overflow-y-auto"
       trigger={(props) => (
-        <button
-          type="button"
+        <FilterTrigger
           {...props}
-          className={cn(
-            'inline-flex h-9 items-center gap-1.5 rounded-sm border px-3 text-sm whitespace-nowrap transition-colors',
-            current
-              ? 'border-brand/30 bg-brand-soft text-brand'
-              : 'border-line bg-surface text-ink-2 hover:border-ink-faint',
-          )}
-        >
-          <span className={current ? 'text-brand/80' : 'text-ink-muted'}>{label}:</span>
-          <span className="max-w-40 truncate font-medium">{current?.label ?? allLabel}</span>
-          <ChevronDown className="size-4 opacity-70" />
-        </button>
+          label={label}
+          value={current?.label}
+          onClear={() => onChange(undefined)}
+        />
       )}
     >
       {[{ value: undefined, label: allLabel }, ...options].map((opt) => {

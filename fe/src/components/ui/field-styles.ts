@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 
 export const fieldBase =
-  'w-full rounded-sm border border-line bg-surface text-sm text-ink transition-[border-color,box-shadow] duration-150 placeholder:text-ink-faint hover:border-ink-faint focus:border-brand focus:ring-3 focus:ring-brand-soft focus:outline-none disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-muted disabled:hover:border-line'
+  'w-full rounded-sm border border-line-strong bg-surface text-sm text-ink transition-[border-color,box-shadow] duration-150 placeholder:text-ink-faint hover:border-ink-faint focus:border-brand focus:ring-3 focus:ring-brand-soft focus:outline-none disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-muted disabled:hover:border-line-strong'
 
 export const fieldInvalid = 'border-bad hover:border-bad focus:border-bad focus:ring-bad-soft'
 

@@ -21,7 +21,7 @@ export function PageHeader({
   return (
     <header className={cn('space-y-1.5', className)}>
       {breadcrumb && (
-        <div className="type-caption [&_a]:hover:text-ink [&_a]:inline-flex [&_a]:items-center [&_a]:gap-1 [&_a]:transition-colors">
+        <div className="type-caption [&_a]:hover:text-ink md:hidden [&_a]:inline-flex [&_a]:items-center [&_a]:gap-1 [&_a]:transition-colors">
           {breadcrumb}
         </div>
       )}
@@ -41,6 +41,21 @@ export function PageHeader({
   )
 }
 
+const LEADING_NUMBER = /^(\d[\d.,]*\+?)(\s.*)$/s
+
+/** Số đứng đầu mỗi mục in mực đậm, phần chữ giữ màu phụ: "**32** hồ sơ · **6** chờ xem" */
+function SummaryItem({ item }: { item: ReactNode }) {
+  if (typeof item !== 'string') return <>{item}</>
+  const match = LEADING_NUMBER.exec(item)
+  if (!match) return <>{item}</>
+  return (
+    <>
+      <span className="text-ink font-semibold">{match[1]}</span>
+      {match[2]}
+    </>
+  )
+}
+
 export function Summary({ items }: { items: (ReactNode | false | null | undefined)[] }) {
   const shown = items.filter(Boolean)
   return (
@@ -48,7 +63,7 @@ export function Summary({ items }: { items: (ReactNode | false | null | undefine
       {shown.map((item, i) => (
         <span key={i}>
           {i > 0 && <span className="text-ink-faint mx-1.5">·</span>}
-          {item}
+          <SummaryItem item={item} />
         </span>
       ))}
     </>

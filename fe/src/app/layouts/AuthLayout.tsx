@@ -6,7 +6,7 @@ function SampleCv() {
   return (
     <figure aria-hidden className="relative w-full max-w-[380px] select-none">
       <div className="bg-surface text-ink-2 relative rounded-sm px-8 pt-7 pb-8 text-[13px] leading-6">
-        <p className="text-ink font-serif text-lg font-semibold tracking-[0.02em]">
+        <p className="text-ink font-display text-lg font-semibold tracking-[0.02em]">
           NGUYỄN MINH ANH
         </p>
         <p className="text-ink-muted text-xs">Backend Developer · Hà Nội</p>

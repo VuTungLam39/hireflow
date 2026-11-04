@@ -172,7 +172,8 @@ export function DataTable<T>({
                           type="button"
                           onClick={() => toggleSort(col.sortKey!)}
                           className={cn(
-                            'hover:text-ink inline-flex items-center gap-1 uppercase transition-colors',
+                            'group/sort hover:text-ink inline-flex items-center gap-1 transition-colors',
+                            col.align === 'right' && 'flex-row-reverse',
                             active && 'text-ink',
                           )}
                         >
@@ -184,7 +185,7 @@ export function DataTable<T>({
                               <ArrowDown className="size-3.5" />
                             )
                           ) : (
-                            <ArrowUpDown className="size-3.5 opacity-50" />
+                            <ArrowUpDown className="size-3.5 opacity-0 transition-opacity group-hover/sort:opacity-60 group-focus-visible/sort:opacity-60" />
                           )}
                         </button>
                       ) : (
@@ -251,9 +252,7 @@ export function DataTable<T>({
                     ))}
                     {rowActions && (
                       <td className={cn(tdClass, rowH, 'w-px pl-0 whitespace-nowrap')}>
-                        <div className="flex justify-end gap-1 opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 pointer-coarse:opacity-100">
-                          {rowActions(row)}
-                        </div>
+                        <div className="flex justify-end gap-1">{rowActions(row)}</div>
                       </td>
                     )}
                   </tr>
@@ -339,7 +338,7 @@ export function DataTable<T>({
 }
 
 const thClass =
-  'border-line bg-sunken type-overline sticky top-14 z-10 h-9 border-b px-4 whitespace-nowrap first:pl-5'
+  'border-line bg-surface type-overline sticky top-[var(--sticky-top,3.5rem)] z-10 h-10 border-b px-4 whitespace-nowrap first:rounded-tl-md first:pl-5 last:rounded-tr-md'
 const tdClass =
   'border-line-soft border-b px-4 align-middle first:pl-5 [tr:last-child_&]:border-b-0'
 
