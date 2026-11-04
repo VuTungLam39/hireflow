@@ -20,6 +20,7 @@ import { ApplicationsService } from '../applications/applications.service.js';
 import { PublicApplyDto } from '../applications/dto/public-apply.dto.js';
 import type { UploadedCv } from '../files/cv-file.rules.js';
 import { CV_UPLOAD_OPTIONS } from '../files/cv-upload.options.js';
+import { QueryPublicJobsDto } from '../jobs/dto/query-public-jobs.dto.js';
 import { JobsService } from '../jobs/jobs.service.js';
 
 const HOUR_MS = 3_600_000;
@@ -36,8 +37,14 @@ export class PublicJobsController {
 
   @Get()
   @ApiOperation({ summary: 'Job đang tuyển (OPEN), mới đăng trước' })
-  findAll(@Query() query: PaginationQueryDto) {
+  findAll(@Query() query: QueryPublicJobsDto) {
     return this.jobsService.findPublic(query);
+  }
+
+  @Get('departments')
+  @ApiOperation({ summary: 'Số job đang tuyển theo phòng ban, theo cùng từ khoá tìm' })
+  departments(@Query() query: PaginationQueryDto) {
+    return this.jobsService.publicDepartments(query.search);
   }
 
   @Get(':id')

@@ -1,8 +1,7 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository, SelectQueryBuilder } from 'typeorm';
 import { PaginatedResult } from '../../common/dto/paginated-result.dto.js';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto.js';
 import { AiStatus } from '../../common/enums/ai-status.enum.js';
 import { ApplicationStatus } from '../../common/enums/application-status.enum.js';
 import type { ScoreFlag } from '../../common/enums/score-flag.enum.js';
@@ -24,6 +23,7 @@ import { Job, JobStatus } from './entities/job.entity.js';
 import { PrerenderHookService } from './prerender-hook.service.js';
 import { Role } from '../../common/enums/role.enum.js';
 import { AppEvents } from '../../common/events/app-events.js';
+import { QueryPublicJobsDto } from './dto/query-public-jobs.dto.js';
 
 type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId'>;
 
@@ -320,16 +320,15 @@ export class JobsService {
   }
 
   // US-03, BR-JOB-07
-  async findPublic(query: PaginationQueryDto): Promise<PaginatedResult<PublicJobSummaryView>> {
+  async findPublic(query: QueryPublicJobsDto): Promise<PaginatedResult<PublicJobSummaryView>> {
     const qb = this.publicQuery()
       .orderBy('job.publishedAt', 'DESC')
       .addOrderBy('job.id', 'DESC')
       .offset(query.skip)
       .limit(query.limit);
-    if (query.search) {
-      qb.andWhere(`f_unaccent(lower(job.title)) LIKE '%' || f_unaccent(lower(:search)) || '%'`, {
-        search: escapeLike(query.search),
-      });
+    this.applyPublicSearch(qb, query.search);
+    if (query.departmentId) {
+      qb.andWhere('job.departmentId = :departmentId', { departmentId: query.departmentId });
     }
     const [jobs, total] = await qb.getManyAndCount();
     return new PaginatedResult(
@@ -338,6 +337,30 @@ export class JobsService {
       query.page,
       query.limit,
     );
+  }
+
+  // US-03
+  async publicDepartments(search?: string): Promise<{ id: string; name: string; count: number }[]> {
+    const qb = this.jobsRepository
+      .createQueryBuilder('job')
+      .innerJoin('job.department', 'department')
+      .select('department.id', 'id')
+      .addSelect('department.name', 'name')
+      .addSelect('COUNT(*)::int', 'count')
+      .where('job.status = :open', { open: JobStatus.Open })
+      .groupBy('department.id')
+      .addGroupBy('department.name')
+      .orderBy('count', 'DESC')
+      .addOrderBy('department.name', 'ASC');
+    this.applyPublicSearch(qb, search);
+    return qb.getRawMany<{ id: string; name: string; count: number }>();
+  }
+
+  private applyPublicSearch(qb: SelectQueryBuilder<Job>, search?: string) {
+    if (!search) return;
+    qb.andWhere(`f_unaccent(lower(job.title)) LIKE '%' || f_unaccent(lower(:search)) || '%'`, {
+      search: escapeLike(search),
+    });
   }
 
   // BR-APP-02, BR-JOB-07
