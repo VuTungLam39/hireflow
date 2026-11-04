@@ -2,7 +2,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { setupServer } from 'msw/node'
 import { createMemoryRouter, RouterProvider } from 'react-router'
-import { paths } from '@/routes/paths'
 import { useAuthStore } from '@/stores/auth.store'
 import { useRealtimeStore } from '@/stores/realtime.store'
 import { db } from '@/test/msw/data'
@@ -19,13 +18,9 @@ function renderAs(email: string) {
   useAuthStore.getState().setSession(toUser(row), tokenFor(row))
   const unread = db.notifications.filter((n) => n.userId === row.id && !n.readAt).length
   useRealtimeStore.getState().setUnreadCount(unread)
-  const router = createMemoryRouter(
-    [
-      { path: '/', element: <NotificationBell /> },
-      { path: paths.applicationDetail, element: <p>Trang chi tiết hồ sơ</p> },
-    ],
-    { initialEntries: ['/'] },
-  )
+  const router = createMemoryRouter([{ path: '/', element: <NotificationBell /> }], {
+    initialEntries: ['/'],
+  })
   render(
     <QueryClientProvider
       client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
@@ -33,7 +28,7 @@ function renderAs(email: string) {
       <RouterProvider router={router} />
     </QueryClientProvider>,
   )
-  return { row, unread }
+  return { row, unread, router }
 }
 
 // F-NOTI-01 · US-12
@@ -55,8 +50,8 @@ describe('NotificationBell', () => {
     await vi.waitFor(() => expect(within(panel).queryAllByLabelText('Chưa đọc')).toHaveLength(0))
   })
 
-  it('opening a notification marks it read and goes to the application', async () => {
-    const { row } = renderAs('hm.eng@hireflow.dev')
+  it('opening a notification marks it read and opens the application popup on the same page', async () => {
+    const { row, router } = renderAs('hm.eng@hireflow.dev')
     const target = db.notifications.find((n) => n.userId === row.id)!
     target.readAt = null
 
@@ -67,7 +62,12 @@ describe('NotificationBell', () => {
     })
     fireEvent.click(items[0])
 
-    expect(await screen.findByText('Trang chi tiết hồ sơ')).toBeInTheDocument()
+    await vi.waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('xem')).toBe(
+        `application:${target.applicationId}`,
+      ),
+    )
+    expect(router.state.location.pathname).toBe('/')
     await vi.waitFor(() => expect(target.readAt).not.toBeNull())
   })
 })
