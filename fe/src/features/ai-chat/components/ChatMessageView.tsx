@@ -14,7 +14,7 @@ function TypingDots() {
         <span
           key={i}
           style={{ animationDelay: `${i * 0.2}s` }}
-          className="animate-blink size-1.5 rounded-full bg-slate-400"
+          className="animate-blink bg-ink-faint size-1.5 rounded-full"
         />
       ))}
     </span>
@@ -29,8 +29,8 @@ export const ChatMessageView = memo(function ChatMessageView({
 }) {
   if (message.role === 'user') {
     return (
-      <div className="animate-slide-up flex justify-end">
-        <p className="bg-primary text-primary-foreground max-w-[85%] rounded-2xl rounded-br-md px-4 py-2.5 text-sm whitespace-pre-wrap shadow-sm">
+      <div className="flex justify-end">
+        <p className="bg-brand max-w-[85%] rounded-md rounded-br-md px-4 py-2.5 text-sm whitespace-pre-wrap text-white">
           {message.content}
         </p>
       </div>
@@ -43,15 +43,15 @@ export const ChatMessageView = memo(function ChatMessageView({
   )
 
   return (
-    <div className="animate-slide-up flex max-w-[90%] gap-3">
-      <span className="bg-primary mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-white">
+    <div className="flex max-w-[90%] gap-3">
+      <span className="bg-brand mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-white">
         <MessageSquareText className="size-4" />
       </span>
       <div className="min-w-0 space-y-3">
         <div
           className={cn(
-            'rounded-2xl rounded-tl-md bg-white px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap text-slate-700 shadow-sm ring-1 ring-slate-200/80',
-            message.status === 'error' && 'bg-red-50 text-red-700 ring-red-200',
+            'bg-surface text-ink-2 ring-line/80 rounded-md rounded-tl-md px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ring-1',
+            message.status === 'error' && 'bg-bad-soft text-bad ring-bad',
           )}
         >
           {message.status === 'streaming' && !message.content ? (
@@ -66,7 +66,7 @@ export const ChatMessageView = memo(function ChatMessageView({
                   key={i}
                   to={links.applicationDetail(source.s.applicationId)}
                   title={source.s.excerpt}
-                  className="bg-primary-soft text-primary hover:bg-primary mx-0.5 inline-flex size-[18px] items-center justify-center rounded-full align-super text-[10px] font-semibold transition-colors hover:text-white"
+                  className="bg-brand-soft text-brand hover:bg-brand mx-0.5 inline-flex size-[18px] items-center justify-center rounded-full align-super text-xs font-semibold transition-colors hover:text-white"
                 >
                   {source.index}
                 </Link>
@@ -74,27 +74,27 @@ export const ChatMessageView = memo(function ChatMessageView({
             })
           )}
           {message.status === 'streaming' && message.content && (
-            <span className="animate-blink bg-primary ml-0.5 inline-block h-4 w-0.5 translate-y-0.5" />
+            <span className="animate-blink bg-brand ml-0.5 inline-block h-4 w-0.5 translate-y-0.5" />
           )}
         </div>
 
         {message.sources.length > 0 && message.status === 'done' && (
-          <div className="animate-fade-in space-y-2">
-            <p className="text-xs font-medium tracking-wide text-slate-400 uppercase">Nguồn</p>
+          <div className="space-y-2">
+            <p className="text-ink-faint text-xs font-medium tracking-wide uppercase">Nguồn</p>
             <ol className="grid gap-2 sm:grid-cols-2">
               {message.sources.map((s, i) => (
                 <li key={sourceKey(s.candidateId, s.chunkId)}>
                   <Link
                     to={links.applicationDetail(s.applicationId)}
-                    className="hover:border-primary/40 block h-full rounded-xl border border-slate-200 bg-white p-3 text-xs transition-all hover:shadow-sm"
+                    className="hover:border-brand/40 border-line bg-surface block h-full rounded-md border p-3 text-xs transition-all"
                   >
                     <span className="flex items-center gap-2">
-                      <span className="bg-primary-soft text-primary flex size-5 items-center justify-center rounded-full text-[10px] font-semibold">
+                      <span className="bg-brand-soft text-brand flex size-5 items-center justify-center rounded-full text-xs font-semibold">
                         {i + 1}
                       </span>
-                      <span className="font-medium text-slate-800">{s.candidateName}</span>
+                      <span className="text-ink font-medium">{s.candidateName}</span>
                     </span>
-                    <span className="mt-1.5 line-clamp-2 block text-slate-500">“{s.excerpt}”</span>
+                    <span className="text-ink-muted mt-1.5 line-clamp-2 block">“{s.excerpt}”</span>
                   </Link>
                 </li>
               ))}

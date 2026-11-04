@@ -11,29 +11,59 @@ interface TabsProps<T extends string> {
   value: T
   onChange: (id: T) => void
   className?: string
+  label?: string
 }
 
-/** Thanh tab dạng "segmented". Nội dung tab do component cha render theo `value`. */
-export function Tabs<T extends string>({ tabs, value, onChange, className }: TabsProps<T>) {
+export function Tabs<T extends string>({ tabs, value, onChange, className, label }: TabsProps<T>) {
+  const move = (from: number, delta: number) => {
+    const next = tabs[(from + delta + tabs.length) % tabs.length]
+    onChange(next.id)
+    requestAnimationFrame(() =>
+      document.getElementById(`tab-${next.id}`)?.focus({ preventScroll: true }),
+    )
+  }
+
   return (
-    <div role="tablist" className={cn('inline-flex gap-1 rounded-lg bg-slate-100 p-1', className)}>
-      {tabs.map((tab) => {
+    <div
+      role="tablist"
+      aria-label={label}
+      className={cn(
+        'border-line -mb-px flex [scrollbar-width:none] gap-5 overflow-x-auto border-b',
+        className,
+      )}
+    >
+      {tabs.map((tab, index) => {
         const active = tab.id === value
         return (
           <button
             key={tab.id}
+            id={`tab-${tab.id}`}
             type="button"
             role="tab"
             aria-selected={active}
+            tabIndex={active ? 0 : -1}
             onClick={() => onChange(tab.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowRight') move(index, 1)
+              if (e.key === 'ArrowLeft') move(index, -1)
+            }}
             className={cn(
-              'rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-150',
-              active ? 'text-primary bg-white shadow-sm' : 'text-slate-500 hover:text-slate-800',
+              'relative -mb-px flex h-10 shrink-0 items-center gap-1.5 border-b-2 text-sm whitespace-nowrap transition-colors duration-150',
+              active
+                ? 'border-brand text-ink font-semibold'
+                : 'text-ink-muted hover:text-ink border-transparent font-medium',
             )}
           >
             {tab.label}
             {tab.count != null && (
-              <span className="ml-1.5 text-xs text-slate-400 tabular-nums">{tab.count}</span>
+              <span
+                className={cn(
+                  'num text-[13px] font-normal',
+                  active ? 'text-ink-2' : 'text-ink-muted',
+                )}
+              >
+                {tab.count.toLocaleString('vi-VN')}
+              </span>
             )}
           </button>
         )

@@ -16,7 +16,7 @@ import { Link } from 'react-router'
 import { Can, DataTable, ErrorState, PageHeader, type Column } from '@/components/shared'
 import { buttonVariants, Card, CardTitle, Skeleton } from '@/components/ui'
 import { APPLICATION_STATUS, ScoreValue, type ApplicationStatus } from '@/features/applications'
-import { cn, staggerStyle } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { Permission } from '@/lib/permissions'
 import { links, paths } from '@/routes/paths'
 import { useAuthStore } from '@/stores/auth.store'
@@ -27,11 +27,11 @@ import type { DashboardSummary } from '../types'
 type JobRow = DashboardSummary['byJob'][number]
 
 const STATUS_BAR: Record<string, string> = {
-  neutral: 'bg-slate-300',
-  info: 'bg-blue-500',
-  warning: 'bg-amber-400',
-  success: 'bg-emerald-500',
-  danger: 'bg-red-400',
+  neutral: 'bg-line',
+  info: 'bg-info',
+  warning: 'bg-warn',
+  success: 'bg-good',
+  danger: 'bg-bad',
 }
 
 const jobColumns: Column<JobRow>[] = [
@@ -39,7 +39,7 @@ const jobColumns: Column<JobRow>[] = [
     key: 'title',
     header: 'Vị trí',
     cell: (j) => (
-      <Link to={links.jobRanking(j.jobId)} className="hover:text-primary font-medium">
+      <Link to={links.jobRanking(j.jobId)} className="hover:text-brand font-medium">
         {j.title}
       </Link>
     ),
@@ -50,7 +50,7 @@ const jobColumns: Column<JobRow>[] = [
     cell: (j) => (
       <Link
         to={links.applications({ jobId: j.jobId })}
-        className="text-primary font-medium tabular-nums hover:underline"
+        className="text-brand font-medium tabular-nums hover:underline"
       >
         {j.total}
       </Link>
@@ -81,25 +81,25 @@ export default function DashboardPage() {
       label: 'Hồ sơ',
       value: data?.totals.applications,
       icon: FileText,
-      tint: 'bg-indigo-50 text-indigo-600',
+      tint: 'bg-brand-soft text-brand',
     },
     {
       label: 'Job đang tuyển',
       value: data?.totals.openJobs,
       icon: Briefcase,
-      tint: 'bg-sky-50 text-sky-600',
+      tint: 'bg-info-soft text-info',
     },
     {
       label: 'Đang chấm AI',
       value: data?.totals.processing,
       icon: Loader,
-      tint: 'bg-amber-50 text-amber-600',
+      tint: 'bg-warn-soft text-warn',
     },
     {
       label: 'Điểm trung bình',
       value: data ? (data.totals.avgScore ?? '—') : undefined,
       icon: Gauge,
-      tint: 'bg-emerald-50 text-emerald-600',
+      tint: 'bg-good-soft text-good',
     },
   ]
 
@@ -120,7 +120,7 @@ export default function DashboardPage() {
           <>
             <Can permission={Permission.AiChat}>
               <Link to={paths.aiChat} className={buttonVariants({ variant: 'secondary' })}>
-                <MessageSquareText className="text-primary" />
+                <MessageSquareText className="text-brand" />
                 Hỏi trợ lý AI
               </Link>
             </Can>
@@ -139,8 +139,8 @@ export default function DashboardPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {stats.map((s, i) => (
-              <StatCard key={s.label} index={i} {...s} />
+            {stats.map((s) => (
+              <StatCard key={s.label} {...s} />
             ))}
           </div>
 
@@ -200,19 +200,17 @@ function StatCard({
   value,
   icon: Icon,
   tint,
-  index,
 }: {
   label: string
   value: number | string | undefined
   icon: LucideIcon
   tint: string
-  index: number
 }) {
   return (
-    <Card style={staggerStyle(index)} className="animate-slide-up stagger p-5">
+    <Card className="p-5">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-medium text-slate-500">{label}</p>
-        <span className={cn('flex size-9 items-center justify-center rounded-lg', tint)}>
+        <p className="text-ink-muted text-sm font-medium">{label}</p>
+        <span className={cn('flex size-9 items-center justify-center rounded-sm', tint)}>
           <Icon className="size-[18px]" />
         </span>
       </div>
@@ -242,19 +240,17 @@ function StatusBars({
           <li key={status}>
             <Link to={links.applications({ status })} className="group block space-y-1.5">
               <div className="flex items-baseline justify-between text-sm">
-                <span className="text-slate-600 transition-colors group-hover:text-slate-900">
-                  {label}
-                </span>
+                <span className="text-ink-2 group-hover:text-ink transition-colors">{label}</span>
                 <span className="font-medium tabular-nums">
                   {count}
-                  <span className="ml-1.5 text-xs font-normal text-slate-400">{percent}%</span>
+                  <span className="text-ink-faint ml-1.5 text-xs font-normal">{percent}%</span>
                 </span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+              <div className="bg-sunken h-2 overflow-hidden rounded-full">
                 <div
                   style={{ width: `${percent}%`, animationDelay: `${i * 60}ms` }}
                   className={cn(
-                    'animate-grow-x h-full origin-left rounded-full transition-[filter] group-hover:brightness-95',
+                    'h-full origin-left rounded-full transition-[filter] group-hover:brightness-95',
                     STATUS_BAR[tone],
                   )}
                 />

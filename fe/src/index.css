@@ -1,103 +1,177 @@
 @import 'tailwindcss';
 
-/*
- * Design token (FE Architecture mục 10): khai báo một nơi, feature chỉ dùng tên ngữ nghĩa.
- * Bảng màu tiết chế: một màu chủ đạo (indigo) + nền trung tính hơi ấm.
- */
+/* Design Spec v1.0 – mục 3 */
 @theme {
   --font-sans: 'Be Vietnam Pro', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Source Serif 4', ui-serif, Georgia, serif;
 
-  --color-primary: oklch(0.52 0.19 268);
-  --color-primary-hover: oklch(0.47 0.19 268);
-  --color-primary-foreground: oklch(0.99 0 0);
-  --color-primary-soft: oklch(0.96 0.025 268);
+  /* 3.1 Giấy và mực */
+  --color-canvas: #f7f6f2;
+  --color-surface: #ffffff;
+  --color-sunken: #efece5;
+  --color-ink: #1c1b18;
+  --color-ink-2: #3d3a34;
+  --color-ink-muted: #6b675e;
+  --color-ink-faint: #8f8a7f;
+  --color-line: #e4e0d6;
+  --color-line-soft: #eeebe4;
 
-  --color-canvas: oklch(0.975 0.007 268);
+  /* 3.2 Thương hiệu và bằng chứng */
+  --color-brand: #1e5b4f;
+  --color-brand-hover: #174a40;
+  --color-brand-soft: #e6f0ec;
+  --color-marker: #fce98a;
+  --color-marker-strong: #f5d84a;
 
-  /* Theme "Indigo Night": sidebar tối tách khỏi khung main sáng, topbar trắng mờ */
-  --color-sidebar: oklch(0.22 0.05 274);
-  --color-sidebar-deep: oklch(0.17 0.045 276);
-  --color-sidebar-foreground: oklch(0.88 0.02 270);
-  --color-sidebar-muted: oklch(0.64 0.035 272);
-  --color-sidebar-hover: oklch(1 0 0 / 0.07);
-  --color-sidebar-border: oklch(1 0 0 / 0.09);
-  --color-sidebar-active: oklch(0.6 0.2 270);
-  --color-accent: oklch(0.66 0.2 296);
-  --color-topbar: oklch(1 0 0 / 0.82);
+  /* 3.3 Kết quả */
+  --color-good: #2f7d4f;
+  --color-good-ink: #276b43;
+  --color-good-soft: #e7f3ec;
+  --color-warn: #94600f;
+  --color-warn-soft: #fbf0dc;
+  --color-bad: #b3362b;
+  --color-bad-soft: #fbeae7;
+  --color-info: #2f5e8f;
+  --color-info-soft: #e8eef5;
 
-  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06);
-  --shadow-raised: 0 4px 12px -2px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.05);
-  --shadow-glow: 0 6px 18px -6px oklch(0.6 0.2 270 / 0.7);
-  --shadow-topbar: 0 1px 0 0 rgb(15 23 42 / 0.06), 0 6px 16px -10px rgb(15 23 42 / 0.12);
+  /* 3.4 Khung điều hướng */
+  --color-rail: #1f1e1b;
+  --color-rail-hover: #2c2a26;
+  --color-rail-line: #34322d;
+  --color-rail-text: #d9d5cc;
+  --color-rail-muted: #a39e93;
 
-  --animate-fade-in: fade-in 0.25s ease-out both;
-  --animate-slide-up: slide-up 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  --animate-scale-in: scale-in 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  --animate-grow-x: grow-x 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  --animate-shimmer: shimmer 1.4s linear infinite;
-  --animate-blink: blink 1.2s ease-in-out infinite;
+  /* 5.9 Avatar màu đất */
+  --color-earth-moss: #dfe5d3;
+  --color-earth-moss-ink: #3f4f2c;
+  --color-earth-clay: #f0dccf;
+  --color-earth-clay-ink: #7a3e22;
+  --color-earth-sand: #efe4c8;
+  --color-earth-sand-ink: #6b5420;
+  --color-earth-stone: #e2e0da;
+  --color-earth-stone-ink: #4a4740;
+  --color-earth-plum: #eadbe2;
+  --color-earth-plum-ink: #643a50;
+  --color-earth-sea: #d8e5e6;
+  --color-earth-sea-ink: #2c5459;
 
-  @keyframes fade-in {
+  /* 3.6 */
+  --radius-xs: 2px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 10px;
+  --radius-xl: 10px;
+  --radius-2xl: 10px;
+  --shadow-float: 0 8px 24px -8px rgb(28 27 24 / 0.18), 0 0 0 1px rgb(28 27 24 / 0.04);
+
+  /* 3.7 */
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+
+  /* 3.8 */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --animate-float-in: float-in 150ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-marker-focus: marker-focus 300ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-skeleton: skeleton 1.2s ease-in-out infinite;
+  --animate-caret: caret 1s steps(2, start) infinite;
+  --animate-progress: progress 1.4s cubic-bezier(0.2, 0, 0, 1) infinite;
+
+  @keyframes float-in {
     from {
       opacity: 0;
+      transform: scale(0.98);
     }
   }
-  @keyframes slide-up {
+  @keyframes marker-focus {
     from {
-      opacity: 0;
-      transform: translateY(6px);
+      background-color: var(--color-marker);
     }
   }
-  @keyframes scale-in {
-    from {
-      opacity: 0;
-      transform: scale(0.97);
-    }
-  }
-  /* Thanh tiến độ "mọc" từ trái khi xuất hiện */
-  @keyframes grow-x {
-    from {
-      transform: scaleX(0);
-    }
-  }
-  @keyframes shimmer {
-    from {
-      background-position: 200% 0;
-    }
-    to {
-      background-position: -200% 0;
-    }
-  }
-  @keyframes blink {
+  @keyframes skeleton {
     0%,
     100% {
-      opacity: 0.25;
+      opacity: 1;
     }
     50% {
-      opacity: 1;
+      opacity: 0.55;
+    }
+  }
+  @keyframes caret {
+    to {
+      visibility: hidden;
+    }
+  }
+  @keyframes progress {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(250%);
     }
   }
 }
 
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
-    @apply bg-canvas text-slate-900 antialiased;
-    font-feature-settings: 'cv11', 'ss01';
+    @apply bg-canvas text-ink-2 font-sans text-sm antialiased;
+    line-height: 22px;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply text-ink;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  strong,
+  b {
+    @apply text-ink font-semibold;
   }
 
   ::selection {
-    @apply bg-primary/15;
+    @apply bg-marker text-ink;
   }
 
-  /* Hộp thoại <dialog>: hiện ra nhẹ nhàng */
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: none;
+  }
+
+  button,
+  [role='button'],
+  a {
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  svg.lucide {
+    stroke-width: 1.75px;
+  }
+
   dialog[open] {
-    @apply animate-scale-in;
-  }
-  dialog[open]::backdrop {
-    @apply animate-fade-in;
+    @apply animate-float-in;
   }
 
-  /* Tôn trọng cài đặt giảm chuyển động của hệ điều hành */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -110,32 +184,125 @@
   }
 }
 
-@layer utilities {
-  /* Xuất hiện lần lượt cho danh sách: style={{ '--i': index }} */
-  .stagger {
-    animation-delay: calc(min(var(--i, 0), 12) * 30ms);
+/* Thang chữ – 2 họ chữ, phân cấp bằng cỡ và độ đậm */
+@utility type-display {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+  @media (width >= 64rem) {
+    font-size: 44px;
+    line-height: 52px;
   }
-
-  /* Nền sidebar: chuyển nhẹ từ trên xuống, kèm quầng sáng indigo ở góc trên */
-  .bg-sidebar-surface {
-    background:
-      radial-gradient(120% 60% at 0% 0%, oklch(0.6 0.2 270 / 0.22), transparent 60%),
-      linear-gradient(180deg, var(--color-sidebar), var(--color-sidebar-deep));
+}
+@utility type-title {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  line-height: 34px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--color-ink);
+  @media (width >= 40rem) {
+    font-size: 32px;
+    line-height: 40px;
   }
+}
+@utility type-heading {
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--color-ink);
+}
+@utility type-subheading {
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+@utility type-overline {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+@utility type-body {
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 400;
+  color: var(--color-ink-2);
+}
+@utility type-body-strong {
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 500;
+  color: var(--color-ink);
+}
+@utility type-label {
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--color-ink-2);
+}
+@utility type-caption {
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 400;
+  color: var(--color-ink-muted);
+}
+@utility type-read {
+  font-size: 15px;
+  line-height: 26px;
+  font-weight: 400;
+  color: var(--color-ink-2);
+  max-width: 72ch;
+}
+@utility type-read-lg {
+  font-size: 16px;
+  line-height: 28px;
+  font-weight: 400;
+  color: var(--color-ink-2);
+  max-width: 68ch;
+}
+@utility type-figure {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  line-height: 36px;
+  font-weight: 700;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+@utility type-figure-sm {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 700;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+@utility type-num {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+@utility type-code {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+@utility num {
+  font-variant-numeric: tabular-nums;
+}
 
-  /* Dải nhấn mảnh ở mép trên topbar */
-  .bg-brand-line {
-    background: linear-gradient(
-      90deg,
-      var(--color-primary),
-      var(--color-accent),
-      oklch(0.72 0.14 200)
-    );
+@layer components {
+  .mark-evidence {
+    @apply bg-marker text-ink rounded-xs [box-decoration-break:clone] px-0.5;
   }
-
-  /* Nền chấm bi mờ để trang trí khối thương hiệu */
-  .bg-dots {
-    background-image: radial-gradient(rgb(255 255 255 / 0.18) 1px, transparent 1px);
-    background-size: 18px 18px;
+  .mark-evidence-active {
+    @apply bg-marker-strong decoration-ink underline decoration-2 underline-offset-[3px];
   }
 }

@@ -41,9 +41,9 @@ export function NotesPanel({ applicationId }: { applicationId: string }) {
       ) : (
         <ul className="space-y-3">
           {data.map((note) => (
-            <li key={note.id} className="rounded-md bg-slate-50 p-3 text-sm">
+            <li key={note.id} className="bg-canvas rounded-md p-3 text-sm">
               <p className="whitespace-pre-wrap">{note.content}</p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="text-ink-muted mt-1 text-xs">
                 {note.author.fullName} · {formatDateTime(note.createdAt)}
               </p>
             </li>

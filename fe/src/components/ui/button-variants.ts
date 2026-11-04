@@ -1,33 +1,35 @@
 import { cn } from '@/lib/utils'
 
 const variants = {
-  primary: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary-hover',
-  secondary:
-    'bg-white text-slate-700 border border-slate-200 shadow-sm hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300',
-  /** Chỉ cho nút xác nhận trong hộp thoại xoá/từ chối (Design system 10.7) */
-  danger: 'bg-red-600 text-white shadow-sm hover:bg-red-700',
-  /** Hành động tiêu cực ngoài hộp thoại: Từ chối, Đóng tin, Xoá trong trang */
-  'danger-outline':
-    'bg-white text-red-600 border border-red-200 shadow-sm hover:bg-red-50 hover:border-red-300 hover:text-red-700',
-  ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+  primary: 'bg-brand font-semibold text-white hover:bg-brand-hover active:bg-brand-hover',
+  inverse: 'bg-surface font-semibold text-ink hover:bg-canvas',
+  secondary: 'bg-surface text-ink border border-line hover:bg-canvas hover:border-ink-faint',
+  quiet: 'text-ink-2 hover:bg-sunken hover:text-ink',
+  danger: 'bg-bad text-white hover:bg-bad/90',
+  'danger-quiet': 'text-bad hover:bg-bad-soft',
 } as const
 
 const sizes = {
-  sm: 'h-8 px-3 text-sm rounded-md',
-  md: 'h-10 px-4 text-sm rounded-lg',
-  lg: 'h-11 px-6 text-base rounded-lg',
+  sm: 'h-8 px-2.5 text-[13px]',
+  md: 'h-9 px-3.5 text-sm',
+  lg: 'h-11 px-5 text-sm',
+  icon: 'size-9',
+  'icon-sm': 'size-8',
 } as const
 
-export type ButtonStyle = { variant?: keyof typeof variants; size?: keyof typeof sizes }
+export type ButtonVariant = keyof typeof variants
+export type ButtonSize = keyof typeof sizes
+export type ButtonStyle = { variant?: ButtonVariant; size?: ButtonSize }
 
-/** Class của Button – dùng cho <Link> trông như nút (không lồng <button> trong <a>) */
 export function buttonVariants({ variant = 'primary', size = 'md' }: ButtonStyle = {}) {
   return cn(
-    'inline-flex items-center justify-center gap-2 font-medium whitespace-nowrap',
-    'transition-all duration-150 active:scale-[0.98]',
-    'focus-visible:ring-primary/40 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none',
-    'disabled:pointer-events-none disabled:opacity-50',
+    'relative inline-flex items-center justify-center gap-1.5 rounded-sm font-medium whitespace-nowrap select-none',
+    'transition-colors duration-150 ease-(--ease-standard)',
+    'disabled:pointer-events-none',
+    '[&:disabled:not([data-loading])]:bg-sunken [&:disabled:not([data-loading])]:text-ink-faint [&:disabled:not([data-loading])]:border-transparent',
+    'aria-disabled:cursor-not-allowed aria-disabled:bg-sunken aria-disabled:text-ink-faint',
     '[&_svg]:size-4 [&_svg]:shrink-0',
+    'pointer-coarse:after:absolute pointer-coarse:after:inset-x-0 pointer-coarse:after:top-1/2 pointer-coarse:after:h-11 pointer-coarse:after:-translate-y-1/2',
     variants[variant],
     sizes[size],
   )

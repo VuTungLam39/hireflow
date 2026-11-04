@@ -64,7 +64,7 @@ export function DepartmentFormDialog({ open, onClose, department }: Props) {
         <FormField label="Mã" htmlFor="dept-code" error={errors.code?.message}>
           <Input id="dept-code" invalid={!!errors.code} {...register('code')} />
         </FormField>
-        {errors.root && <p className="text-sm text-red-600">{errors.root.message}</p>}
+        {errors.root && <p className="text-bad text-sm">{errors.root.message}</p>}
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="secondary" onClick={close}>
             Huỷ

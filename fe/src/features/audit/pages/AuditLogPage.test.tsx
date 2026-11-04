@@ -74,6 +74,6 @@ describe('AuditLogPage', () => {
         action: 'APPLICATION_STATUS_CHANGED',
         metadata: { from: 'REJECTED', to: 'SCREENING', reopen: true, reason: 'Xét lại' },
       }),
-    ).toBe('Từ chối → Sàng lọc CV (mở lại) · Lý do: Xét lại')
+    ).toBe('Từ chối → Sàng lọc (mở lại) · Lý do: Xét lại')
   })
 })

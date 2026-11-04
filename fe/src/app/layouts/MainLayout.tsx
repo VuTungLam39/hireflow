@@ -1,27 +1,44 @@
-import { Outlet, useLocation } from 'react-router'
+import { Outlet, useMatches } from 'react-router'
 import { useMe } from '@/features/auth'
 import { useRealtimeConnection } from '@/features/notifications'
+import { cn } from '@/lib/utils'
+import { QuickSearch } from './QuickSearch'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 
+export interface RouteHandle {
+  fullWidth?: boolean
+}
+
 export function MainLayout() {
-  useMe() // làm mới thông tin user mỗi khi vào app
+  useMe()
   useRealtimeConnection()
-  const { pathname } = useLocation()
+  const matches = useMatches()
+  const fullWidth = matches.some((m) => (m.handle as RouteHandle | undefined)?.fullWidth)
 
   return (
-    <div className="min-h-screen md:flex">
+    <div className="bg-canvas min-h-dvh md:flex">
+      <a
+        href="#main"
+        className="bg-ink sr-only z-[70] rounded-sm px-3 py-2 text-white focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+      >
+        Bỏ qua tới nội dung
+      </a>
       <Sidebar />
       <div className="min-w-0 flex-1">
         <Topbar />
-        {/* key theo đường dẫn: mỗi lần đổi trang nội dung hiện ra nhẹ nhàng */}
         <main
-          key={pathname}
-          className="animate-slide-up mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8"
+          id="main"
+          tabIndex={-1}
+          className={cn(
+            'mx-auto px-4 pt-6 pb-24 outline-none md:px-6 md:pt-8 lg:px-8',
+            fullWidth ? 'max-w-none' : 'max-w-[1264px]',
+          )}
         >
           <Outlet />
         </main>
       </div>
+      <QuickSearch />
     </div>
   )
 }

@@ -117,26 +117,22 @@ export function ApplyForm({ jobId, onSuccess }: ApplyFormProps) {
       />
 
       <div className="space-y-1">
-        <label className="flex items-start gap-2 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            className="accent-primary mt-0.5 size-4"
-            {...register('consent')}
-          />
+        <label className="text-ink-2 flex items-start gap-2 text-sm">
+          <input type="checkbox" className="accent-brand mt-0.5 size-4" {...register('consent')} />
           <span>
             Tôi đồng ý để công ty lưu trữ và xử lý dữ liệu cá nhân trong CV cho mục đích tuyển dụng,
             tối đa 12 tháng, theo Nghị định 13/2023/NĐ-CP.
           </span>
         </label>
         {errors.consent && (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="text-bad text-sm">
             {errors.consent.message}
           </p>
         )}
       </div>
 
       {errors.root && (
-        <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+        <p role="alert" className="bg-bad-soft text-bad rounded-md p-3 text-sm">
           {errors.root.message}
         </p>
       )}

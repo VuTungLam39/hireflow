@@ -16,7 +16,7 @@ interface RatingInputProps {
 export function RatingInput({ label, value, onChange, invalid }: RatingInputProps) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <span className="text-sm text-slate-700">{label}</span>
+      <span className="text-ink-2 text-sm">{label}</span>
       <div role="radiogroup" aria-label={label} className="flex gap-1">
         {[1, 2, 3, 4, 5].map((score) => (
           <button
@@ -28,12 +28,12 @@ export function RatingInput({ label, value, onChange, invalid }: RatingInputProp
             title={SCORE_LABEL[score]}
             onClick={() => onChange(score)}
             className={cn(
-              'size-9 rounded-lg border text-sm font-semibold transition-colors',
+              'size-9 rounded-sm border text-sm font-semibold transition-colors',
               value === score
-                ? 'border-primary bg-primary text-white'
+                ? 'border-brand bg-brand text-white'
                 : invalid
-                  ? 'border-red-300 text-slate-600 hover:bg-red-50'
-                  : 'border-slate-200 text-slate-600 hover:bg-slate-50',
+                  ? 'border-bad text-ink-2 hover:bg-bad-soft'
+                  : 'border-line text-ink-2 hover:bg-canvas',
             )}
           >
             {score}
@@ -100,7 +100,7 @@ export function FeedbackDialog({
       size="lg"
     >
       <div className="space-y-5">
-        <div className="space-y-3 rounded-xl border border-slate-100 p-4">
+        <div className="border-line-soft space-y-3 rounded-md border p-4">
           {requirements.map((r) => (
             <RatingInput
               key={r.id}
@@ -110,7 +110,7 @@ export function FeedbackDialog({
               onChange={(score) => setRatings((prev) => ({ ...prev, [r.id]: score }))}
             />
           ))}
-          <div className="border-t border-slate-100 pt-3">
+          <div className="border-line-soft border-t pt-3">
             <RatingInput
               label="Đánh giá chung"
               value={overall}
@@ -120,7 +120,7 @@ export function FeedbackDialog({
           </div>
         </div>
         {touched && incomplete && (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="text-bad text-sm">
             Chấm đủ mọi tiêu chí và phần đánh giá chung.
           </p>
         )}
@@ -139,7 +139,7 @@ export function FeedbackDialog({
           />
         </FormField>
         {error && (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="text-bad text-sm">
             {error}
           </p>
         )}

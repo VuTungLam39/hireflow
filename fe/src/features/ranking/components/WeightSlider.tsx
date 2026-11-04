@@ -27,8 +27,8 @@ export const WeightSlider = memo(function WeightSlider({
         <span
           key={value}
           className={cn(
-            'animate-scale-in flex size-6 items-center justify-center rounded-md text-xs font-semibold tabular-nums transition-colors',
-            changed ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700',
+            'animate-float-in flex size-6 items-center justify-center rounded-md text-xs font-semibold tabular-nums transition-colors',
+            changed ? 'bg-warn-soft text-warn' : 'bg-sunken text-ink-2',
           )}
         >
           {value}
@@ -42,9 +42,9 @@ export const WeightSlider = memo(function WeightSlider({
         step={1}
         value={value}
         onChange={(e) => onChange(requirement.id, Number(e.target.value))}
-        className="accent-primary focus-visible:ring-primary/30 h-1.5 w-full cursor-pointer rounded-full focus-visible:ring-4 focus-visible:outline-none"
+        className="accent-brand focus-visible:ring-brand/30 h-1.5 w-full cursor-pointer rounded-full focus-visible:ring-4 focus-visible:outline-none"
       />
-      <div aria-hidden className="flex justify-between px-0.5 text-[10px] text-slate-400">
+      <div aria-hidden className="text-ink-faint flex justify-between px-0.5 text-xs">
         {Array.from({ length: WEIGHT_MAX - WEIGHT_MIN + 1 }, (_, i) => (
           <span key={i}>{WEIGHT_MIN + i}</span>
         ))}

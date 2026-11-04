@@ -122,11 +122,11 @@ export function ScheduleInterviewDialog({
         </FormField>
 
         <fieldset className="space-y-2">
-          <legend className="text-sm font-medium text-slate-700">Người phỏng vấn</legend>
+          <legend className="text-ink-2 text-sm font-medium">Người phỏng vấn</legend>
           {interviewers.isPending ? (
             <Spinner />
           ) : !interviewers.data?.length ? (
-            <p className="text-sm text-slate-500">
+            <p className="text-ink-muted text-sm">
               Chưa có tài khoản vai trò Người phỏng vấn. Nhờ Admin tạo ở trang Người dùng.
             </p>
           ) : (
@@ -140,11 +140,11 @@ export function ScheduleInterviewDialog({
                     return (
                       <label
                         key={u.id}
-                        className="flex cursor-pointer items-start gap-2 rounded-lg border border-slate-200 p-2.5 text-sm hover:bg-slate-50"
+                        className="border-line hover:bg-canvas flex cursor-pointer items-start gap-2 rounded-sm border p-2.5 text-sm"
                       >
                         <input
                           type="checkbox"
-                          className="accent-primary mt-0.5 size-4"
+                          className="accent-brand mt-0.5 size-4"
                           checked={checked}
                           onChange={() =>
                             field.onChange(
@@ -155,8 +155,8 @@ export function ScheduleInterviewDialog({
                           }
                         />
                         <span className="min-w-0">
-                          <span className="block font-medium text-slate-800">{u.fullName}</span>
-                          <span className="block truncate text-xs text-slate-500">{u.email}</span>
+                          <span className="text-ink block font-medium">{u.fullName}</span>
+                          <span className="text-ink-muted block truncate text-xs">{u.email}</span>
                         </span>
                       </label>
                     )
@@ -166,14 +166,14 @@ export function ScheduleInterviewDialog({
             />
           )}
           {errors.interviewerIds && (
-            <p role="alert" className="text-sm text-red-600">
+            <p role="alert" className="text-bad text-sm">
               {errors.interviewerIds.message}
             </p>
           )}
         </fieldset>
 
         {errors.root && (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="text-bad text-sm">
             {errors.root.message}
           </p>
         )}

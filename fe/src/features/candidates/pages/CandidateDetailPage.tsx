@@ -47,7 +47,7 @@ const columns: Column<CandidateApplication>[] = [
     cell: (a) => (
       <Link
         to={links.applicationDetail(a.id)}
-        className="hover:text-primary font-medium transition-colors"
+        className="hover:text-brand font-medium transition-colors"
       >
         {a.job.title}
       </Link>
@@ -70,7 +70,7 @@ const columns: Column<CandidateApplication>[] = [
     key: 'createdAt',
     header: 'Ngày nộp',
     cell: (a) => (
-      <span className="whitespace-nowrap text-slate-500">{formatDateTime(a.createdAt)}</span>
+      <span className="text-ink-muted whitespace-nowrap">{formatDateTime(a.createdAt)}</span>
     ),
   },
 ]
@@ -99,7 +99,7 @@ export default function CandidateDetailPage() {
             <Avatar name={candidate.fullName} size="lg" />
             <span>
               {candidate.fullName}
-              <span className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-normal tracking-normal text-slate-500">
+              <span className="text-ink-muted mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-normal tracking-normal">
                 {!anonymized && (
                   <span className="inline-flex items-center gap-1.5">
                     <Mail className="size-3.5" />
@@ -213,10 +213,10 @@ function ContactCard({ candidate }: { candidate: CandidateDetail }) {
             {...register('phone')}
           />
         </FormField>
-        <p className="text-xs text-slate-500">
+        <p className="text-ink-muted text-xs">
           Email dùng để nhận ra ứng viên giữa các lần nộp nên không sửa được.
         </p>
-        {errors.root && <p className="text-sm text-red-600">{errors.root.message}</p>}
+        {errors.root && <p className="text-bad text-sm">{errors.root.message}</p>}
         {editable && (
           <div className="flex justify-end">
             <Button type="submit" size="sm" loading={update.isPending} disabled={!isDirty}>
@@ -235,13 +235,13 @@ function AnonymizeCard({ candidate }: { candidate: CandidateDetail }) {
   const anonymize = useAnonymizeCandidate(candidate.id)
 
   return (
-    <Card className="space-y-3 border-red-200/80">
+    <Card className="border-bad/80 space-y-3">
       <CardTitle icon={<ShieldAlert />}>Yêu cầu xoá dữ liệu</CardTitle>
-      <p className="text-sm text-slate-600">
+      <p className="text-ink-2 text-sm">
         Khi ứng viên yêu cầu xoá dữ liệu cá nhân: xoá file CV, nội dung CV, bằng chứng và thông tin
         liên hệ. Trạng thái và điểm của các hồ sơ được giữ để số liệu thống kê không lệch.
       </p>
-      <Button variant="danger-outline" size="sm" onClick={() => setOpen(true)}>
+      <Button variant="danger-quiet" size="sm" onClick={() => setOpen(true)}>
         <ShieldOff />
         Ẩn danh ứng viên
       </Button>

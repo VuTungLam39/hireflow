@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button, Input, Select } from '@/components/ui'
-import { cn, staggerStyle } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { REQUIREMENT_TYPE, WEIGHT_MAX, WEIGHT_MIN } from '../constants'
 import {
   requirementsFormSchema,
@@ -62,20 +62,20 @@ export function RequirementEditor({
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-slate-500">
+        <p className="text-ink-muted text-sm">
           Điểm = 100 × Σ(trọng số × mức khớp) / Σ trọng số. Thiếu tiêu chí bắt buộc chỉ gắn cờ,
           không loại ứng viên.
         </p>
         {!readOnly && (
           <Button variant="secondary" size="sm" loading={suggesting} onClick={suggest}>
-            {!suggesting && <ListChecks className="text-primary" />}
+            {!suggesting && <ListChecks className="text-brand" />}
             AI gợi ý từ JD
           </Button>
         )}
       </div>
 
       {/* Tiêu đề cột – chỉ hiện từ md */}
-      <div className="hidden grid-cols-[2fr_1fr_80px_90px_2fr_40px] gap-2 px-1 text-xs font-medium text-slate-500 md:grid">
+      <div className="text-ink-muted hidden grid-cols-[2fr_1fr_80px_90px_2fr_40px] gap-2 px-1 text-xs font-medium md:grid">
         <span>Tiêu chí</span>
         <span>Loại</span>
         <span>Trọng số</span>
@@ -85,8 +85,8 @@ export function RequirementEditor({
       </div>
 
       {showAi && (
-        <div className="animate-slide-up border-primary/20 bg-primary-soft/60 flex items-start gap-2 rounded-lg border px-3 py-2.5 text-sm text-slate-700">
-          <Info className="text-primary mt-0.5 size-4 shrink-0" />
+        <div className="border-brand/20 bg-brand-soft/60 text-ink-2 flex items-start gap-2 rounded-sm border px-3 py-2.5 text-sm">
+          <Info className="text-brand mt-0.5 size-4 shrink-0" />
           <span>
             Các tiêu chí dưới đây do AI tách từ JD. Hãy sửa nhãn, loại, trọng số và từ khoá cho đúng
             ý bạn rồi bấm <strong>Lưu tiêu chí</strong>.
@@ -100,10 +100,9 @@ export function RequirementEditor({
           return (
             <li
               key={field.id}
-              style={staggerStyle(index)}
               className={cn(
-                'grid gap-2 rounded-lg border border-slate-200 p-3 md:grid-cols-[2fr_1fr_80px_90px_2fr_40px] md:border-0 md:p-0',
-                showAi && 'animate-slide-up stagger md:border-l-primary/40 md:border-l-2 md:pl-2',
+                'border-line grid gap-2 rounded-sm border p-3 md:grid-cols-[2fr_1fr_80px_90px_2fr_40px] md:border-0 md:p-0',
+                showAi && 'md:border-l-primary/40 md:border-l-2 md:pl-2',
               )}
             >
               <Input
@@ -156,17 +155,17 @@ export function RequirementEditor({
               />
               {!readOnly && (
                 <Button
-                  variant="ghost"
+                  variant="quiet"
                   size="sm"
                   aria-label="Xoá tiêu chí"
-                  className="text-red-600"
+                  className="text-bad"
                   onClick={() => remove(index)}
                 >
                   <Trash2 />
                 </Button>
               )}
               {err && (
-                <p role="alert" className="text-sm text-red-600 md:col-span-6">
+                <p role="alert" className="text-bad text-sm md:col-span-6">
                   {err.label?.message ?? err.keywords?.message ?? err.minYears?.message}
                 </p>
               )}
@@ -175,17 +174,17 @@ export function RequirementEditor({
         })}
       </ul>
 
-      {rowErrors?.root?.message && <p className="text-sm text-red-600">{rowErrors.root.message}</p>}
-      {rowErrors?.message && <p className="text-sm text-red-600">{rowErrors.message}</p>}
+      {rowErrors?.root?.message && <p className="text-bad text-sm">{rowErrors.root.message}</p>}
+      {rowErrors?.message && <p className="text-bad text-sm">{rowErrors.message}</p>}
 
       {!readOnly && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-          <Button variant="ghost" size="sm" onClick={() => append({ ...EMPTY_ROW })}>
+        <div className="border-line-soft flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+          <Button variant="quiet" size="sm" onClick={() => append({ ...EMPTY_ROW })}>
             <Plus />
             Thêm tiêu chí
           </Button>
           <div className="flex items-center gap-3">
-            <span className={cn('text-sm text-amber-700', !isDirty && 'invisible')}>
+            <span className={cn('text-warn text-sm', !isDirty && 'invisible')}>
               Có thay đổi chưa lưu
             </span>
             <Button type="submit" loading={saving} disabled={!isDirty}>

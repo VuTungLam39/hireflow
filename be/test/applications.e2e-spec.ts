@@ -262,6 +262,9 @@ describe('Applications (e2e)', () => {
       ['&scoreMin=50', ['a1']],
       ['&scoreMax=50', ['a2']],
       ['&missingMust=true', ['a1']],
+      ['&aiStatus=DONE', ['a1', 'a2']],
+      ['&aiStatus=PENDING', ['a3']],
+      ['&aiStatus=FAILED', []],
       ['&createdFrom=2026-10-01&createdTo=2026-10-01', ['a1']],
       ['&createdFrom=2026-10-02', ['a2', 'a3']],
       ['&createdTo=2026-10-10', ['a1', 'a2', 'a3']],
@@ -286,6 +289,7 @@ describe('Applications (e2e)', () => {
       'createdFrom=01-10-2026',
       'scoreMin=101',
       'missingMust=yes',
+      'aiStatus=BROKEN',
       'limit=101',
     ])('rejects %s', async (query) => {
       await as('hr', request(server()).get(`/api/v1/applications?${query}`)).expect(400);

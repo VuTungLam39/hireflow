@@ -17,6 +17,7 @@ export const applicationListSchema = z.object({
   search: z.string().optional().catch(undefined),
   jobId: z.string().optional().catch(undefined),
   status: z.enum(APPLICATION_STATUSES).optional().catch(undefined),
+  aiStatus: z.enum(['PENDING', 'PROCESSING', 'DONE', 'FAILED']).optional().catch(undefined),
   scoreMin: score,
   scoreMax: score,
   /** Cờ "thiếu tiêu chí bắt buộc" */

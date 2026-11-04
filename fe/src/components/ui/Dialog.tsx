@@ -1,22 +1,21 @@
 import { X } from 'lucide-react'
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 interface DialogProps {
   open: boolean
   onClose: () => void
   title: string
-  description?: string
+  description?: ReactNode
   children: ReactNode
-  size?: 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg'
 }
 
-/**
- * Hộp thoại dùng thẻ <dialog> gốc (có sẵn focus trap, phím Esc).
- * Hiệu ứng mở nằm trong index.css (dialog[open]).
- */
+const widths = { sm: 'max-w-[480px]', md: 'max-w-[480px]', lg: 'max-w-[640px]' } as const
+
 export function Dialog({ open, onClose, title, description, children, size = 'md' }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null)
+  const titleId = useId()
 
   useEffect(() => {
     const dialog = ref.current
@@ -29,30 +28,42 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
     <dialog
       ref={ref}
       onClose={onClose}
-      // Bấm ra vùng nền (chính thẻ dialog) thì đóng
       onClick={(e) => e.target === e.currentTarget && onClose()}
+      aria-labelledby={titleId}
       className={cn(
-        'm-auto w-[calc(100%-2rem)] rounded-2xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-900/40 backdrop:backdrop-blur-[2px]',
-        size === 'md' ? 'max-w-md' : 'max-w-2xl',
+        'border-line bg-surface text-ink-2 shadow-float backdrop:bg-ink/40 m-auto w-[calc(100%-2rem)] rounded-md border p-0',
+        'max-h-[calc(100dvh-2rem)]',
+        widths[size],
       )}
     >
-      <div className="p-6">
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-            {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+      {open && (
+        <div className="p-5 sm:p-6">
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h2
+                id={titleId}
+                className="text-ink font-serif text-xl leading-7 font-semibold tracking-[-0.01em]"
+              >
+                {title}
+              </h2>
+              {description && <div className="type-caption mt-1">{description}</div>}
+            </div>
+            <button
+              type="button"
+              aria-label="Đóng"
+              onClick={onClose}
+              className="text-ink-muted hover:bg-sunken hover:text-ink -m-1.5 rounded-sm p-1.5 transition-colors"
+            >
+              <X className="size-[18px]" />
+            </button>
           </div>
-          <button
-            type="button"
-            aria-label="Đóng"
-            onClick={onClose}
-            className="-m-1 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-          >
-            <X className="size-5" />
-          </button>
+          {children}
         </div>
-        {children}
-      </div>
+      )}
     </dialog>
   )
+}
+
+export function DialogFooter({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cn('mt-6 flex flex-wrap justify-end gap-2', className)}>{children}</div>
 }

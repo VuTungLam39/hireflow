@@ -1,14 +1,10 @@
 import { clsx, type ClassValue } from 'clsx'
-import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 /** Gộp className, class Tailwind sau sẽ ghi đè class trước nếu xung đột */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
-
-/** Độ trễ xuất hiện theo thứ tự cho phần tử thứ `index` (đi kèm class `stagger`) */
-export const staggerStyle = (index: number) => ({ '--i': index }) as CSSProperties
 
 export function formatDateTime(value: string | null | undefined): string {
   if (!value) return '—'

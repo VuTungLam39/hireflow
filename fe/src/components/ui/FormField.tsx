@@ -1,29 +1,39 @@
 import type { ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 
 interface FormFieldProps {
   label: string
   htmlFor: string
   error?: string
-  /** Ghi chú nhỏ dưới ô; ẩn khi đang có lỗi */
   hint?: string
+  optional?: boolean
+  className?: string
   children: ReactNode
 }
 
-/** Label + ô nhập + thông báo lỗi (hoặc ghi chú) */
-export function FormField({ label, htmlFor, error, hint, children }: FormFieldProps) {
+export function FormField({
+  label,
+  htmlFor,
+  error,
+  hint,
+  optional,
+  className,
+  children,
+}: FormFieldProps) {
   return (
-    <div className="space-y-1.5">
-      <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-700">
+    <div className={cn('space-y-1.5', className)}>
+      <label htmlFor={htmlFor} className="type-label block">
         {label}
+        {optional && <span className="text-ink-muted font-normal"> · không bắt buộc</span>}
       </label>
       {children}
       {error ? (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-bad text-[13px] leading-5">
           {error}
         </p>
       ) : (
         hint && (
-          <p id={`${htmlFor}-hint`} className="text-xs text-slate-500">
+          <p id={`${htmlFor}-hint`} className="type-caption">
             {hint}
           </p>
         )

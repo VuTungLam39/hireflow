@@ -41,7 +41,7 @@ describe('reopen a closed application', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Mở lại hồ sơ' }))
     const dialog = await screen.findByRole('dialog')
     fireEvent.click(within(dialog).getByRole('button', { name: 'Mở lại' }))
-    expect(await within(dialog).findByText('Vui lòng nhập lý do')).toBeInTheDocument()
+    expect(await within(dialog).findByText('Nhập lý do để tiếp tục')).toBeInTheDocument()
 
     fireEvent.change(within(dialog).getByLabelText('Lý do'), {
       target: { value: 'Ứng viên liên hệ lại' },

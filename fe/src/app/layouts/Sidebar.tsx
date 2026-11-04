@@ -1,6 +1,11 @@
-import { ExternalLink, X } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { ArrowUpRight, X } from 'lucide-react'
 import { Link, NavLink } from 'react-router'
-import { hasPermission } from '@/lib/permissions'
+import { Tooltip } from '@/components/ui'
+import { applicationQueries } from '@/features/applications'
+import { useMediaQuery } from '@/hooks/use-media-query'
+import { usePermission } from '@/hooks/use-permission'
+import { hasPermission, Permission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import { paths } from '@/routes/paths'
 import { useAuthStore } from '@/stores/auth.store'
@@ -8,11 +13,28 @@ import { useUiStore } from '@/stores/ui.store'
 import { BrandMark } from './BrandMark'
 import { navGroups } from './nav-config'
 
-// Theme "Indigo Night" (FE Architecture 10): sidebar tối, tách khỏi khung main sáng
+function usePendingCount() {
+  const allowed = usePermission(Permission.ApplicationRead)
+  const query = useQuery({
+    ...applicationQueries.list({
+      page: 1,
+      limit: 1,
+      status: 'NEW',
+      sortBy: 'createdAt',
+      order: 'DESC',
+    }),
+    enabled: allowed,
+    staleTime: 60_000,
+  })
+  return query.data?.meta?.totalItems
+}
+
 export function Sidebar() {
   const user = useAuthStore((s) => s.user)
   const open = useUiStore((s) => s.sidebarOpen)
   const setOpen = useUiStore((s) => s.setSidebarOpen)
+  const pending = usePendingCount()
+  const railOnly = useMediaQuery('(min-width: 48rem) and (max-width: 63.99rem)')
 
   const groups = navGroups
     .map((group) => ({
@@ -26,96 +48,102 @@ export function Sidebar() {
       {open && (
         <div
           aria-hidden
-          className="animate-fade-in fixed inset-0 z-30 bg-slate-950/50 backdrop-blur-[2px] md:hidden"
+          className="bg-ink/40 fixed inset-0 z-30 md:hidden"
           onClick={() => setOpen(false)}
         />
       )}
 
       <aside
+        aria-label="Thanh điều hướng"
         className={cn(
-          'bg-sidebar-surface text-sidebar-foreground fixed inset-y-0 left-0 z-40 flex w-64 flex-col transition-transform duration-200 ease-out',
-          'md:sticky md:top-0 md:h-screen md:translate-x-0',
-          open ? 'translate-x-0 shadow-2xl' : '-translate-x-full',
+          'bg-rail text-rail-text fixed inset-y-0 left-0 z-40 flex w-[232px] flex-col transition-transform duration-200 ease-(--ease-standard)',
+          'md:sticky md:top-0 md:h-dvh md:w-16 md:translate-x-0 lg:w-[232px]',
+          open ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <div className="flex h-16 items-center justify-between px-5">
-          <Link
-            to={paths.home}
-            className="rounded-lg focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none"
-          >
-            <BrandMark onDark />
+        <div className="flex h-14 shrink-0 items-center justify-between px-4 md:justify-center md:px-0 lg:justify-start lg:px-4">
+          <Link to={paths.home} aria-label="HireFlow – Hôm nay" className="rounded-sm">
+            <BrandMark onDark className="md:hidden lg:inline-flex" />
+            <BrandMark onDark compact className="hidden md:inline-flex lg:hidden" />
           </Link>
           <button
             type="button"
             aria-label="Đóng menu"
-            className="text-sidebar-muted hover:bg-sidebar-hover rounded-md p-1.5 hover:text-white md:hidden"
+            className="text-rail-muted hover:bg-rail-hover rounded-sm p-1.5 hover:text-white md:hidden"
             onClick={() => setOpen(false)}
           >
             <X className="size-5" />
           </button>
         </div>
 
-        <nav className="flex-1 space-y-7 overflow-y-auto px-3 py-5" aria-label="Điều hướng chính">
+        <nav className="flex-1 space-y-6 overflow-y-auto px-2.5 py-4" aria-label="Điều hướng chính">
           {groups.map((group) => (
             <div key={group.title}>
-              <p className="text-sidebar-muted mb-2 px-3 text-[11px] font-semibold tracking-[0.12em] uppercase">
+              <p className="text-rail-muted mb-1.5 px-2.5 text-xs font-semibold tracking-[0.08em] uppercase md:sr-only lg:not-sr-only">
                 {group.title}
               </p>
-              <ul className="space-y-1">
-                {group.items.map(({ to, label, icon: Icon, end }) => (
-                  <li key={to}>
-                    <NavLink
-                      to={to}
-                      end={end}
-                      onClick={() => setOpen(false)}
-                      className={({ isActive }) =>
-                        cn(
-                          'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150',
-                          'focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none',
-                          isActive
-                            ? 'bg-sidebar-active shadow-glow text-white'
-                            : 'text-sidebar-foreground/85 hover:bg-sidebar-hover hover:text-white',
-                        )
-                      }
-                    >
-                      {({ isActive }) => (
-                        <>
-                          <span
-                            aria-hidden
-                            className={cn(
-                              'bg-accent absolute top-1/2 -left-3 h-6 w-1 -translate-y-1/2 rounded-r-full transition-opacity',
-                              isActive ? 'opacity-100' : 'opacity-0',
-                            )}
-                          />
-                          <Icon
-                            className={cn(
-                              'size-[18px] transition-colors',
-                              isActive ? 'text-white' : 'text-sidebar-muted group-hover:text-white',
-                            )}
-                          />
-                          {label}
-                        </>
-                      )}
-                    </NavLink>
-                  </li>
-                ))}
+              <ul className="space-y-0.5">
+                {group.items.map(({ to, label, icon: Icon, end, badge }) => {
+                  const count = badge === 'pending' ? pending : undefined
+                  return (
+                    <li key={to}>
+                      <Tooltip label={label} side="right" className="flex" disabled={!railOnly}>
+                        <NavLink
+                          to={to}
+                          end={end}
+                          onClick={() => setOpen(false)}
+                          aria-label={count ? `${label}, ${count} hồ sơ chờ xem` : undefined}
+                          className={({ isActive }) =>
+                            cn(
+                              'focus-visible:outline-marker relative flex h-9 w-full items-center gap-3 rounded-sm px-2.5 text-sm transition-colors duration-150',
+                              'md:justify-center md:px-0 lg:justify-start lg:px-2.5',
+                              isActive
+                                ? 'bg-rail-hover font-semibold text-white'
+                                : 'text-rail-text hover:bg-rail-hover/70 font-normal hover:text-white',
+                            )
+                          }
+                        >
+                          {({ isActive }) => (
+                            <>
+                              {isActive && (
+                                <span
+                                  aria-hidden
+                                  className="bg-marker absolute top-1.5 bottom-1.5 left-0 w-[3px] rounded-r-xs"
+                                />
+                              )}
+                              <Icon
+                                className={cn(
+                                  'size-[18px] shrink-0',
+                                  isActive ? 'text-white' : 'text-rail-muted',
+                                )}
+                              />
+                              <span className="truncate md:sr-only lg:not-sr-only">{label}</span>
+                              {count != null && count > 0 && (
+                                <span className="num text-rail-muted ml-auto text-xs md:absolute md:top-0.5 md:right-1 md:ml-0 lg:static lg:ml-auto">
+                                  {count > 999 ? '999+' : count.toLocaleString('vi-VN')}
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </NavLink>
+                      </Tooltip>
+                    </li>
+                  )
+                })}
               </ul>
             </div>
           ))}
         </nav>
 
-        <div className="border-sidebar-border border-t p-3">
+        <div className="border-rail-line border-t p-2.5">
           <Link
             to={paths.publicJobs}
             target="_blank"
-            className="text-sidebar-muted hover:bg-sidebar-hover flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:text-white"
+            className="text-rail-muted hover:bg-rail-hover/70 flex h-9 items-center gap-3 rounded-sm px-2.5 text-sm transition-colors hover:text-white md:justify-center md:px-0 lg:justify-start lg:px-2.5"
           >
-            <ExternalLink className="size-[18px]" />
-            Trang tuyển dụng
+            <ArrowUpRight className="size-[18px] shrink-0" />
+            <span className="md:sr-only lg:not-sr-only">Trang tuyển dụng</span>
           </Link>
-          <p className="text-sidebar-muted/70 px-3 pt-2 text-[11px]">
-            HireFlow · ATS có bằng chứng
-          </p>
         </div>
       </aside>
     </>

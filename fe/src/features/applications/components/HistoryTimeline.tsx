@@ -1,6 +1,6 @@
 import { ErrorState } from '@/components/shared'
 import { Skeleton, TONE_DOT } from '@/components/ui'
-import { cn, formatDateTime, staggerStyle } from '@/lib/utils'
+import { cn, formatDateTime } from '@/lib/utils'
 import { APPLICATION_STATUS } from '../constants'
 import { useApplicationHistory } from '../hooks/use-applications'
 
@@ -12,9 +12,9 @@ export function HistoryTimeline({ applicationId }: { applicationId: string }) {
   if (isError) return <ErrorState error={error} onRetry={refetch} />
 
   return (
-    <ol className="relative space-y-5 pl-6 before:absolute before:top-2 before:bottom-2 before:left-[5px] before:w-px before:bg-slate-200">
-      {data.map((item, index) => (
-        <li key={item.id} style={staggerStyle(index)} className="animate-slide-up stagger relative">
+    <ol className="before:bg-line relative space-y-5 pl-6 before:absolute before:top-2 before:bottom-2 before:left-[5px] before:w-px">
+      {data.map((item) => (
+        <li key={item.id} className="relative">
           <span
             aria-hidden
             className={cn(
@@ -22,23 +22,23 @@ export function HistoryTimeline({ applicationId }: { applicationId: string }) {
               TONE_DOT[APPLICATION_STATUS[item.toStatus].tone],
             )}
           />
-          <p className="text-sm text-slate-600">
+          <p className="text-ink-2 text-sm">
             {item.fromStatus ? (
               <>
                 {APPLICATION_STATUS[item.fromStatus].label} →{' '}
-                <span className="font-medium text-slate-900">
+                <span className="text-ink font-medium">
                   {APPLICATION_STATUS[item.toStatus].label}
                 </span>
               </>
             ) : (
-              <span className="font-medium text-slate-900">Nộp hồ sơ</span>
+              <span className="text-ink font-medium">Nộp hồ sơ</span>
             )}
           </p>
-          <p className="text-xs text-slate-400">
+          <p className="text-ink-faint text-xs">
             {formatDateTime(item.changedAt)} · {item.changedBy?.fullName ?? 'Ứng viên'}
           </p>
           {item.reason && (
-            <p className="mt-1.5 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            <p className="bg-canvas text-ink-2 mt-1.5 rounded-sm px-3 py-2 text-sm">
               {item.reason}
             </p>
           )}

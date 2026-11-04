@@ -1,8 +1,15 @@
-/** Màu chấm theo tone – dùng chung cho Badge, chip lọc, dòng thời gian */
 export const TONE_DOT = {
-  neutral: 'bg-slate-400',
-  info: 'bg-blue-500',
-  success: 'bg-emerald-500',
-  warning: 'bg-amber-500',
-  danger: 'bg-red-500',
+  neutral: 'bg-ink-faint',
+  info: 'bg-info',
+  success: 'bg-good',
+  warning: 'bg-warn',
+  danger: 'bg-bad',
+} as const
+
+export const TONE_TEXT = {
+  neutral: 'text-ink-2',
+  info: 'text-info',
+  success: 'text-good-ink',
+  warning: 'text-warn',
+  danger: 'text-bad',
 } as const

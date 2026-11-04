@@ -35,7 +35,7 @@ export default function DepartmentsPage() {
       header: 'Tên',
       cell: (d) => (
         <span className="flex items-center gap-3">
-          <span className="bg-primary-soft text-primary hidden size-8 items-center justify-center rounded-lg md:flex">
+          <span className="bg-brand-soft text-brand hidden size-8 items-center justify-center rounded-sm md:flex">
             <Building2 className="size-4" />
           </span>
           <span className="font-medium">{d.name}</span>
@@ -53,10 +53,10 @@ export default function DepartmentsPage() {
       className: 'text-right whitespace-nowrap',
       cell: (d) => (
         <>
-          <Button variant="ghost" size="sm" onClick={() => setEditing(d)}>
+          <Button variant="quiet" size="sm" onClick={() => setEditing(d)}>
             Sửa
           </Button>
-          <Button variant="ghost" size="sm" className="text-red-600" onClick={() => setDeleting(d)}>
+          <Button variant="quiet" size="sm" className="text-bad" onClick={() => setDeleting(d)}>
             Xoá
           </Button>
         </>

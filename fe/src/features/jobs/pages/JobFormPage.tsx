@@ -162,7 +162,7 @@ function JobFormContent({ job }: { job: Job | undefined }) {
               </Can>
               <Can permission={Permission.JobUpdate}>
                 {deletable && (
-                  <Button variant="danger-outline" onClick={() => setConfirm('delete')}>
+                  <Button variant="danger-quiet" onClick={() => setConfirm('delete')}>
                     <Trash2 />
                     Xoá tin nháp
                   </Button>
@@ -173,7 +173,7 @@ function JobFormContent({ job }: { job: Job | undefined }) {
                   <Button onClick={() => setConfirm('publish')}>Đăng tin</Button>
                 )}
                 {job.status === 'OPEN' && (
-                  <Button variant="danger-outline" onClick={() => setConfirm('close')}>
+                  <Button variant="danger-quiet" onClick={() => setConfirm('close')}>
                     Đóng tin
                   </Button>
                 )}
@@ -230,7 +230,7 @@ function JobFormContent({ job }: { job: Job | undefined }) {
               {...register('jdText')}
             />
           </FormField>
-          {errors.root && <p className="text-sm text-red-600">{errors.root.message}</p>}
+          {errors.root && <p className="text-bad text-sm">{errors.root.message}</p>}
           {canEdit && (
             <div className="flex justify-end">
               <Button type="submit" loading={saveJob.isPending} disabled={!!job && !isDirty}>
@@ -255,7 +255,7 @@ function JobFormContent({ job }: { job: Job | undefined }) {
             onSuggest={() => suggest.mutateAsync(job.id)}
           />
         ) : (
-          <p className="text-sm text-slate-500">
+          <p className="text-ink-muted text-sm">
             Tạo job nháp trước, sau đó AI sẽ gợi ý tiêu chí từ JD đã lưu.
           </p>
         )}
@@ -321,11 +321,11 @@ function StepTitle({
   children: ReactNode
 }) {
   return (
-    <h2 className="flex items-center gap-3 font-semibold text-slate-900">
+    <h2 className="text-ink flex items-center gap-3 font-semibold">
       <span
         className={cn(
           'flex size-7 items-center justify-center rounded-full text-sm font-semibold',
-          muted ? 'bg-slate-100 text-slate-400' : 'bg-primary-soft text-primary',
+          muted ? 'bg-sunken text-ink-faint' : 'bg-brand-soft text-brand',
         )}
       >
         {step}

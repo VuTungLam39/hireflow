@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, MapPin } from 'lucide-react'
+import { Clock, MapPin } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router'
 import { EmptyState, ErrorState, PageHeader } from '@/components/shared'
 import { Badge, Card, Skeleton } from '@/components/ui'
@@ -60,10 +60,10 @@ export default function InterviewsPage() {
               : 'Các buổi phỏng vấn của phòng bạn từ hôm qua đến 30 ngày tới.'
         }
         actions={
-          <label className="flex items-center gap-2 text-sm text-slate-600">
+          <label className="text-ink-2 flex items-center gap-2 text-sm">
             <input
               type="checkbox"
-              className="accent-primary size-4"
+              className="accent-brand size-4"
               checked={includeCancelled}
               onChange={toggleCancelled}
             />
@@ -83,7 +83,6 @@ export default function InterviewsPage() {
       ) : query.data.length === 0 ? (
         <Card>
           <EmptyState
-            icon={CalendarDays}
             title="Chưa có buổi phỏng vấn nào"
             description={
               isInterviewer
@@ -96,31 +95,31 @@ export default function InterviewsPage() {
         <div className="space-y-6">
           {groupByDay(query.data).map((day) => (
             <section key={day[0].scheduledAt} className="space-y-2">
-              <h2 className="text-sm font-semibold text-slate-500 capitalize">
+              <h2 className="text-ink-muted text-sm font-semibold capitalize">
                 {formatDay(day[0].scheduledAt)}
               </h2>
-              <Card className="divide-y divide-slate-100 p-0">
+              <Card className="divide-line-soft divide-y p-0">
                 {day.map((iv) => (
                   <div
                     key={iv.id}
                     className="grid gap-2 px-4 py-3 text-sm md:grid-cols-[7rem_1fr_auto] md:items-center"
                   >
-                    <span className="flex items-center gap-1.5 font-medium text-slate-800 tabular-nums">
-                      <Clock className="size-4 text-slate-400" />
+                    <span className="text-ink flex items-center gap-1.5 font-medium tabular-nums">
+                      <Clock className="text-ink-faint size-4" />
                       {formatTime(iv.scheduledAt)}
                     </span>
                     <span className="min-w-0 space-y-0.5">
                       <Link
                         to={links.applicationDetail(iv.applicationId)}
-                        className="text-primary block truncate font-medium hover:underline"
+                        className="text-brand block truncate font-medium hover:underline"
                       >
                         {iv.application?.candidate.fullName}
                       </Link>
-                      <span className="block truncate text-slate-500">
+                      <span className="text-ink-muted block truncate">
                         {iv.application?.job.title} · Vòng {iv.round} ·{' '}
                         {iv.interviewers.map((p) => p.fullName).join(', ')}
                       </span>
-                      <span className="flex min-w-0 items-center gap-1 text-slate-500">
+                      <span className="text-ink-muted flex min-w-0 items-center gap-1">
                         <MapPin className="size-3.5 shrink-0" />
                         {isLink(iv.location) ? (
                           <a

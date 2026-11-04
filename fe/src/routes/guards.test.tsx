@@ -55,7 +55,7 @@ describe('route guards', () => {
   it('blocks users without the required permission', () => {
     useAuthStore.getState().setSession(user, tokens)
     renderAt('/users')
-    expect(screen.getByText(/không có quyền/i)).toBeInTheDocument()
+    expect(screen.getByText(/không thuộc quyền của bạn/i)).toBeInTheDocument()
   })
 
   it('allows admins into admin routes', () => {

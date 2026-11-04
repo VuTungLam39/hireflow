@@ -138,6 +138,7 @@ export const routes: RouteObject[] = [
                 },
                 {
                   path: paths.applicationDetail,
+                  handle: { fullWidth: true },
                   lazy: page(() => import('@/features/applications/pages/ApplicationDetailPage')),
                 },
               ]),

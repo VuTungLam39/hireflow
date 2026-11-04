@@ -1,4 +1,5 @@
-import { FlaskConical } from 'lucide-react'
+import { Eye, EyeOff, FlaskConical } from 'lucide-react'
+import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { Button, FormField, Input } from '@/components/ui'
@@ -19,6 +20,7 @@ const DEMO_ACCOUNTS = [
 
 export default function LoginPage() {
   const login = useLogin()
+  const [showPassword, setShowPassword] = useState(false)
   const {
     register,
     handleSubmit,
@@ -41,9 +43,9 @@ export default function LoginPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold tracking-tight">Chào mừng trở lại</h1>
-      <p className="mt-1 mb-8 text-sm text-slate-500">
-        Đăng nhập bằng tài khoản nội bộ do Admin cấp.
+      <h1 className="type-title">Đăng nhập</h1>
+      <p className="type-body text-ink-muted mt-1.5 mb-8">
+        Dùng email công việc và mật khẩu của bạn.
       </p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
@@ -58,33 +60,41 @@ export default function LoginPage() {
         </FormField>
 
         <FormField label="Mật khẩu" htmlFor="password" error={errors.password?.message}>
-          <Input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            invalid={!!errors.password}
-            {...register('password')}
-          />
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
+              invalid={!!errors.password}
+              className="pr-10"
+              {...register('password')}
+            />
+            <button
+              type="button"
+              aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+              aria-pressed={showPassword}
+              onClick={() => setShowPassword((v) => !v)}
+              className="text-ink-muted hover:text-ink absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-sm"
+            >
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
         </FormField>
 
+        <Button type="submit" size="lg" className="w-full" loading={login.isPending}>
+          Đăng nhập
+        </Button>
         {errors.root && (
-          <p
-            role="alert"
-            className="animate-scale-in rounded-lg bg-red-50 p-3 text-sm text-red-700 ring-1 ring-red-600/10"
-          >
+          <p role="alert" className="text-bad type-label">
             {errors.root.message}
           </p>
         )}
-
-        <Button type="submit" className="w-full" loading={login.isPending}>
-          Đăng nhập
-        </Button>
       </form>
 
       {env.isDev && (
-        <div className="mt-8 rounded-xl border border-dashed border-slate-300 p-4 text-sm">
-          <p className="mb-3 flex items-center gap-2 font-medium text-slate-600">
-            <FlaskConical className="text-primary size-4" />
+        <div className="border-line mt-8 rounded-md border border-dashed p-4">
+          <p className="type-label mb-3 flex items-center gap-2">
+            <FlaskConical className="text-brand size-4" />
             Tài khoản seed · đăng nhập nhanh với vai trò
           </p>
           <div className="flex flex-wrap gap-2">
@@ -105,9 +115,7 @@ export default function LoginPage() {
         </div>
       )}
 
-      <p className="mt-6 text-center text-sm text-slate-600">
-        Chưa có tài khoản? Liên hệ Admin để được cấp.
-      </p>
+      <p className="type-caption mt-8">Chưa có tài khoản? Liên hệ quản trị viên.</p>
     </>
   )
 }

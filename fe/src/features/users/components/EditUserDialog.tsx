@@ -92,14 +92,14 @@ export function EditUserDialog({ user, isSelf, onClose }: Props) {
           </FormField>
 
           {/* BR-ACC-06: quyền mới nằm trong access token kế tiếp */}
-          <p className="flex gap-2 rounded-lg bg-slate-50 px-3 py-2.5 text-xs text-slate-600">
-            <Info className="mt-px size-3.5 shrink-0 text-slate-400" />
+          <p className="bg-canvas text-ink-2 flex gap-2 rounded-sm px-3 py-2.5 text-xs">
+            <Info className="text-ink-faint mt-px size-3.5 shrink-0" />
             Đổi vai trò hoặc phòng ban có hiệu lực trong tối đa 15 phút, khi phiên của người dùng
             được làm mới.
           </p>
 
           {errors.root && (
-            <p role="alert" className="text-sm text-red-600">
+            <p role="alert" className="text-bad text-sm">
               {errors.root.message}
             </p>
           )}

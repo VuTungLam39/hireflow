@@ -53,13 +53,13 @@ export default function JobsPage() {
           <div className="flex items-center gap-2">
             <Link
               to={canUpdate ? links.jobEdit(job.id) : links.jobRanking(job.id)}
-              className="hover:text-primary font-medium text-slate-900 transition-colors"
+              className="hover:text-brand text-ink font-medium transition-colors"
             >
               {job.title}
             </Link>
             <JobStatusBadge status={job.status} />
           </div>
-          <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-slate-500">
+          <p className="text-ink-muted mt-1 flex flex-wrap gap-x-3 text-xs">
             <span className="inline-flex items-center gap-1">
               <Building2 className="size-3" />
               {job.department.name}
@@ -81,7 +81,7 @@ export default function JobsPage() {
           className="group flex items-center gap-3"
           aria-label={`Xem ${job.applicationCount} hồ sơ của ${job.title}`}
         >
-          <span className="group-hover:text-primary w-8 text-lg font-semibold text-slate-900 tabular-nums transition-colors">
+          <span className="group-hover:text-brand text-ink w-8 text-lg font-semibold tabular-nums transition-colors">
             {job.applicationCount}
           </span>
           <PipelineBar pipeline={job.pipeline} total={job.applicationCount} />
@@ -94,11 +94,11 @@ export default function JobsPage() {
       sortKey: 'publishedAt',
       cell: (job) =>
         job.publishedAt ? (
-          <span className="text-slate-600" title={formatDate(job.publishedAt)}>
+          <span className="text-ink-2" title={formatDate(job.publishedAt)}>
             {formatRelative(job.publishedAt)}
           </span>
         ) : (
-          <span className="text-slate-400">Chưa đăng</span>
+          <span className="text-ink-faint">Chưa đăng</span>
         ),
     },
     {
@@ -110,7 +110,7 @@ export default function JobsPage() {
         <div className="inline-flex gap-1">
           <Link
             to={links.jobRanking(job.id)}
-            className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+            className={buttonVariants({ variant: 'quiet', size: 'sm' })}
           >
             <Trophy />
             Xếp hạng
@@ -119,7 +119,7 @@ export default function JobsPage() {
             {job.status !== 'DRAFT' && (
               <Link
                 to={links.jobMatches(job.id)}
-                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                className={buttonVariants({ variant: 'quiet', size: 'sm' })}
               >
                 <UserSearch />
                 Gợi ý
@@ -129,9 +129,9 @@ export default function JobsPage() {
           <Can permission={Permission.JobPublish}>
             {job.status === 'DRAFT' && (
               <Button
-                variant="ghost"
+                variant="quiet"
                 size="sm"
-                className="text-primary"
+                className="text-brand"
                 onClick={() => setPending({ type: 'publish', job })}
               >
                 <Megaphone />
@@ -140,9 +140,9 @@ export default function JobsPage() {
             )}
             {job.status === 'OPEN' && (
               <Button
-                variant="ghost"
+                variant="quiet"
                 size="sm"
-                className="text-slate-500 hover:text-red-600"
+                className="text-ink-muted hover:text-bad"
                 onClick={() => setPending({ type: 'close', job })}
               >
                 <X />

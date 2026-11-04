@@ -1,50 +1,57 @@
+import { Link } from 'react-router'
+import { links } from '@/routes/paths'
 import { cn } from '@/lib/utils'
 import { PIPELINE_STAGES } from '../constants'
 import type { JobPipeline } from '../types'
 
-interface PipelineBarProps {
+interface PipelineCountsProps {
   pipeline: JobPipeline
   total: number
+  jobId?: string
   className?: string
 }
 
-/**
- * Thanh phân bố hồ sơ của một job theo 4 nhóm (Mới · Đang xử lý · Đã nhận · Đã loại).
- * Cho biết ngay job nào đang ùn hồ sơ chưa xem mà không cần mở từng job.
- */
-export function PipelineBar({ pipeline, total, className }: PipelineBarProps) {
-  if (total === 0) {
-    return <span className="text-xs text-slate-400">Chưa có hồ sơ</span>
-  }
-  const summary = PIPELINE_STAGES.map((s) => `${s.label}: ${pipeline[s.key]}`).join(' · ')
+const STAGE_STATUS: Record<keyof JobPipeline, string | undefined> = {
+  new: 'NEW',
+  inProgress: undefined,
+  hired: 'HIRED',
+  closed: undefined,
+}
 
+export function PipelineCounts({ pipeline, total, jobId, className }: PipelineCountsProps) {
+  if (total === 0) return <span className="type-caption">Chưa có hồ sơ</span>
+  const summary = PIPELINE_STAGES.map((s) => `${s.label}: ${pipeline[s.key]}`).join(' · ')
   return (
-    <div className={cn('w-56 space-y-1.5', className)} title={summary}>
-      <div className="flex h-2 overflow-hidden rounded-full bg-slate-100" aria-hidden>
-        {PIPELINE_STAGES.map((s) =>
-          pipeline[s.key] > 0 ? (
-            <span
-              key={s.key}
-              className={cn('animate-grow-x h-full origin-left', s.bar)}
-              style={{ width: `${(pipeline[s.key] / total) * 100}%` }}
-            />
-          ) : null,
-        )}
-      </div>
-      <p className="flex gap-2.5 text-xs whitespace-nowrap text-slate-500 tabular-nums">
-        <span>
-          <span className="font-semibold text-slate-800">{pipeline.new}</span> mới
-        </span>
-        <span>
-          <span className="font-semibold text-slate-800">{pipeline.inProgress}</span> đang xử lý
-        </span>
-        {pipeline.hired > 0 && (
-          <span className="text-emerald-700">
-            <span className="font-semibold">{pipeline.hired}</span> nhận
+    <span className={cn('num inline-flex gap-4 text-[13px]', className)} aria-label={summary}>
+      {PIPELINE_STAGES.map((s) => {
+        const value = pipeline[s.key]
+        const status = STAGE_STATUS[s.key]
+        const body = (
+          <>
+            <span className={cn('font-semibold', value ? 'text-ink' : 'text-ink-faint')}>
+              {value.toLocaleString('vi-VN')}
+            </span>{' '}
+            <span className="text-ink-muted">{s.short}</span>
+          </>
+        )
+        return jobId && status && value > 0 ? (
+          <Link
+            key={s.key}
+            aria-hidden
+            tabIndex={-1}
+            to={links.applications({ jobId, status })}
+            className="hover:[&>span:first-child]:text-brand whitespace-nowrap"
+          >
+            {body}
+          </Link>
+        ) : (
+          <span key={s.key} aria-hidden className="whitespace-nowrap">
+            {body}
           </span>
-        )}
-      </p>
-      <span className="sr-only">{summary}</span>
-    </div>
+        )
+      })}
+    </span>
   )
 }
+
+export const PipelineBar = PipelineCounts

@@ -22,24 +22,24 @@ interface InterviewPanelProps {
 
 function FeedbackView({ feedback }: { feedback: InterviewFeedback }) {
   return (
-    <div className="space-y-2 rounded-lg bg-slate-50 p-3 text-sm">
+    <div className="bg-canvas space-y-2 rounded-sm p-3 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-medium text-slate-800">{feedback.author.fullName}</span>
-        <span className="flex items-center gap-1 font-semibold text-amber-600">
+        <span className="text-ink font-medium">{feedback.author.fullName}</span>
+        <span className="text-warn flex items-center gap-1 font-semibold">
           <Star className="size-4 fill-current" />
           {feedback.overall}/5
         </span>
       </div>
       <ul className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
         {feedback.ratings.map((r) => (
-          <li key={r.requirementId} className="flex justify-between gap-2 text-slate-600">
+          <li key={r.requirementId} className="text-ink-2 flex justify-between gap-2">
             <span className="truncate">{r.label}</span>
-            <span className="font-medium text-slate-800 tabular-nums">{r.score}</span>
+            <span className="text-ink font-medium tabular-nums">{r.score}</span>
           </li>
         ))}
       </ul>
-      {feedback.comment && <p className="whitespace-pre-line text-slate-700">{feedback.comment}</p>}
-      <p className="text-xs text-slate-400">Gửi {formatDateTime(feedback.submittedAt)}</p>
+      {feedback.comment && <p className="text-ink-2 whitespace-pre-line">{feedback.comment}</p>}
+      <p className="text-ink-faint text-xs">Gửi {formatDateTime(feedback.submittedAt)}</p>
     </div>
   )
 }
@@ -62,7 +62,7 @@ export function InterviewPanel({
   const now = useNow()
 
   if (isPending) return <Skeleton className="h-24" />
-  if (isError) return <p className="text-sm text-red-600">Không tải được lịch phỏng vấn.</p>
+  if (isError) return <p className="text-bad text-sm">Không tải được lịch phỏng vấn.</p>
 
   const interviews = data ?? []
   const canSchedule = canManage && applicationStatus === 'INTERVIEW'
@@ -77,13 +77,13 @@ export function InterviewPanel({
             Đặt lịch phỏng vấn
           </Button>
           {!canSchedule && (
-            <p className="text-xs text-slate-500">Chuyển hồ sơ sang “Phỏng vấn” để đặt lịch.</p>
+            <p className="text-ink-muted text-xs">Chuyển hồ sơ sang “Phỏng vấn” để đặt lịch.</p>
           )}
         </div>
       )}
 
       {interviews.length === 0 ? (
-        <p className="text-sm text-slate-500">Chưa có buổi phỏng vấn nào.</p>
+        <p className="text-ink-muted text-sm">Chưa có buổi phỏng vấn nào.</p>
       ) : (
         <ul className="space-y-3">
           {interviews.map((iv) => {
@@ -93,22 +93,22 @@ export function InterviewPanel({
             const editableMine = !mine || new Date(mine.editableUntil).getTime() > now
             const avg = averageOverall(iv.feedbacks.map((f) => f.overall))
             return (
-              <li key={iv.id} className="space-y-3 rounded-xl border border-slate-200 p-3">
+              <li key={iv.id} className="border-line space-y-3 rounded-md border p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0 space-y-1">
-                    <p className="font-medium text-slate-900">Vòng {iv.round}</p>
-                    <p className="flex items-center gap-1.5 text-sm text-slate-600">
-                      <Clock className="size-4 shrink-0 text-slate-400" />
+                    <p className="text-ink font-medium">Vòng {iv.round}</p>
+                    <p className="text-ink-2 flex items-center gap-1.5 text-sm">
+                      <Clock className="text-ink-faint size-4 shrink-0" />
                       {formatSlot(iv.scheduledAt, iv.durationMinutes)}
                     </p>
-                    <p className="flex min-w-0 items-center gap-1.5 text-sm text-slate-600">
-                      <MapPin className="size-4 shrink-0 text-slate-400" />
+                    <p className="text-ink-2 flex min-w-0 items-center gap-1.5 text-sm">
+                      <MapPin className="text-ink-faint size-4 shrink-0" />
                       {isLink(iv.location) ? (
                         <a
                           href={iv.location}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-primary truncate hover:underline"
+                          className="text-brand truncate hover:underline"
                         >
                           {iv.location}
                         </a>
@@ -126,10 +126,10 @@ export function InterviewPanel({
                   {iv.interviewers.map((p) => (
                     <li
                       key={p.id}
-                      className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-slate-700"
+                      className="bg-sunken text-ink-2 flex items-center gap-1 rounded-full px-2 py-1"
                     >
                       {p.submitted ? (
-                        <Check aria-label="Đã gửi phiếu" className="size-3.5 text-emerald-600" />
+                        <Check aria-label="Đã gửi phiếu" className="text-good size-3.5" />
                       ) : null}
                       {p.fullName}
                     </li>
@@ -137,13 +137,13 @@ export function InterviewPanel({
                 </ul>
 
                 {iv.cancelReason && (
-                  <p className="text-sm text-slate-500">Lý do huỷ: {iv.cancelReason}</p>
+                  <p className="text-ink-muted text-sm">Lý do huỷ: {iv.cancelReason}</p>
                 )}
 
                 {iv.feedbacks.length > 0 && (
                   <div className="space-y-2">
                     {avg !== null && iv.feedbacks.length > 1 && (
-                      <p className="text-sm text-slate-600">
+                      <p className="text-ink-2 text-sm">
                         Trung bình đánh giá chung: <strong>{avg}/5</strong> ({iv.feedbacks.length}{' '}
                         phiếu)
                       </p>
@@ -165,12 +165,12 @@ export function InterviewPanel({
                           {mine ? 'Sửa phiếu đánh giá' : 'Gửi phiếu đánh giá'}
                         </Button>
                       ) : (
-                        <p className="text-xs text-slate-500">
+                        <p className="text-ink-muted text-xs">
                           Đã quá 24 giờ, phiếu không sửa được nữa.
                         </p>
                       )
                     ) : (
-                      <p className="text-xs text-slate-500">
+                      <p className="text-ink-muted text-xs">
                         Phiếu đánh giá mở khi buổi phỏng vấn bắt đầu.
                       </p>
                     ))}
@@ -182,7 +182,7 @@ export function InterviewPanel({
                           Đổi lịch
                         </Button>
                       )}
-                      <Button size="sm" variant="danger-outline" onClick={() => setCancelling(iv)}>
+                      <Button size="sm" variant="danger-quiet" onClick={() => setCancelling(iv)}>
                         <X />
                         Huỷ buổi
                       </Button>

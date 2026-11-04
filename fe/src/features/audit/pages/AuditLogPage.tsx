@@ -1,4 +1,3 @@
-import { ScrollText } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router'
 import { EmptyState, ErrorState, PageHeader } from '@/components/shared'
 import { Badge, Button, Card, FormField, Input, Select, Skeleton } from '@/components/ui'
@@ -11,24 +10,24 @@ import type { AuditLogItem, AuditLogParams } from '../types'
 const DAY = /^\d{4}-\d{2}-\d{2}$/
 
 function Target({ log }: { log: AuditLogItem }) {
-  if (!log.entityId) return <span className="text-slate-400">–</span>
+  if (!log.entityId) return <span className="text-ink-faint">–</span>
   const short = log.entityId.slice(0, 8)
   if (log.entity === 'application') {
     return (
-      <Link className="text-primary hover:underline" to={links.applicationDetail(log.entityId)}>
+      <Link className="text-brand hover:underline" to={links.applicationDetail(log.entityId)}>
         Hồ sơ {short}
       </Link>
     )
   }
   if (log.entity === 'candidate') {
     return (
-      <Link className="text-primary hover:underline" to={links.candidateDetail(log.entityId)}>
+      <Link className="text-brand hover:underline" to={links.candidateDetail(log.entityId)}>
         Ứng viên {short}
       </Link>
     )
   }
   return (
-    <span className="text-slate-600">
+    <span className="text-ink-2">
       {log.entity === 'user' ? 'Người dùng' : 'File CV'} {short}
     </span>
   )
@@ -115,28 +114,27 @@ export default function AuditLogPage() {
       ) : logs.length === 0 ? (
         <Card>
           <EmptyState
-            icon={ScrollText}
             title="Chưa có hành động nào"
             description="Thử bỏ bớt bộ lọc hoặc chọn khoảng ngày khác."
           />
         </Card>
       ) : (
         <Card className="overflow-hidden p-0">
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-line-soft divide-y">
             {logs.map((log) => (
               <li
                 key={log.id}
                 className="grid gap-1 px-4 py-3 text-sm md:grid-cols-[10rem_12rem_1fr_9rem] md:items-start md:gap-4"
               >
-                <span className="text-xs text-slate-500 tabular-nums md:text-sm">
+                <span className="text-ink-muted text-xs tabular-nums md:text-sm">
                   {formatDateTime(log.createdAt)}
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate font-medium text-slate-800">
+                  <span className="text-ink block truncate font-medium">
                     {log.actor?.fullName ?? (log.actorId ? 'Người dùng đã xoá' : 'Hệ thống')}
                   </span>
                   {log.actor && (
-                    <span className="block truncate text-xs text-slate-500">{log.actor.email}</span>
+                    <span className="text-ink-muted block truncate text-xs">{log.actor.email}</span>
                   )}
                 </span>
                 <span className="min-w-0 space-y-1">
@@ -146,16 +144,16 @@ export default function AuditLogPage() {
                     </Badge>
                     <Target log={log} />
                   </span>
-                  <span className="block break-words text-slate-600">{describeAudit(log)}</span>
+                  <span className="text-ink-2 block break-words">{describeAudit(log)}</span>
                 </span>
-                <span className="text-xs text-slate-400 md:text-right">
+                <span className="text-ink-faint text-xs md:text-right">
                   {log.ip ? `IP ${log.ip}` : '–'}
                 </span>
               </li>
             ))}
           </ul>
           {query.hasNextPage && (
-            <div className="border-t border-slate-100 p-3 text-center">
+            <div className="border-line-soft border-t p-3 text-center">
               <Button
                 variant="secondary"
                 size="sm"

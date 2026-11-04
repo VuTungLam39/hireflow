@@ -24,7 +24,7 @@ export function CvTextViewer({ text, highlight }: CvTextViewerProps) {
   return (
     <div
       ref={boxRef}
-      className="relative max-h-[480px] overflow-y-auto rounded-xl border border-slate-100 bg-slate-50/70 p-5 text-sm leading-7 whitespace-pre-wrap text-slate-700"
+      className="border-line-soft bg-canvas/70 text-ink-2 relative max-h-[480px] overflow-y-auto rounded-md border p-5 text-sm leading-7 whitespace-pre-wrap"
     >
       {index < 0 ? (
         text
@@ -35,7 +35,7 @@ export function CvTextViewer({ text, highlight }: CvTextViewerProps) {
           <mark
             key={highlight}
             ref={markRef}
-            className="animate-scale-in rounded bg-amber-200/80 px-0.5 text-slate-900 ring-2 ring-amber-200/80"
+            className="animate-float-in bg-marker/80 text-ink ring-marker/80 rounded px-0.5 ring-2"
           >
             {highlight}
           </mark>

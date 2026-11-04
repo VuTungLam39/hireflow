@@ -65,3 +65,14 @@ export function useAnonymizeCandidate(id: string) {
     onError: (error) => toast.error(getErrorMessage(error)),
   })
 }
+
+export function useCandidateSearch(search: string) {
+  const q = search.trim()
+  return useQuery({
+    queryKey: [...candidateKeys.list(q), 'quick'] as const,
+    queryFn: () => candidatesApi.list({ search: q, limit: 6 }),
+    enabled: q.length >= 2,
+    staleTime: 30_000,
+    placeholderData: (prev) => prev,
+  })
+}

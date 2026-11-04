@@ -10,9 +10,9 @@ import { links } from '@/routes/paths'
 import type { JobMatch, MatchReason } from '../types'
 
 const MATCH_ICON = {
-  1: { icon: CircleCheck, className: 'text-emerald-600', label: 'Khớp' },
-  0.5: { icon: CircleDashed, className: 'text-amber-600', label: 'Khớp một phần' },
-  0: { icon: CircleMinus, className: 'text-slate-400', label: 'Không khớp' },
+  1: { icon: CircleCheck, className: 'text-good', label: 'Khớp' },
+  0.5: { icon: CircleDashed, className: 'text-warn', label: 'Khớp một phần' },
+  0: { icon: CircleMinus, className: 'text-ink-faint', label: 'Không khớp' },
 } as const
 
 function Reason({ reason }: { reason: MatchReason }) {
@@ -22,13 +22,13 @@ function Reason({ reason }: { reason: MatchReason }) {
       <Icon className={`mt-0.5 size-4 shrink-0 ${className}`} aria-label={label} />
       <div className="min-w-0 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className={reason.match ? 'font-medium text-slate-800' : 'text-slate-500'}>
+          <span className={reason.match ? 'text-ink font-medium' : 'text-ink-muted'}>
             {reason.label}
           </span>
           <RequirementTypeBadge type={reason.type} />
         </div>
         {reason.evidence && (
-          <blockquote className="border-l-2 border-slate-200 pl-2 text-xs text-slate-600 italic">
+          <blockquote className="border-line text-ink-2 border-l-2 pl-2 text-xs italic">
             “{reason.evidence}”
           </blockquote>
         )}
@@ -48,17 +48,17 @@ interface MatchCardProps {
 export function MatchCard({ match, canInvite, inviting, onInvite }: MatchCardProps) {
   const { candidate } = match
   return (
-    <Card className="space-y-4">
+    <Card data-match-card className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <Link
             to={links.candidateDetail(candidate.id)}
-            className="font-semibold text-slate-900 hover:underline"
+            className="text-ink font-semibold hover:underline"
           >
             {candidate.fullName}
           </Link>
-          <p className="truncate text-sm text-slate-500">{candidate.email}</p>
-          <p className="text-xs text-slate-500" title={formatDate(match.lastAppliedAt)}>
+          <p className="text-ink-muted truncate text-sm">{candidate.email}</p>
+          <p className="text-ink-muted text-xs" title={formatDate(match.lastAppliedAt)}>
             Nộp gần nhất {formatRelative(match.lastAppliedAt)}
           </p>
         </div>
@@ -74,7 +74,7 @@ export function MatchCard({ match, canInvite, inviting, onInvite }: MatchCardPro
         ))}
       </ul>
 
-      <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-3">
+      <div className="border-line-soft flex flex-wrap items-center justify-end gap-2 border-t pt-3">
         {match.applicationId ? (
           <>
             <Badge tone="success">
@@ -83,7 +83,7 @@ export function MatchCard({ match, canInvite, inviting, onInvite }: MatchCardPro
             </Badge>
             <Link
               to={links.applicationDetail(match.applicationId)}
-              className="text-primary text-sm font-medium hover:underline"
+              className="text-brand text-sm font-medium hover:underline"
             >
               Xem hồ sơ →
             </Link>
