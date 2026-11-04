@@ -68,7 +68,7 @@ describe('interviews', () => {
     const iv = pastInterview()
     renderAt('interviewer@hireflow.dev', links.applicationDetail(iv.applicationId))
     fireEvent.click(await screen.findByRole('button', { name: 'Gửi phiếu đánh giá' }))
-    expect(screen.getByText(/Điểm và bằng chứng của AI được ẩn/)).toBeInTheDocument()
+    expect(screen.getByText(/Mức phù hợp được ẩn để bạn chấm độc lập/)).toBeInTheDocument()
     const dialog = await screen.findByRole('dialog')
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi phiếu' }))
@@ -95,6 +95,7 @@ describe('interviews', () => {
       (a) => a.status === 'INTERVIEW' && !db.interviews.some((i) => i.applicationId === a.id),
     )!
     renderAt('hr@hireflow.dev', links.applicationDetail(app.id))
+    fireEvent.click(await screen.findByRole('tab', { name: /Phỏng vấn/ }))
     fireEvent.click(await screen.findByRole('button', { name: 'Đặt lịch phỏng vấn' }))
     const dialog = await screen.findByRole('dialog')
     fireEvent.click(within(dialog).getByRole('button', { name: 'Đặt lịch' }))
@@ -117,6 +118,7 @@ describe('interviews', () => {
   it('HR cannot schedule while the application is not in INTERVIEW', async () => {
     const app = db.applications.find((a) => a.status === 'SCREENING')!
     renderAt('hr@hireflow.dev', links.applicationDetail(app.id))
+    fireEvent.click(await screen.findByRole('tab', { name: /Phỏng vấn/ }))
     expect(await screen.findByRole('button', { name: 'Đặt lịch phỏng vấn' })).toBeDisabled()
     expect(screen.getByText('Chuyển hồ sơ sang “Phỏng vấn” để đặt lịch.')).toBeInTheDocument()
   })

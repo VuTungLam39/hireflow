@@ -36,6 +36,12 @@ export const applicationQueries = {
       placeholderData: keepPreviousData, // đổi trang không bị nháy
       staleTime: 30_000,
     }),
+  detail: (id: string) =>
+    queryOptions({
+      queryKey: applicationKeys.detail(id),
+      queryFn: () => applicationsApi.get(id),
+      staleTime: 30_000,
+    }),
 }
 
 export function useApplications(params: ApplicationListParams) {
