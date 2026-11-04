@@ -329,9 +329,14 @@ describe('Matching old candidates (e2e)', () => {
     const read = async () =>
       (await as('hr', request(server()).get(`/api/v1/jobs/${ids.otherJob}/matches`)).expect(200))
         .body.data as MatchesView;
+    const jobs = ds.getRepository(Job);
+    const before = (await jobs.findOneByOrFail({ id: ids.otherJob })).updatedAt;
     expect((await read()).pending).toBe(true);
     const view = await waitFor(read, (v) => v.computedJdVersion === 1);
     expect(view).toMatchObject({ pending: false, items: [] });
+    const after = await jobs.findOneByOrFail({ id: ids.otherJob });
+    expect(after.matchedAt).not.toBeNull();
+    expect(after.updatedAt.getTime()).toBe(before.getTime());
   });
 
   it('only Admin and HR see and invite suggestions', async () => {
