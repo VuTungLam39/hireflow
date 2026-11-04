@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { setupServer } from 'msw/node'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import ApplicationDetailPage from '@/features/applications/pages/ApplicationDetailPage'
@@ -121,5 +121,28 @@ describe('interviews', () => {
     fireEvent.click(await screen.findByRole('tab', { name: /Phỏng vấn/ }))
     expect(await screen.findByRole('button', { name: 'Đặt lịch phỏng vấn' })).toBeDisabled()
     expect(screen.getByText('Chuyển hồ sơ sang “Phỏng vấn” để đặt lịch.')).toBeInTheDocument()
+  })
+
+  it('keeps an interview from 3 days ago in “Cần xử lý” until the feedback is sent', async () => {
+    const iv = pastInterview()
+    const original = { scheduledAt: iv.scheduledAt, feedbacks: iv.feedbacks, status: iv.status }
+    Object.assign(iv, {
+      scheduledAt: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+      feedbacks: [],
+      status: 'SCHEDULED',
+    })
+    try {
+      renderAt('interviewer@hireflow.dev', paths.interviews)
+      const section = await screen.findByRole('region', { name: /Cần xử lý/ }, { timeout: 4000 })
+      expect(within(section).getByText('Cần gửi phiếu')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Tuần trước' })).not.toBeInTheDocument()
+
+      cleanup()
+      renderAt('hr@hireflow.dev', paths.interviews)
+      const hrSection = await screen.findByRole('region', { name: /Cần xử lý/ }, { timeout: 4000 })
+      expect(within(hrSection).getByText(/Chờ phiếu/)).toHaveTextContent('Chờ phiếu 0/1')
+    } finally {
+      Object.assign(iv, original)
+    }
   })
 })
