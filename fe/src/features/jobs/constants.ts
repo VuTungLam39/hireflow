@@ -48,3 +48,40 @@ export const JOB_CONFIRM = {
     label: 'Xoá tin nháp',
   },
 } as const
+
+// F-JOB-10 · BR-JOB-08: giá trị khớp BE
+export const JOB_LEVEL = {
+  INTERN: 'Thực tập sinh',
+  FRESHER: 'Mới tốt nghiệp',
+  JUNIOR: 'Junior',
+  MIDDLE: 'Middle',
+  SENIOR: 'Senior',
+  LEAD: 'Trưởng nhóm',
+  MANAGER: 'Quản lý',
+} as const
+export type JobLevel = keyof typeof JOB_LEVEL
+
+export const EMPLOYMENT_TYPE = {
+  FULL_TIME: 'Toàn thời gian',
+  PART_TIME: 'Bán thời gian',
+  CONTRACT: 'Hợp đồng',
+  INTERNSHIP: 'Thực tập',
+} as const
+export type EmploymentType = keyof typeof EMPLOYMENT_TYPE
+
+export const WORK_MODE = {
+  ONSITE: 'Tại văn phòng',
+  HYBRID: 'Hybrid',
+  REMOTE: 'Từ xa',
+} as const
+export type WorkMode = keyof typeof WORK_MODE
+
+export const SALARY_VISIBILITY = {
+  RANGE: 'Hiện khoảng lương',
+  NEGOTIABLE: 'Hiện "Thoả thuận"',
+  HIDDEN: 'Không hiện lương',
+} as const
+export type SalaryVisibility = keyof typeof SALARY_VISIBILITY
+
+export const HEADCOUNT_MAX = 999
+export const BENEFITS_MAX = 5000

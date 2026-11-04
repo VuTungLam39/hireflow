@@ -4,7 +4,7 @@ import { Link } from 'react-router'
 import { ErrorState, KpiStrip, Summary, type Kpi } from '@/components/shared'
 import { Skeleton } from '@/components/ui'
 import { SCORE_GOOD, ScoreBadge } from '@/features/applications'
-import { PipelineCounts, useJobOptions } from '@/features/jobs'
+import { PipelineCounts, deadlineState, useJobOptions } from '@/features/jobs'
 import { cn, VN_TIME_ZONE } from '@/lib/utils'
 import { links, paths } from '@/routes/paths'
 import { useAuthStore } from '@/stores/auth.store'
@@ -33,6 +33,7 @@ export default function DashboardPage() {
   const user = useAuthStore((s) => s.user)
   const isHm = user?.role === Role.HiringManager
   const canOps = usePermission(Permission.OpsManage)
+  const canCloseJobs = usePermission(Permission.JobUpdate)
   const summary = useDashboardSummary()
   const t = useToday()
   const jobs = useJobOptions()
@@ -70,7 +71,7 @@ export default function DashboardPage() {
       key: 'decide',
       count: t.awaitingDecision,
       text: (c) => `${n(c)} buổi phỏng vấn đã có phiếu, chờ quyết định`,
-      to: paths.interviews,
+      to: `${paths.interviews}?pending=decision`,
       action: 'Xem',
     },
     {
@@ -86,9 +87,24 @@ export default function DashboardPage() {
       count: t.otherNew,
       text: (c) => `${n(c)} hồ sơ mới khác chờ xem`,
       hint: `Điểm dưới ${SCORE_GOOD} hoặc chưa chấm xong`,
-      to: links.applications({ status: 'NEW' }),
+      to: `${paths.applications}?status=NEW&bucket=other`,
       action: 'Xem',
     },
+    // BR-JOB-10
+    ...(canCloseJobs
+      ? [
+          {
+            key: 'expiredJobs',
+            count: jobs.data?.filter(
+              (j) => j.status === 'OPEN' && deadlineState(j.deadline)?.expired,
+            ).length,
+            text: (c: number) => `${n(c)} tin đã hết hạn nộp nhưng chưa đóng`,
+            hint: 'Tin đã ẩn khỏi trang tuyển dụng; đóng tin khi xử lý xong hồ sơ',
+            to: `${paths.jobs}?status=OPEN`,
+            action: 'Xem',
+          },
+        ]
+      : []),
     ...(canOps
       ? [
           {

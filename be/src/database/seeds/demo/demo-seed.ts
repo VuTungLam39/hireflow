@@ -40,7 +40,8 @@ import { RefreshToken } from '../../../modules/refresh-tokens/entities/refresh-t
 import { User } from '../../../modules/users/entities/user.entity.js';
 import { ANONYMIZED, APPLICATIONS, type DemoApplication } from './applications.js';
 import { CANDIDATES, type DemoCandidate, type DemoCv } from './candidates.js';
-import { JOBS, type DemoJob } from './jobs.js';
+import { BENEFITS_TEXT, DEMO_BENEFITS, JOB_DETAILS, JOBS, type DemoJob } from './jobs.js';
+import { vnToday } from '../../../common/utils/vn-date.js';
 import { at, DEPARTMENTS, SESSIONS, USERS } from './org.js';
 
 const [PDF_MIME, DOCX_MIME] = CV_MIME_TYPES;
@@ -334,13 +335,29 @@ async function seedJobs(
     const lastSaved = def.versions.at(-1)?.savedAt;
     const updatedAt =
       def.closedAt ?? [def.publishedAt, lastSaved].filter(Boolean).sort().at(-1) ?? def.createdAt;
+    const details = JOB_DETAILS[def.key];
+    const hasBenefits = def.jd.includes(DEMO_BENEFITS);
     await manager.insert(Job, {
       id,
       title: def.title,
       departmentId,
       status: def.status,
       location: def.location,
-      jdText: def.jd.join('\n\n'),
+      jdText: def.jd.filter((p) => p !== DEMO_BENEFITS).join('\n\n'),
+      benefits: hasBenefits ? BENEFITS_TEXT : '',
+      ...(details && {
+        salaryMin: details.salary[0],
+        salaryMax: details.salary[1],
+        salaryVisibility: details.salary[2],
+        level: details.level,
+        employmentType: details.employmentType,
+        workMode: details.workMode,
+        headcount: details.headcount,
+        deadline:
+          details.deadlineInDays === null
+            ? null
+            : vnToday(new Date(Date.now() + details.deadlineInDays * DAY)),
+      }),
       jdVersion,
       createdBy: userIds.get(def.createdBy)!,
       publishedAt: def.publishedAt ? at(def.publishedAt) : null,

@@ -74,6 +74,16 @@ describe('dashboard', () => {
     if (missingTodo) {
       expect(missingTodo.closest('a')!.getAttribute('href')).toContain('scoreMax=69')
     }
+    expect(
+      screen
+        .getByText(/hồ sơ mới khác chờ xem$/)
+        .closest('a')!
+        .getAttribute('href'),
+    ).toBe('/applications?status=NEW&bucket=other')
+    const decide = screen.queryByText(/chờ quyết định$/)
+    if (decide) {
+      expect(decide.closest('a')!.getAttribute('href')).toBe('/interviews?pending=decision')
+    }
     expect(screen.queryByText(/lỗi hoặc kẹt ở bước xử lý CV/)).not.toBeInTheDocument()
   })
 

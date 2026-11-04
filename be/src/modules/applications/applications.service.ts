@@ -7,6 +7,7 @@ import {
   Repository,
   SelectQueryBuilder,
 } from 'typeorm';
+import { SCORE_GOOD } from '../../common/constants/index.js';
 import { PaginatedResult } from '../../common/dto/paginated-result.dto.js';
 import { AiStatus } from '../../common/enums/ai-status.enum.js';
 import { AppEvents } from '../../common/events/app-events.js';
@@ -17,6 +18,7 @@ import { ScoreFlag } from '../../common/enums/score-flag.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { applyDepartmentScope } from '../../common/utils/department-scope.js';
+import { vnToday } from '../../common/utils/vn-date.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity.js';
 import { CvPipelineService } from '../ai/pipeline/cv-pipeline.service.js';
@@ -106,6 +108,7 @@ export class ApplicationsService {
         scoreMin: undefined,
         scoreMax: undefined,
         missingMust: undefined,
+        bucket: undefined,
       });
     }
     const pageQuery = this.filteredQuery(query, user)
@@ -154,6 +157,10 @@ export class ApplicationsService {
       qb.andWhere('app.score <= :scoreMax', { scoreMax: query.scoreMax });
     if (query.missingMust) {
       qb.andWhere(`app.flags @> ARRAY['${ScoreFlag.MissingMust}']::score_flag_enum[]`);
+    }
+    if (query.bucket === 'other') {
+      qb.andWhere('(app.score IS NULL OR app.score < :scoreGood)', { scoreGood: SCORE_GOOD });
+      qb.andWhere(`NOT (app.flags @> ARRAY['${ScoreFlag.MissingMust}']::score_flag_enum[])`);
     }
     if (query.createdFrom) {
       qb.andWhere('app.createdAt >= :createdFrom', {
@@ -450,10 +457,18 @@ export class ApplicationsService {
     file: UploadedCv | undefined,
     requestId?: string,
   ): Promise<null> {
-    const open = await this.dataSource
+    const job = await this.dataSource
       .getRepository(Job)
-      .existsBy({ id: jobId, status: JobStatus.Open });
-    if (!open) throw new NotFoundException('Job not found');
+      .findOne({ select: ['id', 'deadline'], where: { id: jobId, status: JobStatus.Open } });
+    if (!job) throw new NotFoundException('Job not found');
+    // BR-JOB-10
+    if (job.deadline && job.deadline < vnToday()) {
+      throw new BusinessException(
+        ErrorCode.JobExpired,
+        'The application deadline has passed',
+        HttpStatus.CONFLICT,
+      );
+    }
     // BR-APP-06
     if (dto.website) return null;
     const applicationId = await this.submit(

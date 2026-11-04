@@ -13,3 +13,8 @@ afterEach(() => {
   cleanup()
   localStorage.clear()
 })
+
+// Test flow render cả trang qua MSW; khi chạy song song cả bộ có thể vượt 5 s mặc định
+if (/[\\/]src[\\/]test[\\/]flows[\\/]/.test(expect.getState().testPath ?? '')) {
+  vi.setConfig({ testTimeout: 15_000 })
+}

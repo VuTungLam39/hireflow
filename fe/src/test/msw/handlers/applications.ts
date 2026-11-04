@@ -3,6 +3,7 @@ import {
   APPLICATION_STATUS,
   NEXT_STATUS,
   REASON_REQUIRED,
+  SCORE_GOOD,
   type ApplicationStatus,
 } from '@/features/applications'
 import type { DashboardSummary } from '@/features/dashboard'
@@ -87,6 +88,8 @@ export const applicationHandlers = [
         (!scoreMin || (a.score ?? -1) >= Number(scoreMin)) &&
         (!scoreMax || (a.score !== null && a.score <= Number(scoreMax))) &&
         (!p.get('missingMust') || a.flags.includes('MISSING_MUST')) &&
+        (p.get('bucket') !== 'other' ||
+          ((a.score === null || a.score < SCORE_GOOD) && !a.flags.includes('MISSING_MUST'))) &&
         (!from || new Date(a.createdAt) >= from) &&
         (!to || new Date(a.createdAt) <= to) &&
         includesText(`${c.fullName} ${c.email}`, p.get('search'))

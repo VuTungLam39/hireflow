@@ -229,6 +229,105 @@ describe('Jobs (e2e)', () => {
     });
   });
 
+  describe('job details for candidates (F-JOB-10, F-JOB-11)', () => {
+    const pub = (path: string) => request(server()).get(`/api/v1/public/jobs${path}`);
+    const patch = (body: Record<string, unknown>) =>
+      as('hr', request(server()).patch(`/api/v1/jobs/${jobA}`)).send(body);
+
+    it('HR sets salary, level, mode, headcount and benefits on an OPEN job without a new JD version', async () => {
+      const before = (await as('hr', request(server()).get(`/api/v1/jobs/${jobA}`))).body.data;
+      const res = await patch({
+        salaryMin: 20_000_000,
+        salaryMax: 30_000_000,
+        salaryVisibility: 'RANGE',
+        level: 'SENIOR',
+        employmentType: 'FULL_TIME',
+        workMode: 'HYBRID',
+        headcount: 2,
+        benefits: '  Lương tháng 13\nBảo hiểm sức khoẻ  ',
+      }).expect(200);
+      expect(res.body.data).toMatchObject({
+        salaryMin: 20_000_000,
+        salaryMax: 30_000_000,
+        salaryVisibility: 'RANGE',
+        level: 'SENIOR',
+        workMode: 'HYBRID',
+        headcount: 2,
+        benefits: 'Lương tháng 13\nBảo hiểm sức khoẻ',
+        jdVersion: before.jdVersion,
+      });
+    });
+
+    it.each([
+      [{ salaryMin: 40_000_000 }, 'salaryMax'],
+      [{ deadline: '2020-01-01' }, 'deadline'],
+      [{ level: 'GURU' }, 'level'],
+      [{ headcount: 0 }, 'headcount'],
+      [{ benefits: 'x'.repeat(5001) }, 'benefits'],
+    ])('rejects %o', async (body, field) => {
+      const res = await patch(body).expect(400);
+      expect(res.body.errors).toEqual([expect.objectContaining({ field })]);
+    });
+
+    it('BR-JOB-08: candidates see the numbers only in RANGE mode', async () => {
+      expect((await pub(`/${jobA}`).expect(200)).body.data).toMatchObject({
+        salary: { mode: 'RANGE', min: 20_000_000, max: 30_000_000 },
+        level: 'SENIOR',
+        workMode: 'HYBRID',
+        headcount: 2,
+        benefits: 'Lương tháng 13\nBảo hiểm sức khoẻ',
+        expired: false,
+      });
+      await patch({ salaryVisibility: 'NEGOTIABLE' }).expect(200);
+      const negotiable = await pub(`/${jobA}`).expect(200);
+      expect(negotiable.body.data.salary).toEqual({ mode: 'NEGOTIABLE' });
+      expect(JSON.stringify(negotiable.body)).not.toContain('20000000');
+      await patch({ salaryVisibility: 'HIDDEN' }).expect(200);
+      const hidden = await pub(`?search=${run}`).expect(200);
+      const item = hidden.body.data.find((j: { id: string }) => j.id === jobA);
+      expect(item.salary).toBeNull();
+      expect(JSON.stringify(hidden.body)).not.toContain('30000000');
+      await patch({ salaryVisibility: 'RANGE' }).expect(200);
+    });
+
+    it('F-PUB-05: filters the public list by level, employment type and work mode', async () => {
+      const ids = async (q: string) =>
+        (await pub(`?search=${run}${q}`).expect(200)).body.data.map((j: { id: string }) => j.id);
+      expect(await ids('&level=SENIOR&workMode=HYBRID&employmentType=FULL_TIME')).toContain(jobA);
+      expect(await ids('&level=INTERN')).not.toContain(jobA);
+      expect(await ids('&workMode=REMOTE')).not.toContain(jobA);
+      await pub('?level=GURU').expect(400);
+    });
+
+    it('BR-JOB-10: past the deadline the job leaves the list, still opens as expired and refuses applications', async () => {
+      const yesterday = new Date(Date.now() - 86_400_000 - 7 * 3_600_000)
+        .toISOString()
+        .slice(0, 10);
+      await ds.getRepository(Job).update(jobA, { deadline: yesterday });
+      try {
+        const list = await pub(`?search=${run}`).expect(200);
+        expect(list.body.data.map((j: { id: string }) => j.id)).not.toContain(jobA);
+        expect((await pub(`/${jobA}`).expect(200)).body.data).toMatchObject({
+          expired: true,
+          deadline: yesterday,
+        });
+        const apply = request(server()).post(`/api/v1/public/jobs/${jobA}/apply`);
+        for (const [k, v] of Object.entries({
+          fullName: `Hết Hạn ${run}`,
+          email: `expired-${run}@gmail.com`,
+          phone: '0912345678',
+          consent: 'true',
+        }))
+          apply.field(k, v);
+        const res = await apply.expect(409);
+        expect(res.body.code).toBe('JOB_EXPIRED');
+      } finally {
+        await ds.getRepository(Job).update(jobA, { deadline: null });
+      }
+      expect((await pub(`/${jobA}`).expect(200)).body.data.expired).toBe(false);
+    });
+  });
+
   describe('list, scope and ranking', () => {
     beforeAll(async () => {
       const res = await as('hr', request(server()).post('/api/v1/jobs'))

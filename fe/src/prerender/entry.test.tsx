@@ -15,9 +15,17 @@ const job = {
   location: 'Hà Nội',
   department: { name: 'Kỹ thuật' },
   publishedAt: '2026-10-20T02:00:00.000Z',
+  salary: { mode: 'RANGE', min: 25_000_000, max: 40_000_000 },
+  level: 'MIDDLE',
+  employmentType: 'FULL_TIME',
+  workMode: 'HYBRID',
+  headcount: 2,
+  deadline: null,
 }
 const detail = {
   ...job,
+  expired: false,
+  benefits: 'Lương tháng 13',
   jdText: 'Xây dựng API bằng NestJS và PostgreSQL.',
   requirements: [
     { label: 'NestJS', type: 'MUST' },

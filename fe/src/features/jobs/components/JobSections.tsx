@@ -11,7 +11,18 @@ import { applyServerErrors, getErrorMessage } from '@/lib/errors'
 import { Permission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import { useCanEditJob } from '../hooks/use-can-edit-job'
-import { JOB_CONFIRM, REQUIREMENT_TYPE } from '../constants'
+import { withDaySlashes } from '@/lib/vn-day'
+import {
+  EMPLOYMENT_TYPE,
+  HEADCOUNT_MAX,
+  JOB_CONFIRM,
+  JOB_LEVEL,
+  REQUIREMENT_TYPE,
+  SALARY_VISIBILITY,
+  WORK_MODE,
+} from '../constants'
+import { salaryOf } from '../lib/job-details'
+import { JobFacts } from './JobFacts'
 import {
   useCloseJob,
   useDeleteJob,
@@ -20,7 +31,7 @@ import {
   useSaveRequirements,
   useSuggestRequirements,
 } from '../hooks/use-jobs'
-import { jobInfoSchema, type JobInfoForm } from '../schemas/job.schema'
+import { jobInfoSchema, toJobInfoForm, toJobInput, type JobInfoForm } from '../schemas/job.schema'
 import type { Job } from '../types'
 import { RequirementEditor } from './RequirementEditor'
 
@@ -47,15 +58,28 @@ export function JobInfoSection({
     formState: { errors, isDirty },
   } = useForm<JobInfoForm>({
     resolver: zodResolver(jobInfoSchema),
-    values: {
-      title: job?.title ?? '',
-      departmentId: job?.department.id ?? '',
-      location: job?.location ?? '',
-      jdText: job?.jdText ?? '',
-    },
+    values: toJobInfoForm(job),
   })
   const draft = useWatch({ control })
   const deptName = departments.data?.find((d) => d.id === draft.departmentId)?.name
+  const parsedDraft = jobInfoSchema.safeParse(draft)
+  const draftFacts = parsedDraft.success
+    ? (() => {
+        const input = toJobInput(parsedDraft.data)
+        return {
+          salary: salaryOf({
+            salaryVisibility: parsedDraft.data.salaryVisibility,
+            salaryMin: input.salaryMin ?? null,
+            salaryMax: input.salaryMax ?? null,
+          }),
+          level: input.level ?? null,
+          employmentType: parsedDraft.data.employmentType,
+          workMode: parsedDraft.data.workMode,
+          headcount: parsedDraft.data.headcount,
+          deadline: input.deadline ?? null,
+        }
+      })()
+    : null
 
   const preview = (
     <>
@@ -63,6 +87,7 @@ export function JobInfoSection({
       <p className="text-ink-2 mt-1 text-sm">
         {deptName ?? 'Phòng ban'} · {draft.location || 'Địa điểm'}
       </p>
+      {draftFacts && <JobFacts job={draftFacts} className="mt-4 sm:grid-cols-2" />}
       <p className="type-read mt-3 line-clamp-6 whitespace-pre-line">
         {draft.jdText || 'Mô tả công việc sẽ hiện ở đây.'}
       </p>
@@ -83,9 +108,9 @@ export function JobInfoSection({
     </>
   )
 
-  const onSubmit = handleSubmit((input) =>
+  const onSubmit = handleSubmit((form) =>
     saveJob.mutate(
-      { id: job?.id, input },
+      { id: job?.id, input: toJobInput(form) },
       {
         onSuccess: (saved) => !job && onCreated?.(saved.id),
         onError: (error) => {
@@ -166,6 +191,155 @@ export function JobInfoSection({
               {...register('jdText')}
             />
           </FormField>
+
+          <fieldset className="border-line space-y-4 border-t pt-5">
+            <legend className="type-subheading pr-2">Thông tin hiển thị cho ứng viên</legend>
+            <p className="type-caption -mt-2">
+              Không ảnh hưởng điểm chấm và không tạo phiên bản tiêu chí mới.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <FormField
+                label="Lương từ (triệu/tháng)"
+                htmlFor="job-salary-min"
+                error={errors.salaryMin?.message}
+              >
+                <Input
+                  id="job-salary-min"
+                  inputMode="decimal"
+                  placeholder="20"
+                  disabled={!canEdit}
+                  invalid={!!errors.salaryMin}
+                  {...register('salaryMin')}
+                />
+              </FormField>
+              <FormField
+                label="Lương đến (triệu/tháng)"
+                htmlFor="job-salary-max"
+                error={errors.salaryMax?.message}
+              >
+                <Input
+                  id="job-salary-max"
+                  inputMode="decimal"
+                  placeholder="35"
+                  disabled={!canEdit}
+                  invalid={!!errors.salaryMax}
+                  {...register('salaryMax')}
+                />
+              </FormField>
+              <FormField label="Hiển thị lương" htmlFor="job-salary-visibility">
+                <Select
+                  id="job-salary-visibility"
+                  className="w-full"
+                  disabled={!canEdit}
+                  {...register('salaryVisibility')}
+                >
+                  {Object.entries(SALARY_VISIBILITY).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+              </FormField>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <FormField label="Cấp bậc" htmlFor="job-level">
+                <Select
+                  id="job-level"
+                  className="w-full"
+                  disabled={!canEdit}
+                  {...register('level')}
+                >
+                  <option value="">Không ghi</option>
+                  {Object.entries(JOB_LEVEL).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+              </FormField>
+              <FormField label="Hình thức" htmlFor="job-employment-type">
+                <Select
+                  id="job-employment-type"
+                  className="w-full"
+                  disabled={!canEdit}
+                  {...register('employmentType')}
+                >
+                  {Object.entries(EMPLOYMENT_TYPE).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+              </FormField>
+              <FormField label="Làm việc" htmlFor="job-work-mode">
+                <Select
+                  id="job-work-mode"
+                  className="w-full"
+                  disabled={!canEdit}
+                  {...register('workMode')}
+                >
+                  {Object.entries(WORK_MODE).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+              </FormField>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <FormField
+                label="Số lượng cần tuyển"
+                htmlFor="job-headcount"
+                error={errors.headcount?.message}
+              >
+                <Input
+                  id="job-headcount"
+                  type="number"
+                  min={1}
+                  max={HEADCOUNT_MAX}
+                  disabled={!canEdit}
+                  invalid={!!errors.headcount}
+                  {...register('headcount', { valueAsNumber: true })}
+                />
+              </FormField>
+              <FormField
+                label="Hạn nộp hồ sơ"
+                htmlFor="job-deadline"
+                error={errors.deadline?.message}
+                hint="Để trống nếu không giới hạn. Quá hạn thì tin ẩn khỏi trang tuyển dụng."
+              >
+                <Input
+                  id="job-deadline"
+                  inputMode="numeric"
+                  placeholder="dd/mm/yyyy"
+                  disabled={!canEdit}
+                  invalid={!!errors.deadline}
+                  {...register('deadline', {
+                    onChange: (e) => {
+                      e.target.value = withDaySlashes(e.target.value)
+                    },
+                  })}
+                />
+              </FormField>
+            </div>
+            <FormField
+              label="Quyền lợi"
+              htmlFor="job-benefits"
+              error={errors.benefits?.message}
+              hint="Mỗi dòng một ý. Không dùng để gợi ý tiêu chí hay chấm điểm."
+            >
+              <Textarea
+                id="job-benefits"
+                rows={5}
+                className="type-read max-w-none"
+                placeholder={'Lương tháng 13\nBảo hiểm sức khoẻ cho bản thân và gia đình'}
+                disabled={!canEdit}
+                invalid={!!errors.benefits}
+                {...register('benefits')}
+              />
+            </FormField>
+          </fieldset>
+
           {errors.root && (
             <p role="alert" className="text-bad type-label">
               {errors.root.message}

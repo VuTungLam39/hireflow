@@ -1,4 +1,10 @@
-import { JobStatus } from '../../../modules/jobs/entities/job.entity.js';
+import {
+  EmploymentType,
+  JobLevel,
+  JobStatus,
+  SalaryVisibility,
+  WorkMode,
+} from '../../../modules/jobs/entities/job.entity.js';
 import { RequirementType } from '../../../modules/jobs/entities/job-requirement.entity.js';
 
 const M = RequirementType.Must;
@@ -609,3 +615,199 @@ export const JOBS: DemoJob[] = [
     ],
   },
 ];
+
+// F-JOB-10, F-JOB-11 · BR-JOB-08 → 10: thông tin hiển thị cho ứng viên.
+// deadlineInDays tính từ ngày chạy seed (như lịch phỏng vấn) để tin không tự quá hạn;
+// "accountant" cố ý quá hạn từ hôm qua để demo BR-JOB-10.
+export interface DemoJobDetails {
+  salary: [min: number | null, max: number | null, visibility: SalaryVisibility];
+  level: JobLevel | null;
+  employmentType: EmploymentType;
+  workMode: WorkMode;
+  headcount: number;
+  deadlineInDays: number | null;
+}
+
+const M_VND = 1_000_000;
+const R = SalaryVisibility.Range;
+const NEG = SalaryVisibility.Negotiable;
+const FT = EmploymentType.FullTime;
+
+export const JOB_DETAILS: Record<string, DemoJobDetails> = {
+  backend: {
+    salary: [25 * M_VND, 40 * M_VND, R],
+    level: JobLevel.Middle,
+    employmentType: FT,
+    workMode: WorkMode.Hybrid,
+    headcount: 2,
+    deadlineInDays: 21,
+  },
+  java: {
+    salary: [40 * M_VND, 60 * M_VND, R],
+    level: JobLevel.Senior,
+    employmentType: FT,
+    workMode: WorkMode.Onsite,
+    headcount: 1,
+    deadlineInDays: 14,
+  },
+  frontend: {
+    salary: [20 * M_VND, 35 * M_VND, R],
+    level: JobLevel.Middle,
+    employmentType: FT,
+    workMode: WorkMode.Hybrid,
+    headcount: 2,
+    deadlineInDays: 30,
+  },
+  flutter: {
+    salary: [22 * M_VND, 38 * M_VND, R],
+    level: JobLevel.Middle,
+    employmentType: FT,
+    workMode: WorkMode.Onsite,
+    headcount: 1,
+    deadlineInDays: 10,
+  },
+  qa: {
+    salary: [18 * M_VND, 30 * M_VND, R],
+    level: JobLevel.Junior,
+    employmentType: FT,
+    workMode: WorkMode.Onsite,
+    headcount: 2,
+    deadlineInDays: 20,
+  },
+  devops: {
+    salary: [35 * M_VND, null, R],
+    level: JobLevel.Senior,
+    employmentType: FT,
+    workMode: WorkMode.Remote,
+    headcount: 1,
+    deadlineInDays: null,
+  },
+  'data-eng': {
+    salary: [null, null, NEG],
+    level: JobLevel.Senior,
+    employmentType: FT,
+    workMode: WorkMode.Hybrid,
+    headcount: 1,
+    deadlineInDays: 25,
+  },
+  'ai-llm': {
+    salary: [45 * M_VND, 70 * M_VND, R],
+    level: JobLevel.Senior,
+    employmentType: FT,
+    workMode: WorkMode.Hybrid,
+    headcount: 1,
+    deadlineInDays: 45,
+  },
+  fullstack: {
+    salary: [25 * M_VND, 45 * M_VND, R],
+    level: JobLevel.Middle,
+    employmentType: FT,
+    workMode: WorkMode.Hybrid,
+    headcount: 2,
+    deadlineInDays: 30,
+  },
+  po: {
+    salary: [null, null, NEG],
+    level: JobLevel.Senior,
+    employmentType: FT,
+    workMode: WorkMode.Onsite,
+    headcount: 1,
+    deadlineInDays: 15,
+  },
+  uiux: {
+    salary: [18 * M_VND, 28 * M_VND, R],
+    level: JobLevel.Middle,
+    employmentType: FT,
+    workMode: WorkMode.Hybrid,
+    headcount: 1,
+    deadlineInDays: null,
+  },
+  security: {
+    salary: [null, null, SalaryVisibility.Hidden],
+    level: JobLevel.Senior,
+    employmentType: FT,
+    workMode: WorkMode.Onsite,
+    headcount: 1,
+    deadlineInDays: 30,
+  },
+  'sales-b2b': {
+    salary: [15 * M_VND, 25 * M_VND, R],
+    level: JobLevel.Junior,
+    employmentType: FT,
+    workMode: WorkMode.Onsite,
+    headcount: 3,
+    deadlineInDays: 12,
+  },
+  'account-manager': {
+    salary: [20 * M_VND, 30 * M_VND, R],
+    level: JobLevel.Middle,
+    employmentType: FT,
+    workMode: WorkMode.Onsite,
+    headcount: 1,
+    deadlineInDays: null,
+  },
+  cs: {
+    salary: [9 * M_VND, 12 * M_VND, R],
+    level: JobLevel.Fresher,
+    employmentType: FT,
+    workMode: WorkMode.Onsite,
+    headcount: 4,
+    deadlineInDays: 7,
+  },
+  performance: {
+    salary: [18 * M_VND, 28 * M_VND, R],
+    level: JobLevel.Middle,
+    employmentType: FT,
+    workMode: WorkMode.Hybrid,
+    headcount: 1,
+    deadlineInDays: 18,
+  },
+  content: {
+    salary: [12 * M_VND, 18 * M_VND, R],
+    level: JobLevel.Junior,
+    employmentType: EmploymentType.PartTime,
+    workMode: WorkMode.Remote,
+    headcount: 1,
+    deadlineInDays: null,
+  },
+  recruiter: {
+    salary: [14 * M_VND, 22 * M_VND, R],
+    level: JobLevel.Junior,
+    employmentType: FT,
+    workMode: WorkMode.Onsite,
+    headcount: 1,
+    deadlineInDays: 20,
+  },
+  accountant: {
+    salary: [15 * M_VND, 22 * M_VND, R],
+    level: JobLevel.Middle,
+    employmentType: FT,
+    workMode: WorkMode.Onsite,
+    headcount: 1,
+    deadlineInDays: -1,
+  },
+  'data-analyst': {
+    salary: [5 * M_VND, 7 * M_VND, R],
+    level: JobLevel.Intern,
+    employmentType: EmploymentType.Internship,
+    workMode: WorkMode.Onsite,
+    headcount: 2,
+    deadlineInDays: null,
+  },
+  legal: {
+    salary: [null, null, NEG],
+    level: JobLevel.Senior,
+    employmentType: FT,
+    workMode: WorkMode.Onsite,
+    headcount: 1,
+    deadlineInDays: 30,
+  },
+};
+
+/** Đoạn "Quyền lợi" trong JD chuyển sang ô Quyền lợi riêng (F-JOB-11) */
+export const BENEFITS_TEXT = BENEFITS.replace(/^Quyền lợi:\s*/, '')
+  .split(/;\s*/)
+  .map((line) => line.replace(/\.$/, ''))
+  .map((line) => line.charAt(0).toUpperCase() + line.slice(1))
+  .join('\n');
+export const DEMO_BENEFITS = BENEFITS;

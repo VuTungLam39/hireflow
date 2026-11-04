@@ -1,7 +1,24 @@
 import { z } from 'zod'
 import { pageFields, sortFields } from '@/hooks/use-list-params'
-import { JOB_SORT_FIELDS, JOB_STATUS, REQUIREMENT_TYPE, WEIGHT_MAX, WEIGHT_MIN } from '../constants'
-import type { RequirementInput } from '../types'
+import { isoDayToVnText, vnTextToIsoDay } from '@/lib/vn-day'
+import {
+  BENEFITS_MAX,
+  EMPLOYMENT_TYPE,
+  HEADCOUNT_MAX,
+  JOB_LEVEL,
+  JOB_SORT_FIELDS,
+  JOB_STATUS,
+  REQUIREMENT_TYPE,
+  SALARY_VISIBILITY,
+  WEIGHT_MAX,
+  WEIGHT_MIN,
+  WORK_MODE,
+  type EmploymentType,
+  type JobLevel,
+  type SalaryVisibility,
+  type WorkMode,
+} from '../constants'
+import type { Job, JobInput, RequirementInput } from '../types'
 
 /** Bộ lọc danh sách job trên URL */
 export const jobListSchema = z.object({
@@ -16,13 +33,85 @@ export const jobListSchema = z.object({
 })
 export type JobListParams = z.output<typeof jobListSchema>
 
-export const jobInfoSchema = z.object({
-  title: z.string().trim().min(5, 'Tiêu đề ít nhất 5 ký tự').max(200),
-  departmentId: z.string().min(1, 'Chọn phòng ban'),
-  location: z.string().trim().min(2, 'Nhập địa điểm').max(100),
-  jdText: z.string().trim().min(50, 'Mô tả công việc ít nhất 50 ký tự'),
-})
+const MILLION = 1_000_000
+const millionsText = z
+  .string()
+  .trim()
+  .refine(
+    (v) => v === '' || (/^\d{1,4}([.,]\d{1,2})?$/.test(v) && Number(v.replace(',', '.')) > 0),
+    'Nhập số triệu, ví dụ 25 hoặc 12,5',
+  )
+const toVnd = (v: string) => (v === '' ? null : Math.round(Number(v.replace(',', '.')) * MILLION))
+const fromVnd = (v: number | null) => (v === null ? '' : String(v / MILLION).replace('.', ','))
+
+export const jobInfoSchema = z
+  .object({
+    title: z.string().trim().min(5, 'Tiêu đề ít nhất 5 ký tự').max(200),
+    departmentId: z.string().min(1, 'Chọn phòng ban'),
+    location: z.string().trim().min(2, 'Nhập địa điểm').max(100),
+    jdText: z.string().trim().min(50, 'Mô tả công việc ít nhất 50 ký tự'),
+    // F-JOB-10 · BR-JOB-08: lương nhập theo triệu/tháng
+    salaryMin: millionsText,
+    salaryMax: millionsText,
+    salaryVisibility: z.enum(Object.keys(SALARY_VISIBILITY) as [SalaryVisibility]),
+    level: z.enum(['', ...(Object.keys(JOB_LEVEL) as [JobLevel])]),
+    employmentType: z.enum(Object.keys(EMPLOYMENT_TYPE) as [EmploymentType]),
+    workMode: z.enum(Object.keys(WORK_MODE) as [WorkMode]),
+    headcount: z
+      .number({ error: 'Nhập số người cần tuyển' })
+      .int('Nhập số nguyên')
+      .min(1, 'Ít nhất 1 người')
+      .max(HEADCOUNT_MAX, `Tối đa ${HEADCOUNT_MAX}`),
+    // BR-JOB-10: nhập dd/mm/yyyy như mọi ô ngày khác
+    deadline: z
+      .string()
+      .trim()
+      .refine((v) => v === '' || vnTextToIsoDay(v) !== null, 'Ngày không hợp lệ (dd/mm/yyyy)'),
+    benefits: z.string().trim().max(BENEFITS_MAX, `Tối đa ${BENEFITS_MAX} ký tự`),
+  })
+  .superRefine((form, ctx) => {
+    const min = toVnd(form.salaryMin)
+    const max = toVnd(form.salaryMax)
+    if (min !== null && max !== null && min > max) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['salaryMax'],
+        message: 'Lương đến phải lớn hơn hoặc bằng lương từ',
+      })
+    }
+    if (form.salaryVisibility === 'RANGE' && min === null && max === null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['salaryMin'],
+        message: 'Nhập ít nhất một mức lương, hoặc chọn hiện "Thoả thuận"',
+      })
+    }
+  })
 export type JobInfoForm = z.infer<typeof jobInfoSchema>
+
+export const toJobInfoForm = (job: Job | undefined): JobInfoForm => ({
+  title: job?.title ?? '',
+  departmentId: job?.department.id ?? '',
+  location: job?.location ?? '',
+  jdText: job?.jdText ?? '',
+  salaryMin: fromVnd(job?.salaryMin ?? null),
+  salaryMax: fromVnd(job?.salaryMax ?? null),
+  salaryVisibility: job?.salaryVisibility ?? 'NEGOTIABLE',
+  level: job?.level ?? '',
+  employmentType: job?.employmentType ?? 'FULL_TIME',
+  workMode: job?.workMode ?? 'ONSITE',
+  headcount: job?.headcount ?? 1,
+  deadline: isoDayToVnText(job?.deadline),
+  benefits: job?.benefits ?? '',
+})
+
+export const toJobInput = (form: JobInfoForm): JobInput => ({
+  ...form,
+  salaryMin: toVnd(form.salaryMin),
+  salaryMax: toVnd(form.salaryMax),
+  level: form.level === '' ? null : form.level,
+  deadline: form.deadline === '' ? null : vnTextToIsoDay(form.deadline),
+})
 
 const requirementRowSchema = z.object({
   label: z.string().trim().min(2, 'Nhập tên tiêu chí').max(100),

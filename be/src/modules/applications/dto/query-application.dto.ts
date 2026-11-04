@@ -52,6 +52,14 @@ export class QueryApplicationDto extends PaginationQueryDto {
   missingMust?: 'true';
 
   @ApiPropertyOptional({
+    enum: ['other'],
+    description: 'other: dưới SCORE_GOOD điểm hoặc chưa chấm, và không thiếu tiêu chí bắt buộc',
+  })
+  @IsOptional()
+  @IsIn(['other'])
+  bucket?: 'other';
+
+  @ApiPropertyOptional({
     example: '2026-10-01',
     description: 'YYYY-MM-DD giờ Việt Nam, tính cả ngày này',
   })

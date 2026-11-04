@@ -10,7 +10,16 @@ import type {
   MatchLevel,
   ScoreFlag,
 } from '@/features/applications'
-import type { JobStatus, Requirement, RequirementType } from '@/features/jobs'
+import type {
+  JobDetails,
+  JobLevel,
+  JobStatus,
+  Requirement,
+  RequirementType,
+  SalaryVisibility,
+  WorkMode,
+} from '@/features/jobs'
+import { shiftIsoDay, todayIsoDay } from '@/lib/vn-day'
 import { computeScore } from '@/features/ranking'
 import { Role } from '@/types/user'
 
@@ -187,7 +196,7 @@ export interface UserRow {
   updatedAt: string
 }
 
-export interface JobRow {
+export interface JobRow extends JobDetails {
   id: string
   title: string
   status: JobStatus
@@ -430,6 +439,11 @@ const jobSeeds: JobSeed[] = [
   },
 ]
 
+const MILLION = 1_000_000
+const SALARY_CYCLE: SalaryVisibility[] = ['RANGE', 'RANGE', 'NEGOTIABLE', 'HIDDEN']
+const LEVEL_CYCLE: JobLevel[] = ['MIDDLE', 'SENIOR', 'JUNIOR', 'FRESHER']
+const MODE_CYCLE: WorkMode[] = ['HYBRID', 'ONSITE', 'REMOTE']
+
 const jobs: JobRow[] = jobSeeds.map((seed, i) => {
   const createdAt = daysAgo(60 - i * 5)
   return {
@@ -444,6 +458,16 @@ const jobs: JobRow[] = jobSeeds.map((seed, i) => {
     publishedAt: seed.status === 'DRAFT' ? null : daysAgo(50 - i * 5),
     createdAt,
     updatedAt: createdAt,
+    // F-JOB-10, F-JOB-11: giá trị xoay vòng theo vị trí, cố định giữa các lần chạy test
+    salaryMin: (15 + i * 2) * MILLION,
+    salaryMax: (25 + i * 2) * MILLION,
+    salaryVisibility: SALARY_CYCLE[i % SALARY_CYCLE.length],
+    level: LEVEL_CYCLE[i % LEVEL_CYCLE.length],
+    employmentType: i % 5 === 4 ? 'PART_TIME' : 'FULL_TIME',
+    workMode: MODE_CYCLE[i % MODE_CYCLE.length],
+    headcount: 1 + (i % 3),
+    deadline: i % 3 === 2 ? null : shiftIsoDay(todayIsoDay(), 10 + i),
+    benefits: 'Lương tháng 13\nBảo hiểm sức khoẻ cho bản thân và gia đình\n15 ngày phép mỗi năm',
   }
 })
 const jobTrack = new Map(jobs.map((job, i) => [job.id, jobSeeds[i].track]))

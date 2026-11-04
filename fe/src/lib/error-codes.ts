@@ -17,6 +17,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   JOB_NOT_EDITABLE: 'Tin đã đóng, không sửa được JD và tiêu chí',
   JOB_NOT_DELETABLE: 'Chỉ xoá được tin nháp chưa có hồ sơ',
   JOB_NOT_OPEN: 'Tin không còn nhận hồ sơ',
+  JOB_EXPIRED: 'Tin đã hết hạn nhận hồ sơ',
   APPLICATION_DUPLICATED: 'Bạn đã nộp CV cho vị trí này',
   CANDIDATE_ANONYMIZED: 'Ứng viên đã được ẩn danh, không thể thay đổi',
   INTERVIEW_NOT_ALLOWED: 'Chỉ đặt lịch khi hồ sơ đang ở bước Phỏng vấn',

@@ -70,6 +70,15 @@ export const jobHandlers = [
     const now = new Date().toISOString()
     const job: JobRow = {
       id: uid('job'),
+      salaryMin: null,
+      salaryMax: null,
+      salaryVisibility: 'NEGOTIABLE',
+      level: null,
+      employmentType: 'FULL_TIME',
+      workMode: 'ONSITE',
+      headcount: 1,
+      deadline: null,
+      benefits: '',
       ...input,
       status: 'DRAFT',
       jdVersion: 1,

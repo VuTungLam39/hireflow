@@ -57,10 +57,7 @@ export function useToday() {
     { status: 'NEW', scoreMax: SCORE_GOOD - 1, missingMust: 'true' },
     canRead,
   )
-  const otherNew =
-    pending === undefined || highNew === undefined || missingNew === undefined
-      ? undefined
-      : Math.max(0, pending - highNew - missingNew)
+  const otherNew = useCount({ status: 'NEW', bucket: 'other' }, canRead)
   const offers = useCount({ status: 'OFFER' }, canRead)
   const thisWeek = useCount({ createdFrom: b.week }, canRead)
   const lastWeek = useCount({ createdFrom: b.prevWeekFrom, createdTo: b.prevWeekTo }, canRead)
