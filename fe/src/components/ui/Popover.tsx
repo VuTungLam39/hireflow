@@ -8,6 +8,13 @@ interface TriggerProps {
   onClick: () => void
 }
 
+const menuItems = (menu: HTMLElement | null) =>
+  Array.from(
+    menu?.querySelectorAll<HTMLElement>(
+      '[role^="menuitem"]:not([disabled]):not([aria-disabled="true"])',
+    ) ?? [],
+  )
+
 interface PopoverProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -35,14 +42,46 @@ export function Popover({
   const id = useId()
 
   useEffect(() => {
+    if (!open || role !== 'menu') return
+    const items = menuItems(document.getElementById(id))
+    ;(items.find((el) => el.getAttribute('aria-checked') === 'true') ?? items[0])?.focus()
+  }, [open, role, id])
+
+  useEffect(() => {
     if (!open) return
     const onPointer = (e: PointerEvent) => {
       if (!ref.current?.contains(e.target as Node)) onOpenChange(false)
     }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
-      onOpenChange(false)
-      ;(ref.current?.querySelector('[aria-expanded]') as HTMLElement | null)?.focus()
+      if (e.defaultPrevented) return
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        e.stopPropagation()
+        onOpenChange(false)
+        ;(ref.current?.querySelector('[aria-expanded]') as HTMLElement | null)?.focus()
+        return
+      }
+      if (role !== 'menu' || !ref.current?.contains(document.activeElement)) return
+      if (e.key === 'Tab') {
+        onOpenChange(false)
+        return
+      }
+      const items = menuItems(document.getElementById(id))
+      if (items.length === 0) return
+      const at = items.indexOf(document.activeElement as HTMLElement)
+      const next =
+        e.key === 'ArrowDown'
+          ? (at + 1) % items.length
+          : e.key === 'ArrowUp'
+            ? (at - 1 + items.length) % items.length
+            : e.key === 'Home'
+              ? 0
+              : e.key === 'End'
+                ? items.length - 1
+                : null
+      if (next === null) return
+      e.preventDefault()
+      items[next].focus()
     }
     document.addEventListener('pointerdown', onPointer)
     document.addEventListener('keydown', onKey)
@@ -50,7 +89,7 @@ export function Popover({
       document.removeEventListener('pointerdown', onPointer)
       document.removeEventListener('keydown', onKey)
     }
-  }, [open, onOpenChange])
+  }, [open, onOpenChange, role, id])
 
   return (
     <div ref={ref} className="relative inline-flex">
