@@ -86,6 +86,31 @@ describe('FallbackLlmProvider', () => {
     expect(text).toEqual(['Xin ', 'chào']);
   });
 
+  it('skips a provider that just failed for a while, then tries it again', async () => {
+    const flaky = failing('gemini', new LlmError('503', 'gemini', 'UNAVAILABLE', true, 503));
+    const backup = ok('lite');
+    const chain = new FallbackLlmProvider([flaky, backup], 40);
+
+    await chain.generateJson(request);
+    await chain.generateJson(request);
+    expect(flaky.generateJson).toHaveBeenCalledTimes(1);
+    expect(backup.generateJson).toHaveBeenCalledTimes(2);
+
+    await new Promise((r) => setTimeout(r, 60));
+    await chain.generateJson(request);
+    expect(flaky.generateJson).toHaveBeenCalledTimes(2);
+  });
+
+  it('still tries every provider when all of them are cooling down', async () => {
+    const a = failing('gemini', rateLimited('gemini'));
+    const b = failing('groq', rateLimited('groq'));
+    const chain = new FallbackLlmProvider([a, b], 60_000);
+    await expect(chain.generateJson(request)).rejects.toBeInstanceOf(LlmError);
+    await expect(chain.generateJson(request)).rejects.toBeInstanceOf(LlmError);
+    expect(a.generateJson).toHaveBeenCalledTimes(2);
+    expect(b.generateJson).toHaveBeenCalledTimes(2);
+  });
+
   it('names the chain in order', () => {
     expect(new FallbackLlmProvider([ok('gemini'), ok('groq')]).name).toBe('gemini>groq');
   });

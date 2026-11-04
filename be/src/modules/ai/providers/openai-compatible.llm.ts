@@ -18,6 +18,7 @@ export interface OpenAICompatibleConfig {
   models?: Partial<Record<AiTask, string>>;
   jsonMode: JsonMode;
   timeoutMs: number;
+  firstTokenTimeoutMs?: number;
 }
 
 interface CompletionResponse {
@@ -101,22 +102,47 @@ export class OpenAICompatibleLlmProvider implements LlmProvider {
   }
 
   async *streamText(request: StreamRequest): AsyncIterable<string> {
-    const response = await this.post(
-      {
-        model: this.modelFor(request.task),
-        temperature: 0.3,
-        max_tokens: request.maxOutputTokens ?? 2048,
-        stream: true,
-        messages: [{ role: 'system', content: request.system }, ...request.messages],
-      },
-      request.signal,
-    );
-    if (!response.body) throw new LlmError('Empty stream', this.name, 'UNAVAILABLE', true);
+    const started = Date.now();
+    const limit = this.config.firstTokenTimeoutMs;
+    const firstToken = new AbortController();
+    const timer = limit ? setTimeout(() => firstToken.abort(), limit) : undefined;
+    const signal = request.signal
+      ? AbortSignal.any([request.signal, firstToken.signal])
+      : firstToken.signal;
+    const model = this.modelFor(request.task);
+    let firstAt = 0;
+    try {
+      const response = await this.post(
+        {
+          model,
+          temperature: 0.3,
+          max_tokens: request.maxOutputTokens ?? 2048,
+          stream: true,
+          messages: [{ role: 'system', content: request.system }, ...request.messages],
+        },
+        signal,
+      );
+      if (!response.body) throw new LlmError('Empty stream', this.name, 'UNAVAILABLE', true);
 
-    const filter = new ThinkFilter();
-    for await (const delta of readSseDeltas(response.body)) {
-      const text = filter.push(delta);
-      if (text) yield text;
+      const filter = new ThinkFilter();
+      for await (const delta of readSseDeltas(response.body)) {
+        if (!firstAt) {
+          firstAt = Date.now() - started;
+          clearTimeout(timer);
+        }
+        const text = filter.push(delta);
+        if (text) yield text;
+      }
+      this.logger.log(
+        `${request.task} stream model=${model} first=${firstAt}ms total=${Date.now() - started}ms`,
+      );
+    } catch (error) {
+      if (firstToken.signal.aborted && !request.signal?.aborted) {
+        throw new LlmError(`No first token within ${limit}ms`, this.name, 'UNAVAILABLE', true);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
     }
   }
 
