@@ -1,5 +1,5 @@
 import { ArrowRight, SendHorizontal, Square } from 'lucide-react'
-import { useCallback, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { PageHeader, SidePanel } from '@/components/shared'
 import { Button, Textarea, buttonVariants } from '@/components/ui'
@@ -20,13 +20,18 @@ const SUGGESTIONS = [
 let nextId = 0
 const newId = () => `m${++nextId}`
 
+const NEAR_BOTTOM_PX = 80
+
 // US-08 · BR-AI-10 · Design Spec 6.9
 export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [question, setQuestion] = useState('')
   const touch = useMediaQuery('(pointer: coarse)')
   const { start, stop, isStreaming } = useStream()
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+  const pinned = useRef(true)
+  const pending = useRef('')
+  const frame = useRef(0)
   const [cited, setCited] = useState<{ source: ChatSource; index: number } | null>(null)
   const onCite = useCallback(
     (source: ChatSource, index: number) => setCited({ source, index }),
@@ -36,11 +41,28 @@ export default function ChatPage() {
   const updateMessage = (id: string, patch: (m: ChatMessage) => Partial<ChatMessage>) =>
     setMessages((list) => list.map((m) => (m.id === id ? { ...m, ...patch(m) } : m)))
 
+  const flush = (id: string) => {
+    cancelAnimationFrame(frame.current)
+    frame.current = 0
+    const chunk = pending.current
+    pending.current = ''
+    if (chunk) updateMessage(id, (m) => ({ content: m.content + chunk }))
+  }
+
+  useEffect(() => () => cancelAnimationFrame(frame.current), [])
+
+  useLayoutEffect(() => {
+    const list = listRef.current
+    if (list && pinned.current) list.scrollTop = list.scrollHeight
+  }, [messages])
+
   const ask = async (text: string) => {
     const q = text.trim()
     if (!q || isStreaming) return
     const answerId = newId()
     setQuestion('')
+    pinned.current = true
+    pending.current = ''
     setMessages((list) => [
       ...list,
       { id: newId(), role: 'user', content: q, sources: [], status: 'done' },
@@ -54,8 +76,8 @@ export default function ChatPage() {
         onEvent: ({ event, data }) => {
           if (event === 'token') {
             const { text: chunk } = JSON.parse(data) as { text: string }
-            updateMessage(answerId, (m) => ({ content: m.content + chunk }))
-            bottomRef.current?.scrollIntoView({ block: 'end' })
+            pending.current += chunk
+            if (!frame.current) frame.current = requestAnimationFrame(() => flush(answerId))
           } else if (event === 'error') {
             const { code, message } = JSON.parse(data) as { code?: string; message: string }
             throw new Error((code && ERROR_MESSAGES[code]) || message)
@@ -64,8 +86,10 @@ export default function ChatPage() {
           }
         },
       })
+      flush(answerId)
       updateMessage(answerId, () => ({ status: 'done' }))
     } catch (error) {
+      flush(answerId)
       updateMessage(answerId, () => ({ status: 'error', content: getErrorMessage(error) }))
     }
   }
@@ -82,7 +106,17 @@ export default function ChatPage() {
         description="Chỉ tìm trong CV bạn có quyền xem · mỗi ý trả lời kèm số trích dẫn tới đúng đoạn CV"
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto py-6" aria-live="polite">
+      <div
+        ref={listRef}
+        onScroll={(e) => {
+          const el = e.currentTarget
+          pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX
+        }}
+        className="min-h-0 flex-1 overflow-y-auto py-6"
+      >
+        <p role="status" className="sr-only">
+          {isStreaming ? 'Đang trả lời…' : messages.length > 0 ? 'Đã trả lời xong' : ''}
+        </p>
         {messages.length === 0 ? (
           <section aria-labelledby="chat-suggestions">
             <h2 id="chat-suggestions" className="type-heading">
@@ -111,7 +145,6 @@ export default function ChatPage() {
             ))}
           </div>
         )}
-        <div ref={bottomRef} />
       </div>
 
       <form

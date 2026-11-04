@@ -175,6 +175,67 @@ describe('OpenAICompatibleLlmProvider', () => {
       expect(lastBody()).toMatchObject({ stream: true, model: 'flash' });
     });
 
+    const hang = (_url: string, init: RequestInit) =>
+      new Promise<Response>((_, reject) =>
+        init.signal!.addEventListener('abort', () =>
+          reject(new DOMException('aborted', 'AbortError')),
+        ),
+      );
+    const drain = async (provider: OpenAICompatibleLlmProvider, signal?: AbortSignal) => {
+      for await (const _ of provider.streamText({
+        task: 'chat',
+        system: 's',
+        messages: [],
+        signal,
+      }));
+    };
+
+    it('a model that sends nothing within firstTokenTimeoutMs fails fast as retryable, so the next model can answer', async () => {
+      fetchMock.mockImplementation(hang);
+      const started = Date.now();
+      const error = await drain(
+        new OpenAICompatibleLlmProvider(config({ firstTokenTimeoutMs: 50 })),
+      ).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(LlmError);
+      expect(error).toMatchObject({ code: 'UNAVAILABLE', retryable: true });
+      expect(Date.now() - started).toBeLessThan(2000);
+    });
+
+    it('a slow answer is not cut off once the first token has arrived', async () => {
+      const encoder = new TextEncoder();
+      fetchMock.mockResolvedValue(
+        new Response(
+          new ReadableStream({
+            async start(controller) {
+              controller.enqueue(encoder.encode(delta('Một ')));
+              await new Promise((r) => setTimeout(r, 120));
+              controller.enqueue(encoder.encode(delta('hai')));
+              controller.close();
+            },
+          }),
+          { status: 200 },
+        ),
+      );
+      let text = '';
+      for await (const t of new OpenAICompatibleLlmProvider(
+        config({ firstTokenTimeoutMs: 50 }),
+      ).streamText({ task: 'chat', system: 's', messages: [] })) {
+        text += t;
+      }
+      expect(text).toBe('Một hai');
+    });
+
+    it('the user stopping the answer is not reported as an outage', async () => {
+      fetchMock.mockImplementation(hang);
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), 20);
+      const error = await drain(
+        new OpenAICompatibleLlmProvider(config({ firstTokenTimeoutMs: 5000 })),
+        controller.signal,
+      ).catch((e: unknown) => e);
+      expect(error).not.toBeInstanceOf(LlmError);
+    });
+
     it('hides <think> blocks split across deltas', async () => {
       fetchMock.mockResolvedValue(
         sse([delta('<thi'), delta('nk>nghĩ</th'), delta('ink>Kết '), delta('quả')]),

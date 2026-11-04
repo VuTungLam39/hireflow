@@ -38,7 +38,11 @@ export const ChatMessageView = memo(function ChatMessageView({
         )}
       >
         {message.status === 'streaming' && !message.content ? (
-          <span className="text-ink-muted">Đang tìm trong kho CV…</span>
+          <span className="text-ink-muted">
+            {message.sources.length > 0
+              ? `Đã tìm thấy ${message.sources.length} đoạn CV liên quan, đang soạn câu trả lời…`
+              : 'Đang tìm trong kho CV…'}
+          </span>
         ) : (
           parseCitations(message.content).map((seg, i) => {
             if (seg.type === 'text') return <span key={i}>{seg.text}</span>

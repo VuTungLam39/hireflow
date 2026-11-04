@@ -31,6 +31,7 @@ function buildOne(name: LlmProviderName, config: AiConfig): LlmProvider {
         models: config.gemini.extractModel ? { 'extract-cv': config.gemini.extractModel } : {},
         jsonMode: 'json_schema',
         timeoutMs: config.timeoutMs,
+        firstTokenTimeoutMs: config.firstTokenTimeoutMs,
       });
     case 'groq':
       return new OpenAICompatibleLlmProvider({
@@ -40,6 +41,7 @@ function buildOne(name: LlmProviderName, config: AiConfig): LlmProvider {
         model: required(config.groq.model, 'GROQ_MODEL', name),
         jsonMode: config.groq.jsonMode,
         timeoutMs: config.timeoutMs,
+        firstTokenTimeoutMs: config.firstTokenTimeoutMs,
       });
     case 'ollama':
       return new OpenAICompatibleLlmProvider({
@@ -57,7 +59,23 @@ function buildOne(name: LlmProviderName, config: AiConfig): LlmProvider {
 }
 
 export function buildLlmProvider(config: AiConfig): LlmProvider {
-  const providers = config.llmProviders.map((name) => buildOne(name, config));
+  const providers = config.llmProviders.flatMap((name) => {
+    const provider = buildOne(name, config);
+    const fallback = config.gemini.fallbackModel;
+    if (name !== 'gemini' || !fallback || fallback === config.gemini.model) return [provider];
+    return [
+      provider,
+      new OpenAICompatibleLlmProvider({
+        name: `gemini:${fallback}`,
+        baseUrl: config.gemini.baseUrl,
+        apiKey: config.gemini.apiKey,
+        model: fallback,
+        jsonMode: 'json_schema',
+        timeoutMs: config.timeoutMs,
+        firstTokenTimeoutMs: config.firstTokenTimeoutMs,
+      }),
+    ];
+  });
   return providers.length === 1 ? providers[0] : new FallbackLlmProvider(providers);
 }
 

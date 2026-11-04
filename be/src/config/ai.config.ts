@@ -17,6 +17,7 @@ export const buildAiConfig = () => ({
     .map((p) => p.trim())
     .filter(Boolean) as LlmProviderName[],
   timeoutMs: Number(process.env.AI_TIMEOUT_MS ?? 60000),
+  firstTokenTimeoutMs: Number(process.env.AI_FIRST_TOKEN_TIMEOUT_MS ?? 15000),
   promptVersion: process.env.AI_PROMPT_VERSION ?? 'v3',
   gemini: {
     baseUrl:
@@ -24,6 +25,7 @@ export const buildAiConfig = () => ({
     apiKey: optional(process.env.GEMINI_API_KEY),
     model: optional(process.env.GEMINI_MODEL),
     extractModel: optional(process.env.GEMINI_MODEL_EXTRACT),
+    fallbackModel: optional(process.env.GEMINI_MODEL_FALLBACK),
   },
   groq: {
     baseUrl: process.env.GROQ_BASE_URL ?? 'https://api.groq.com/openai/v1',

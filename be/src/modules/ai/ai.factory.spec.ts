@@ -12,6 +12,8 @@ const AI_KEYS = [
   'GEMINI_API_KEY',
   'GEMINI_MODEL',
   'GEMINI_MODEL_EXTRACT',
+  'GEMINI_MODEL_FALLBACK',
+  'AI_FIRST_TOKEN_TIMEOUT_MS',
   'GROQ_API_KEY',
   'GROQ_MODEL',
   'EMBEDDING_PROVIDER',
@@ -52,6 +54,29 @@ describe('AI provider factory', () => {
     );
     expect(llm).toBeInstanceOf(FallbackLlmProvider);
     expect(llm.name).toBe('gemini>groq>ollama');
+  });
+
+  it('GEMINI_MODEL_FALLBACK adds a second Gemini model right after the main one', () => {
+    const llm = buildLlmProvider(
+      withEnv({
+        LLM_PROVIDERS: 'gemini,groq',
+        GEMINI_API_KEY: 'g',
+        GEMINI_MODEL: 'flash',
+        GEMINI_MODEL_FALLBACK: 'flash-lite',
+        GROQ_API_KEY: 'q',
+        GROQ_MODEL: 'qwen',
+      }),
+    );
+    expect(llm.name).toBe('gemini>gemini:flash-lite>groq');
+    const same = buildLlmProvider(
+      withEnv({
+        LLM_PROVIDERS: 'gemini',
+        GEMINI_API_KEY: 'g',
+        GEMINI_MODEL: 'flash',
+        GEMINI_MODEL_FALLBACK: 'flash',
+      }),
+    );
+    expect(same).toBeInstanceOf(OpenAICompatibleLlmProvider);
   });
 
   it('uses the per-task Gemini model for CV extraction', () => {
