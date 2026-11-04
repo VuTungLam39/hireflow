@@ -22,6 +22,8 @@ export const applicationListSchema = z.object({
   scoreMax: score,
   /** Cờ "thiếu tiêu chí bắt buộc" */
   missingMust: z.enum(['true']).optional().catch(undefined),
+  /** Nhóm "hồ sơ mới khác" của trang Hôm nay: dưới 70 điểm hoặc chưa chấm, không thiếu tiêu chí bắt buộc */
+  bucket: z.enum(['other']).optional().catch(undefined),
   createdFrom: day,
   createdTo: day,
 })

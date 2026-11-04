@@ -70,7 +70,7 @@ export default function DashboardPage() {
       key: 'decide',
       count: t.awaitingDecision,
       text: (c) => `${n(c)} buổi phỏng vấn đã có phiếu, chờ quyết định`,
-      to: paths.interviews,
+      to: `${paths.interviews}?pending=decision`,
       action: 'Xem',
     },
     {
@@ -86,7 +86,7 @@ export default function DashboardPage() {
       count: t.otherNew,
       text: (c) => `${n(c)} hồ sơ mới khác chờ xem`,
       hint: `Điểm dưới ${SCORE_GOOD} hoặc chưa chấm xong`,
-      to: links.applications({ status: 'NEW' }),
+      to: `${paths.applications}?status=NEW&bucket=other`,
       action: 'Xem',
     },
     ...(canOps

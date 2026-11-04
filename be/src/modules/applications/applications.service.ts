@@ -7,6 +7,7 @@ import {
   Repository,
   SelectQueryBuilder,
 } from 'typeorm';
+import { SCORE_GOOD } from '../../common/constants/index.js';
 import { PaginatedResult } from '../../common/dto/paginated-result.dto.js';
 import { AiStatus } from '../../common/enums/ai-status.enum.js';
 import { AppEvents } from '../../common/events/app-events.js';
@@ -106,6 +107,7 @@ export class ApplicationsService {
         scoreMin: undefined,
         scoreMax: undefined,
         missingMust: undefined,
+        bucket: undefined,
       });
     }
     const pageQuery = this.filteredQuery(query, user)
@@ -154,6 +156,10 @@ export class ApplicationsService {
       qb.andWhere('app.score <= :scoreMax', { scoreMax: query.scoreMax });
     if (query.missingMust) {
       qb.andWhere(`app.flags @> ARRAY['${ScoreFlag.MissingMust}']::score_flag_enum[]`);
+    }
+    if (query.bucket === 'other') {
+      qb.andWhere('(app.score IS NULL OR app.score < :scoreGood)', { scoreGood: SCORE_GOOD });
+      qb.andWhere(`NOT (app.flags @> ARRAY['${ScoreFlag.MissingMust}']::score_flag_enum[])`);
     }
     if (query.createdFrom) {
       qb.andWhere('app.createdAt >= :createdFrom', {

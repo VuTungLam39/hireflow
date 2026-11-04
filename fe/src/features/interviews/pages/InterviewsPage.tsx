@@ -63,6 +63,7 @@ export default function InterviewsPage() {
   const includeCancelled = search.get('cancelled') === '1'
   const view: View = search.get('view') === 'week' ? 'week' : 'list'
   const offset = Number(search.get('w') ?? 0) || 0
+  const onlyDecision = view === 'list' && search.get('pending') === 'decision'
   const week = useMemo(() => weekOf(offset), [offset])
   const [lookbackFrom] = useState(() =>
     new Date(Date.now() - PENDING_LOOKBACK_DAYS * DAY_MS).toISOString(),
@@ -96,10 +97,12 @@ export default function InterviewsPage() {
     [view, backlog.data, query.data],
   )
   const todayKey = vnDay(new Date(now).toISOString())
-  const pending = items.filter((iv) => pendingOfIv(iv) !== null)
-  const upcoming = items.filter(
-    (iv) => pendingOfIv(iv) === null && vnDay(iv.scheduledAt) >= todayKey,
+  const pending = items.filter((iv) =>
+    onlyDecision ? pendingOfIv(iv) === 'decision' : pendingOfIv(iv) !== null,
   )
+  const upcoming = onlyDecision
+    ? []
+    : items.filter((iv) => pendingOfIv(iv) === null && vnDay(iv.scheduledAt) >= todayKey)
   const live = (list: Interview[]) => list.filter((i) => i.status !== 'CANCELLED').length
   const todayCount = live(upcoming.filter((i) => vnDay(i.scheduledAt) === todayKey))
   const rangeLabel = `${short.format(week.days[0])} – ${short.format(week.days[6])}`
@@ -137,7 +140,9 @@ export default function InterviewsPage() {
             { value: 'week', label: 'Tuần' },
           ]}
           value={view}
-          onChange={(v) => patch(v === 'week' ? { view: 'week' } : { view: null, w: null })}
+          onChange={(v) =>
+            patch(v === 'week' ? { view: 'week', pending: null } : { view: null, w: null })
+          }
         />
         {view === 'week' && (
           <div className="flex items-center gap-1">
@@ -164,6 +169,14 @@ export default function InterviewsPage() {
               </Button>
             )}
           </div>
+        )}
+        {onlyDecision && (
+          <span className="type-body flex items-center gap-2">
+            Chỉ buổi đã có phiếu, chờ quyết định
+            <Button variant="quiet" size="sm" onClick={() => patch({ pending: null })}>
+              Xem tất cả
+            </Button>
+          </span>
         )}
         <Checkbox
           className="ml-auto"

@@ -58,6 +58,7 @@ const FILTER_KEYS = [
   'scoreMin',
   'scoreMax',
   'missingMust',
+  'bucket',
   'createdFrom',
   'createdTo',
 ] as const
@@ -122,6 +123,11 @@ export default function ApplicationsPage() {
       key: 'must',
       label: 'Thiếu tiêu chí bắt buộc',
       onRemove: () => setParams({ missingMust: null }),
+    },
+    params.bucket === 'other' && {
+      key: 'bucket',
+      label: `Dưới ${SCORE_GOOD} điểm hoặc chưa chấm, không thiếu tiêu chí`,
+      onRemove: () => setParams({ bucket: null }),
     },
     (params.createdFrom || params.createdTo) && {
       key: 'date',
