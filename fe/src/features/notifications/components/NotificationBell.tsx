@@ -1,7 +1,7 @@
-import { Bell, CalendarClock, CheckCheck, CircleAlert, CircleCheck } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { Bell } from 'lucide-react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { Button, Spinner } from '@/components/ui'
+import { Button, Popover, Skeleton } from '@/components/ui'
 import { cn, formatRelative } from '@/lib/utils'
 import { links } from '@/routes/paths'
 import { useRealtimeStore } from '@/stores/realtime.store'
@@ -17,32 +17,37 @@ interface NotificationBellProps {
   align?: 'left' | 'right'
 }
 
-// F-NOTI-01: trung tâm thông báo
+const isToday = (iso: string) => new Date(iso).toDateString() === new Date().toDateString()
+
+function Sentence({ n }: { n: NotificationItem }) {
+  const text = notificationText(n)
+  const name = n.application?.candidateName
+  if (!name || !text.includes(name)) return <>{text}</>
+  const [before, after] = text.split(name)
+  return (
+    <>
+      {before}
+      <strong>{name}</strong>
+      {after}
+    </>
+  )
+}
+
+// F-NOTI-01 · Design Spec 6.10
 export function NotificationBell({ align = 'left' }: NotificationBellProps) {
   const [open, setOpen] = useState(false)
   const unread = useRealtimeStore((s) => s.unreadCount)
   const connected = useRealtimeStore((s) => s.connected)
-  const ref = useRef<HTMLDivElement>(null)
   const list = useNotifications(open)
   const markRead = useMarkRead()
   const markAll = useMarkAllRead()
   const navigate = useNavigate()
 
-  useEffect(() => {
-    if (!open) return
-    const onPointer = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false)
-    }
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
-    document.addEventListener('mousedown', onPointer)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onPointer)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
-
   const items = list.data?.pages.flatMap((p) => p.items) ?? []
+  const groups = [
+    { label: 'Hôm nay', items: items.filter((n) => isToday(n.createdAt)) },
+    { label: 'Trước đó', items: items.filter((n) => !isToday(n.createdAt)) },
+  ].filter((g) => g.items.length > 0)
 
   const openItem = (n: NotificationItem) => {
     if (!n.readAt) markRead.mutate(n.id)
@@ -51,110 +56,114 @@ export function NotificationBell({ align = 'left' }: NotificationBellProps) {
   }
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        aria-label={unread ? `Thông báo, ${unread} chưa đọc` : 'Thông báo'}
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        title={connected ? 'Thông báo (đang cập nhật trực tiếp)' : 'Thông báo (đang kết nối lại…)'}
-        onClick={() => setOpen((v) => !v)}
-        className="text-ink-muted hover:bg-sunken hover:text-ink relative rounded-md p-2 transition-colors"
-      >
-        <Bell className="size-5" />
-        {unread > 0 && (
-          <span className="bg-bad absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-xs font-semibold text-white">
-            {unread > 99 ? '99+' : unread}
-          </span>
-        )}
-      </button>
-
-      {open && (
-        <div
-          role="dialog"
-          aria-label="Thông báo"
-          className={cn(
-            'border-line bg-surface shadow-float absolute top-full z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-md border',
-            align === 'left' ? 'left-0' : 'right-0',
-          )}
+    <Popover
+      open={open}
+      onOpenChange={setOpen}
+      align={align === 'left' ? 'start' : 'end'}
+      label="Thông báo"
+      className="w-[min(380px,calc(100vw-2rem))] p-0"
+      trigger={(props) => (
+        <button
+          type="button"
+          {...props}
+          aria-label={unread ? `Thông báo, ${unread} chưa đọc` : 'Thông báo'}
+          className="text-ink-2 hover:bg-sunken hover:text-ink relative rounded-sm p-2 transition-colors"
         >
-          <div className="border-line-soft flex items-center justify-between border-b px-4 py-3">
-            <p className="text-ink text-sm font-semibold">Thông báo</p>
-            <Button
-              size="sm"
-              variant="quiet"
-              disabled={!unread}
-              loading={markAll.isPending}
-              onClick={() => markAll.mutate()}
-            >
-              {!markAll.isPending && <CheckCheck />}
-              Đã đọc hết
-            </Button>
-          </div>
+          <Bell className="size-5" />
+          {unread > 0 && (
+            <span className="bg-bad num absolute top-0.5 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-xs leading-none font-semibold text-white">
+              {unread > 99 ? '99+' : unread}
+            </span>
+          )}
+        </button>
+      )}
+    >
+      <div className="border-line-soft flex items-center justify-between border-b py-2 pr-2 pl-4">
+        <p className="type-subheading">Thông báo</p>
+        <Button
+          size="sm"
+          variant="quiet"
+          disabled={!unread}
+          loading={markAll.isPending}
+          onClick={() => markAll.mutate()}
+        >
+          Đã đọc hết
+        </Button>
+      </div>
+      {!connected && (
+        <p role="status" className="bg-warn-soft text-warn px-4 py-1.5 text-[13px]">
+          Đang kết nối lại…
+        </p>
+      )}
 
-          <div className="max-h-[min(26rem,70vh)] overflow-y-auto">
-            {list.isPending ? (
-              <div className="flex justify-center p-6">
-                <Spinner />
-              </div>
-            ) : list.isError ? (
-              <p className="text-bad p-4 text-sm">Không tải được thông báo.</p>
-            ) : items.length === 0 ? (
-              <p className="text-ink-muted p-6 text-center text-sm">
-                Chưa có thông báo. Khi CV của tin bạn phụ trách chấm xong, thông báo sẽ hiện ở đây.
-              </p>
-            ) : (
-              <ul className="divide-line-soft divide-y">
-                {items.map((n) => (
+      <div className="max-h-[min(28rem,70dvh)] overflow-y-auto">
+        {list.isPending ? (
+          <div className="space-y-3 p-4">
+            <Skeleton className="h-4 w-4/5" />
+            <Skeleton className="h-4 w-3/5" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        ) : list.isError ? (
+          <p className="text-bad p-4 text-[13px]">
+            Chưa tải được thông báo. Mở lại để thử lần nữa.
+          </p>
+        ) : items.length === 0 ? (
+          <p className="type-body p-4">
+            Không có gì mới. Thông báo về hồ sơ và lịch phỏng vấn sẽ hiện ở đây.
+          </p>
+        ) : (
+          groups.map((group) => (
+            <section key={group.label} aria-label={group.label}>
+              <p className="type-overline px-4 pt-3 pb-1">{group.label}</p>
+              <ul>
+                {group.items.map((n) => (
                   <li key={n.id}>
                     <button
                       type="button"
                       onClick={() => openItem(n)}
-                      className={cn(
-                        'hover:bg-canvas flex w-full items-start gap-3 px-4 py-3 text-left transition-colors',
-                        !n.readAt && 'bg-info-soft/50',
-                      )}
+                      className="hover:bg-canvas flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors"
                     >
-                      {n.type === 'CV_FAILED' || n.type === 'INTERVIEW_CANCELLED' ? (
-                        <CircleAlert className="text-bad mt-0.5 size-4 shrink-0" />
-                      ) : n.type.startsWith('INTERVIEW') ? (
-                        <CalendarClock className="text-info mt-0.5 size-4 shrink-0" />
-                      ) : (
-                        <CircleCheck className="text-good mt-0.5 size-4 shrink-0" />
-                      )}
                       <span className="min-w-0 flex-1">
-                        <span className="text-ink block text-sm">{notificationText(n)}</span>
-                        <span className="text-ink-muted block truncate text-xs">
-                          {n.application?.jobTitle} · {formatRelative(n.createdAt)}
+                        <span
+                          className={cn(
+                            'block text-sm leading-5',
+                            n.readAt ? 'text-ink-2' : 'text-ink',
+                          )}
+                        >
+                          <Sentence n={n} />
+                        </span>
+                        <span className="type-caption block truncate">
+                          {formatRelative(n.createdAt)}
+                          {n.application?.jobTitle && ` · ${n.application.jobTitle}`}
                         </span>
                       </span>
                       {!n.readAt && (
                         <span
                           aria-label="Chưa đọc"
-                          className="bg-info mt-1.5 size-2 shrink-0 rounded-full"
+                          className="bg-brand mt-1.5 size-2 shrink-0 rounded-full"
                         />
                       )}
                     </button>
                   </li>
                 ))}
               </ul>
-            )}
-            {list.hasNextPage && (
-              <div className="border-line-soft border-t p-2">
-                <Button
-                  size="sm"
-                  variant="quiet"
-                  className="w-full"
-                  loading={list.isFetchingNextPage}
-                  onClick={() => void list.fetchNextPage()}
-                >
-                  Xem thêm
-                </Button>
-              </div>
-            )}
+            </section>
+          ))
+        )}
+        {list.hasNextPage && (
+          <div className="border-line-soft border-t p-2">
+            <Button
+              size="sm"
+              variant="quiet"
+              className="w-full"
+              loading={list.isFetchingNextPage}
+              onClick={() => void list.fetchNextPage()}
+            >
+              Xem thêm
+            </Button>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </Popover>
   )
 }

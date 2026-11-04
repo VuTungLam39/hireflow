@@ -1,10 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { Button, Dialog, FormField, Input, Select, Spinner } from '@/components/ui'
 import { applyServerErrors, getErrorMessage } from '@/lib/errors'
-import { useInterviewers, useScheduleInterview, useUpdateInterview } from '../hooks/use-interviews'
-import { toLocalInput } from '../lib/format'
+import {
+  useInterviewers,
+  useInterviews,
+  useScheduleInterview,
+  useUpdateInterview,
+} from '../hooks/use-interviews'
+import { formatTime, toLocalInput } from '../lib/format'
 import type { Interview } from '../types'
 
 export const MAX_INTERVIEWERS = 5
@@ -60,6 +65,31 @@ export function ScheduleInterviewDialog({
     reset,
     formState: { errors },
   } = useForm<ScheduleForm>({ resolver: zodResolver(scheduleSchema), values: defaults })
+
+  const at = useWatch({ control, name: 'scheduledAt' })
+  const duration = Number(useWatch({ control, name: 'durationMinutes' }) ?? 60)
+  const start = at ? new Date(at).getTime() : NaN
+  const valid = Number.isFinite(start)
+  const around = useInterviews(
+    valid
+      ? {
+          from: new Date(start - 12 * 3_600_000).toISOString(),
+          to: new Date(start + 12 * 3_600_000).toISOString(),
+        }
+      : {},
+    { enabled: open && valid },
+  )
+  const busyAt = (userId: string) => {
+    if (!valid) return null
+    const end = start + duration * 60_000
+    const hit = around.data?.find((iv) => {
+      if (iv.id === interview?.id || iv.status === 'CANCELLED') return false
+      if (!iv.interviewers.some((p) => p.id === userId)) return false
+      const s = new Date(iv.scheduledAt).getTime()
+      return s < end && start < s + iv.durationMinutes * 60_000
+    })
+    return hit ? formatTime(hit.scheduledAt) : null
+  }
 
   const close = () => {
     reset(defaults)
@@ -122,7 +152,7 @@ export function ScheduleInterviewDialog({
         </FormField>
 
         <fieldset className="space-y-2">
-          <legend className="text-ink-2 text-sm font-medium">Người phỏng vấn</legend>
+          <legend className="type-label">Người phỏng vấn</legend>
           {interviewers.isPending ? (
             <Spinner />
           ) : !interviewers.data?.length ? (
@@ -156,7 +186,12 @@ export function ScheduleInterviewDialog({
                         />
                         <span className="min-w-0">
                           <span className="text-ink block font-medium">{u.fullName}</span>
-                          <span className="text-ink-muted block truncate text-xs">{u.email}</span>
+                          <span className="type-caption block truncate">{u.email}</span>
+                          {busyAt(u.id) && (
+                            <span className="text-warn block text-[13px] font-medium">
+                              Đã có buổi khác lúc {busyAt(u.id)}
+                            </span>
+                          )}
                         </span>
                       </label>
                     )

@@ -1,10 +1,10 @@
 import { CalendarPlus, Check, Clock, MapPin, Pencil, Star, X } from 'lucide-react'
 import { useState } from 'react'
 import { ConfirmDialog } from '@/components/shared'
-import { Badge, Button, Skeleton } from '@/components/ui'
+import { Button, Skeleton } from '@/components/ui'
 import { usePermission } from '@/hooks/use-permission'
 import { Permission } from '@/lib/permissions'
-import { formatDateTime } from '@/lib/utils'
+import { cn, formatDateTime } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
 import { useApplicationInterviews, useCancelInterview } from '../hooks/use-interviews'
 import { averageOverall, formatSlot, isLink } from '../lib/format'
@@ -93,10 +93,10 @@ export function InterviewPanel({
             const editableMine = !mine || new Date(mine.editableUntil).getTime() > now
             const avg = averageOverall(iv.feedbacks.map((f) => f.overall))
             return (
-              <li key={iv.id} className="border-line space-y-3 rounded-md border p-3">
+              <li key={iv.id} className="border-line bg-surface space-y-3 rounded-md border p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0 space-y-1">
-                    <p className="text-ink font-medium">Vòng {iv.round}</p>
+                    <p className="type-subheading">Vòng {iv.round}</p>
                     <p className="text-ink-2 flex items-center gap-1.5 text-sm">
                       <Clock className="text-ink-faint size-4 shrink-0" />
                       {formatSlot(iv.scheduledAt, iv.durationMinutes)}
@@ -117,9 +117,14 @@ export function InterviewPanel({
                       )}
                     </p>
                   </div>
-                  <Badge tone={INTERVIEW_STATUS[iv.status].tone}>
+                  <span
+                    className={cn(
+                      'text-[13px] font-medium',
+                      iv.status === 'COMPLETED' ? 'text-good-ink' : 'text-ink-muted',
+                    )}
+                  >
                     {INTERVIEW_STATUS[iv.status].label}
-                  </Badge>
+                  </span>
                 </div>
 
                 <ul className="flex flex-wrap gap-2 text-xs">

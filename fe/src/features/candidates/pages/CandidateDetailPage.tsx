@@ -1,92 +1,38 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import {
-  ArrowLeft,
-  CalendarDays,
-  FileText,
-  Mail,
-  Phone,
-  ShieldAlert,
-  ShieldOff,
-  UserPen,
-} from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useParams } from 'react-router'
-import {
-  Can,
-  ConfirmDialog,
-  DataTable,
-  ErrorState,
-  PageHeader,
-  type Column,
-} from '@/components/shared'
-import {
-  Avatar,
-  Badge,
-  Button,
-  Card,
-  CardTitle,
-  FormField,
-  Input,
-  PageLoader,
-} from '@/components/ui'
-import { APPLICATION_SOURCE, ApplicationStatusBadge, ScoreValue } from '@/features/applications'
+import { Can, ConfirmDialog, ErrorState, PageHeader, Summary, Timeline } from '@/components/shared'
+import { Button, FormField, Input, Skeleton } from '@/components/ui'
+import { APPLICATION_SOURCE, ScoreBadge, StatusPill } from '@/features/applications'
 import { usePermission } from '@/hooks/use-permission'
 import { applyServerErrors, getErrorMessage } from '@/lib/errors'
 import { Permission } from '@/lib/permissions'
-import { formatDate, formatDateTime } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import { links, paths } from '@/routes/paths'
 import { useAnonymizeCandidate, useCandidate, useUpdateCandidate } from '../hooks/use-candidates'
 import { candidateContactSchema, type CandidateContactForm } from '../schemas/candidate.schema'
-import type { CandidateApplication, CandidateDetail } from '../types'
+import type { CandidateDetail } from '../types'
 
-const columns: Column<CandidateApplication>[] = [
-  {
-    key: 'job',
-    header: 'Vị trí',
-    cell: (a) => (
-      <Link
-        to={links.applicationDetail(a.id)}
-        className="hover:text-brand font-medium transition-colors"
-      >
-        {a.job.title}
-      </Link>
-    ),
-  },
-  {
-    key: 'status',
-    header: 'Trạng thái',
-    cell: (a) => <ApplicationStatusBadge status={a.status} />,
-  },
-  { key: 'score', header: 'Điểm', cell: (a) => <ScoreValue score={a.score} /> },
-  {
-    key: 'source',
-    header: 'Nguồn',
-    cell: (a) => (
-      <Badge tone={APPLICATION_SOURCE[a.source].tone}>{APPLICATION_SOURCE[a.source].label}</Badge>
-    ),
-  },
-  {
-    key: 'createdAt',
-    header: 'Ngày nộp',
-    cell: (a) => (
-      <span className="text-ink-muted whitespace-nowrap">{formatDateTime(a.createdAt)}</span>
-    ),
-  },
-]
-
-/** Chi tiết ứng viên: mọi lần nộp, sửa thông tin liên hệ, ẩn danh (US-14, US-16) */
+// US-14, US-16 · Design Spec 6.7
 export default function CandidateDetailPage() {
   const { id = '' } = useParams()
   const { data: candidate, isPending, isError, error, refetch } = useCandidate(id)
 
-  if (isPending) return <PageLoader />
-  if (isError) return <ErrorState error={error} onRetry={refetch} />
+  if (isPending)
+    return (
+      <div aria-busy aria-label="Đang tải ứng viên" className="space-y-6">
+        <Skeleton className="h-10 w-72" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    )
+  if (isError) return <ErrorState title="Chưa mở được ứng viên" error={error} onRetry={refetch} />
 
   const anonymized = !!candidate.anonymizedAt
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <PageHeader
         breadcrumb={
           <Link to={paths.candidates}>
@@ -94,70 +40,69 @@ export default function CandidateDetailPage() {
             Kho ứng viên
           </Link>
         }
-        title={
-          <span className="flex items-center gap-4">
-            <Avatar name={candidate.fullName} size="lg" />
-            <span>
-              {candidate.fullName}
-              <span className="text-ink-muted mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-normal tracking-normal">
-                {!anonymized && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Mail className="size-3.5" />
-                    {candidate.email}
-                  </span>
-                )}
-                {candidate.phone && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Phone className="size-3.5" />
-                    {candidate.phone}
-                  </span>
-                )}
-                <span className="inline-flex items-center gap-1.5">
-                  <CalendarDays className="size-3.5" />
-                  Trong hệ thống từ {formatDate(candidate.createdAt)}
-                </span>
-              </span>
-            </span>
-          </span>
-        }
-        actions={
-          anonymized && (
-            <Badge tone="neutral">
-              <ShieldOff className="size-3" />
-              Đã ẩn danh {formatDate(candidate.anonymizedAt)}
-            </Badge>
-          )
+        title={candidate.fullName}
+        description={
+          <Summary
+            items={[
+              !anonymized && candidate.email,
+              candidate.phone,
+              `trong kho từ ${formatDate(candidate.createdAt)}`,
+              anonymized && `đã ẩn danh ${formatDate(candidate.anonymizedAt)}`,
+            ]}
+          />
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <Card className="min-w-0 space-y-4">
-          <CardTitle icon={<FileText />}>Các lần nộp ({candidate.applications.length})</CardTitle>
-          <DataTable
-            columns={columns}
-            data={candidate.applications}
-            rowKey={(a) => a.id}
-            isPending={false}
-            isError={false}
-            emptyTitle="Không có hồ sơ nào bạn được xem"
-          />
-        </Card>
-
-        <div className="space-y-6 lg:sticky lg:top-8 lg:self-start">
-          <ContactCard candidate={candidate} />
-          {!anonymized && (
-            <Can permission={Permission.CandidateAnonymize}>
-              <AnonymizeCard candidate={candidate} />
-            </Can>
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <section aria-labelledby="apps-title" className="min-w-0">
+          <h2 id="apps-title" className="type-heading mb-4">
+            Các lần nộp ({candidate.applications.length})
+          </h2>
+          {candidate.applications.length === 0 ? (
+            <p className="type-body">Không có lần nộp nào thuộc phạm vi bạn được xem.</p>
+          ) : (
+            <Timeline
+              items={candidate.applications.map((a) => ({
+                id: a.id,
+                tone: a.status === 'HIRED' ? 'good' : a.status === 'REJECTED' ? 'bad' : 'default',
+                title: (
+                  <Link
+                    to={links.applicationDetail(a.id)}
+                    className="hover:text-brand font-semibold transition-colors"
+                  >
+                    {a.job.title}
+                  </Link>
+                ),
+                aside: <ScoreBadge score={a.score} />,
+                meta: (
+                  <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                    <StatusPill status={a.status} />
+                    <span>
+                      nộp {formatDate(a.createdAt)} · {APPLICATION_SOURCE[a.source].phrase}
+                    </span>
+                  </span>
+                ),
+              }))}
+            />
           )}
-        </div>
+        </section>
+
+        <aside className="space-y-10">
+          <ContactForm candidate={candidate} />
+        </aside>
       </div>
+
+      {!anonymized && (
+        <Can permission={Permission.CandidateAnonymize}>
+          <DangerZone candidate={candidate} />
+        </Can>
+      )}
     </div>
   )
 }
 
-/** Sửa họ tên và số điện thoại; email là khoá định danh nên không sửa (BR-CAND-01) */
-function ContactCard({ candidate }: { candidate: CandidateDetail }) {
+// BR-CAND-01
+function ContactForm({ candidate }: { candidate: CandidateDetail }) {
   const canUpdate = usePermission(Permission.CandidateUpdate)
   const editable = canUpdate && !candidate.anonymizedAt
   const update = useUpdateCandidate(candidate.id)
@@ -185,8 +130,10 @@ function ContactCard({ candidate }: { candidate: CandidateDetail }) {
   )
 
   return (
-    <Card className="space-y-4">
-      <CardTitle icon={<UserPen />}>Thông tin liên hệ</CardTitle>
+    <section aria-labelledby="contact-title">
+      <h2 id="contact-title" className="type-heading mb-4">
+        Thông tin liên hệ
+      </h2>
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
         <FormField label="Họ tên" htmlFor="cand-name" error={errors.fullName?.message}>
           <Input
@@ -196,7 +143,11 @@ function ContactCard({ candidate }: { candidate: CandidateDetail }) {
             {...register('fullName')}
           />
         </FormField>
-        <FormField label="Email" htmlFor="cand-email">
+        <FormField
+          label="Email"
+          htmlFor="cand-email"
+          hint="Email dùng để nhận ra ứng viên giữa các lần nộp nên không sửa được."
+        >
           <Input
             id="cand-email"
             value={candidate.anonymizedAt ? '—' : candidate.email}
@@ -213,48 +164,62 @@ function ContactCard({ candidate }: { candidate: CandidateDetail }) {
             {...register('phone')}
           />
         </FormField>
-        <p className="text-ink-muted text-xs">
-          Email dùng để nhận ra ứng viên giữa các lần nộp nên không sửa được.
-        </p>
-        {errors.root && <p className="text-bad text-sm">{errors.root.message}</p>}
+        {errors.root && (
+          <p role="alert" className="text-bad type-label">
+            {errors.root.message}
+          </p>
+        )}
         {editable && (
           <div className="flex justify-end">
-            <Button type="submit" size="sm" loading={update.isPending} disabled={!isDirty}>
-              Lưu
+            <Button
+              type="submit"
+              variant="secondary"
+              loading={update.isPending}
+              disabled={!isDirty}
+            >
+              Lưu thông tin liên hệ
             </Button>
           </div>
         )}
       </form>
-    </Card>
+    </section>
   )
 }
 
-/** Ẩn danh theo yêu cầu của ứng viên (Nghị định 13, BR-DATA-03). Không hoàn tác. */
-function AnonymizeCard({ candidate }: { candidate: CandidateDetail }) {
+// BR-DATA-03
+function DangerZone({ candidate }: { candidate: CandidateDetail }) {
   const [open, setOpen] = useState(false)
   const anonymize = useAnonymizeCandidate(candidate.id)
 
   return (
-    <Card className="border-bad/80 space-y-3">
-      <CardTitle icon={<ShieldAlert />}>Yêu cầu xoá dữ liệu</CardTitle>
-      <p className="text-ink-2 text-sm">
-        Khi ứng viên yêu cầu xoá dữ liệu cá nhân: xoá file CV, nội dung CV, bằng chứng và thông tin
-        liên hệ. Trạng thái và điểm của các hồ sơ được giữ để số liệu thống kê không lệch.
-      </p>
-      <Button variant="danger-quiet" size="sm" onClick={() => setOpen(true)}>
-        <ShieldOff />
-        Ẩn danh ứng viên
-      </Button>
+    <section aria-labelledby="danger-title" className="border-bad/30 rounded-md border px-5 py-4">
+      <h2 id="danger-title" className="type-subheading text-bad">
+        Vùng nguy hiểm
+      </h2>
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-4">
+        <p className="type-body max-w-2xl">
+          Khi ứng viên yêu cầu xoá dữ liệu: xoá tệp CV, nội dung CV, bằng chứng và thông tin liên
+          hệ. Trạng thái và điểm của các hồ sơ được giữ để số liệu không lệch.
+        </p>
+        <Button variant="danger-quiet" onClick={() => setOpen(true)}>
+          Ẩn danh ứng viên
+        </Button>
+      </div>
       <ConfirmDialog
         open={open}
         onClose={() => setOpen(false)}
         title={`Ẩn danh ${candidate.fullName}?`}
-        description="Thao tác này không hoàn tác được. CV và thông tin liên hệ sẽ bị xoá vĩnh viễn."
-        confirmLabel="Ẩn danh"
+        description={
+          <>
+            Thao tác này <strong>không hoàn tác được</strong>. Tệp CV, nội dung CV, bằng chứng và
+            thông tin liên hệ của {candidate.applications.length} lần nộp sẽ bị xoá vĩnh viễn.
+          </>
+        }
+        confirmLabel="Ẩn danh vĩnh viễn"
         tone="danger"
         loading={anonymize.isPending}
         onConfirm={() => anonymize.mutate(undefined, { onSettled: () => setOpen(false) })}
       />
-    </Card>
+    </section>
   )
 }

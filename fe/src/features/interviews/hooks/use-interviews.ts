@@ -20,11 +20,12 @@ export function useApplicationInterviews(applicationId: string) {
   })
 }
 
-export function useInterviews(params: InterviewListParams) {
+export function useInterviews(params: InterviewListParams, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: interviewKeys.calendar(params),
     queryFn: () => interviewsApi.list(params),
     staleTime: 30_000,
+    enabled: options.enabled ?? true,
   })
 }
 
