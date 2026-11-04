@@ -22,15 +22,30 @@ const toPublicSummary = (job: JobRow): PublicJobSummary => ({
 })
 
 /** Trang công khai: chỉ job OPEN, không có trọng số/từ khoá nội bộ */
+const openJobs = (search: string | null) =>
+  db.jobs.filter((j) => j.status === 'OPEN' && includesText(j.title, search))
+
 export const publicHandlers = [
   http.get(api('/public/jobs'), async ({ request }) => {
     await delay()
     const params = searchParams(request)
-    const rows = db.jobs
-      .filter((j) => j.status === 'OPEN' && includesText(j.title, params.get('search')))
+    const rows = openJobs(params.get('search'))
+      .filter((j) => !params.get('departmentId') || j.departmentId === params.get('departmentId'))
       .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''))
     const { items, meta } = paginate(rows, params)
     return ok(items.map(toPublicSummary), { meta })
+  }),
+
+  http.get(api('/public/jobs/departments'), async ({ request }) => {
+    await delay()
+    const counts = new Map<string, number>()
+    for (const j of openJobs(searchParams(request).get('search'))) {
+      counts.set(j.departmentId, (counts.get(j.departmentId) ?? 0) + 1)
+    }
+    const data = [...counts.entries()]
+      .map(([id, count]) => ({ id, name: db.departments.find((d) => d.id === id)!.name, count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'vi'))
+    return ok(data)
   }),
 
   http.get(api('/public/jobs/:id'), async ({ params }) => {
