@@ -4,7 +4,7 @@ import { RouterProvider } from 'react-router/dom'
 import { AppProviders } from '@/app/providers'
 import { queryClient } from '@/lib/query-client'
 import { createAppRouter, ROOT_ROUTE_ID, routes } from '@/routes/router'
-import { prerenderPublicPages } from './entry'
+import { buildSitemap, prerenderPublicPages } from './entry'
 import { hydrateQueryCache, resolveLazyRoutes } from './hydrate'
 import { PRERENDER_GLOBAL, type PrerenderPayload } from './shared'
 
@@ -66,6 +66,10 @@ const company = {
   gallery: [],
   openJobs: 1,
 }
+const departments = [
+  { id: 'd1', name: 'Kỹ thuật', count: 1 },
+  { id: 'd2', name: 'Kinh doanh', count: 2 },
+]
 const envelope = (data: unknown, extra = {}) =>
   new Response(
     JSON.stringify({ success: true, statusCode: 200, message: 'Success', data, ...extra }),
@@ -75,6 +79,7 @@ function stubApi({ withCompany = false } = {}) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input)
     if (withCompany && url === `${API}/public/company`) return envelope(company)
+    if (url === `${API}/public/jobs/departments`) return envelope(departments)
     if (url.startsWith(`${API}/public/jobs?`)) return envelope([job], { meta })
     if (url === `${API}/public/jobs/${job.id}`) return envelope(detail)
     return new Response('{}', { status: 404 })
@@ -101,6 +106,7 @@ describe('F-PUB-04: prerender trang công khai', () => {
     const [list, page] = pages
     expect(list.html).toContain('Backend Developer (NestJS)')
     expect(list.head).toContain('<title>Việc làm đang tuyển – HireFlow Careers</title>')
+    expect(list.html).toContain('Kinh doanh')
     expect(page.html).toContain('<h1')
     expect(page.html).toContain('Xây dựng API bằng NestJS')
     expect(page.head).toContain('"@type":"JobPosting"')
@@ -198,5 +204,53 @@ describe('F-PUB-04: prerender trang công khai', () => {
     expect(onRecoverableError).not.toHaveBeenCalled()
     expect(container.querySelector('h1')).toBe(heading)
     router.dispose()
+  })
+
+  it('E4: JSON-LD JobPosting có công ty tuyển, /careers có Organization', async () => {
+    stubApi({ withCompany: true })
+    const pages = await prerenderPublicPages({ apiUrl: API, siteUrl: 'https://hireflow.example' })
+    const ldOf = (head: string) =>
+      JSON.parse(head.split('<script type="application/ld+json">')[1].split('</script>')[0])
+    expect(ldOf(pages[1].head)).toMatchObject({
+      '@type': 'JobPosting',
+      hiringOrganization: { name: 'Công ty Cổ phần HireFlow' },
+      employmentType: 'FULL_TIME',
+      baseSalary: { currency: 'VND' },
+    })
+    expect(ldOf(pages[2].head)).toMatchObject({
+      '@type': 'Organization',
+      url: 'https://hireflow.example/careers',
+    })
+  })
+
+  it('dữ liệu chứa "</script>" không làm kết thúc thẻ script sớm', async () => {
+    const evil = '</script><script>alert(1)</script><!--'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.startsWith(`${API}/public/jobs?`)) return envelope([job], { meta })
+        if (url === `${API}/public/jobs/${job.id}`) return envelope({ ...detail, jdText: evil })
+        if (url === `${API}/public/jobs/departments`) return envelope(departments)
+        return new Response('{}', { status: 404 })
+      }),
+    )
+    const [, page] = await prerenderPublicPages({ apiUrl: API })
+    const scripts =
+      (page.head + '<script>' + page.payload + '</script>').split('</script>').length - 1
+    expect(scripts).toBe(2)
+    expect(page.head).not.toContain('<script>alert')
+    expect(page.payload).not.toContain('<!--')
+    expect(payloadOf(page.payload).queryState.queries[0].state.data).toMatchObject({ jdText: evil })
+  })
+
+  it('E4: sitemap liệt kê đúng các trang đã dựng sẵn', () => {
+    const xml = buildSitemap(
+      [{ path: '/jobs' }, { path: `/jobs/${job.id}` }, { path: '/careers' }],
+      'https://hireflow.example/',
+    )
+    expect(xml.match(/<loc>/g)).toHaveLength(3)
+    expect(xml).toContain('<loc>https://hireflow.example/careers</loc>')
+    expect(xml).toContain(`<loc>https://hireflow.example/jobs/${job.id}</loc>`)
   })
 })
