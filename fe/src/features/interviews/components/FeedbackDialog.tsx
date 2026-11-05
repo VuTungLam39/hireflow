@@ -5,6 +5,7 @@ import { cn, formatTimeOnDate } from '@/lib/utils'
 import { useSubmitFeedback } from '../hooks/use-interviews'
 import { SCORE_LABEL } from '../lib/constants'
 import type { Interview, InterviewFeedback } from '../types'
+import { QuestionSuggestions } from './QuestionSuggestions'
 
 interface RatingInputProps {
   label: string
@@ -111,6 +112,7 @@ export function FeedbackDialog({
       size="lg"
     >
       <div className="space-y-5">
+        <QuestionSuggestions interviewId={interview.id} />
         <div className="border-line space-y-3 rounded-md border p-4">
           {requirements.map((r) => (
             <RatingInput

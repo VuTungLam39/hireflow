@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import ApplicationDetailPage from '@/features/applications/pages/ApplicationDetailPage'
@@ -11,12 +12,13 @@ import { db } from '@/test/msw/data'
 import { applicationHandlers } from '@/test/msw/handlers/applications'
 import { authHandlers } from '@/test/msw/handlers/auth'
 import { interviewHandlers } from '@/test/msw/handlers/interviews'
-import { tokenFor, toUser } from '@/test/msw/http'
+import { api, tokenFor, toUser } from '@/test/msw/http'
 import { toLocalInput } from '@/features/interviews/lib/format'
 import InterviewsPage from '@/features/interviews/pages/InterviewsPage'
 
 const server = setupServer(...authHandlers, ...applicationHandlers, ...interviewHandlers)
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 function renderAt(email: string, entry: string) {
@@ -88,6 +90,50 @@ describe('interviews', () => {
     expect(screen.getByText('Nắm chắc NestJS')).toBeInTheDocument()
     expect(iv.feedbacks).toHaveLength(1)
     expect(iv.status).toBe('COMPLETED')
+  })
+
+  it('E5 · BR-INT-04: the assignee gets suggested questions per criterion before the interview starts', async () => {
+    const iv = upcoming()
+    renderAt('linh.pham@hireflow.dev', links.applicationDetail(iv.applicationId))
+    expect(
+      await screen.findByText('Phiếu đánh giá mở khi buổi phỏng vấn bắt đầu.'),
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Gợi ý câu hỏi' }))
+
+    const box = await screen.findByRole('region', { name: 'Câu hỏi gợi ý' })
+    const app = db.applications.find((a) => a.id === iv.applicationId)!
+    const job = db.jobs.find((j) => j.id === app.jobId)!
+    for (const r of job.requirements) {
+      expect(within(box).getByText(r.label)).toBeInTheDocument()
+      expect(
+        within(box).getByText(`Bạn đã dùng ${r.label} trong dự án nào gần nhất?`),
+      ).toBeInTheDocument()
+    }
+    expect(within(box).getByText(/không dựa trên điểm chấm CV/)).toBeInTheDocument()
+
+    fireEvent.click(within(box).getByRole('button', { name: 'Ẩn' }))
+    await waitFor(() =>
+      expect(screen.queryByRole('region', { name: 'Câu hỏi gợi ý' })).not.toBeInTheDocument(),
+    )
+    expect(screen.getByRole('button', { name: 'Gợi ý câu hỏi' })).toBeInTheDocument()
+  })
+
+  it('E5: when suggestions fail, says so in place and the feedback form still works', async () => {
+    server.use(
+      http.post(api('/interviews/:id/question-suggestions'), () =>
+        HttpResponse.json(
+          { success: false, statusCode: 503, code: 'AI_UNAVAILABLE', message: 'AI is unavailable' },
+          { status: 503 },
+        ),
+      ),
+    )
+    const iv = pastInterview()
+    renderAt('interviewer@hireflow.dev', links.applicationDetail(iv.applicationId))
+    fireEvent.click(await screen.findByRole('button', { name: 'Gợi ý câu hỏi' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /Chưa gợi ý được câu hỏi.*Phiếu đánh giá vẫn dùng bình thường/,
+    )
+    expect(screen.getByRole('button', { name: /phiếu đánh giá/ })).toBeEnabled()
   })
 
   it('BR-INT-01: HR schedules an interview with an interviewer for an application in INTERVIEW', async () => {

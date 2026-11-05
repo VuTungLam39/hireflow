@@ -12,6 +12,7 @@ import { useNow } from '../hooks/use-now'
 import { INTERVIEW_STATUS } from '../lib/constants'
 import type { Interview, InterviewFeedback } from '../types'
 import { FeedbackDialog } from './FeedbackDialog'
+import { QuestionSuggestions } from './QuestionSuggestions'
 import { ScheduleInterviewDialog } from './ScheduleInterviewDialog'
 
 interface InterviewPanelProps {
@@ -157,6 +158,10 @@ export function InterviewPanel({
                       <FeedbackView key={f.id} feedback={f} />
                     ))}
                   </div>
+                )}
+
+                {canFeedback && assigned && iv.status !== 'CANCELLED' && (
+                  <QuestionSuggestions interviewId={iv.id} />
                 )}
 
                 <div className="flex flex-wrap gap-2">
