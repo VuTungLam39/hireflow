@@ -75,6 +75,17 @@ const DEFAULT_JSON: Record<AiTask, JsonFixture> = {
   'suggest-requirements': fakeSuggest,
   match: () => ({ reasons: [] }),
   chat: () => ({}),
+  'interview-questions': (req) => ({
+    items: [...('prompt' in req ? req.prompt : '').matchAll(/^(T\d+)\. (.+?) \(/gm)].map(
+      ([, code, label]) => ({
+        criterion: code,
+        questions: [
+          `Bạn đã dùng ${label} trong dự án nào?`,
+          `Khó khăn lớn nhất khi làm ${label} là gì?`,
+        ],
+      }),
+    ),
+  }),
 };
 
 // Kickoff 8.7

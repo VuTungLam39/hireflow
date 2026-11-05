@@ -13,6 +13,7 @@ import { CvPipelineService } from './pipeline/cv-pipeline.service.js';
 import { PipelineOpsService } from './pipeline/pipeline-ops.service.js';
 import { ExtractCvProcessor, ParseCvProcessor, ScoreProcessor } from './pipeline/processors.js';
 import { DEFAULT_JOB_OPTIONS, QUEUE } from './pipeline/queues.js';
+import { InterviewQuestionSuggester } from './interview-questions.service.js';
 import { RequirementsSuggester } from './requirements-suggester.service.js';
 
 @Module({
@@ -49,10 +50,17 @@ import { RequirementsSuggester } from './requirements-suggester.service.js';
     CvPipelineService,
     PipelineOpsService,
     RequirementsSuggester,
+    InterviewQuestionSuggester,
     ParseCvProcessor,
     ExtractCvProcessor,
     ScoreProcessor,
   ],
-  exports: [LLM_PROVIDER, EMBEDDING_PROVIDER, CvPipelineService, RequirementsSuggester],
+  exports: [
+    LLM_PROVIDER,
+    EMBEDDING_PROVIDER,
+    CvPipelineService,
+    RequirementsSuggester,
+    InterviewQuestionSuggester,
+  ],
 })
 export class AiModule {}

@@ -8,6 +8,8 @@ import { AppModule } from '../src/app.module.js';
 import { AiStatus } from '../src/common/enums/ai-status.enum.js';
 import { ApplicationStatus } from '../src/common/enums/application-status.enum.js';
 import { Role } from '../src/common/enums/role.enum.js';
+import { LLM_PROVIDER, type JsonRequest } from '../src/modules/ai/ai.types.js';
+import type { FakeLlmProvider } from '../src/modules/ai/providers/fake.llm.js';
 import { Application } from '../src/modules/applications/entities/application.entity.js';
 import { Candidate } from '../src/modules/candidates/entities/candidate.entity.js';
 import { Department } from '../src/modules/departments/entities/department.entity.js';
@@ -311,6 +313,44 @@ describe('Interviews (e2e)', () => {
       expect(none.body.data).toEqual([]);
       const hm = await as('hm', request(server()).get('/api/v1/interviews')).expect(200);
       expect(hm.body.data.map((i: { id: string }) => i.id)).toContain(interviewA);
+    });
+  });
+
+  describe('question suggestions (Mở rộng MVP 2 – E5, BR-INT-04)', () => {
+    const suggest = (who: Who) =>
+      as(who, request(server()).post(`/api/v1/interviews/${interviewA}/question-suggestions`));
+
+    it('gives the assignee 2–3 questions per criterion, before the interview starts, then serves the cache', async () => {
+      const llm = app.get<FakeLlmProvider>(LLM_PROVIDER);
+      const before = llm.calls.length;
+      const first = await suggest('ivA').expect(200);
+      expect(first.body.data.cached).toBe(false);
+      expect(first.body.data.items.map((i: { requirementId: string }) => i.requirementId)).toEqual(
+        ids.reqs,
+      );
+      for (const item of first.body.data.items as { questions: string[] }[]) {
+        expect(item.questions.length).toBeGreaterThanOrEqual(2);
+        expect(item.questions.length).toBeLessThanOrEqual(3);
+      }
+      const second = await suggest('ivA').expect(200);
+      expect(second.body.data).toEqual({ ...first.body.data, cached: true });
+      expect(llm.calls.length).toBe(before + 1);
+    });
+
+    it('BR-INT-04: the prompt holds criteria and CV lines only – no score, flags or candidate contact', async () => {
+      const llm = app.get<FakeLlmProvider>(LLM_PROVIDER);
+      const call = llm.calls
+        .filter((c): c is JsonRequest => 'task' in c && c.task === 'interview-questions')
+        .at(-1)!;
+      expect(call.prompt).toContain('NestJS PostgreSQL');
+      expect(call.prompt).not.toMatch(/score|điểm|flag|MISSING_MUST|evidence|bằng chứng|\b80\b/i);
+      expect(call.prompt).not.toContain(`iv-c-a-${run}@example.com`);
+    });
+
+    it('BR-INT-02: only assignees ask; others get 404, roles without feedback rights get 403', async () => {
+      await suggest('ivB').expect(404);
+      await suggest('hr').expect(403);
+      await suggest('hm').expect(403);
     });
   });
 

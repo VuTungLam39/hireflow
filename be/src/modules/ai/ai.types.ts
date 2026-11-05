@@ -1,7 +1,8 @@
 export const LLM_PROVIDER = Symbol('LLM_PROVIDER');
 export const EMBEDDING_PROVIDER = Symbol('EMBEDDING_PROVIDER');
 
-export type AiTask = 'extract-cv' | 'suggest-requirements' | 'chat' | 'match';
+export type AiTask =
+  'extract-cv' | 'suggest-requirements' | 'chat' | 'match' | 'interview-questions';
 
 export interface JsonSchemaSpec {
   name: string;

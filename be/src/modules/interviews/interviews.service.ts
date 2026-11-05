@@ -13,8 +13,13 @@ import { AppEvents } from '../../common/events/app-events.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { applyDepartmentScope } from '../../common/utils/department-scope.js';
+import {
+  InterviewQuestionSuggester,
+  type QuestionSuggestion,
+} from '../ai/interview-questions.service.js';
 import { Application } from '../applications/entities/application.entity.js';
-import { JobRequirement } from '../jobs/entities/job-requirement.entity.js';
+import { CvFile } from '../files/entities/cv-file.entity.js';
+import { JobRequirement, RequirementType } from '../jobs/entities/job-requirement.entity.js';
 import { NotificationType } from '../notifications/entities/notification.entity.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { User } from '../users/entities/user.entity.js';
@@ -71,6 +76,9 @@ export interface InterviewView {
   };
 }
 
+const QUESTION_CACHE_TTL_MS = 60 * 60_000;
+const QUESTION_CACHE_MAX = 200;
+
 @Injectable()
 export class InterviewsService implements OnModuleInit {
   private readonly logger = new Logger(InterviewsService.name);
@@ -79,7 +87,11 @@ export class InterviewsService implements OnModuleInit {
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly notifications: NotificationsService,
     private readonly events: AppEvents,
+    private readonly questions: InterviewQuestionSuggester,
   ) {}
+
+  // E5 · BR-INT-04: cache theo (buổi phỏng vấn, phiên bản JD), giữ trong bộ nhớ
+  private readonly questionCache = new Map<string, { at: number; items: QuestionSuggestion[] }>();
 
   onModuleInit(): void {
     this.events.on('application.changed', ({ applicationId }) =>
@@ -287,6 +299,74 @@ export class InterviewsService implements OnModuleInit {
     });
     await this.notifySafely(assignees, NotificationType.InterviewCancelled, applicationId, id);
     return (await this.views([id], user, true))[0];
+  }
+
+  // Mở rộng MVP 2 – E5 · BR-INT-02, BR-INT-04: chỉ người được giao; không dùng điểm, cờ, bằng chứng chấm
+  async suggestQuestions(
+    id: string,
+    user: ScopeUser,
+  ): Promise<{ items: QuestionSuggestion[]; cached: boolean }> {
+    const iv = await this.dataSource.getRepository(Interview).findOne({
+      select: {
+        id: true,
+        status: true,
+        application: {
+          id: true,
+          jobId: true,
+          cvFileId: true,
+          job: { id: true, title: true, jdVersion: true },
+        },
+      },
+      where: { id },
+      relations: { application: { job: true } },
+    });
+    const assigned =
+      iv &&
+      (await this.dataSource
+        .getRepository(InterviewAssignee)
+        .existsBy({ interviewId: id, userId: user.id }));
+    if (!iv || !assigned) throw new NotFoundException('Interview not found');
+    if (iv.status === InterviewStatus.Cancelled) {
+      throw new BusinessException(
+        ErrorCode.InterviewNotEditable,
+        'Interview was cancelled',
+        HttpStatus.CONFLICT,
+      );
+    }
+    const job = iv.application!.job!;
+    const key = `${id}:${job.jdVersion}`;
+    const hit = this.questionCache.get(key);
+    if (hit && Date.now() - hit.at < QUESTION_CACHE_TTL_MS)
+      return { items: hit.items, cached: true };
+
+    const [requirements, cv] = await Promise.all([
+      this.dataSource.getRepository(JobRequirement).find({
+        select: ['id', 'label', 'type', 'keywords'],
+        where: { jobId: job.id, jdVersion: job.jdVersion },
+        order: { position: 'ASC' },
+      }),
+      iv.application!.cvFileId
+        ? this.dataSource
+            .getRepository(CvFile)
+            .findOne({ select: ['id', 'text'], where: { id: iv.application!.cvFileId } })
+        : null,
+    ]);
+    if (!requirements.length) return { items: [], cached: false };
+    const items = await this.questions.suggest(
+      job.title,
+      requirements.map((r) => ({
+        id: r.id,
+        label: r.label,
+        required: r.type === RequirementType.Must,
+        keywords: r.keywords,
+      })),
+      cv?.text ?? null,
+    );
+    if (this.questionCache.size >= QUESTION_CACHE_MAX) {
+      this.questionCache.delete(this.questionCache.keys().next().value!);
+    }
+    this.questionCache.set(key, { at: Date.now(), items });
+    return { items, cached: false };
   }
 
   // F-INT-03, BR-INT-03
