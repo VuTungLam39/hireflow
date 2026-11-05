@@ -40,14 +40,41 @@ const meta = {
   hasNextPage: false,
   hasPreviousPage: false,
 }
+const logo = {
+  id: 'm1',
+  kind: 'LOGO',
+  url: `/public/media/${'a'.repeat(64)}.png`,
+  width: 256,
+  height: 256,
+  alt: 'Logo',
+  position: 0,
+}
+const company = {
+  name: 'Công ty Cổ phần HireFlow',
+  tagline: 'Đọc kỹ từng hồ sơ',
+  about: ['HireFlow xây dựng phần mềm tuyển dụng.', 'Đội ngũ hơn 200 người.'].join('\n\n'),
+  sizeRange: '201-500',
+  industries: ['Phần mềm'],
+  foundedYear: 2016,
+  website: 'https://hireflow.example.com',
+  socials: {},
+  benefits: [{ title: 'Bảo hiểm sức khoẻ', description: 'Cho cả gia đình' }],
+  offices: [],
+  milestones: [{ year: 2016, title: 'Thành lập', description: '' }],
+  logo,
+  cover: null,
+  gallery: [],
+  openJobs: 1,
+}
 const envelope = (data: unknown, extra = {}) =>
   new Response(
     JSON.stringify({ success: true, statusCode: 200, message: 'Success', data, ...extra }),
   )
 
-function stubApi() {
+function stubApi({ withCompany = false } = {}) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input)
+    if (withCompany && url === `${API}/public/company`) return envelope(company)
     if (url.startsWith(`${API}/public/jobs?`)) return envelope([job], { meta })
     if (url === `${API}/public/jobs/${job.id}`) return envelope(detail)
     return new Response('{}', { status: 404 })
@@ -98,6 +125,61 @@ describe('F-PUB-04: prerender trang công khai', () => {
     const heading = container.querySelector('h1')
 
     hydrateQueryCache(payloadOf(page.payload))
+    await resolveLazyRoutes(routes, window.location)
+    const router = createAppRouter({ hydrationData: { loaderData: { [ROOT_ROUTE_ID]: null } } })
+    const onRecoverableError = vi.fn()
+    await act(async () => {
+      hydrateRoot(
+        container,
+        <StrictMode>
+          <AppProviders>
+            <RouterProvider router={router} />
+          </AppProviders>
+        </StrictMode>,
+        { onRecoverableError },
+      )
+    })
+
+    expect(onRecoverableError).not.toHaveBeenCalled()
+    expect(container.querySelector('h1')).toBe(heading)
+    router.dispose()
+  })
+
+  it('F-PUB-06: dựng /careers khi hồ sơ công ty đã công khai; mọi trang có link "Về công ty"', async () => {
+    stubApi({ withCompany: true })
+    const pages = await prerenderPublicPages({ apiUrl: API, siteUrl: 'https://hireflow.example' })
+
+    expect(pages.map((p) => p.file)).toEqual(['jobs.html', `jobs/${job.id}.html`, 'careers.html'])
+    const [list, detailPage, careers] = pages
+    expect(careers.html).toContain('Công ty Cổ phần HireFlow')
+    expect(careers.html).toContain('Bảo hiểm sức khoẻ')
+    expect(careers.html).toContain('Backend Developer (NestJS)')
+    expect(careers.head).toContain('<title>Công ty Cổ phần HireFlow – HireFlow Careers</title>')
+    expect(careers.head).toContain(
+      '<link rel="canonical" href="https://hireflow.example/careers" />',
+    )
+    for (const page of [list, detailPage]) expect(page.html).toContain('href="/careers"')
+    expect(detailPage.html).toContain('Về Công ty Cổ phần HireFlow')
+  })
+
+  it('BR-ORG-01: hồ sơ chưa công khai thì không dựng /careers, các trang khác vẫn dựng', async () => {
+    stubApi()
+    const pages = await prerenderPublicPages({ apiUrl: API })
+    expect(pages.map((p) => p.file)).toEqual(['jobs.html', `jobs/${job.id}.html`])
+    expect(pages[1].html).not.toContain('href="/careers"')
+  })
+
+  it('client hydrate /careers khớp HTML dựng sẵn', async () => {
+    stubApi({ withCompany: true })
+    const careers = (await prerenderPublicPages({ apiUrl: API })).find(
+      (p) => p.file === 'careers.html',
+    )!
+    window.history.replaceState(null, '', '/careers')
+    document.body.innerHTML = `<div id="root">${careers.html}</div>`
+    const container = document.getElementById('root')!
+    const heading = container.querySelector('h1')
+
+    hydrateQueryCache(payloadOf(careers.payload))
     await resolveLazyRoutes(routes, window.location)
     const router = createAppRouter({ hydrationData: { loaderData: { [ROOT_ROUTE_ID]: null } } })
     const onRecoverableError = vi.fn()

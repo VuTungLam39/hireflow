@@ -1,8 +1,17 @@
-import { Link, Outlet } from 'react-router'
+import { Link, NavLink, Outlet } from 'react-router'
+import { usePublicCompany } from '@/features/company'
+import { cn } from '@/lib/utils'
 import { paths } from '@/routes/paths'
 import { BrandMark } from './BrandMark'
 
+const navClass = ({ isActive }: { isActive: boolean }) =>
+  cn(
+    'rounded-sm px-2 py-1.5 text-sm font-medium whitespace-nowrap transition-colors',
+    isActive ? 'text-ink' : 'text-ink-muted hover:text-ink',
+  )
+
 export function PublicLayout() {
+  const { data: company } = usePublicCompany()
   return (
     <div className="bg-surface text-ink-2 flex min-h-dvh flex-col">
       <a
@@ -13,16 +22,29 @@ export function PublicLayout() {
       </a>
       <header className="border-line bg-surface sticky top-0 z-20 border-b">
         <div className="mx-auto flex h-16 max-w-[960px] items-center justify-between gap-4 px-4">
-          <Link to={paths.publicJobs} className="flex items-center gap-3 rounded-sm">
-            <BrandMark />
-            <span aria-hidden className="bg-line hidden h-5 w-px sm:block" />
-            <span className="text-ink-2 hidden text-sm font-medium sm:inline">Việc làm</span>
-          </Link>
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <Link to={paths.publicJobs} aria-label="HireFlow – Việc làm" className="rounded-sm">
+              <BrandMark compact className="sm:hidden" />
+              <BrandMark className="hidden sm:inline-flex" />
+            </Link>
+            <span aria-hidden className="bg-line h-5 w-px" />
+            <nav aria-label="Trang tuyển dụng" className="-ml-2 flex items-center">
+              <NavLink to={paths.publicJobs} className={navClass}>
+                Việc làm
+              </NavLink>
+              {company && (
+                <NavLink to={paths.careers} className={navClass}>
+                  Về công ty
+                </NavLink>
+              )}
+            </nav>
+          </div>
           <Link
             to={paths.login}
-            className="text-ink-muted hover:text-ink rounded-sm px-2 py-1.5 text-[13px] transition-colors"
+            className="text-ink-muted hover:text-ink shrink-0 rounded-sm px-2 py-1.5 text-[13px] whitespace-nowrap transition-colors"
           >
-            Đăng nhập nội bộ
+            <span className="sm:hidden">Đăng nhập</span>
+            <span className="hidden sm:inline">Đăng nhập nội bộ</span>
           </Link>
         </div>
       </header>

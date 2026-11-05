@@ -3,6 +3,7 @@ import { StrictMode } from 'react'
 import { renderToString } from 'react-dom/server'
 import { createStaticHandler, createStaticRouter, StaticRouterProvider } from 'react-router'
 import { AppProviders } from '@/app/providers'
+import { companyKeys, type PublicCompany } from '@/features/company'
 import {
   publicJobKeys,
   publicJobsListSchema,
@@ -41,6 +42,14 @@ async function getJson<T>(url: string, timeoutMs: number): Promise<ApiResponse<T
   const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) })
   if (!res.ok) throw new Error(`GET ${url} → ${res.status}`)
   return (await res.json()) as ApiResponse<T>
+}
+
+/** BR-ORG-01: hồ sơ chưa công khai trả 404 → không dựng /careers, các trang khác vẫn dựng */
+async function fetchCompany(apiUrl: string, timeoutMs: number): Promise<PublicCompany | null> {
+  const res = await fetch(`${apiUrl}/public/company`, { signal: AbortSignal.timeout(timeoutMs) })
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`GET ${apiUrl}/public/company → ${res.status}`)
+  return ((await res.json()) as ApiResponse<PublicCompany>).data
 }
 
 async function fetchAllSummaries(apiUrl: string, timeoutMs: number) {
@@ -123,16 +132,24 @@ export async function prerenderPublicPages(options: PrerenderOptions): Promise<P
   const timeoutMs = options.fetchTimeoutMs ?? 90_000
   const pages: PrerenderedPage[] = []
 
+  const company = await fetchCompany(apiUrl, timeoutMs)
   const listParams = parseListParams(publicJobsListSchema, new URLSearchParams())
   const firstPage = await getJson<PublicJobSummary[]>(
     `${apiUrl}/public/jobs?page=${listParams.page}&limit=${listParams.limit}`,
     timeoutMs,
   )
-  queryClient.clear()
-  queryClient.setQueryData<Paginated<PublicJobSummary>>(publicJobKeys.list(listParams), {
+  const firstPageData: Paginated<PublicJobSummary> = {
     items: firstPage.data,
     meta: firstPage.meta!,
-  })
+  }
+  /** Mỗi trang bắt đầu từ cache trống, chỉ có hồ sơ công ty (header, khối "Về công ty") */
+  const resetCache = () => {
+    queryClient.clear()
+    if (company) queryClient.setQueryData(companyKeys.public(), company)
+  }
+
+  resetCache()
+  queryClient.setQueryData(publicJobKeys.list(listParams), firstPageData)
   pages.push({
     path: paths.publicJobs,
     file: 'jobs.html',
@@ -148,7 +165,7 @@ export async function prerenderPublicPages(options: PrerenderOptions): Promise<P
   for (const summary of await fetchAllSummaries(apiUrl, timeoutMs)) {
     const job = (await getJson<PublicJob>(`${apiUrl}/public/jobs/${summary.id}`, timeoutMs)).data
     const path = links.publicJobDetail(job.id)
-    queryClient.clear()
+    resetCache()
     queryClient.setQueryData(publicJobKeys.detail(job.id), job)
     pages.push({
       path,
@@ -163,6 +180,24 @@ export async function prerenderPublicPages(options: PrerenderOptions): Promise<P
         jsonLd: jobPostingJsonLd(job),
       }),
       ...(await renderUrl(path)),
+    })
+  }
+
+  if (company) {
+    resetCache()
+    queryClient.setQueryData(publicJobKeys.list(listParams), firstPageData)
+    pages.push({
+      path: paths.careers,
+      file: 'careers.html',
+      head: buildHead({
+        title: `${company.name} – ${SITE_NAME}`,
+        description: summarize(
+          company.tagline ? `${company.tagline}. ${company.about}` : company.about,
+        ),
+        path: paths.careers,
+        siteUrl: options.siteUrl,
+      }),
+      ...(await renderUrl(paths.careers)),
     })
   }
 

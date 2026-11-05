@@ -10,6 +10,7 @@ import { paths } from '@/routes/paths'
 import { JobFacts } from '@/features/jobs'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { ApplyForm } from '../components/ApplyForm'
+import { CompanyAbout } from '../components/CompanyAbout'
 import { usePublicJob } from '../hooks/use-public-jobs'
 
 // F-PUB-02, F-PUB-03 · BR-APP-07 · Design Spec 6.11
@@ -96,6 +97,8 @@ export default function PublicJobDetailPage() {
               </ul>
             </section>
           )}
+
+          <CompanyAbout />
         </article>
 
         <aside
