@@ -21,6 +21,9 @@ import { ApplicationStatusHistory } from '../../../modules/applications/entities
 import { Application } from '../../../modules/applications/entities/application.entity.js';
 import { ANONYMIZED_NAME } from '../../../modules/candidates/candidates.service.js';
 import { Candidate } from '../../../modules/candidates/entities/candidate.entity.js';
+import { CompanyProfile } from '../../../modules/company/entities/company-profile.entity.js';
+import { MediaFile, MediaKind } from '../../../modules/company/entities/media-file.entity.js';
+import { checkImage, type CheckedImage } from '../../../modules/company/media.rules.js';
 import { Department } from '../../../modules/departments/entities/department.entity.js';
 import {
   CV_MIME_TYPES,
@@ -40,6 +43,8 @@ import { RefreshToken } from '../../../modules/refresh-tokens/entities/refresh-t
 import { User } from '../../../modules/users/entities/user.entity.js';
 import { ANONYMIZED, APPLICATIONS, type DemoApplication } from './applications.js';
 import { CANDIDATES, type DemoCandidate, type DemoCv } from './candidates.js';
+import { COMPANY } from './company.js';
+import { companyImages } from './images.js';
 import { BENEFITS_TEXT, DEMO_BENEFITS, JOB_DETAILS, JOBS, type DemoJob } from './jobs.js';
 import { vnToday } from '../../../common/utils/vn-date.js';
 import { at, DEPARTMENTS, SESSIONS, USERS } from './org.js';
@@ -56,6 +61,8 @@ export const demoId = (name: string) => {
 };
 
 const BUSINESS_TABLES = [
+  'company_profile',
+  'media_files',
   'interviews',
   'application_notes',
   'application_status_history',
@@ -96,6 +103,7 @@ export async function seedDemo(
   }
 
   const cvs = await buildCvs();
+  const images = buildCompanyImages();
   const storedKeys: string[] = [];
   try {
     await dataSource.transaction(async (manager) => {
@@ -117,6 +125,11 @@ export async function seedDemo(
       await seedCvFiles(manager, cvs);
       await seedApplications(manager, { jobs, candidateIds, userIds, cvs });
       await seedInterviews(manager, userIds);
+      for (const image of images) {
+        await storage.put(image.checked.key, image.checked.buffer, image.checked.mime);
+        storedKeys.push(image.checked.key);
+      }
+      await seedCompany(manager, images, userIds.get('admin')!);
     });
   } catch (error) {
     await Promise.allSettled(storedKeys.map((k) => storage.remove(k)));
@@ -682,6 +695,72 @@ async function seedInterviews(manager: EntityManager, userIds: Map<string, strin
       });
     }
   }
+}
+
+// F-ORG-01 · BR-MEDIA-01
+interface BuiltImage {
+  kind: MediaKind;
+  alt: string;
+  position: number;
+  checked: CheckedImage;
+}
+
+function buildCompanyImages(): BuiltImage[] {
+  const { logo, cover, gallery } = companyImages();
+  const check = (buffer: Buffer, kind: MediaKind) =>
+    checkImage(
+      { originalname: 'seed.png', mimetype: 'image/png', size: buffer.length, buffer },
+      kind,
+    );
+  return [
+    {
+      kind: MediaKind.Logo,
+      alt: logo.alt,
+      position: 0,
+      checked: check(logo.buffer, MediaKind.Logo),
+    },
+    {
+      kind: MediaKind.Cover,
+      alt: cover.alt,
+      position: 0,
+      checked: check(cover.buffer, MediaKind.Cover),
+    },
+    ...gallery.map((g, i) => ({
+      kind: MediaKind.Gallery,
+      alt: g.alt,
+      position: i,
+      checked: check(g.buffer, MediaKind.Gallery),
+    })),
+  ];
+}
+
+async function seedCompany(manager: EntityManager, images: BuiltImage[], adminId: string) {
+  if (await manager.exists(CompanyProfile, { where: { id: 1 } })) return;
+  const ids = new Map<MediaKind, string>();
+  for (const image of images) {
+    const id = demoId(`media:${image.kind}:${image.position}`);
+    await manager.insert(MediaFile, {
+      id,
+      kind: image.kind,
+      storageKey: image.checked.key,
+      mime: image.checked.mime,
+      sizeBytes: image.checked.size,
+      width: image.checked.width,
+      height: image.checked.height,
+      sha256: image.checked.sha256,
+      altText: image.alt,
+      position: image.position,
+      createdBy: adminId,
+    });
+    if (image.kind !== MediaKind.Gallery) ids.set(image.kind, id);
+  }
+  await manager.insert(CompanyProfile, {
+    id: 1,
+    ...COMPANY,
+    logoMediaId: ids.get(MediaKind.Logo)!,
+    coverMediaId: ids.get(MediaKind.Cover)!,
+    updatedBy: adminId,
+  });
 }
 
 async function countRows(dataSource: DataSource): Promise<DemoSeedResult> {
