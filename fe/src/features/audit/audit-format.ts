@@ -14,11 +14,30 @@ export const AUDIT_ACTION_LABEL: Record<AuditAction, string> = {
   COMPANY_PROFILE_UPDATED: 'Sửa hồ sơ công ty',
   COMPANY_MEDIA_ADDED: 'Thêm ảnh công ty',
   COMPANY_MEDIA_REMOVED: 'Xoá ảnh công ty',
+  APPLICATIONS_EXPORTED: 'Xuất CSV hồ sơ',
 }
 
 export const AUDIT_ACTIONS = Object.keys(AUDIT_ACTION_LABEL) as AuditAction[]
 
 const statusLabel = (s: unknown) => APPLICATION_STATUS[s as ApplicationStatus]?.label ?? String(s)
+/** E6: "status=NEW&search=an" → "trạng thái Mới, tìm “an”" */
+function describeFilters(filters: unknown) {
+  const p = new URLSearchParams(typeof filters === 'string' ? filters : '')
+  const parts = [
+    p.get('status') && `trạng thái ${statusLabel(p.get('status'))}`,
+    p.get('jobId') && 'một tin',
+    p.get('missingMust') && 'thiếu tiêu chí bắt buộc',
+    p.get('bucket') === 'other' && 'hồ sơ mới khác',
+    (p.get('scoreMin') || p.get('scoreMax')) &&
+      `điểm ${p.get('scoreMin') ?? 0}–${p.get('scoreMax') ?? 100}`,
+    (p.get('createdFrom') || p.get('createdTo')) &&
+      `nộp ${p.get('createdFrom') ?? '…'} → ${p.get('createdTo') ?? '…'}`,
+    p.get('aiStatus') && 'theo trạng thái đọc CV',
+    p.get('search') && `tìm “${p.get('search')}”`,
+  ].filter(Boolean)
+  return parts.length ? parts.join(', ') : 'không lọc'
+}
+
 const roleLabel = (r: unknown) => (r ? (ROLE_LABELS[r as Role] ?? String(r)) : '–')
 
 export function describeAudit(log: AuditLogItem): string {
@@ -46,6 +65,8 @@ export function describeAudit(log: AuditLogItem): string {
       if (m.passwordReset) parts.push('Đặt lại mật khẩu')
       return parts.join(' · ')
     }
+    case 'APPLICATIONS_EXPORTED':
+      return `${Number(m.rows).toLocaleString('vi-VN')} hồ sơ · Bộ lọc: ${describeFilters(m.filters)}`
     case 'TOKEN_REUSE_DETECTED':
       return 'Phiên đăng nhập đã thu hồi bị dùng lại; mọi phiên liên quan đã bị đăng xuất'
     default:
