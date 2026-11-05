@@ -22,11 +22,32 @@ import { CvFile, CvParseStatus } from '../files/entities/cv-file.entity.js';
 import { CitationRewriter, labelOf } from './citations.js';
 import { chunkCv, type CvSection } from './cv-chunks.js';
 import { CV_CHUNK_DIMENSION, CvChunk } from './entities/cv-chunk.entity.js';
+import { buildExcerpt, type Excerpt } from './excerpt.js';
 import { searchKeywords } from './keywords.js';
 import { retrieveChunks, toVector, type RetrievalMode, type RetrievedRow } from './retrieval.js';
 import { CHAT_SYSTEM, chatPrompt, NOT_ENOUGH_INFO } from './prompts/chat.prompt.js';
 
 type ScopeUser = Pick<AuthUser, 'role' | 'departmentId'>;
+
+// F-SEARCH-01: lấy 30 đoạn rồi gộp theo ứng viên, tối đa 10 người
+const CV_SEARCH_CHUNKS = 30;
+const CV_SEARCH_MAX = 10;
+
+export interface CvSearchItem {
+  candidateId: string;
+  candidateName: string;
+  applicationId: string;
+  section: CvSection;
+  excerpt: Excerpt;
+  /** keyword: đoạn CV có đúng từ đã gõ; meaning: chỉ gần nghĩa theo vector */
+  match: 'keyword' | 'meaning';
+}
+
+export interface CvSearchResult {
+  items: CvSearchItem[];
+  /** true: embedding lỗi, chỉ tìm theo từ khoá */
+  degraded: boolean;
+}
 
 // API Contract 4.8
 export interface ChatSource {
@@ -134,6 +155,47 @@ export class RagService implements OnApplicationBootstrap {
       throw error;
     }
     return chunks.length;
+  }
+
+  // F-SEARCH-01 · US-13 · BR-ACC-07: Kho ứng viên tìm theo kỹ năng trong CV, mỗi người một dòng
+  async searchCv(query: string, user: ScopeUser): Promise<CvSearchResult> {
+    const empty: CvSearchResult = { items: [], degraded: false };
+    if (user.role === Role.HiringManager && !user.departmentId) return empty;
+    const keywords = searchKeywords(query);
+    let vector: number[];
+    let mode: RetrievalMode = 'hybrid';
+    try {
+      [vector] = await this.embedding.embed([query], 'query');
+    } catch (error) {
+      this.logger.warn(`CV search embedding failed: ${(error as Error).message}`);
+      if (!keywords) {
+        throw new BusinessException(
+          ErrorCode.AiUnavailable,
+          'Embedding provider is unavailable',
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
+      vector = Array.from({ length: CV_CHUNK_DIMENSION }, () => 0);
+      mode = 'keyword';
+    }
+    const rows = await this.retrieve(vector, keywords, user, { mode, topK: CV_SEARCH_CHUNKS });
+    const seen = new Set<string>();
+    const items: CvSearchItem[] = [];
+    for (const row of rows) {
+      if (seen.has(row.candidateId)) continue;
+      seen.add(row.candidateId);
+      const excerpt = buildExcerpt(row.content, keywords);
+      items.push({
+        candidateId: row.candidateId,
+        candidateName: row.candidateName,
+        applicationId: row.applicationId,
+        section: row.section,
+        excerpt,
+        match: excerpt.highlights.length ? 'keyword' : 'meaning',
+      });
+      if (items.length === CV_SEARCH_MAX) break;
+    }
+    return { items, degraded: mode === 'keyword' };
   }
 
   // US-08, BR-AI-10, BR-ACC-07

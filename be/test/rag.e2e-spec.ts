@@ -383,6 +383,45 @@ describe('RAG chat (e2e, LLM và embedding giả)', () => {
     expect(res.sources.length).toBeGreaterThan(0);
   });
 
+  describe('GET /ai/cv-search (F-SEARCH-01, US-13)', () => {
+    type Item = {
+      candidateId: string;
+      match: 'keyword' | 'meaning';
+      applicationId: string;
+      excerpt: { text: string; highlights: [number, number][] };
+    };
+    const search = (who: keyof typeof tokens, q: string) =>
+      as(who, request(server()).get('/api/v1/ai/cv-search').query({ q }));
+
+    it('finds a candidate by a skill in the CV, one row per candidate, with the match marked', async () => {
+      const res = await search('hr', kwA.toUpperCase()).expect(200);
+      const items = res.body.data.items as Item[];
+      expect(res.body.data.degraded).toBe(false);
+      expect(items[0]).toMatchObject({ applicationId: apps.kwA, match: 'keyword' });
+      expect(items.slice(1).every((i) => i.match === 'meaning')).toBe(true);
+      const [s, e] = items[0].excerpt.highlights[0];
+      expect(items[0].excerpt.text.slice(s, e)).toBe(kwA);
+      expect(new Set(items.map((i) => i.candidateId)).size).toBe(items.length);
+    });
+
+    it('BR-ACC-07: a Hiring Manager only finds candidates of their department', async () => {
+      const items = (await search('hmA', kwB).expect(200)).body.data.items as Item[];
+      expect(items.every((i) => i.applicationId !== apps.kwB)).toBe(true);
+      expect((await search('hmC', kwA).expect(200)).body.data.items).toEqual([]);
+    });
+
+    it('falls back to keywords only when embedding is down', async () => {
+      const res = await search('hr', `${kwA} ${EMBED_DOWN}`).expect(200);
+      expect(res.body.data.degraded).toBe(true);
+      expect((res.body.data.items as Item[])[0].applicationId).toBe(apps.kwA);
+    });
+
+    it('validates the query and requires a token', async () => {
+      await search('hr', 'a').expect(400);
+      await request(server()).get('/api/v1/ai/cv-search').query({ q: 'kafka' }).expect(401);
+    });
+  });
+
   it('HR sees chunks from every department', async () => {
     const [, otherDept] = await chunksOf(apps.b1);
     const res = await chat('hr', otherDept.content);

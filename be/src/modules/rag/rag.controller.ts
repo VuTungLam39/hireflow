@@ -1,4 +1,4 @@
-import { Body, Controller, HttpStatus, Logger, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Logger, Post, Query, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
@@ -8,6 +8,7 @@ import { ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { Permission } from '../../common/permissions/permission.enum.js';
 import { ChatDto } from './dto/chat.dto.js';
+import { CvSearchDto } from './dto/cv-search.dto.js';
 import { RagService } from './rag.service.js';
 
 // API Contract 4.8
@@ -18,6 +19,17 @@ export class RagController {
   private readonly logger = new Logger(RagController.name);
 
   constructor(private readonly rag: RagService) {}
+
+  // F-SEARCH-01 · US-13
+  @Get('cv-search')
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Permissions(Permission.CandidateRead)
+  @ApiOperation({
+    summary: 'Tìm ứng viên theo kỹ năng trong CV (full-text + vector), kèm đoạn trích khớp',
+  })
+  cvSearch(@Query() dto: CvSearchDto, @CurrentUser() user: AuthUser) {
+    return this.rag.searchCv(dto.q, user);
+  }
 
   @Post('chat')
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
