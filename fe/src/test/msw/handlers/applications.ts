@@ -8,6 +8,7 @@ import {
 } from '@/features/applications'
 import type { DashboardSummary } from '@/features/dashboard'
 import { Permission } from '@/lib/permissions'
+import { Role } from '@/types/user'
 import {
   addApplication,
   applyScore,
@@ -62,6 +63,31 @@ function moveStatus(app: ApplicationRow, to: ApplicationStatus, user: UserRow, r
   app.status = to
 }
 
+// US-06: cùng bộ lọc cho danh sách và xuất CSV
+function filterRows(user: UserRow, p: URLSearchParams) {
+  const scoreMin = p.get('scoreMin')
+  const scoreMax = p.get('scoreMax')
+  // Ngày theo giờ Việt Nam (UTC+7), tính cả hai đầu
+  const from = p.get('createdFrom') && new Date(`${p.get('createdFrom')}T00:00:00+07:00`)
+  const to = p.get('createdTo') && new Date(`${p.get('createdTo')}T23:59:59.999+07:00`)
+  return visible(user).filter((a) => {
+    const c = candidateOf(a)
+    return (
+      (!p.get('jobId') || a.jobId === p.get('jobId')) &&
+      (!p.get('status') || a.status === p.get('status')) &&
+      (!p.get('aiStatus') || a.aiStatus === p.get('aiStatus')) &&
+      (!scoreMin || (a.score ?? -1) >= Number(scoreMin)) &&
+      (!scoreMax || (a.score !== null && a.score <= Number(scoreMax))) &&
+      (!p.get('missingMust') || a.flags.includes('MISSING_MUST')) &&
+      (p.get('bucket') !== 'other' ||
+        ((a.score === null || a.score < SCORE_GOOD) && !a.flags.includes('MISSING_MUST'))) &&
+      (!from || new Date(a.createdAt) >= from) &&
+      (!to || new Date(a.createdAt) <= to) &&
+      includesText(`${c.fullName} ${c.email}`, p.get('search'))
+    )
+  })
+}
+
 const userRef = (id: string | null) => {
   const u = db.users.find((x) => x.id === id)
   return u ? { id: u.id, fullName: u.fullName } : null
@@ -74,27 +100,7 @@ export const applicationHandlers = [
     if (user instanceof Response) return user
     settleProcessing()
     const p = searchParams(request)
-    const scoreMin = p.get('scoreMin')
-    const scoreMax = p.get('scoreMax')
-    // Ngày theo giờ Việt Nam (UTC+7), tính cả hai đầu
-    const from = p.get('createdFrom') && new Date(`${p.get('createdFrom')}T00:00:00+07:00`)
-    const to = p.get('createdTo') && new Date(`${p.get('createdTo')}T23:59:59.999+07:00`)
-    const rows = visible(user).filter((a) => {
-      const c = candidateOf(a)
-      return (
-        (!p.get('jobId') || a.jobId === p.get('jobId')) &&
-        (!p.get('status') || a.status === p.get('status')) &&
-        (!p.get('aiStatus') || a.aiStatus === p.get('aiStatus')) &&
-        (!scoreMin || (a.score ?? -1) >= Number(scoreMin)) &&
-        (!scoreMax || (a.score !== null && a.score <= Number(scoreMax))) &&
-        (!p.get('missingMust') || a.flags.includes('MISSING_MUST')) &&
-        (p.get('bucket') !== 'other' ||
-          ((a.score === null || a.score < SCORE_GOOD) && !a.flags.includes('MISSING_MUST'))) &&
-        (!from || new Date(a.createdAt) >= from) &&
-        (!to || new Date(a.createdAt) <= to) &&
-        includesText(`${c.fullName} ${c.email}`, p.get('search'))
-      )
-    })
+    const rows = filterRows(user, p)
     const sorted = sortBy(
       rows,
       p,
@@ -103,6 +109,35 @@ export const applicationHandlers = [
     )
     const { items, meta } = paginate(sorted, p)
     return ok(items.map(toApplicationItem), { meta })
+  }),
+
+  // E6 · BR-APP-11: đặt trước '/applications/:id'
+  http.get(api('/applications/export'), async ({ request }) => {
+    await delay()
+    const user = authorize(request, Permission.ApplicationRead)
+    if (user instanceof Response) return user
+    if (user.role === Role.Interviewer) {
+      return fail(403, 'FORBIDDEN', 'Interviewers cannot export applications')
+    }
+    const p = searchParams(request)
+    settleProcessing()
+    const rows = filterRows(user, p)
+    if (rows.length > 5000) return fail(400, 'EXPORT_TOO_LARGE', 'Too many rows')
+    const lines = rows.map((a) => {
+      const c = candidateOf(a)
+      return `"${c.fullName}","${c.email}","${APPLICATION_STATUS[a.status].label}"`
+    })
+    const CRLF = String.fromCharCode(13, 10)
+    const body = [String.fromCharCode(0xfeff) + '"Họ tên","Email","Trạng thái"', ...lines, ''].join(
+      CRLF,
+    )
+    return new Response(body, {
+      headers: {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="ho-so-ung-tuyen-2026-11-05.csv"',
+        'X-Total-Count': String(rows.length),
+      },
+    })
   }),
 
   http.get(api('/applications/:id'), async ({ request, params }) => {

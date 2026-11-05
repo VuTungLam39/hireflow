@@ -10,6 +10,7 @@ export type AuditAction =
   | 'COMPANY_PROFILE_UPDATED'
   | 'COMPANY_MEDIA_ADDED'
   | 'COMPANY_MEDIA_REMOVED'
+  | 'APPLICATIONS_EXPORTED'
 
 export type AuditEntity = 'cv_file' | 'application' | 'candidate' | 'user' | 'company' | 'media'
 

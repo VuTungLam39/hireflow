@@ -43,6 +43,7 @@ export enum ErrorCode {
   FileTypeNotAllowed = 'FILE_TYPE_NOT_ALLOWED',
   FileTooLarge = 'FILE_TOO_LARGE',
   CvTextNotEditable = 'CV_TEXT_NOT_EDITABLE',
+  ExportTooLarge = 'EXPORT_TOO_LARGE',
 
   // Interviews
   InterviewNotAllowed = 'INTERVIEW_NOT_ALLOWED',

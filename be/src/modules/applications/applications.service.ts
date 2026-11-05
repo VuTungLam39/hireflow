@@ -29,6 +29,14 @@ import { CvFile, CvParseStatus } from '../files/entities/cv-file.entity.js';
 import { FilesService } from '../files/files.service.js';
 import { JobRequirement } from '../jobs/entities/job-requirement.entity.js';
 import { Job, JobStatus } from '../jobs/entities/job.entity.js';
+import {
+  CSV_BOM,
+  CSV_HEADER,
+  csvLine,
+  csvRow,
+  EXPORT_BATCH,
+  EXPORT_MAX_ROWS,
+} from './application-export.js';
 import { assertReopenable, assertTransition, REOPEN_TO } from './application-status.js';
 import { ChangeStatusDto } from './dto/change-status.dto.js';
 import { CreateNoteDto } from './dto/create-note.dto.js';
@@ -81,6 +89,25 @@ export interface ApplicationDetailView extends Omit<ApplicationListItemView, 'ca
 
 // BR-INT-02: Interviewer đánh giá độc lập, không thấy điểm và bằng chứng của AI
 const blind = (user: ScopeUser) => user.role === Role.Interviewer;
+
+const EXPORT_FILTERS = [
+  'jobId',
+  'status',
+  'aiStatus',
+  'scoreMin',
+  'scoreMax',
+  'missingMust',
+  'bucket',
+  'createdFrom',
+  'createdTo',
+  'search',
+] as const;
+
+/** Nhật ký kiểm toán: bộ lọc đã dùng, dạng "status=NEW&jobId=…" */
+const describeFilters = (query: QueryApplicationDto) =>
+  EXPORT_FILTERS.filter((k) => query[k] !== undefined && query[k] !== '')
+    .map((k) => `${k}=${String(query[k])}`)
+    .join('&');
 
 const escapeLike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`);
 
@@ -139,6 +166,104 @@ export class ApplicationsService {
       query.page,
       query.limit,
     );
+  }
+
+  // E6 · BR-APP-11: theo phạm vi quyền, tối đa EXPORT_MAX_ROWS dòng, ghi nhật ký trước khi trả file
+  async exportCsv(
+    query: QueryApplicationDto,
+    user: ScopeUser,
+  ): Promise<{ total: number; lines: AsyncGenerator<string> }> {
+    if (blind(user)) {
+      throw new ForbiddenException({
+        code: ErrorCode.Forbidden,
+        message: 'Interviewers cannot export applications',
+      });
+    }
+    const total =
+      (
+        await this.filteredQuery(query, user)
+          .select('COUNT(*)::int', 'total')
+          .getRawOne<{ total: number }>()
+      )?.total ?? 0;
+    if (total > EXPORT_MAX_ROWS) {
+      throw new BusinessException(
+        ErrorCode.ExportTooLarge,
+        `At most ${EXPORT_MAX_ROWS} rows can be exported`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    await this.audit.record({
+      actorId: user.id,
+      action: AuditAction.ApplicationsExported,
+      entity: AuditEntity.Application,
+      entityId: null,
+      metadata: { rows: total, filters: describeFilters(query) },
+    });
+    return { total, lines: this.exportLines(query, user) };
+  }
+
+  private async *exportLines(query: QueryApplicationDto, user: ScopeUser): AsyncGenerator<string> {
+    yield CSV_BOM + csvLine(CSV_HEADER);
+    for (let offset = 0; offset < EXPORT_MAX_ROWS; offset += EXPORT_BATCH) {
+      const ids = (
+        await this.filteredQuery(query, user)
+          .select('app.id', 'id')
+          .orderBy(
+            `app.${query.sortBy}`,
+            query.order,
+            query.sortBy === 'score' ? 'NULLS LAST' : undefined,
+          )
+          .addOrderBy('app.id', query.order)
+          .offset(offset)
+          .limit(EXPORT_BATCH)
+          .getRawMany<{ id: string }>()
+      ).map((r) => r.id);
+      if (!ids.length) return;
+      const rows = await this.applicationsRepository
+        .createQueryBuilder('app')
+        .innerJoin('app.job', 'job')
+        .innerJoin('job.department', 'department')
+        .innerJoin('app.candidate', 'candidate')
+        .select([
+          'app.id',
+          'app.status',
+          'app.score',
+          'app.source',
+          'app.createdAt',
+          'job.id',
+          'job.title',
+          'department.id',
+          'department.name',
+          'candidate.id',
+          'candidate.fullName',
+          'candidate.email',
+          'candidate.phone',
+        ])
+        .where('app.id IN (:...ids)', { ids })
+        .getMany();
+      const byId = new Map(rows.map((a) => [a.id, a]));
+      yield ids
+        .flatMap((id) => {
+          const a = byId.get(id);
+          return a
+            ? [
+                csvRow({
+                  fullName: a.candidate!.fullName,
+                  email: a.candidate!.email,
+                  phone: a.candidate!.phone,
+                  jobTitle: a.job!.title,
+                  department: a.job!.department!.name,
+                  status: a.status,
+                  score: a.score,
+                  source: a.source,
+                  createdAt: a.createdAt,
+                }),
+              ]
+            : [];
+        })
+        .join('');
+      if (ids.length < EXPORT_BATCH) return;
+    }
   }
 
   // US-06, BR-ACC-07

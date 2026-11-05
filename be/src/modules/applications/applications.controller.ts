@@ -10,19 +10,26 @@ import {
   Post,
   Put,
   Query,
+  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import type { Response } from 'express';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Permissions } from '../../common/decorators/permissions.decorator.js';
 import { RequestId } from '../../common/decorators/request-id.decorator.js';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
+import { vnToday } from '../../common/utils/vn-date.js';
 import { Permission } from '../../common/permissions/permission.enum.js';
 import type { UploadedCv } from '../files/cv-file.rules.js';
 import { CV_UPLOAD_OPTIONS } from '../files/cv-upload.options.js';
+import { exportFileName } from './application-export.js';
 import { ApplicationsService } from './applications.service.js';
 import { ChangeStatusDto, DeclineOfferDto } from './dto/change-status.dto.js';
 import { CreateNoteDto } from './dto/create-note.dto.js';
@@ -43,6 +50,29 @@ export class ApplicationsController {
   @ApiOperation({ summary: 'Bảng hồ sơ: lọc, sắp xếp, phân trang (lọc theo phạm vi phòng ban)' })
   findAll(@Query() query: QueryApplicationDto, @CurrentUser() user: AuthUser) {
     return this.applicationsService.findAll(query, user);
+  }
+
+  // E6 · BR-APP-11: đặt trước ':id' để "export" không bị hiểu là id
+  @Get('export')
+  @Permissions(Permission.ApplicationRead)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @ApiProduces('text/csv')
+  @ApiOperation({
+    summary: 'Xuất CSV theo bộ lọc hiện tại (≤ 5.000 dòng, UTF-8 có BOM); Interviewer bị từ chối',
+  })
+  async export(
+    @Query() query: QueryApplicationDto,
+    @CurrentUser() user: AuthUser,
+    @Res() res: Response,
+  ) {
+    const { total, lines } = await this.applicationsService.exportCsv(query, user);
+    res.status(HttpStatus.OK).set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${exportFileName(vnToday())}"`,
+      'Cache-Control': 'no-store',
+      'X-Total-Count': String(total),
+    });
+    await pipeline(Readable.from(lines), res);
   }
 
   @Get(':id')

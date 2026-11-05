@@ -90,5 +90,19 @@ describe('AuditLogPage', () => {
         metadata: { from: 'REJECTED', to: 'SCREENING', reopen: true, reason: 'Xét lại' },
       }),
     ).toBe('Từ chối → Sàng lọc (mở lại) · Lý do: Xét lại')
+    expect(
+      describeAudit({
+        ...base,
+        action: 'APPLICATIONS_EXPORTED',
+        metadata: { rows: 1250, filters: 'status=NEW&search=an' },
+      }),
+    ).toBe('1.250 hồ sơ · Bộ lọc: trạng thái Mới, tìm “an”')
+    expect(
+      describeAudit({
+        ...base,
+        action: 'APPLICATIONS_EXPORTED',
+        metadata: { rows: 3, filters: '' },
+      }),
+    ).toBe('3 hồ sơ · Bộ lọc: không lọc')
   })
 })
