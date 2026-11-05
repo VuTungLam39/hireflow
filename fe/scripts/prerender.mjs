@@ -28,7 +28,9 @@ try {
     logLevel: 'warn',
     build: { ssr: 'src/prerender/entry.tsx', outDir: ssrDir, emptyOutDir: true },
   })
-  const { prerenderPublicPages } = await import(pathToFileURL(join(ssrDir, 'entry.js')).href)
+  const { prerenderPublicPages, buildSitemap } = await import(
+    pathToFileURL(join(ssrDir, 'entry.js')).href
+  )
   const pages = await prerenderPublicPages({
     apiUrl,
     siteUrl: siteUrl || undefined,
@@ -55,14 +57,7 @@ try {
   }
 
   if (siteUrl) {
-    const urls = pages.map((page) => `  <url><loc>${siteUrl}${page.path}</loc></url>`)
-    const sitemap = [
-      '<?xml version="1.0" encoding="UTF-8"?>',
-      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-      ...urls,
-      '</urlset>',
-    ]
-    await writeFile(join(distDir, 'sitemap.xml'), `${sitemap.join('\n')}\n`)
+    await writeFile(join(distDir, 'sitemap.xml'), buildSitemap(pages, siteUrl))
     const robots = await readFile(join(distDir, 'robots.txt'), 'utf8')
     await writeFile(
       join(distDir, 'robots.txt'),
@@ -72,7 +67,7 @@ try {
 
   const seconds = ((performance.now() - started) / 1000).toFixed(1)
   console.log(
-    `[prerender] ${pages.length} trang công khai trong ${seconds}s → dist/jobs.html, dist/jobs/*.html`,
+    `[prerender] ${pages.length} trang công khai trong ${seconds}s → dist/jobs.html, dist/jobs/*.html, dist/careers.html`,
   )
 } catch (error) {
   console.error(`[prerender] lỗi: ${error instanceof Error ? error.message : error}`)

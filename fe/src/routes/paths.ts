@@ -25,6 +25,7 @@ export const paths = {
   // Công khai cho ứng viên (FE Architecture mục 8.2)
   publicJobs: '/jobs',
   publicJobDetail: '/jobs/:id',
+  careers: '/careers',
 } as const
 
 const withQuery = (path: string, query?: Record<string, string | undefined>) => {
