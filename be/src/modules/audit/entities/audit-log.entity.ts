@@ -14,6 +14,7 @@ export enum AuditAction {
   CompanyProfileUpdated = 'COMPANY_PROFILE_UPDATED',
   CompanyMediaAdded = 'COMPANY_MEDIA_ADDED',
   CompanyMediaRemoved = 'COMPANY_MEDIA_REMOVED',
+  ApplicationsExported = 'APPLICATIONS_EXPORTED',
 }
 
 export enum AuditEntity {
