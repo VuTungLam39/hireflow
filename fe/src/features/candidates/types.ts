@@ -39,3 +39,22 @@ export interface CandidateListParams {
   cursor?: string
   limit?: number
 }
+
+/** F-SEARCH-01 · US-13: kết quả tìm theo kỹ năng trong CV, mỗi ứng viên một dòng */
+export type CvSection = 'summary' | 'experience' | 'skills' | 'projects' | 'education' | 'other'
+
+export interface CvSearchItem {
+  candidateId: string
+  candidateName: string
+  applicationId: string
+  section: CvSection
+  excerpt: { text: string; highlights: [number, number][] }
+  /** keyword: CV có đúng từ đã gõ; meaning: chỉ gần nghĩa theo AI */
+  match: 'keyword' | 'meaning'
+}
+
+export interface CvSearchResult {
+  items: CvSearchItem[]
+  /** true: dịch vụ embedding lỗi, chỉ tìm theo từ khoá */
+  degraded: boolean
+}

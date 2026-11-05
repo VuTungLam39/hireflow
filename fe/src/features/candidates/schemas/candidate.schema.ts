@@ -3,6 +3,8 @@ import { z } from 'zod'
 /** Bộ lọc kho ứng viên trên URL. Cursor không lưu trên URL: nó thuộc về lần cuộn hiện tại. */
 export const candidateListSchema = z.object({
   search: z.string().optional().catch(undefined),
+  /** F-SEARCH-01: cv = tìm theo kỹ năng trong CV */
+  in: z.enum(['cv']).optional().catch(undefined),
 })
 export type CandidateListFilter = z.output<typeof candidateListSchema>
 

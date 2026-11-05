@@ -5,9 +5,14 @@ import type {
   CandidateListItem,
   CandidateListParams,
   CandidateUpdateInput,
+  CvSearchResult,
 } from '../types'
 
 export const candidatesApi = {
+  /** F-SEARCH-01: tìm theo kỹ năng trong CV (full-text + vector) */
+  cvSearch: async (q: string) =>
+    (await api.get<ApiResponse<CvSearchResult>>('/ai/cv-search', { params: { q } })).data.data,
+
   /** Phân trang cursor: gửi lại đúng nextCursor của trang trước */
   list: async (params: CandidateListParams): Promise<CursorPage<CandidateListItem>> => {
     const res = await api.get<ApiResponse<CandidateListItem[], CursorMeta>>('/candidates', {

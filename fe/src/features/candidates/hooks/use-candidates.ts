@@ -9,14 +9,16 @@ export const candidateKeys = {
   all: ['candidates'] as const,
   lists: () => [...candidateKeys.all, 'list'] as const,
   list: (search: string | undefined) => [...candidateKeys.lists(), { search }] as const,
+  cvSearch: (q: string) => [...candidateKeys.all, 'cv-search', q] as const,
   detail: (id: string) => [...candidateKeys.all, 'detail', id] as const,
 }
 
 const PAGE_SIZE = 20
 
 /** Kho ứng viên cuộn vô hạn (FE Architecture mục 7.3: cursor + useInfiniteQuery) */
-export function useCandidates(search: string | undefined) {
+export function useCandidates(search: string | undefined, enabled = true) {
   return useInfiniteQuery({
+    enabled,
     queryKey: candidateKeys.list(search),
     queryFn: ({ pageParam }) =>
       candidatesApi.list({ search, limit: PAGE_SIZE, cursor: pageParam ?? undefined }),
@@ -73,6 +75,18 @@ export function useCandidateSearch(search: string) {
     queryFn: () => candidatesApi.list({ search: q, limit: 6 }),
     enabled: q.length >= 2,
     staleTime: 30_000,
+    placeholderData: (prev) => prev,
+  })
+}
+
+// F-SEARCH-01 · US-13
+export function useCvSearch(q: string | undefined) {
+  const query = q?.trim() ?? ''
+  return useQuery({
+    queryKey: candidateKeys.cvSearch(query),
+    queryFn: () => candidatesApi.cvSearch(query),
+    enabled: query.length >= 2,
+    staleTime: 60_000,
     placeholderData: (prev) => prev,
   })
 }
