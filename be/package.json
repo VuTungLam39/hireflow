@@ -36,6 +36,7 @@
     "smoke": "node scripts/smoke.mjs",
     "ai:smoke": "npm run build && node dist/modules/ai/ai-smoke.js",
     "ai:eval": "npm run build && node dist/modules/ai/eval/ai-eval.js",
+    "rag:eval": "npm run build && node dist/modules/rag/eval/rag-eval.js",
     "infra:up": "docker compose up -d postgres redis storage",
     "infra:down": "docker compose down"
   },

@@ -82,7 +82,10 @@ describe('RAG chat (e2e, LLM và embedding giả)', () => {
     hmC: '',
   };
   const ids = { depA: '', depB: '', depC: '', jobA: '', jobB: '' };
-  const apps = { a1: '', b1: '', broken: '' };
+  const apps = { a1: '', b1: '', broken: '', kwA: '', kwB: '' };
+  // Từ khoá hiếm, riêng cho mỗi lần chạy: embedding giả cho vector ngẫu nhiên nên chỉ full-text tìm ra
+  const kwA = `quarkdb${run}`;
+  const kwB = `zephyrmq${run}`;
 
   const llm = new FakeLlmProvider({}, (req: StreamRequest) => {
     const prompt = req.messages.map((m) => m.content).join('\n');
@@ -255,8 +258,25 @@ describe('RAG chat (e2e, LLM và embedding giả)', () => {
       )
     ).id;
 
+    apps.kwA = (
+      await upload(
+        jobA.id,
+        `kwa-${run}@example.com`,
+        cvOf('Hoàng Văn Kiên', [`Thiết kế lớp lưu trữ dùng ${kwA} cho hệ thống đặt vé.`]),
+      )
+    ).id;
+    apps.kwB = (
+      await upload(
+        jobB.id,
+        `kwb-${run}@example.com`,
+        cvOf('Vũ Thị Mai', [`Vận hành hàng đợi ${kwB} cho hệ thống thanh toán.`]),
+      )
+    ).id;
+
     await waitUntil(
       async () =>
+        (await chunksOf(apps.kwA)).length > 0 &&
+        (await chunksOf(apps.kwB)).length > 0 &&
         (await chunksOf(apps.a1)).length > 0 &&
         (await chunksOf(apps.b1)).length > 0 &&
         (await aiStatusOf(apps.broken)) === AiStatus.Done,
@@ -341,6 +361,26 @@ describe('RAG chat (e2e, LLM và embedding giả)', () => {
       [res.sources.map((s) => s.applicationId), ids.depA],
     );
     expect(deptOf).toEqual([]);
+  });
+
+  it('F-SEARCH-01: a rare exact keyword is found by full-text even when vectors miss it', async () => {
+    const res = await chat('hr', `Ai có kinh nghiệm ${kwA.toUpperCase()}?`);
+    // Khớp cả hai nhánh nên RRF đưa lên đầu; vector ngẫu nhiên một mình hiếm khi xếp nó đầu tiên
+    expect(res.sources[0]).toMatchObject({ applicationId: apps.kwA });
+    expect(res.sources[0].excerpt).toContain(kwA);
+  });
+
+  it('F-SEARCH-01 · BR-ACC-07: the full-text branch keeps the department scope', async () => {
+    const hmA = await chat('hmA', `Ai từng dùng ${kwB}?`);
+    expect(hmA.sources.every((s) => s.applicationId !== apps.kwB)).toBe(true);
+    const hr = await chat('hr', `Ai từng dùng ${kwB}?`);
+    expect(hr.sources[0]).toMatchObject({ applicationId: apps.kwB });
+    expect((await chat('hmC', `Ai từng dùng ${kwA} hoặc ${kwB}?`)).sources).toEqual([]);
+  });
+
+  it('F-SEARCH-01: a question asked only by meaning still retrieves by vector', async () => {
+    const res = await chat('hr', 'Ai có kinh nghiệm nhiều năm nhất?');
+    expect(res.sources.length).toBeGreaterThan(0);
   });
 
   it('HR sees chunks from every department', async () => {

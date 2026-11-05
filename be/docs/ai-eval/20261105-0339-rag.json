@@ -1,0 +1,843 @@
+{
+  "startedAt": "2026-11-05T03:39:37.941Z",
+  "embeddingModel": "gemini/gemini-embedding-2",
+  "topK": 8,
+  "summary": {
+    "all": {
+      "vector": {
+        "recall": 0.9565217391304348,
+        "mrr": 0.9565217391304348,
+        "missed": [
+          "k03"
+        ]
+      },
+      "keyword": {
+        "recall": 0.9782608695652174,
+        "mrr": 0.8731884057971014,
+        "missed": []
+      },
+      "hybrid": {
+        "recall": 1,
+        "mrr": 0.9782608695652174,
+        "missed": []
+      }
+    },
+    "keyword": {
+      "vector": {
+        "recall": 0.9375,
+        "mrr": 0.9375,
+        "missed": [
+          "k03"
+        ]
+      },
+      "keyword": {
+        "recall": 1,
+        "mrr": 0.921875,
+        "missed": []
+      },
+      "hybrid": {
+        "recall": 1,
+        "mrr": 0.96875,
+        "missed": []
+      }
+    },
+    "meaning": {
+      "vector": {
+        "recall": 1,
+        "mrr": 1,
+        "missed": []
+      },
+      "keyword": {
+        "recall": 0.9285714285714286,
+        "mrr": 0.7619047619047619,
+        "missed": []
+      },
+      "hybrid": {
+        "recall": 1,
+        "mrr": 1,
+        "missed": []
+      }
+    }
+  },
+  "latencyMs": {
+    "vector": {
+      "p50": 6.3,
+      "p95": 8.8
+    },
+    "keyword": {
+      "p50": 5.6,
+      "p95": 8
+    },
+    "hybrid": {
+      "p50": 6.8,
+      "p95": 8.9
+    }
+  },
+  "embedMs": {
+    "p50": 439,
+    "p95": 494
+  },
+  "cases": [
+    {
+      "id": "k01",
+      "kind": "keyword",
+      "question": "Ai có kinh nghiệm Playwright?",
+      "keywords": "playwright",
+      "expected": [
+        "Đặng Văn Long"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Đặng Văn Long"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Đặng Văn Long"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Đặng Văn Long"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "k02",
+      "kind": "keyword",
+      "question": "Ứng viên nào dùng PySpark?",
+      "keywords": "pyspark",
+      "expected": [
+        "Phan Thị Lan Hương"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Phan Thị Lan Hương"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Phan Thị Lan Hương"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Phan Thị Lan Hương"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "k03",
+      "kind": "keyword",
+      "question": "Tìm người biết dbt",
+      "keywords": "dbt",
+      "expected": [
+        "Phan Thị Lan Hương"
+      ],
+      "modes": {
+        "vector": {
+          "found": [],
+          "recall": 0,
+          "firstRank": null
+        },
+        "keyword": {
+          "found": [
+            "Phan Thị Lan Hương"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Phan Thị Lan Hương"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "k04",
+      "kind": "keyword",
+      "question": "Ai từng làm với BigQuery?",
+      "keywords": "bigquery",
+      "expected": [
+        "Phan Thị Lan Hương"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Phan Thị Lan Hương"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Phan Thị Lan Hương"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Phan Thị Lan Hương"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "k05",
+      "kind": "keyword",
+      "question": "Ai dùng Helm để triển khai?",
+      "keywords": "helm trien khai",
+      "expected": [
+        "Trịnh Minh Đức"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Trịnh Minh Đức"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Trịnh Minh Đức"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Trịnh Minh Đức"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "k06",
+      "kind": "keyword",
+      "question": "Ứng viên nào biết Prometheus?",
+      "keywords": "prometheus",
+      "expected": [
+        "Trịnh Minh Đức"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Trịnh Minh Đức"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Trịnh Minh Đức"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Trịnh Minh Đức"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "k07",
+      "kind": "keyword",
+      "question": "Ai từng dùng Fastlane?",
+      "keywords": "fastlane",
+      "expected": [
+        "Hồ Thị Kim Ngân"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Hồ Thị Kim Ngân"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Hồ Thị Kim Ngân"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Hồ Thị Kim Ngân"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "k08",
+      "kind": "keyword",
+      "question": "Ai quản lý test case bằng TestRail?",
+      "keywords": "quan ly test case testrail",
+      "expected": [
+        "Lý Thu Phương"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Lý Thu Phương"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Lý Thu Phương"
+          ],
+          "recall": 1,
+          "firstRank": 4
+        },
+        "hybrid": {
+          "found": [
+            "Lý Thu Phương"
+          ],
+          "recall": 1,
+          "firstRank": 2
+        }
+      }
+    },
+    {
+      "id": "k09",
+      "kind": "keyword",
+      "question": "Ai biết phần mềm kế toán MISA?",
+      "keywords": "phan mem ke toan misa",
+      "expected": [
+        "Vương Thị Thu"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Vương Thị Thu"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Vương Thị Thu"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Vương Thị Thu"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "k10",
+      "kind": "keyword",
+      "question": "Ai có kinh nghiệm Salesforce?",
+      "keywords": "salesforce",
+      "expected": [
+        "Nguyễn Thị Thanh Tâm"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Nguyễn Thị Thanh Tâm"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Nguyễn Thị Thanh Tâm"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Nguyễn Thị Thanh Tâm"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "k11",
+      "kind": "keyword",
+      "question": "Ai từng làm RabbitMQ?",
+      "keywords": "rabbitmq",
+      "expected": [
+        "Lê Văn Thắng"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Lê Văn Thắng"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Lê Văn Thắng"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Lê Văn Thắng"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "k12",
+      "kind": "keyword",
+      "question": "Ai biết Spring Boot?",
+      "keywords": "spring boot",
+      "expected": [
+        "Lê Văn Thắng",
+        "Phạm Quang Huy"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Lê Văn Thắng",
+            "Phạm Quang Huy"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Lê Văn Thắng",
+            "Phạm Quang Huy"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Lê Văn Thắng",
+            "Phạm Quang Huy"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "k13",
+      "kind": "keyword",
+      "question": "Ứng viên nào code Flutter?",
+      "keywords": "code flutter",
+      "expected": [
+        "Hồ Thị Kim Ngân",
+        "Ngô Thanh Tùng"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Hồ Thị Kim Ngân",
+            "Ngô Thanh Tùng"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Hồ Thị Kim Ngân",
+            "Ngô Thanh Tùng"
+          ],
+          "recall": 1,
+          "firstRank": 2
+        },
+        "hybrid": {
+          "found": [
+            "Hồ Thị Kim Ngân",
+            "Ngô Thanh Tùng"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "k14",
+      "kind": "keyword",
+      "question": "Ai có chứng chỉ IELTS?",
+      "keywords": "chung chi ielts",
+      "expected": [
+        "Lê Thị Bích Ngọc"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Lê Thị Bích Ngọc"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Lê Thị Bích Ngọc"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Lê Thị Bích Ngọc"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "k15",
+      "kind": "keyword",
+      "question": "Ai biết Redis?",
+      "keywords": "redis",
+      "expected": [
+        "Phạm Quang Huy",
+        "Đỗ Minh Khôi"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Phạm Quang Huy",
+            "Đỗ Minh Khôi"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Phạm Quang Huy",
+            "Đỗ Minh Khôi"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Phạm Quang Huy",
+            "Đỗ Minh Khôi"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "k16",
+      "kind": "keyword",
+      "question": "Ai có kinh nghiệm Kafka?",
+      "keywords": "kafka",
+      "expected": [
+        "Phạm Quang Huy"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Phạm Quang Huy"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Phạm Quang Huy"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Phạm Quang Huy"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "m01",
+      "kind": "meaning",
+      "question": "Ai làm được ứng dụng di động?",
+      "keywords": "di dong",
+      "expected": [
+        "Hồ Thị Kim Ngân",
+        "Ngô Thanh Tùng"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Hồ Thị Kim Ngân",
+            "Ngô Thanh Tùng"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Hồ Thị Kim Ngân"
+          ],
+          "recall": 0.5,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Hồ Thị Kim Ngân",
+            "Ngô Thanh Tùng"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "m02",
+      "kind": "meaning",
+      "question": "Ai có kinh nghiệm vận hành hạ tầng đám mây và container?",
+      "keywords": "hanh ha tang dam may container",
+      "expected": [
+        "Trịnh Minh Đức"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Trịnh Minh Đức"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Trịnh Minh Đức"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Trịnh Minh Đức"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "m03",
+      "kind": "meaning",
+      "question": "Ai làm phân tích dữ liệu và dựng báo cáo?",
+      "keywords": "phan tich du lieu cao",
+      "expected": [
+        "Lương Thị Mỹ Duyên",
+        "Phan Thị Lan Hương",
+        "Tô Minh Quân"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Lương Thị Mỹ Duyên",
+            "Phan Thị Lan Hương",
+            "Tô Minh Quân"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Lương Thị Mỹ Duyên",
+            "Phan Thị Lan Hương",
+            "Tô Minh Quân"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Lương Thị Mỹ Duyên",
+            "Phan Thị Lan Hương",
+            "Tô Minh Quân"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "m04",
+      "kind": "meaning",
+      "question": "Ai từng chạy quảng cáo trực tuyến?",
+      "keywords": "chay quang cao truc tuyen",
+      "expected": [
+        "Đoàn Thị Hồng Nhung"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Đoàn Thị Hồng Nhung"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Đoàn Thị Hồng Nhung"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "hybrid": {
+          "found": [
+            "Đoàn Thị Hồng Nhung"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "m05",
+      "kind": "meaning",
+      "question": "Ai thiết kế được trải nghiệm người dùng?",
+      "keywords": "thiet ke trai",
+      "expected": [
+        "Lâm Bảo Trâm"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Lâm Bảo Trâm"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Lâm Bảo Trâm"
+          ],
+          "recall": 1,
+          "firstRank": 2
+        },
+        "hybrid": {
+          "found": [
+            "Lâm Bảo Trâm"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "m06",
+      "kind": "meaning",
+      "question": "Ai có kinh nghiệm kiểm thử phần mềm?",
+      "keywords": "kiem thu phan mem",
+      "expected": [
+        "Lý Thu Phương",
+        "Đặng Văn Long"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Lý Thu Phương",
+            "Đặng Văn Long"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Lý Thu Phương",
+            "Đặng Văn Long"
+          ],
+          "recall": 1,
+          "firstRank": 2
+        },
+        "hybrid": {
+          "found": [
+            "Lý Thu Phương",
+            "Đặng Văn Long"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    },
+    {
+      "id": "m07",
+      "kind": "meaning",
+      "question": "Ai làm bán hàng cho khách doanh nghiệp?",
+      "keywords": "hang khach doanh nghiep",
+      "expected": [
+        "Nguyễn Thị Thanh Tâm"
+      ],
+      "modes": {
+        "vector": {
+          "found": [
+            "Nguyễn Thị Thanh Tâm"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        },
+        "keyword": {
+          "found": [
+            "Nguyễn Thị Thanh Tâm"
+          ],
+          "recall": 1,
+          "firstRank": 3
+        },
+        "hybrid": {
+          "found": [
+            "Nguyễn Thị Thanh Tâm"
+          ],
+          "recall": 1,
+          "firstRank": 1
+        }
+      }
+    }
+  ]
+}

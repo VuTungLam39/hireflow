@@ -22,6 +22,8 @@ import { CvFile, CvParseStatus } from '../files/entities/cv-file.entity.js';
 import { CitationRewriter, labelOf } from './citations.js';
 import { chunkCv, type CvSection } from './cv-chunks.js';
 import { CV_CHUNK_DIMENSION, CvChunk } from './entities/cv-chunk.entity.js';
+import { searchKeywords } from './keywords.js';
+import { retrieveChunks, toVector, type RetrievalMode, type RetrievedRow } from './retrieval.js';
 import { CHAT_SYSTEM, chatPrompt, NOT_ENOUGH_INFO } from './prompts/chat.prompt.js';
 
 type ScopeUser = Pick<AuthUser, 'role' | 'departmentId'>;
@@ -41,22 +43,9 @@ export interface ChatPlan {
   context: { label: string; candidateName: string; section: CvSection; content: string }[];
 }
 
-interface RetrievedRow {
-  chunkId: string;
-  candidateId: string;
-  candidateName: string;
-  applicationId: string;
-  section: CvSection;
-  content: string;
-}
-
-// Database Design Q8
-export const CHAT_TOP_K = 8;
 const EXCERPT_CHARS = 300;
 const BACKFILL_LIMIT = 500;
 const FK_VIOLATION = '23503';
-
-const toVector = (values: number[]) => `[${values.join(',')}]`;
 
 @Injectable()
 export class RagService implements OnApplicationBootstrap {
@@ -164,7 +153,7 @@ export class RagService implements OnApplicationBootstrap {
       );
     }
 
-    const rows = await this.retrieve(vector, user);
+    const rows = await this.retrieve(vector, searchKeywords(question), user);
     return {
       question,
       sources: rows.map((r) => ({
@@ -183,34 +172,19 @@ export class RagService implements OnApplicationBootstrap {
     };
   }
 
-  // Kickoff 8.5, BR-ACC-07
-  private retrieve(vector: number[], user: ScopeUser): Promise<RetrievedRow[]> {
-    const params: unknown[] = [toVector(vector), this.embeddingModel, CHAT_TOP_K];
-    let scope = '';
-    if (user.role === Role.HiringManager) {
-      params.push(user.departmentId);
-      scope = `AND j.department_id = $${params.length}`;
-    }
-    return this.dataSource.transaction(async (manager) => {
-      await manager.query(`SET LOCAL hnsw.iterative_scan = relaxed_order`);
-      return manager.query<RetrievedRow[]>(
-        `SELECT ch.id AS "chunkId", cf.candidate_id AS "candidateId", c.full_name AS "candidateName",
-                app.id AS "applicationId", ch.section, ch.content
-         FROM cv_chunks ch
-         JOIN cv_files cf ON cf.id = ch.cv_file_id AND cf.deleted_at IS NULL
-         JOIN candidates c ON c.id = cf.candidate_id AND c.deleted_at IS NULL AND c.anonymized_at IS NULL
-         CROSS JOIN LATERAL (
-           SELECT a.id FROM applications a
-           JOIN jobs j ON j.id = a.job_id AND j.deleted_at IS NULL
-           WHERE a.cv_file_id = ch.cv_file_id AND a.deleted_at IS NULL ${scope}
-           ORDER BY a.created_at DESC
-           LIMIT 1
-         ) app
-         WHERE ch.embedding_model = $2
-         ORDER BY ch.embedding <=> $1::vector
-         LIMIT $3`,
-        params,
-      );
+  // Kickoff 8.5 · F-SEARCH-01 · BR-ACC-07
+  retrieve(
+    vector: number[],
+    keywords: string,
+    user: ScopeUser,
+    options: { mode?: RetrievalMode; topK?: number } = {},
+  ): Promise<RetrievedRow[]> {
+    return retrieveChunks(this.dataSource, {
+      vector,
+      keywords,
+      user,
+      embeddingModel: this.embeddingModel,
+      ...options,
     });
   }
 

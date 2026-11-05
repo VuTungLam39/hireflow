@@ -17,6 +17,7 @@ export const CV_CHUNK_DIMENSION = 1024;
 @Entity('cv_chunks')
 @Index('UQ_cv_chunks_cv_file_id_position', ['cvFileId', 'position'], { unique: true })
 @Index('IDX_cv_chunks_embedding', { synchronize: false })
+@Index('IDX_cv_chunks_search_vector', { synchronize: false })
 @Check(
   'CK_cv_chunks_section',
   `"section" IN ('summary', 'experience', 'skills', 'projects', 'education', 'other')`,
@@ -46,6 +47,17 @@ export class CvChunk {
 
   @Column({ type: 'varchar', length: 100 })
   embeddingModel: string;
+
+  // F-SEARCH-01: cột sinh tự động (migration 20), chỉ đọc trong SQL tìm kiếm
+  @Column({
+    type: 'tsvector',
+    select: false,
+    insert: false,
+    update: false,
+    generatedType: 'STORED',
+    asExpression: `to_tsvector('simple'::regconfig, f_unaccent(lower("content")))`,
+  })
+  searchVector?: string;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
