@@ -6,12 +6,14 @@ import { usePermission } from '@/hooks/use-permission'
 import { Permission } from '@/lib/permissions'
 import { cn, formatDateTime } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
+import { Role } from '@/types/user'
 import { useApplicationInterviews, useCancelInterview } from '../hooks/use-interviews'
 import { averageOverall, formatSlot, isLink } from '../lib/format'
 import { useNow } from '../hooks/use-now'
 import { INTERVIEW_STATUS } from '../lib/constants'
 import type { Interview, InterviewFeedback } from '../types'
 import { FeedbackDialog } from './FeedbackDialog'
+import { QuestionSuggestions } from './QuestionSuggestions'
 import { ScheduleInterviewDialog } from './ScheduleInterviewDialog'
 
 interface InterviewPanelProps {
@@ -51,6 +53,7 @@ export function InterviewPanel({
   requirements,
 }: InterviewPanelProps) {
   const userId = useAuthStore((s) => s.user?.id)
+  const isInterviewer = useAuthStore((s) => s.user?.role === Role.Interviewer)
   const canManage = usePermission(Permission.InterviewManage)
   const canFeedback = usePermission(Permission.InterviewFeedback)
   const { data, isPending, isError } = useApplicationInterviews(applicationId)
@@ -157,6 +160,10 @@ export function InterviewPanel({
                       <FeedbackView key={f.id} feedback={f} />
                     ))}
                   </div>
+                )}
+
+                {(assigned || !isInterviewer) && iv.status !== 'CANCELLED' && (
+                  <QuestionSuggestions interviewId={iv.id} />
                 )}
 
                 <div className="flex flex-wrap gap-2">

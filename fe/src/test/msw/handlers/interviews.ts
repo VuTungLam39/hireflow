@@ -9,6 +9,7 @@ import {
   candidateOf,
   canSeeApplication,
   fail,
+  inScope,
   jobOf,
   notFound,
   ok,
@@ -214,6 +215,34 @@ export const interviewHandlers = [
       interviewerIds: ids,
     })
     return ok(toInterview(iv, user.id, true))
+  }),
+
+  // Mở rộng MVP 2 – E5 · BR-INT-04
+  http.post(api('/interviews/:id/question-suggestions'), async ({ request, params }) => {
+    await delay()
+    const user = authorize(request, Permission.ApplicationRead)
+    if (user instanceof Response) return user
+    const iv = db.interviews.find((i) => i.id === params.id)
+    const app = iv && db.applications.find((a) => a.id === iv.applicationId)
+    const allowed =
+      iv &&
+      app &&
+      (user.role === Role.Interviewer
+        ? iv.interviewerIds.includes(user.id)
+        : inScope(user, jobOf(app).departmentId))
+    if (!iv || !app || !allowed) return notFound('Interview')
+    if (iv.status === 'CANCELLED') return fail(409, 'INTERVIEW_NOT_EDITABLE', 'Cancelled')
+    return ok({
+      cached: false,
+      items: jobOf(app).requirements.map((r) => ({
+        requirementId: r.id,
+        label: r.label,
+        questions: [
+          `Bạn đã dùng ${r.label} trong dự án nào gần nhất?`,
+          `Khó khăn lớn nhất khi làm với ${r.label} là gì, bạn xử lý ra sao?`,
+        ],
+      })),
+    })
   }),
 
   http.put(api('/interviews/:id/feedback'), async ({ request, params }) => {

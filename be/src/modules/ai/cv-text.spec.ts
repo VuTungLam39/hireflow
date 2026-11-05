@@ -1,6 +1,12 @@
 import { cleanCvText, hasReadableText, maskPii } from './cv-text.js';
 
 describe('maskPii', () => {
+  it('never reaches across a line break, so the next line keeps its numbers', () => {
+    expect(maskPii('Điện thoại: 0912 345 678\n3 năm phát triển NestJS')).toBe(
+      'Điện thoại: [PHONE]\n3 năm phát triển NestJS',
+    );
+  });
+
   it.each([
     ['Email: tran.van.b@gmail.com', 'Email: [EMAIL]'],
     ['Liên hệ: nguyễn.an@công-ty.vn', 'Liên hệ: [EMAIL]'],

@@ -59,3 +59,10 @@ export interface InterviewListParams {
   includeCancelled?: boolean
   open?: boolean
 }
+
+/** Mở rộng MVP 2 – E5 · BR-INT-04: chỉ để tham khảo, không lưu vào phiếu */
+export interface QuestionSuggestion {
+  requirementId: string
+  label: string
+  questions: string[]
+}

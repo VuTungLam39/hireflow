@@ -6,10 +6,19 @@ import type {
   InterviewFeedback,
   Interviewer,
   InterviewListParams,
+  QuestionSuggestion,
   ScheduleInput,
 } from '../types'
 
 export const interviewsApi = {
+  /** E5 · BR-INT-04: 2–3 câu hỏi cho mỗi tiêu chí, chỉ người được giao gọi được */
+  suggestQuestions: async (id: string) =>
+    (
+      await api.post<ApiResponse<{ items: QuestionSuggestion[]; cached: boolean }>>(
+        `/interviews/${id}/question-suggestions`,
+      )
+    ).data.data,
+
   list: async (params: InterviewListParams) =>
     (await api.get<ApiResponse<Interview[]>>('/interviews', { params })).data.data,
 

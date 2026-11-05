@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -10,6 +12,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Permissions } from '../../common/decorators/permissions.decorator.js';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator.js';
@@ -69,6 +72,19 @@ export class InterviewsController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.interviews.cancel(id, dto, user);
+  }
+
+  // Mở rộng MVP 2 – E5 · BR-INT-04
+  @Post(':id/question-suggestions')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Permissions(Permission.ApplicationRead)
+  @ApiOperation({
+    summary:
+      'Gợi ý 2–3 câu hỏi mỗi tiêu chí: HR, Admin; HM trong phòng; Interviewer buổi được giao; không dùng điểm AI',
+  })
+  suggestQuestions(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.interviews.suggestQuestions(id, user);
   }
 
   @Put(':id/feedback')

@@ -1,5 +1,6 @@
 const EMAIL = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}/gu;
-const PHONE = /(?<![\p{L}\p{N}(])(?:\(?\+?84\)?|0)(?:[\s.()-]*\d){8,10}(?![\p{L}\p{N}])/gu;
+const PHONE =
+  /(?<![\p{L}\p{N}(])(?:\(?\+?84\)?|0)(?:(?:[^\S\r\n]|[.()-])*\d){8,10}(?![\p{L}\p{N}])/gu;
 const NUL = String.fromCharCode(0);
 
 // BR-AI-09

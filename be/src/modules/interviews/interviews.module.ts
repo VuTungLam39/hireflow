@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AiModule } from '../ai/ai.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { InterviewAssignee } from './entities/interview-assignee.entity.js';
 import { InterviewFeedback } from './entities/interview-feedback.entity.js';
@@ -12,6 +13,7 @@ import { InterviewsService } from './interviews.service.js';
   imports: [
     TypeOrmModule.forFeature([Interview, InterviewAssignee, InterviewFeedback]),
     NotificationsModule,
+    AiModule,
   ],
   controllers: [InterviewsController, ApplicationInterviewsController],
   providers: [InterviewsService],

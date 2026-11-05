@@ -97,3 +97,8 @@ export function useSubmitFeedback() {
     },
   })
 }
+
+// Mở rộng MVP 2 – E5: người dùng bấm mới gọi; lỗi hiện ngay tại chỗ, không chặn phiếu
+export function useSuggestQuestions(id: string) {
+  return useMutation({ mutationFn: () => interviewsApi.suggestQuestions(id) })
+}
