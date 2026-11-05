@@ -21,9 +21,11 @@ export function JobFacts({
   job,
   className,
   relativeDeadline = true,
+  columns = 3,
 }: {
   job: JobFactsData
   className?: string
+  columns?: 2 | 3
   /** false: hiện ngày cố định (HTML dựng sẵn không phụ thuộc thời điểm xem) */
   relativeDeadline?: boolean
 }) {
@@ -75,23 +77,26 @@ export function JobFacts({
   const facts = all.filter((f): f is Fact => f !== null)
 
   return (
-    <dl
-      className={cn(
-        'border-line divide-line-soft grid grid-cols-2 gap-px overflow-hidden rounded-md border sm:grid-cols-3',
-        className,
-      )}
-    >
-      {facts.map((f) => (
-        <div key={f.key} className="bg-surface flex items-start gap-2.5 px-4 py-3">
-          <span aria-hidden className="text-ink-muted mt-0.5 [&_svg]:size-4">
-            {f.icon}
-          </span>
-          <div className="min-w-0">
-            <dt className="type-caption">{f.label}</dt>
-            <dd className="text-ink text-sm font-medium">{f.value}</dd>
+    // Viền phải + dưới cho từng ô; lề âm 1px + overflow-hidden giấu viền ở cột cuối và hàng cuối
+    <div className={cn('border-line overflow-hidden rounded-md border', className)}>
+      <dl
+        className={cn(
+          '-mr-px -mb-px grid grid-cols-2',
+          columns === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2',
+        )}
+      >
+        {facts.map((f) => (
+          <div key={f.key} className="border-line-soft border-r border-b px-4 py-3">
+            <dt className="type-caption flex items-center gap-1.5">
+              <span aria-hidden className="text-ink-muted [&_svg]:size-4">
+                {f.icon}
+              </span>
+              {f.label}
+            </dt>
+            <dd className="text-ink mt-0.5 pl-[22px] text-sm font-medium">{f.value}</dd>
           </div>
-        </div>
-      ))}
-    </dl>
+        ))}
+      </dl>
+    </div>
   )
 }

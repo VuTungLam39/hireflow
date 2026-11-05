@@ -12,7 +12,12 @@ export function getErrorCode(error: unknown): string | undefined {
 
 /** Lấy thông báo lỗi dễ đọc từ lỗi API / lỗi bất kỳ */
 export function getErrorMessage(error: unknown, fallback = 'Có trục trặc khi tải dữ liệu'): string {
+  // Lý do cụ thể BE gửi kèm (vd. "Hạn nộp đã qua") đúng hơn câu chung của mã lỗi
+  const detail = isAxiosError<ApiErrorResponse>(error)
+    ? error.response?.data?.errors?.[0]?.messages?.[0]
+    : undefined
   const code = getErrorCode(error)
+  if (detail && code && code !== 'VALIDATION_FAILED') return detail
   if (code && ERROR_MESSAGES[code]) return ERROR_MESSAGES[code]
 
   if (isAxiosError<ApiErrorResponse>(error)) {

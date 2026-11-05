@@ -269,6 +269,31 @@ describe('Jobs (e2e)', () => {
       expect(res.body.errors).toEqual([expect.objectContaining({ field })]);
     });
 
+    it('BR-JOB-10: a draft whose deadline has passed cannot be published', async () => {
+      const draft = await as('hr', request(server()).post('/api/v1/jobs'))
+        .send(jobBody(dep.a, `Hết hạn trước khi đăng ${run}`))
+        .expect(201);
+      const id = draft.body.data.id as string;
+      // Xoá ngay sau test để không làm lệch số đếm tin của phòng ban ở các test sau
+      onTestFinished(async () => {
+        await ds.query('DELETE FROM job_requirements WHERE job_id = $1', [id]);
+        await ds.getRepository(Job).delete(id);
+      });
+      await as('hr', request(server()).put(`/api/v1/jobs/${id}/requirements`))
+        .send({ requirements })
+        .expect(202);
+      const yesterday = new Date(Date.now() + 7 * 3_600_000 - 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+      await ds.getRepository(Job).update(id, { deadline: yesterday });
+      const res = await as('hr', request(server()).patch(`/api/v1/jobs/${id}/publish`)).expect(409);
+      expect(res.body).toMatchObject({
+        code: 'JOB_NOT_PUBLISHABLE',
+        errors: [expect.objectContaining({ field: 'deadline' })],
+      });
+      expect((await ds.getRepository(Job).findOneByOrFail({ id })).status).toBe('DRAFT');
+    });
+
     it('BR-JOB-08: candidates see the numbers only in RANGE mode', async () => {
       expect((await pub(`/${jobA}`).expect(200)).body.data).toMatchObject({
         salary: { mode: 'RANGE', min: 20_000_000, max: 30_000_000 },

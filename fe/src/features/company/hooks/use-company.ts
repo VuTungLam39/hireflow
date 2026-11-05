@@ -61,5 +61,16 @@ export const useUpdateMedia = () =>
     'Đã lưu ảnh',
   )
 
+/** Đổi chỗ hai ảnh: gửi cả hai cập nhật rồi báo một lần */
+export const useSwapMedia = () =>
+  useMediaMutation(
+    ({ a, b }: { a: { id: string; position: number }; b: { id: string; position: number } }) =>
+      Promise.all([
+        companyApi.updateMedia(a.id, { position: b.position }),
+        companyApi.updateMedia(b.id, { position: a.position }),
+      ]),
+    'Đã đổi thứ tự ảnh',
+  )
+
 export const useRemoveMedia = () =>
   useMediaMutation((id: string) => companyApi.removeMedia(id), 'Đã xoá ảnh')

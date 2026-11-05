@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { notExpiredSql } from '../../common/utils/vn-date.js';
@@ -78,16 +78,18 @@ export class CompanyService {
 
   // F-ORG-01
   async get(): Promise<CompanyView> {
-    const profile = await this.profile();
+    const profile = await this.readProfile();
     const content = await this.content(profile);
     return { ...content, complete: isComplete(content), updatedAt: profile.updatedAt };
   }
 
   async update(dto: UpdateCompanyDto, user: Actor): Promise<CompanyView> {
-    const profile = await this.profile();
     const changed = Object.keys(dto).filter((k) => dto[k as keyof UpdateCompanyDto] !== undefined);
-    Object.assign(profile, stripUndefined(dto), { updatedBy: user.id });
-    await this.profiles.save(profile);
+    await this.dataSource.transaction(async (manager) => {
+      const profile = await this.lockProfile(manager);
+      Object.assign(profile, stripUndefined(dto), { updatedBy: user.id });
+      await manager.getRepository(CompanyProfile).save(profile);
+    });
     await this.changed(user, AuditAction.CompanyProfileUpdated, AuditEntity.Company, null, {
       fields: changed.join(','),
     });
@@ -116,55 +118,65 @@ export class CompanyService {
           ],
         );
       }
-      const count = await this.media.countBy({ kind: MediaKind.Gallery });
-      if (count >= GALLERY_MAX) {
-        throw new BusinessException(
-          ErrorCode.GalleryFull,
-          `Gallery holds at most ${GALLERY_MAX} images`,
-          HttpStatus.CONFLICT,
-        );
-      }
+      if ((await this.media.countBy({ kind: MediaKind.Gallery })) >= GALLERY_MAX)
+        throw galleryFull();
     }
     await this.storage.put(image.key, image.buffer, image.mime);
 
-    const saved = await this.dataSource.transaction(async (manager) => {
-      const position =
-        dto.kind === MediaKind.Gallery
-          ? ((
-              await manager
-                .getRepository(MediaFile)
-                .createQueryBuilder('m')
-                .select('COALESCE(MAX(m.position), -1) + 1', 'next')
-                .where('m.kind = :kind', { kind: MediaKind.Gallery })
-                .getRawOne<{ next: number }>()
-            )?.next ?? 0)
-          : 0;
-      const row = await manager.getRepository(MediaFile).save(
-        manager.getRepository(MediaFile).create({
-          kind: dto.kind,
-          storageKey: image.key,
-          mime: image.mime,
-          sizeBytes: image.size,
-          width: image.width,
-          height: image.height,
-          sha256: image.sha256,
-          altText: alt,
-          position,
-          createdBy: user.id,
-        }),
-      );
-      if (dto.kind !== MediaKind.Gallery) {
-        const field = dto.kind === MediaKind.Logo ? 'logoMediaId' : 'coverMediaId';
-        const profile = await this.profile(manager.getRepository(CompanyProfile));
-        const previous = profile[field];
-        profile[field] = row.id;
-        profile.updatedBy = user.id;
-        await manager.getRepository(CompanyProfile).save(profile);
-        if (previous) await manager.getRepository(MediaFile).softDelete(previous);
-        return { row, previous };
-      }
-      return { row, previous: null };
-    });
+    const saved = await this.dataSource
+      .transaction(async (manager) => {
+        // Khoá dòng hồ sơ công ty: các lần tải đồng thời xếp hàng, đếm ảnh thư viện không bị vượt
+        const profile = await this.lockProfile(manager);
+        if (
+          dto.kind === MediaKind.Gallery &&
+          (await manager.getRepository(MediaFile).countBy({ kind: MediaKind.Gallery })) >=
+            GALLERY_MAX
+        ) {
+          throw galleryFull();
+        }
+        const position =
+          dto.kind === MediaKind.Gallery
+            ? ((
+                await manager
+                  .getRepository(MediaFile)
+                  .createQueryBuilder('m')
+                  .select('COALESCE(MAX(m.position), -1) + 1', 'next')
+                  .where('m.kind = :kind', { kind: MediaKind.Gallery })
+                  .getRawOne<{ next: number }>()
+              )?.next ?? 0)
+            : 0;
+        const row = await manager.getRepository(MediaFile).save(
+          manager.getRepository(MediaFile).create({
+            kind: dto.kind,
+            storageKey: image.key,
+            mime: image.mime,
+            sizeBytes: image.size,
+            width: image.width,
+            height: image.height,
+            sha256: image.sha256,
+            altText: alt,
+            position,
+            createdBy: user.id,
+          }),
+        );
+        if (dto.kind !== MediaKind.Gallery) {
+          const field = dto.kind === MediaKind.Logo ? 'logoMediaId' : 'coverMediaId';
+          const previous = profile[field];
+          profile[field] = row.id;
+          profile.updatedBy = user.id;
+          await manager.getRepository(CompanyProfile).save(profile);
+          if (previous) await manager.getRepository(MediaFile).softDelete(previous);
+          return { row, previous };
+        }
+        return { row, previous: null };
+      })
+      .catch(async (error: unknown) => {
+        // Bị từ chối trong transaction (vd. thư viện vừa đầy): gỡ file vừa tải nếu không ai dùng
+        if (!(await this.media.existsBy({ storageKey: image.key }))) {
+          await this.storage.remove(image.key).catch(() => undefined);
+        }
+        throw error;
+      });
     if (saved.previous) await this.cleanupStorage(saved.previous);
     await this.changed(user, AuditAction.CompanyMediaAdded, AuditEntity.Media, saved.row.id, {
       kind: dto.kind,
@@ -202,7 +214,7 @@ export class CompanyService {
 
   // F-PUB-06 · BR-ORG-01
   async publicView(): Promise<PublicCompanyView> {
-    const content = await this.content(await this.profile());
+    const content = await this.content(await this.readProfile());
     if (!isComplete(content)) {
       throw new BusinessException(
         ErrorCode.CompanyProfileIncomplete,
@@ -228,9 +240,36 @@ export class CompanyService {
     return { body: await this.storage.get(key), mime: row.mime };
   }
 
-  private async profile(repo: Repository<CompanyProfile> = this.profiles): Promise<CompanyProfile> {
+  /** Chỉ đọc: chưa có dòng thì trả hồ sơ trống, không ghi DB (route công khai gọi hàm này) */
+  private async readProfile(): Promise<CompanyProfile> {
+    return (
+      (await this.profiles.findOneBy({ id: PROFILE_ID })) ??
+      this.profiles.create({
+        id: PROFILE_ID,
+        name: '',
+        tagline: '',
+        about: '',
+        sizeRange: null,
+        industries: [],
+        foundedYear: null,
+        website: null,
+        socials: {},
+        logoMediaId: null,
+        coverMediaId: null,
+        benefits: [],
+        offices: [],
+        milestones: [],
+        updatedBy: null,
+        updatedAt: new Date(0),
+      })
+    );
+  }
+
+  /** Ghi: tạo dòng nếu chưa có, rồi khoá FOR UPDATE tới hết transaction */
+  private async lockProfile(manager: EntityManager): Promise<CompanyProfile> {
+    const repo = manager.getRepository(CompanyProfile);
     await repo.createQueryBuilder().insert().values({ id: PROFILE_ID }).orIgnore().execute();
-    return repo.findOneByOrFail({ id: PROFILE_ID });
+    return repo.findOneOrFail({ where: { id: PROFILE_ID }, lock: { mode: 'pessimistic_write' } });
   }
 
   private async content(profile: CompanyProfile): Promise<CompanyContentView> {
@@ -278,6 +317,13 @@ export class CompanyService {
     await this.audit.recordSafely({ actorId: user.id, action, entity, entityId, metadata });
   }
 }
+
+const galleryFull = () =>
+  new BusinessException(
+    ErrorCode.GalleryFull,
+    `Gallery holds at most ${GALLERY_MAX} images`,
+    HttpStatus.CONFLICT,
+  );
 
 const isComplete = (c: CompanyContentView) => !!c.name && !!c.logo && !!c.about;
 

@@ -110,6 +110,13 @@ describe('Company profile and public media (e2e)', () => {
     expect(res.body.code).toBe('COMPANY_PROFILE_INCOMPLETE');
   });
 
+  it('reading the profile, publicly or internally, never writes to the database', async () => {
+    await request(server()).get('/api/v1/public/company').expect(404);
+    const internal = await as('hr', request(server()).get('/api/v1/company')).expect(200);
+    expect(internal.body.data).toMatchObject({ name: '', logo: null, complete: false });
+    expect(await ds.getRepository(CompanyProfile).count()).toBe(0);
+  });
+
   it('HR saves the profile block by block; untouched fields stay, milestones come back in year order', async () => {
     await put({
       name: `  Công ty ${run}  `,
@@ -219,7 +226,7 @@ describe('Company profile and public media (e2e)', () => {
   it('the gallery needs alt text and holds at most 8 images', async () => {
     const noAlt = await upload('GALLERY', png(800, 600, 10)).expect(400);
     expect(noAlt.body.errors).toEqual([expect.objectContaining({ field: 'alt' })]);
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 7; i++) {
       const res = await upload(
         'GALLERY',
         png(800, 600, 20 + i),
@@ -228,6 +235,14 @@ describe('Company profile and public media (e2e)', () => {
       ).expect(201);
       expect(res.body.data.position).toBe(i);
     }
+    // Còn đúng 1 chỗ: nhiều lần tải cùng lúc thì chỉ một lần được nhận
+    const race = await Promise.all(
+      [40, 41, 42, 43].map((seed) =>
+        upload('GALLERY', png(800, 600, seed), `${seed}.png`, `Tải song song ${seed}`),
+      ),
+    );
+    expect(race.map((r) => r.status).sort()).toEqual([201, 409, 409, 409]);
+    expect(await ds.getRepository(MediaFile).countBy({ kind: 'GALLERY' as never })).toBe(8);
     const full = await upload('GALLERY', png(800, 600, 99), 'anh.png', 'Một ảnh nữa').expect(409);
     expect(full.body.code).toBe('GALLERY_FULL');
 
