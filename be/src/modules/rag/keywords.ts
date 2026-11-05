@@ -1,13 +1,9 @@
+import { foldText } from '../../common/utils/text.js';
+
 // F-SEARCH-01 · Mở rộng MVP 2 – E1: lấy từ khoá kỹ thuật từ câu hỏi tiếng Việt cho full-text
 
 /** Bỏ dấu như f_unaccent trong DB, để so với danh sách từ dừng */
-export const fold = (text: string) =>
-  text
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
-    .toLowerCase();
+export const fold = foldText;
 
 /** Từ hỏi và từ phổ thông trong câu hỏi về CV: khớp ở mọi CV nên chỉ làm loãng thứ hạng */
 const STOPWORDS = new Set(
