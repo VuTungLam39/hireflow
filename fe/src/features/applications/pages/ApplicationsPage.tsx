@@ -40,6 +40,7 @@ import {
 import { applicationQueries, useApplications, useBulkChangeStatus } from '../hooks/use-applications'
 import { useMyFeedback } from '../hooks/use-my-feedback'
 import { MyFeedbackStatus } from '../components/MyFeedbackStatus'
+import { ExportCsvButton } from '../components/ExportCsvButton'
 import type { ReviewState } from '../hooks/use-review-navigation'
 import { applicationListSchema, type ApplicationListParams } from '../schemas/application.schema'
 import type { ApplicationListItem } from '../types'
@@ -260,9 +261,14 @@ export default function ApplicationsPage() {
           )
         }
         actions={
-          <Can permission={Permission.ApplicationCreate}>
-            <UploadForJob jobs={jobs.data ?? []} preferredJobId={params.jobId} />
-          </Can>
+          <>
+            {!isInterviewer && (
+              <ExportCsvButton params={params} total={query.data?.meta.totalItems} />
+            )}
+            <Can permission={Permission.ApplicationCreate}>
+              <UploadForJob jobs={jobs.data ?? []} preferredJobId={params.jobId} />
+            </Can>
+          </>
         }
       />
 

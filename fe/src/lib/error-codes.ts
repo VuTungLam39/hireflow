@@ -32,6 +32,8 @@ export const ERROR_MESSAGES: Record<string, string> = {
   MEDIA_TYPE_NOT_ALLOWED: 'Chỉ nhận ảnh JPEG, PNG hoặc WebP (không nhận SVG)',
   MEDIA_TOO_LARGE: 'Ảnh quá lớn: logo tối đa 1 MB, ảnh khác tối đa 3 MB và 4096 × 4096 px',
   GALLERY_FULL: 'Thư viện đã đủ 8 ảnh. Xoá bớt một ảnh trước khi thêm',
+  EXPORT_TOO_LARGE:
+    'Bộ lọc khớp hơn 5.000 hồ sơ. Thu hẹp theo tin, trạng thái hoặc ngày nộp rồi xuất lại',
   COMPANY_PROFILE_INCOMPLETE: 'Trang công ty chưa đủ tên, logo và giới thiệu',
   FILE_TOO_LARGE: 'File lớn hơn 5MB',
   TOO_MANY_REQUESTS: 'Bạn thao tác quá nhanh, thử lại sau ít phút',

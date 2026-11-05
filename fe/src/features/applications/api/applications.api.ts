@@ -1,4 +1,4 @@
-import type { AxiosProgressEvent } from 'axios'
+import { isAxiosError, type AxiosProgressEvent } from 'axios'
 import { api } from '@/lib/api-client'
 import type { ApiResponse, Paginated } from '@/types/api'
 import type { ApplicationStatus } from '../constants'
@@ -11,10 +11,41 @@ import type {
   StatusHistoryItem,
 } from '../types'
 
+/** Tải dạng text thì lỗi cũng là chuỗi: đọc lại thành JSON để getErrorMessage hiểu mã lỗi */
+function textError(error: unknown): never {
+  if (isAxiosError(error) && typeof error.response?.data === 'string') {
+    try {
+      error.response.data = JSON.parse(error.response.data)
+    } catch {
+      // giữ nguyên lỗi gốc
+    }
+  }
+  throw error
+}
+
+/** Excel trên Windows chỉ đọc đúng tiếng Việt khi file UTF-8 có BOM; trình duyệt bỏ BOM khi giải mã */
+const CSV_BOM = '\uFEFF'
+
+const fileNameOf = (disposition: unknown, fallback: string) =>
+  (typeof disposition === 'string' && /filename="([^"]+)"/.exec(disposition)?.[1]) || fallback
+
 export const applicationsApi = {
   list: async (params: ApplicationListParams): Promise<Paginated<ApplicationListItem>> => {
     const res = await api.get<ApiResponse<ApplicationListItem[]>>('/applications', { params })
     return { items: res.data.data, meta: res.data.meta! }
+  },
+
+  /** E6 · BR-APP-11: CSV theo đúng bộ lọc đang chọn (bỏ phân trang) */
+  exportCsv: async ({ page: _page, limit: _limit, ...filters }: ApplicationListParams) => {
+    const res = await api
+      .get<string>('/applications/export', { params: filters, responseType: 'text' })
+      .catch(textError)
+    const csv = res.data.startsWith(CSV_BOM) ? res.data : CSV_BOM + res.data
+    return {
+      blob: new Blob([csv], { type: 'text/csv;charset=utf-8' }),
+      fileName: fileNameOf(res.headers['content-disposition'], 'ho-so-ung-tuyen.csv'),
+      total: Number(res.headers['x-total-count'] ?? 0),
+    }
   },
 
   get: async (id: string) =>
