@@ -2,7 +2,10 @@ import { http, HttpResponse } from 'msw'
 import type { ChatSource } from '@/features/ai-chat'
 import { Permission } from '@/lib/permissions'
 import { db, settleProcessing, SKILLS } from '../data'
-import { api, latency, authorize, candidateOf, inScope, jobOf } from '../http'
+import { api, latency, authorize, candidateOf, fail, inScope, jobOf, ok } from '../http'
+
+const fold = (text: string) =>
+  text.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase()
 
 const sse = (event: string, data: unknown) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
 
@@ -11,6 +14,37 @@ const sse = (event: string, data: unknown) => `event: ${event}\ndata: ${JSON.str
  * rồi stream câu trả lời từng chữ kèm trích dẫn [candidateId#chunkId].
  */
 export const aiHandlers = [
+  // F-SEARCH-01 · US-13: tìm chữ trong CV (không dấu), theo phạm vi quyền, mỗi ứng viên một dòng
+  http.get(api('/ai/cv-search'), ({ request }) => {
+    const user = authorize(request, Permission.CandidateRead)
+    if (user instanceof Response) return user
+    const q = new URL(request.url).searchParams.get('q')?.trim() ?? ''
+    if (q.length < 2) return fail(400, 'VALIDATION_FAILED', 'Validation failed')
+    const needle = fold(q)
+    const seen = new Set<string>()
+    const items = db.applications
+      .filter((a) => inScope(user, jobOf(a).departmentId))
+      .flatMap((a) => {
+        const c = candidateOf(a)
+        const at = fold(c.cvText).indexOf(needle)
+        if (at < 0 || seen.has(c.id)) return []
+        seen.add(c.id)
+        const start = Math.max(0, at - 60)
+        const text = c.cvText.slice(start, at + needle.length + 100)
+        return [
+          {
+            candidateId: c.id,
+            candidateName: c.fullName,
+            applicationId: a.id,
+            section: 'skills',
+            excerpt: { text, highlights: [[at - start, at - start + needle.length]] },
+            match: 'keyword',
+          },
+        ]
+      })
+      .slice(0, 10)
+    return ok({ items, degraded: false })
+  }),
   http.post(api('/ai/chat'), async ({ request }) => {
     const user = authorize(request, Permission.AiChat)
     if (user instanceof Response) return user

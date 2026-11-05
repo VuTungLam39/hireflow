@@ -8,13 +8,14 @@ import {
   Summary,
   type Column,
 } from '@/components/shared'
-import { Avatar, Button } from '@/components/ui'
+import { Avatar, Button, SegmentedControl } from '@/components/ui'
 import { StatusPill } from '@/features/applications'
 import { useDetailLink, useOpenDetail } from '@/hooks/use-detail'
 import { useDensity } from '@/hooks/use-density'
 import { useListParams } from '@/hooks/use-list-params'
 import { useOnVisible } from '@/hooks/use-on-visible'
 import { formatDate } from '@/lib/utils'
+import { CvSearchResults } from '../components/CvSearchResults'
 import { useCandidates } from '../hooks/use-candidates'
 import { candidateListSchema } from '../schemas/candidate.schema'
 import type { CandidateListItem } from '../types'
@@ -104,7 +105,8 @@ function CandidateName({ candidate: c }: { candidate: CandidateListItem }) {
 
 export default function CandidatesPage() {
   const [params, setParams] = useListParams(candidateListSchema)
-  const query = useCandidates(params.search)
+  const inCv = params.in === 'cv'
+  const query = useCandidates(params.search, !inCv)
   const openDetail = useOpenDetail()
   const [density, setDensity] = useDensity()
   const sentinel = useRef<HTMLDivElement>(null)
@@ -121,6 +123,7 @@ export default function CandidatesPage() {
       <PageHeader
         title="Kho ứng viên"
         description={
+          !inCv &&
           items && (
             <Summary
               items={[
@@ -133,52 +136,73 @@ export default function CandidatesPage() {
       />
 
       <div className="flex flex-wrap items-center gap-3">
+        <SegmentedControl
+          label="Tìm theo"
+          value={inCv ? 'cv' : 'name'}
+          onChange={(mode) => setParams({ in: mode === 'cv' ? 'cv' : null })}
+          options={[
+            { value: 'name', label: 'Tên, email' },
+            { value: 'cv', label: 'Kỹ năng trong CV' },
+          ]}
+        />
         <SearchInput
           size="lg"
           value={params.search}
           onChange={(search) => setParams({ search })}
-          placeholder="Tìm theo tên hoặc email – gõ không dấu cũng được"
-          label="Tìm ứng viên theo tên hoặc email"
-          className="max-w-2xl flex-1"
+          placeholder={
+            inCv
+              ? 'Kỹ năng, công nghệ, chứng chỉ – ví dụ: Kafka, Flutter, IELTS'
+              : 'Tìm theo tên hoặc email – gõ không dấu cũng được'
+          }
+          label={inCv ? 'Tìm ứng viên theo kỹ năng trong CV' : 'Tìm ứng viên theo tên hoặc email'}
+          className="max-w-2xl min-w-64 flex-1"
         />
-        <div className="ml-auto">
-          <DensityToggle value={density} onChange={setDensity} />
-        </div>
+        {!inCv && (
+          <div className="ml-auto">
+            <DensityToggle value={density} onChange={setDensity} />
+          </div>
+        )}
       </div>
 
-      <DataTable
-        caption="Kho ứng viên"
-        columns={columns}
-        data={items}
-        rowKey={(c) => c.id}
-        rowLabel={(c) => c.fullName}
-        mobileRow={(c) => <CandidateMobileRow candidate={c} />}
-        onRowClick={(c) => openDetail('candidate', c.id)}
-        density={density}
-        isPending={query.isPending}
-        isError={query.isError}
-        error={query.error}
-        onRetry={query.refetch}
-        isFetching={query.isFetching && !query.isPending && !query.isFetchingNextPage}
-        emptyTitle={
-          params.search ? `Không thấy ai khớp “${params.search}”` : 'Kho ứng viên còn trống'
-        }
-        emptyDescription={
-          params.search
-            ? 'Thử tìm bằng email, hoặc chỉ một phần của tên.'
-            : 'Ứng viên được thêm vào kho khi họ nộp hồ sơ hoặc khi bạn tải CV hộ.'
-        }
-      />
+      {inCv ? (
+        <CvSearchResults q={params.search} onExample={(search) => setParams({ search })} />
+      ) : (
+        <>
+          <DataTable
+            caption="Kho ứng viên"
+            columns={columns}
+            data={items}
+            rowKey={(c) => c.id}
+            rowLabel={(c) => c.fullName}
+            mobileRow={(c) => <CandidateMobileRow candidate={c} />}
+            onRowClick={(c) => openDetail('candidate', c.id)}
+            density={density}
+            isPending={query.isPending}
+            isError={query.isError}
+            error={query.error}
+            onRetry={query.refetch}
+            isFetching={query.isFetching && !query.isPending && !query.isFetchingNextPage}
+            emptyTitle={
+              params.search ? `Không thấy ai khớp “${params.search}”` : 'Kho ứng viên còn trống'
+            }
+            emptyDescription={
+              params.search
+                ? 'Thử tìm bằng email, hoặc chỉ một phần của tên.'
+                : 'Ứng viên được thêm vào kho khi họ nộp hồ sơ hoặc khi bạn tải CV hộ.'
+            }
+          />
 
-      {query.hasNextPage && (
-        <div ref={sentinel} className="flex justify-center">
-          <Button variant="secondary" loading={query.isFetchingNextPage} onClick={loadMore}>
-            Tải thêm
-            {total !== undefined &&
-              items &&
-              ` (còn ${(total - items.length).toLocaleString('vi-VN')})`}
-          </Button>
-        </div>
+          {query.hasNextPage && (
+            <div ref={sentinel} className="flex justify-center">
+              <Button variant="secondary" loading={query.isFetchingNextPage} onClick={loadMore}>
+                Tải thêm
+                {total !== undefined &&
+                  items &&
+                  ` (còn ${(total - items.length).toLocaleString('vi-VN')})`}
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

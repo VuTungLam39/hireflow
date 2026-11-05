@@ -2,10 +2,11 @@
  * Render thử 2 trang kho ứng viên trên API giả (MSW): đủ trạng thái tải, đúng quyền hiện nút.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { setupServer } from 'msw/node'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { db } from '@/test/msw/data'
+import { aiHandlers } from '@/test/msw/handlers/ai'
 import { applicationHandlers } from '@/test/msw/handlers/applications'
 import { authHandlers } from '@/test/msw/handlers/auth'
 import { candidateHandlers } from '@/test/msw/handlers/candidates'
@@ -16,7 +17,12 @@ import { candidatesApi } from '../api/candidates.api'
 import CandidateDetailPage from './CandidateDetailPage'
 import CandidatesPage from './CandidatesPage'
 
-const server = setupServer(...authHandlers, ...applicationHandlers, ...candidateHandlers)
+const server = setupServer(
+  ...authHandlers,
+  ...applicationHandlers,
+  ...candidateHandlers,
+  ...aiHandlers,
+)
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => server.close())
 
@@ -71,5 +77,27 @@ describe('candidate pages', () => {
     await loginAs('admin@hireflow.dev')
     renderAt(`/candidates/${target.id}`)
     expect(await screen.findByRole('button', { name: /Ẩn danh ứng viên/ })).toBeInTheDocument()
+  })
+
+  it('F-SEARCH-01: switches to searching skills in CVs and marks the match', async () => {
+    await loginAs('hr@hireflow.dev')
+    renderAt(paths.candidates)
+    fireEvent.click(await screen.findByRole('radio', { name: 'Kỹ năng trong CV' }))
+    expect(await screen.findByText('Tìm ứng viên theo kỹ năng có trong CV')).toBeInTheDocument()
+
+    const input = screen.getByLabelText('Tìm ứng viên theo kỹ năng trong CV')
+    fireEvent.click(screen.getByRole('button', { name: 'Flutter' }))
+    expect(input).toHaveValue('Flutter')
+
+    fireEvent.change(input, { target: { value: 'nestjs' } })
+    const status = await screen.findByText(/ứng viên có CV nhắc tới “nestjs”/, undefined, {
+      timeout: 4000,
+    })
+    expect(status).toBeInTheDocument()
+    const marks = [...document.querySelectorAll('mark')]
+    expect(marks.length).toBeGreaterThan(0)
+    marks.forEach((m) => expect(m.textContent?.toLowerCase()).toBe('nestjs'))
+    const hit = db.candidates.find((c) => c.cvText.toLowerCase().includes('nestjs'))!
+    expect(screen.getAllByText(hit.fullName).length).toBeGreaterThan(0)
   })
 })
