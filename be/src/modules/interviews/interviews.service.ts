@@ -301,7 +301,7 @@ export class InterviewsService implements OnModuleInit {
     return (await this.views([id], user, true))[0];
   }
 
-  // Mở rộng MVP 2 – E5 · BR-INT-02, BR-INT-04: chỉ người được giao; không dùng điểm, cờ, bằng chứng chấm
+  // Mở rộng MVP 2 – E5 · BR-INT-02, BR-INT-04 · Danh mục Feature 9.2: không dùng điểm, cờ, bằng chứng chấm
   async suggestQuestions(
     id: string,
     user: ScopeUser,
@@ -314,18 +314,14 @@ export class InterviewsService implements OnModuleInit {
           id: true,
           jobId: true,
           cvFileId: true,
-          job: { id: true, title: true, jdVersion: true },
+          job: { id: true, title: true, jdVersion: true, departmentId: true },
         },
       },
       where: { id },
       relations: { application: { job: true } },
     });
-    const assigned =
-      iv &&
-      (await this.dataSource
-        .getRepository(InterviewAssignee)
-        .existsBy({ interviewId: id, userId: user.id }));
-    if (!iv || !assigned) throw new NotFoundException('Interview not found');
+    if (!iv || !(await this.canSuggest(iv, user)))
+      throw new NotFoundException('Interview not found');
     if (iv.status === InterviewStatus.Cancelled) {
       throw new BusinessException(
         ErrorCode.InterviewNotEditable,
@@ -367,6 +363,17 @@ export class InterviewsService implements OnModuleInit {
     }
     this.questionCache.set(key, { at: Date.now(), items });
     return { items, cached: false };
+  }
+
+  // Danh mục Feature 9.2: Admin, HR mọi buổi; HM buổi của phòng mình; Interviewer buổi được giao
+  private async canSuggest(iv: Interview, user: ScopeUser): Promise<boolean> {
+    if (user.role === Role.Admin || user.role === Role.Hr) return true;
+    if (user.role === Role.HiringManager) {
+      return !!user.departmentId && iv.application!.job!.departmentId === user.departmentId;
+    }
+    return this.dataSource
+      .getRepository(InterviewAssignee)
+      .existsBy({ interviewId: iv.id, userId: user.id });
   }
 
   // F-INT-03, BR-INT-03

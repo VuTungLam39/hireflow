@@ -9,6 +9,7 @@ import {
   candidateOf,
   canSeeApplication,
   fail,
+  inScope,
   jobOf,
   notFound,
   ok,
@@ -219,12 +220,18 @@ export const interviewHandlers = [
   // Mở rộng MVP 2 – E5 · BR-INT-04
   http.post(api('/interviews/:id/question-suggestions'), async ({ request, params }) => {
     await delay()
-    const user = authorize(request, Permission.InterviewFeedback)
+    const user = authorize(request, Permission.ApplicationRead)
     if (user instanceof Response) return user
-    const iv = db.interviews.find((i) => i.id === params.id && i.interviewerIds.includes(user.id))
-    if (!iv) return notFound('Interview')
+    const iv = db.interviews.find((i) => i.id === params.id)
+    const app = iv && db.applications.find((a) => a.id === iv.applicationId)
+    const allowed =
+      iv &&
+      app &&
+      (user.role === Role.Interviewer
+        ? iv.interviewerIds.includes(user.id)
+        : inScope(user, jobOf(app).departmentId))
+    if (!iv || !app || !allowed) return notFound('Interview')
     if (iv.status === 'CANCELLED') return fail(409, 'INTERVIEW_NOT_EDITABLE', 'Cancelled')
-    const app = db.applications.find((a) => a.id === iv.applicationId)!
     return ok({
       cached: false,
       items: jobOf(app).requirements.map((r) => ({

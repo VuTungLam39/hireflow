@@ -347,10 +347,15 @@ describe('Interviews (e2e)', () => {
       expect(call.prompt).not.toContain(`iv-c-a-${run}@example.com`);
     });
 
-    it('BR-INT-02: only assignees ask; others get 404, roles without feedback rights get 403', async () => {
+    it('Danh mục Feature 9.2: HR and the department manager may ask; an interviewer only for assigned interviews', async () => {
       await suggest('ivB').expect(404);
-      await suggest('hr').expect(403);
-      await suggest('hm').expect(403);
+      const hr = await suggest('hr').expect(200);
+      expect(hr.body.data.items).toHaveLength(ids.reqs.length);
+      await suggest('hm').expect(200);
+      await as(
+        'ivA',
+        request(server()).post(`/api/v1/interviews/${randomUUID()}/question-suggestions`),
+      ).expect(404);
     });
   });
 

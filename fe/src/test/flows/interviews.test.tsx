@@ -118,6 +118,14 @@ describe('interviews', () => {
     expect(screen.getByRole('button', { name: 'Gợi ý câu hỏi' })).toBeInTheDocument()
   })
 
+  it('E5 · Danh mục Feature 9.2: HR also gets suggestions for an interview', async () => {
+    const iv = upcoming()
+    renderAt('hr@hireflow.dev', links.applicationDetail(iv.applicationId))
+    fireEvent.click(await screen.findByRole('tab', { name: /Phỏng vấn/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Gợi ý câu hỏi' }))
+    expect(await screen.findByRole('region', { name: 'Câu hỏi gợi ý' })).toBeInTheDocument()
+  })
+
   it('E5: when suggestions fail, says so in place and the feedback form still works', async () => {
     server.use(
       http.post(api('/interviews/:id/question-suggestions'), () =>

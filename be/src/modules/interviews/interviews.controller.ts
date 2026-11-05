@@ -78,9 +78,10 @@ export class InterviewsController {
   @Post(':id/question-suggestions')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  @Permissions(Permission.InterviewFeedback)
+  @Permissions(Permission.ApplicationRead)
   @ApiOperation({
-    summary: 'Gợi ý 2–3 câu hỏi cho mỗi tiêu chí (chỉ người được giao; không dùng điểm AI)',
+    summary:
+      'Gợi ý 2–3 câu hỏi mỗi tiêu chí: HR, Admin; HM trong phòng; Interviewer buổi được giao; không dùng điểm AI',
   })
   suggestQuestions(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
     return this.interviews.suggestQuestions(id, user);
