@@ -7,8 +7,8 @@ services:
     plan: free
     region: singapore
     rootDir: be
-    dockerfilePath: ./be/Dockerfile
-    dockerContext: ./be
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /api/health
     autoDeployTrigger: commit
     envVars:
