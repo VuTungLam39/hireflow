@@ -1,13 +1,9 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import { setupServer } from 'msw/node'
-import { createMemoryRouter, RouterProvider } from 'react-router'
 import { paths } from '@/routes/paths'
-import { useAuthStore } from '@/stores/auth.store'
-import { db } from '@/test/msw/data'
 import { allHandlers } from '@/test/msw/handlers'
 import { companyState } from '@/test/msw/handlers/company'
-import { tokenFor, toUser } from '@/test/msw/http'
+import { renderRouteAs } from '@/test/render'
 import CompanyPage from './CompanyPage'
 
 const server = setupServer(...allHandlers)
@@ -21,17 +17,10 @@ const png = (name = 'logo.png') =>
   new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], name, { type: 'image/png' })
 
 function renderPage() {
-  const row = db.users.find((u) => u.email === 'hr@hireflow.dev')!
-  useAuthStore.getState().setSession(toUser(row), tokenFor(row))
-  const router = createMemoryRouter([{ path: paths.company, element: <CompanyPage /> }], {
-    initialEntries: [paths.company],
-  })
-  render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
+  renderRouteAs(
+    'hr@hireflow.dev',
+    [{ path: paths.company, element: <CompanyPage /> }],
+    paths.company,
   )
 }
 

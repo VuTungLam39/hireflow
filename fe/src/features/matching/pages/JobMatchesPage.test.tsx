@@ -1,15 +1,13 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { http } from 'msw'
 import { setupServer } from 'msw/node'
-import { createMemoryRouter, RouterProvider } from 'react-router'
 import { links, paths } from '@/routes/paths'
-import { useAuthStore } from '@/stores/auth.store'
 import { db } from '@/test/msw/data'
 import { applicationHandlers } from '@/test/msw/handlers/applications'
 import { authHandlers } from '@/test/msw/handlers/auth'
 import { matchesOf, matchingHandlers } from '@/test/msw/handlers/matching'
-import { api, ok, tokenFor, toUser } from '@/test/msw/http'
+import { api, ok } from '@/test/msw/http'
+import { renderRouteAs } from '@/test/render'
 import JobMatchesPage from './JobMatchesPage'
 
 const server = setupServer(...authHandlers, ...matchingHandlers, ...applicationHandlers)
@@ -25,20 +23,13 @@ const byStatus = (status: string) =>
   )!
 
 function renderAs(email: string, jobId: string) {
-  const row = db.users.find((u) => u.email === email)!
-  useAuthStore.getState().setSession(toUser(row), tokenFor(row))
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  const router = createMemoryRouter(
+  renderRouteAs(
+    email,
     [
       { path: paths.jobMatches, element: <JobMatchesPage /> },
       { path: paths.applicationDetail, element: <p>Chi tiết hồ sơ</p> },
     ],
-    { initialEntries: [links.jobMatches(jobId)] },
-  )
-  render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
+    links.jobMatches(jobId),
   )
 }
 

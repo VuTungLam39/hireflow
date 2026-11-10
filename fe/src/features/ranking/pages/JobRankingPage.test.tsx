@@ -1,13 +1,10 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { setupServer } from 'msw/node'
-import { createMemoryRouter, RouterProvider } from 'react-router'
 import { links, paths } from '@/routes/paths'
-import { useAuthStore } from '@/stores/auth.store'
 import { db } from '@/test/msw/data'
 import { authHandlers } from '@/test/msw/handlers/auth'
 import { jobHandlers } from '@/test/msw/handlers/jobs'
-import { tokenFor, toUser } from '@/test/msw/http'
+import { renderRoutes, signInAs } from '@/test/render'
 import { useRankingDraft } from '../store'
 import JobRankingPage from './JobRankingPage'
 
@@ -18,18 +15,9 @@ afterAll(() => server.close())
 const job = db.jobs.find((j) => j.departmentId === 'dep-eng' && j.requirements.length > 0)!
 
 function renderAs(email: string) {
-  const row = db.users.find((u) => u.email === email)!
-  useAuthStore.getState().setSession(toUser(row), tokenFor(row))
+  signInAs(email)
   useRankingDraft.getState().reset(job.id)
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  const router = createMemoryRouter([{ path: paths.jobRanking, element: <JobRankingPage /> }], {
-    initialEntries: [links.jobRanking(job.id)],
-  })
-  render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  )
+  renderRoutes([{ path: paths.jobRanking, element: <JobRankingPage /> }], links.jobRanking(job.id))
 }
 
 // US-05 · BR-AI-05

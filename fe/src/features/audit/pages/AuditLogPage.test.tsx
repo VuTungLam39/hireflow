@@ -1,12 +1,8 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { setupServer } from 'msw/node'
-import { createMemoryRouter, RouterProvider } from 'react-router'
 import { paths } from '@/routes/paths'
-import { useAuthStore } from '@/stores/auth.store'
-import { db } from '@/test/msw/data'
 import { auditHandlers } from '@/test/msw/handlers/notifications'
-import { tokenFor, toUser } from '@/test/msw/http'
+import { renderRouteAs } from '@/test/render'
 import { describeAudit } from '../audit-format'
 import AuditLogPage from './AuditLogPage'
 
@@ -15,18 +11,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => server.close())
 
 function renderPage(entry: string = paths.auditLogs) {
-  const admin = db.users.find((u) => u.role === 'admin')!
-  useAuthStore.getState().setSession(toUser(admin), tokenFor(admin))
-  const router = createMemoryRouter([{ path: paths.auditLogs, element: <AuditLogPage /> }], {
-    initialEntries: [entry],
-  })
-  render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  )
+  renderRouteAs('admin@hireflow.dev', [{ path: paths.auditLogs, element: <AuditLogPage /> }], entry)
 }
 
 // F-AUDIT-01

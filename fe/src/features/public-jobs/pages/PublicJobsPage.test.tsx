@@ -1,10 +1,9 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import { setupServer } from 'msw/node'
-import { createMemoryRouter, RouterProvider } from 'react-router'
 import { paths } from '@/routes/paths'
 import { db } from '@/test/msw/data'
 import { allHandlers } from '@/test/msw/handlers'
+import { renderRoutes } from '@/test/render'
 import PublicJobsPage from './PublicJobsPage'
 
 const server = setupServer(...allHandlers)
@@ -12,16 +11,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
 afterAll(() => server.close())
 
 function renderPage() {
-  const router = createMemoryRouter([{ path: paths.publicJobs, element: <PublicJobsPage /> }], {
-    initialEntries: [paths.publicJobs],
-  })
-  render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  )
+  renderRoutes([{ path: paths.publicJobs, element: <PublicJobsPage /> }], paths.publicJobs)
 }
 
 // F-PUB-01

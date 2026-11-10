@@ -1,12 +1,9 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import { setupServer } from 'msw/node'
-import { createMemoryRouter, RouterProvider } from 'react-router'
 import { paths } from '@/routes/paths'
-import { useAuthStore } from '@/stores/auth.store'
 import { db } from '@/test/msw/data'
 import { allHandlers } from '@/test/msw/handlers'
-import { tokenFor, toUser } from '@/test/msw/http'
+import { renderRouteAs } from '@/test/render'
 import UsersPage from './UsersPage'
 
 const server = setupServer(...allHandlers)
@@ -14,19 +11,11 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
 afterAll(() => server.close())
 
 function renderAsAdmin() {
-  const me = db.users.find((u) => u.email === 'admin@hireflow.dev')!
-  useAuthStore.getState().setSession(toUser(me), tokenFor(me))
-  const router = createMemoryRouter([{ path: paths.users, element: <UsersPage /> }], {
-    initialEntries: [paths.users],
-  })
-  render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  )
-  return me
+  return renderRouteAs(
+    'admin@hireflow.dev',
+    [{ path: paths.users, element: <UsersPage /> }],
+    paths.users,
+  ).user
 }
 
 // F-USER-03 → 05 · BR-ACC-05 · App Screens 7.6
