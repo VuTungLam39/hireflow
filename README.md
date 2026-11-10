@@ -384,7 +384,7 @@ Các file cấu hình: [`render.yaml`](render.yaml) (Blueprint của Render) và
 
    Các biến còn lại đã có sẵn trong `render.yaml`. `JWT_ACCESS_SECRET` do Render tự sinh, còn `REDIS_URL` lấy từ `hireflow-redis` qua mạng nội bộ.
 3. Mỗi lần khởi động, container chạy `typeorm migration:run` rồi mới bật server (xem `be/Dockerfile`).
-4. Mở `https://hireflow-api.onrender.com/api/health`. Ba mục `database`, `redis`, `storage` đều phải là `up`.
+4. Mở `https://hireflow-api-z99n.onrender.com/api/health`. Ba mục `database`, `redis`, `storage` đều phải là `up`.
 
 > Nếu tên `hireflow-api` đã có người dùng, Render sẽ thêm hậu tố vào URL. Khi đó sửa `destination` trong `fe/vercel.json` cho khớp.
 
@@ -412,7 +412,7 @@ Không dùng `--reset` trên database thật. Seed tự chặn khi DB đích kh�
 ### 5. Vercel (frontend)
 
 1. Ở https://vercel.com/new, import repo và đặt **Root Directory = `fe`**. Vercel tự nhận Vite; build command và output đã khai báo trong `fe/vercel.json`.
-2. Đặt biến môi trường `PRERENDER_API_URL=https://hireflow-api.onrender.com/api/v1` để build dựng sẵn trang job công khai (F-PUB-04, xem [rendering.md](fe/docs/rendering.md)). Không đặt thì trang công khai chạy CSR như các trang khác. `VITE_API_URL` để mặc định `/api/v1`, Vercel chuyển tiếp `/api/*` sang Render.
+2. Đặt biến môi trường `PRERENDER_API_URL=https://hireflow-api-z99n.onrender.com/api/v1` để build dựng sẵn trang job công khai (F-PUB-04, xem [rendering.md](fe/docs/rendering.md)). Không đặt thì trang công khai chạy CSR như các trang khác. `VITE_API_URL` để mặc định `/api/v1`, Vercel chuyển tiếp `/api/*` sang Render.
 3. Deploy xong, nếu domain Vercel khác giá trị đã điền thì sửa `CORS_ORIGINS` trên Render cho khớp.
 4. Tạo Deploy Hook để trang công khai được build lại khi HR đăng, đóng hoặc sửa job: Vercel → Project Settings → Git → **Deploy Hooks** → tạo hook cho nhánh `main` → copy URL vào biến `PRERENDER_DEPLOY_HOOK_URL` của `hireflow-api` trên Render. Các thay đổi trong 30 giây được gộp thành một lần build.
 5. Mở domain Vercel và đăng nhập bằng tài khoản seed. Tải lại trang (F5) để kiểm tra phiên đăng nhập vẫn còn. Mở `/jobs` → View source để thấy HTML đã có danh sách job.
