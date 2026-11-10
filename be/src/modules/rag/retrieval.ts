@@ -101,17 +101,21 @@ export function retrieveChunks(
          ) f
        ),
        fused AS (
-         SELECT id, sum(1.0 / ($6 + rank)) AS score
-         FROM (SELECT * FROM vec UNION ALL SELECT * FROM fts) u
+         SELECT id, sum(1.0 / ($6 + rank)) AS score, bool_or(keyword) AS keyword
+         FROM (
+           SELECT id, rank, false AS keyword FROM vec
+           UNION ALL
+           SELECT id, rank, true AS keyword FROM fts
+         ) u
          GROUP BY id
-         ORDER BY score DESC, id
+         ORDER BY score DESC, keyword DESC, id
          LIMIT $3
        )
        SELECT ch.id AS "chunkId", cf.candidate_id AS "candidateId", c.full_name AS "candidateName",
               app.id AS "applicationId", ch.section, ch.content
        FROM fused
        JOIN cv_chunks ch ON ch.id = fused.id ${readable('ch')}
-       ORDER BY fused.score DESC, ch.id`,
+       ORDER BY fused.score DESC, fused.keyword DESC, ch.id`,
       params,
     );
   });
