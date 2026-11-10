@@ -251,12 +251,6 @@ function gallery(scene: number): Buffer {
   return c.png();
 }
 
-export interface DemoImage {
-  key: string;
-  buffer: Buffer;
-  alt: string;
-}
-
 export function companyImages() {
   return {
     logo: { key: 'logo', buffer: logo(), alt: 'Logo HireFlow' },

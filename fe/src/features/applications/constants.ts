@@ -91,4 +91,3 @@ export const APPLICATION_VIEWS = [
   { id: 'missing', label: 'Thiếu tiêu chí bắt buộc', params: { missingMust: 'true' } },
   { id: 'failed', label: 'Không đọc được', params: { aiStatus: 'FAILED' } },
 ] as const
-export type ApplicationViewId = (typeof APPLICATION_VIEWS)[number]['id']

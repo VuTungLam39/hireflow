@@ -62,8 +62,6 @@ export function StatusPill({
   )
 }
 
-export const ApplicationStatusBadge = StatusPill
-
 export function AiStatusBadge({ status }: { status: AiStatus }) {
   if (status === 'DONE') return null
   const { label } = AI_STATUS[status]
@@ -156,5 +154,3 @@ export function ScoreBadge({
     </span>
   )
 }
-
-export const ScoreValue = ScoreBadge

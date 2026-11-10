@@ -61,9 +61,3 @@ export interface PaginationParams {
   limit?: number
   search?: string
 }
-
-/** Tham số sort: `sortBy` phải nằm trong whitelist của từng API (kickoff mục 10.1) */
-export interface SortParams<F extends string = string> {
-  sortBy?: F
-  order?: SortOrder
-}

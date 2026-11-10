@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import { JOB_STATUS, REQUIREMENT_TYPE, type JobStatus, type RequirementType } from '../constants'
+import { JOB_STATUS, type JobStatus } from '../constants'
 
 const DOT: Record<JobStatus, string> = {
   DRAFT: 'border border-ink-faint',
@@ -17,14 +17,6 @@ export function JobStatusBadge({ status }: { status: JobStatus }) {
     >
       <span aria-hidden className={cn('size-2 rounded-full', DOT[status])} />
       {JOB_STATUS[status].label}
-    </span>
-  )
-}
-
-export function RequirementTypeBadge({ type }: { type: RequirementType }) {
-  return (
-    <span className={cn('type-overline', type === 'MUST' && 'text-warn')}>
-      {REQUIREMENT_TYPE[type].label}
     </span>
   )
 }
