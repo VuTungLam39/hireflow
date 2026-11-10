@@ -38,16 +38,3 @@ export function Checkbox({
     </label>
   )
 }
-
-export function Radio({
-  label,
-  className,
-  ...props
-}: Omit<ComponentProps<'input'>, 'type'> & { label: ReactNode }) {
-  return (
-    <label className={cn('flex cursor-pointer items-center gap-2.5', className)}>
-      <input type="radio" className="accent-brand size-4 cursor-pointer" {...props} />
-      <span className="text-ink-2">{label}</span>
-    </label>
-  )
-}

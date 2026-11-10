@@ -6,7 +6,6 @@ export const candidateListSchema = z.object({
   /** F-SEARCH-01: cv = tìm theo kỹ năng trong CV */
   in: z.enum(['cv']).optional().catch(undefined),
 })
-export type CandidateListFilter = z.output<typeof candidateListSchema>
 
 /** Sửa thông tin liên hệ – không sửa email (BR-CAND-01) */
 export const candidateContactSchema = z.object({

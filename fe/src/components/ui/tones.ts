@@ -6,10 +6,4 @@ export const TONE_DOT = {
   danger: 'bg-bad',
 } as const
 
-export const TONE_TEXT = {
-  neutral: 'text-ink-2',
-  info: 'text-info',
-  success: 'text-good-ink',
-  warning: 'text-warn',
-  danger: 'text-bad',
-} as const
+export type BadgeTone = keyof typeof TONE_DOT
