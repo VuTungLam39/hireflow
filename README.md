@@ -75,7 +75,7 @@ HireFlow xử lý ba vấn đề của cách "gửi CV cho LLM rồi nhận đi�
 
 ### MVP 2 (đến 01/11/2026)
 
-Đã làm: **gợi ý ứng viên cũ khi đăng tin** (tối đa 10 người từ 50 điểm, mỗi tiêu chí kèm đoạn trích đã kiểm; mời vào tin bằng một thao tác, không gọi LLM) · mở lại hồ sơ đã kết thúc (về Sàng lọc CV, bắt buộc lý do) · nhập text CV thủ công cho CV ảnh scan · job định kỳ tự ẩn danh ứng viên hết hạn lưu CV và dọn refresh token hết hạn · **thông báo realtime (SSE)** khi CV chấm xong hoặc lỗi, chuông thông báo, thay việc hỏi lại mỗi 3 giây · **nhật ký kiểm toán** (xem CV, đổi trạng thái, ẩn danh, đổi quyền; chỉ ghi thêm) · cache Redis cho dashboard (230 ms → 10 ms) · bộ đánh giá chất lượng AI (10 CV × 2 JD) · prerender trang job công khai · cấu hình deploy (Vercel + Render + Neon + R2) + CI.
+Đã làm: **gợi ý ứng viên cũ khi đăng tin** (tối đa 10 người từ 50 điểm, mỗi tiêu chí kèm đoạn trích đã kiểm; mời vào tin bằng một thao tác, không gọi LLM) · mở lại hồ sơ đã kết thúc (về Sàng lọc CV, bắt buộc lý do) · nhập text CV thủ công cho CV ảnh scan · job định kỳ tự ẩn danh ứng viên hết hạn lưu CV và dọn refresh token hết hạn · **thông báo realtime (SSE)** khi CV chấm xong hoặc lỗi, chuông thông báo, thay việc hỏi lại mỗi 3 giây · **nhật ký kiểm toán** (xem CV, đổi trạng thái, ẩn danh, đổi quyền; chỉ ghi thêm) · cache Redis cho dashboard (230 ms → 10 ms) · bộ đánh giá chất lượng AI (10 CV × 2 JD) · prerender trang job công khai · cấu hình deploy (Vercel + Render + Neon + Backblaze B2) + CI.
 
 Đã làm thêm: **phỏng vấn và phiếu đánh giá** với role Interviewer (đặt lịch, chặn trùng giờ, Interviewer chỉ thấy hồ sơ được giao và chấm độc lập không thấy điểm AI, phiếu 1–5 theo tiêu chí sửa trong 24 giờ).
 
@@ -104,7 +104,7 @@ Cập nhật 27/10/2026. Chi tiết từng feature: tài liệu "Danh mục Feat
 | Rate limit theo người dùng và theo tài khoản, `npm audit` trong CI, coverage service lõi | Xong | Coverage 92,6% (mục tiêu 70%) |
 | Prerender trang job công khai (SSG + hydrate), tài liệu rendering | Xong | [fe/docs/rendering.md](fe/docs/rendering.md) |
 | `docker compose up` chạy toàn hệ thống, kiểm giao diện 3 role × 3 độ rộng | Xong | [fe/docs/qa-responsive.md](fe/docs/qa-responsive.md) |
-| Cấu hình deploy Vercel + Render + Neon + R2 | Xong phần code, chưa deploy thật | Mục [Deploy](#deploy) |
+| Cấu hình deploy Vercel + Render + Neon + Backblaze B2 | Xong phần code, chưa deploy thật | Mục [Deploy](#deploy) |
 | Gợi ý ứng viên cũ khi đăng tin, mời vào tin (US-10) | Xong | E2E `be/test/matching.e2e-spec.ts`; tin nháp demo “Fullstack Developer (NestJS + React)” |
 | Mở lại hồ sơ đã kết thúc, nhập text CV thủ công, tự ẩn danh khi hết hạn lưu, dọn token (D5) | Xong | E2E `be/test/data-lifecycle.e2e-spec.ts`, `ai-pipeline.e2e-spec.ts` (CV scan → nhập text → có điểm) |
 | Cache dashboard, thông báo realtime (SSE), nhật ký kiểm toán (D6) | Xong | E2E `be/test/realtime-audit.e2e-spec.ts`; số đo cache ở [perf-report.md](be/docs/perf-report.md) mục 3.5 |
@@ -163,12 +163,12 @@ Chấm điểm không phụ thuộc embedding, nên embedding lỗi không chặ
 | Backend | NestJS 12 (ESM, TypeScript strict), TypeORM, class-validator, Passport JWT, Swagger |
 | Database | PostgreSQL 18 + pgvector 0.8 (image `pgvector/pgvector:0.8.7-pg18-trixie`) |
 | Queue / cache | Redis + BullMQ |
-| Lưu trữ file | RustFS khi dev (thay MinIO đã ngừng phát hành image), S3 tương thích khi deploy (Cloudflare R2) |
+| Lưu trữ file | RustFS khi dev (thay MinIO đã ngừng phát hành image), S3 tương thích khi deploy (Backblaze B2) |
 | AI | Qua interface `LlmProvider`, thứ tự dự phòng cấu hình được: Gemini → Groq → Ollama (đều miễn phí); embedding Gemini hoặc Ollama bge-m3, 1024 chiều; LLM giả cho test và CI |
 | Frontend | React 19, Vite 8, TypeScript 7, React Router 8, TanStack Query 5, Zustand 5, React Hook Form + Zod 4, Axios, Tailwind CSS 4 |
 | Test | Vitest, Supertest, Testing Library |
 | Chất lượng code | oxlint, Prettier, TypeScript strict |
-| Hạ tầng | Dev: Docker Compose. Deploy: Vercel (FE), Render (API + Redis), Neon (PostgreSQL), Cloudflare R2 (file CV); CI bằng GitHub Actions |
+| Hạ tầng | Dev: Docker Compose. Deploy: Vercel (FE), Render (API + Redis), Neon (PostgreSQL), Backblaze B2 (file CV); CI bằng GitHub Actions |
 
 ---
 
@@ -325,7 +325,7 @@ Trình duyệt ──► Vercel (hireflow.vercel.app)
                  └─ /api/*  → chuyển tiếp sang Render ──► hireflow-api (NestJS + 4 worker BullMQ)
                                                            ├─ Neon            PostgreSQL + pgvector
                                                            ├─ Render Key Value Redis cho BullMQ
-                                                           ├─ Cloudflare R2   file CV (S3)
+                                                           ├─ Backblaze B2    file CV (S3)
                                                            └─ Gemini / Groq   LLM + embedding
 ```
 
@@ -340,7 +340,7 @@ Các file cấu hình: [`render.yaml`](render.yaml) (Blueprint của Render) và
 | Render web (free) | 512 MB RAM, 0,1 CPU. Ngủ sau 15 phút không có request, mở lại mất khoảng 1 phút | Lúc ngủ, worker cũng dừng: CV vừa nộp chỉ được xử lý khi API thức dậy. Xem bước 7 |
 | Render Key Value (free) | 25 MB, **không lưu xuống đĩa** | Redis khởi động lại thì job đang chờ trong hàng đợi bị mất |
 | Neon (free) | 0,5 GB, tự tạm dừng khi không dùng | Truy vấn đầu tiên sau khi tạm dừng chậm hơn một chút |
-| Cloudflare R2 | 10 GB, không tính phí tải xuống | Phải thêm phương thức thanh toán mới bật được R2 |
+| Backblaze B2 | 10 GB, tải xuống miễn phí tới 3 lần dung lượng lưu | Server ở Mỹ hoặc châu Âu, mỗi lần đọc/ghi file chậm thêm khoảng 0,2 giây |
 | Vercel (Hobby) | Chỉ dùng cho mục đích phi thương mại | Đủ cho demo và thực tập |
 
 ### 1. Neon (database)
@@ -353,11 +353,21 @@ Các file cấu hình: [`render.yaml`](render.yaml) (Blueprint của Render) và
    ```
 4. Không cần bật extension bằng tay: migration tự chạy `CREATE EXTENSION` cho `vector`, `pg_trgm`, `unaccent`, và Neon hỗ trợ cả ba.
 
-### 2. Cloudflare R2 (file CV)
+### 2. Backblaze B2 (file CV)
 
-1. Vào Cloudflare dashboard, mở **R2 Object Storage** và tạo bucket `hireflow-cv` (location: Asia-Pacific). **Không** bật public access, vì API trả file qua presigned URL.
-2. Vào **R2 → Manage API tokens → Create API token**, chọn quyền **Object Read & Write**, giới hạn trong bucket `hireflow-cv`.
-3. Ghi lại **Access Key ID**, **Secret Access Key** và endpoint `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`.
+1. Đăng ký ở https://www.backblaze.com/sign-up/cloud-storage. Region (US West hoặc EU Central) gắn với tài khoản và không đổi được về sau.
+2. **Buckets → Create a Bucket**: đặt tên riêng (tên bucket B2 là duy nhất trên toàn hệ thống, ví dụ `hireflow-cv-<tên bạn>`), chọn **Private**. **Không** để Public, vì API trả file qua presigned URL. Phải tạo bucket trước: key ở bước 3 chỉ có quyền trong bucket nên API không tự tạo được.
+3. **Application Keys → Add a New Application Key**: chỉ cho bucket vừa tạo, quyền **Read and Write**. Key chỉ hiện một lần.
+4. Ghi lại:
+
+   | Giá trị | Lấy ở đâu |
+   | --- | --- |
+   | `S3_ENDPOINT` | Mục **Endpoint** trên trang bucket, thêm `https://`, ví dụ `https://s3.us-west-004.backblazeb2.com` |
+   | `S3_REGION` | Phần giữa của endpoint, ví dụ `us-west-004` |
+   | `S3_BUCKET` | Tên bucket |
+   | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | **keyID** và **applicationKey** |
+
+   B2 cần địa chỉ dạng path-style, đã đặt sẵn `S3_FORCE_PATH_STYLE=true` trong `render.yaml`. Code đã tắt checksum mặc định của AWS SDK (`requestChecksumCalculation: 'WHEN_REQUIRED'`) nên không cần chỉnh gì thêm.
 
 ### 3. Render (API + Redis)
 
@@ -367,10 +377,9 @@ Các file cấu hình: [`render.yaml`](render.yaml) (Blueprint của Render) và
    | Biến | Giá trị |
    | --- | --- |
    | `DATABASE_URL` | Chuỗi kết nối Neon ở bước 1 |
-   | `S3_ENDPOINT` | `https://<ACCOUNT_ID>.r2.cloudflarestorage.com` |
-   | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Token R2 ở bước 2 |
+   | `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Bước 2 |
    | `GEMINI_API_KEY`, `GEMINI_MODEL` | Key ở https://aistudio.google.com |
-   | `GROQ_API_KEY`, `GROQ_MODEL` | Key ở https://console.groq.com (dự phòng khi Gemini lỗi) |
+   | `GROQ_API_KEY`, `GROQ_MODEL` | Key ở https://console.groq.com (dự phòng khi Gemini lỗi). **Bắt buộc** khi `LLM_PROVIDERS` có `groq` (mặc định `gemini,groq`): thiếu thì API không khởi động. Không dùng Groq thì sửa `LLM_PROVIDERS=gemini` |
    | `CORS_ORIGINS` | **Bắt buộc** (thiếu thì API không khởi động): domain Vercel dự kiến, ví dụ `https://hireflow.vercel.app`; nhiều domain ngăn cách bằng dấu phẩy |
 
    Các biến còn lại đã có sẵn trong `render.yaml`. `JWT_ACCESS_SECRET` do Render tự sinh, còn `REDIS_URL` lấy từ `hireflow-redis` qua mạng nội bộ.
@@ -381,15 +390,17 @@ Các file cấu hình: [`render.yaml`](render.yaml) (Blueprint của Render) và
 
 ### 4. Tạo dữ liệu ban đầu (seed)
 
-Gói free của Render không có shell, nên chạy seed từ máy mình, trỏ thẳng vào Neon và R2. Biến đặt trong shell được ưu tiên hơn `be/.env`.
+Gói free của Render không có shell, nên chạy seed từ máy mình, trỏ thẳng vào Neon và B2. Biến đặt trong shell được ưu tiên hơn `be/.env`. Chạy trong một cửa sổ PowerShell riêng rồi đóng lại, để key không nằm trong lịch sử của công cụ khác.
 
 ```powershell
 cd be
 $env:DATABASE_URL = "postgresql://...neon.tech/hireflow?sslmode=require"
 $env:DB_SSL = "true"
 $env:STORAGE_DRIVER = "s3"
-$env:S3_ENDPOINT = "https://<ACCOUNT_ID>.r2.cloudflarestorage.com"
-$env:S3_REGION = "auto"
+$env:S3_ENDPOINT = "https://s3.<region>.backblazeb2.com"
+$env:S3_REGION = "<region>"
+$env:S3_BUCKET = "<tên bucket>"
+$env:S3_FORCE_PATH_STYLE = "true"
 $env:S3_ACCESS_KEY = "..."
 $env:S3_SECRET_KEY = "..."
 $env:SEED_ADMIN_PASSWORD = "<mật khẩu mạnh>"
@@ -567,7 +578,7 @@ Ngày 26/10/2026 lịch được rút lại: hoàn thiện cả MVP 1 và MVP 2 
 | 26/10 (D4) | Đặc tả US-10 và BR-MATCH-01 → 04; gợi ý ứng viên cũ + mời vào tin | Xong (sớm 2 ngày) |
 | 27/10 (D5) | Job định kỳ tự ẩn danh khi hết hạn lưu, dọn token; mở lại hồ sơ đã kết thúc; nhập text CV thủ công | Xong |
 | 27/10 (D6) | Cache dashboard; thông báo realtime (SSE); nhật ký kiểm toán (kéo lên từ 28–29/10 vì chưa có tài khoản deploy) | Xong |
-| 28/10 | Deploy thật (Vercel + Render + Neon + R2), backup và thử khôi phục | |
+| 28/10 | Deploy thật (Vercel + Render + Neon + Backblaze B2), backup và thử khôi phục | |
 | 29/10 | ai-eval 30 CV | |
 | 27/10 (D7) | Phỏng vấn + role Interviewer; chốt các quy tắc ⚠ (BR-MATCH-01, 04, BR-NOTI-01, BR-AUDIT-01, BR-INT-01 → 03) | Xong |
 | 30/10 | Load test k6, cổng chất lượng production. Ngừng thêm tính năng cuối ngày | |
