@@ -28,6 +28,8 @@ import {
 } from '../src/modules/jobs/entities/job-requirement.entity.js';
 import { Job, JobStatus } from '../src/modules/jobs/entities/job.entity.js';
 import { NOT_ENOUGH_INFO } from '../src/modules/rag/prompts/chat.prompt.js';
+import { RagService } from '../src/modules/rag/rag.service.js';
+import { RRF_CANDIDATES, toVector } from '../src/modules/rag/retrieval.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
 
@@ -376,6 +378,36 @@ describe('RAG chat (e2e, LLM và embedding giả)', () => {
     const hr = await chat('hr', `Ai từng dùng ${kwB}?`);
     expect(hr.sources[0]).toMatchObject({ applicationId: apps.kwB });
     expect((await chat('hmC', `Ai từng dùng ${kwA} hoặc ${kwB}?`)).sources).toEqual([]);
+  });
+
+  it('F-SEARCH-01: on an RRF tie, the exact keyword match ranks above a meaning-only match', async () => {
+    const [hit] = (await chunksOf(apps.kwA)).filter((c) => c.content.includes(kwA));
+    const [{ model, cvFileId }] = await ds.query<{ model: string; cvFileId: string }[]>(
+      `SELECT ch.embedding_model AS model, a.cv_file_id AS "cvFileId"
+       FROM cv_chunks ch, applications a WHERE ch.id = $1 AND a.id = $2`,
+      [hit.id, apps.a1],
+    );
+    const [query] = await new FakeEmbeddingProvider(1024).embed([`tie ${run}`], 'query');
+    const fillers = Array.from({ length: RRF_CANDIDATES }, (_, i) => ({
+      id: `00000000-${run.slice(0, 4)}-4000-8000-${String(i).padStart(12, '0')}`,
+      position: 100 + i,
+    }));
+    await ds.query(
+      `INSERT INTO cv_chunks (id, cv_file_id, section, position, content, token_count, embedding_model, embedding)
+       SELECT f.id::uuid, $1, 'experience', f.position, 'Kinh nghiệm làm việc nhóm', 4, $2, $3::vector
+       FROM jsonb_to_recordset($4::jsonb) AS f(id text, position int)`,
+      [cvFileId, model, toVector(query), JSON.stringify(fillers)],
+    );
+    try {
+      const rows = await app
+        .get(RagService)
+        .retrieve(query, kwA, { role: Role.Hr, departmentId: null }, { topK: 1 });
+      expect(rows.map((r) => r.chunkId)).toEqual([hit.id]);
+    } finally {
+      await ds.query(`DELETE FROM cv_chunks WHERE id = ANY($1::uuid[])`, [
+        fillers.map((f) => f.id),
+      ]);
+    }
   });
 
   it('F-SEARCH-01: a question asked only by meaning still retrieves by vector', async () => {
