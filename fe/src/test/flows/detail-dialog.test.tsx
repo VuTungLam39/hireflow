@@ -89,6 +89,17 @@ describe('detail dialog', () => {
     }
   })
 
+  it('opens the HR upload dialog from the job popup footer', async () => {
+    renderAt('hr@hireflow.dev', paths.jobs)
+    const job = db.jobs.find((j) => j.status === 'OPEN')!
+    const [link] = await screen.findAllByRole('link', { name: job.title })
+    fireEvent.click(link.closest('tr')!)
+
+    const dialog = await screen.findByRole('dialog', { name: job.title }, { timeout: 8000 })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tải CV hộ ứng viên' }))
+    expect(await screen.findByRole('dialog', { name: 'Tải CV hộ ứng viên' })).toBeInTheDocument()
+  })
+
   it('creates a job in a popup, then lands on the criteria tab of the new job', async () => {
     const router = renderAt('hr@hireflow.dev', paths.jobs)
     const [create] = await screen.findAllByRole('link', { name: /Tạo tin/ })

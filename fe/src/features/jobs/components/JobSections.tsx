@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { ConfirmDialog } from '@/components/shared'
 import { Button, FormField, Input, Select, Textarea } from '@/components/ui'
-import { HrUploadDialog } from '@/features/applications'
 import { useDepartmentOptions } from '@/features/departments'
 import { usePermission } from '@/hooks/use-permission'
 import { applyServerErrors, getErrorMessage } from '@/lib/errors'
@@ -426,11 +425,11 @@ type Confirm = 'publish' | 'close' | 'delete'
 export function JobActionBar({
   job,
   onDeleted,
-  onUploaded,
+  onUpload,
 }: {
   job: Job
   onDeleted?: () => void
-  onUploaded?: (applicationId: string) => void
+  onUpload?: () => void
 }) {
   const canEdit = useCanEditJob(job)
   const canPublish = usePermission(Permission.JobPublish)
@@ -439,7 +438,6 @@ export function JobActionBar({
   const close = useCloseJob()
   const remove = useDeleteJob()
   const [confirm, setConfirm] = useState<Confirm | null>(null)
-  const [uploadOpen, setUploadOpen] = useState(false)
   const action = confirm === 'publish' ? publish : confirm === 'delete' ? remove : close
   const deletable = job.status === 'DRAFT' && job.applicationCount === 0 && canEdit
   const noRequirements = job.requirements.length === 0
@@ -457,8 +455,8 @@ export function JobActionBar({
           Đóng tin
         </Button>
       )}
-      {canUpload && job.status === 'OPEN' && (
-        <Button variant="secondary" size="sm" onClick={() => setUploadOpen(true)}>
+      {canUpload && onUpload && job.status === 'OPEN' && (
+        <Button variant="secondary" size="sm" onClick={onUpload}>
           <Upload />
           Tải CV hộ ứng viên
         </Button>
@@ -488,13 +486,6 @@ export function JobActionBar({
             onSettled: () => setConfirm(null),
           })
         }
-      />
-      <HrUploadDialog
-        jobId={job.id}
-        jobTitle={job.title}
-        open={uploadOpen}
-        onClose={() => setUploadOpen(false)}
-        onUploaded={(application) => onUploaded?.(application.id)}
       />
     </div>
   )

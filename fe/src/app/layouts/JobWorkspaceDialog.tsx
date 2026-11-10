@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui'
 import {
   JobApplicationHighlights,
   JobApplicationsList,
+  HrUploadDialog,
   type ApplicationStatus,
 } from '@/features/applications'
 import {
@@ -41,6 +42,7 @@ export function JobWorkspaceDialog({ id, tab: initialTab, onClose }: JobWorkspac
   const [tab, setTab] = useState<JobTab>(
     TABS.includes(initialTab as JobTab) ? (initialTab as JobTab) : 'overview',
   )
+  const [uploadOpen, setUploadOpen] = useState(false)
   const [appStatus, setAppStatus] = useState<ApplicationStatus | undefined>()
 
   const live = job && job.status !== 'DRAFT'
@@ -92,10 +94,13 @@ export function JobWorkspaceDialog({ id, tab: initialTab, onClose }: JobWorkspac
         job && (
           <>
             <span className="type-caption">{!canEdit && 'Bạn chỉ có quyền xem tin này'}</span>
-            <JobActionBar
-              job={job}
-              onDeleted={onClose}
-              onUploaded={(applicationId) => openDetail('application', applicationId)}
+            <JobActionBar job={job} onDeleted={onClose} onUpload={() => setUploadOpen(true)} />
+            <HrUploadDialog
+              jobId={job.id}
+              jobTitle={job.title}
+              open={uploadOpen}
+              onClose={() => setUploadOpen(false)}
+              onUploaded={(application) => openDetail('application', application.id)}
             />
           </>
         )
