@@ -1,5 +1,5 @@
 # Render Blueprint: API NestJS (Docker, free) + Redis cho BullMQ (Key Value, free)
-# Database: Neon, lưu file CV: Cloudflare R2, frontend: Vercel (fe/vercel.json)
+# Database: Neon, lưu file CV: Backblaze B2, frontend: Vercel (fe/vercel.json)
 services:
   - type: web
     name: hireflow-api
@@ -43,15 +43,15 @@ services:
       - key: JWT_REFRESH_EXPIRES_IN
         value: '604800'
 
-      # Cloudflare R2
+      # Backblaze B2
       - key: STORAGE_DRIVER
         value: s3
       - key: S3_ENDPOINT
         sync: false
       - key: S3_REGION
-        value: auto
+        sync: false
       - key: S3_BUCKET
-        value: hireflow-cv
+        sync: false
       - key: S3_FORCE_PATH_STYLE
         value: 'true'
       - key: S3_ACCESS_KEY
