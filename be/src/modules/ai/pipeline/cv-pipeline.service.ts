@@ -94,6 +94,7 @@ export class CvPipelineService implements OnModuleInit {
       aiStatus: AiStatus.Processing,
       aiError: null,
     });
+    this.events.emit('application.changed', { applicationId });
     try {
       if (ready) {
         await this.add(
@@ -110,6 +111,7 @@ export class CvPipelineService implements OnModuleInit {
         aiStatus: app.aiStatus,
         aiError: app.aiError,
       });
+      this.events.emit('application.changed', { applicationId });
       this.logger.error(`rescore ${applicationId}: cannot enqueue: ${(error as Error).message}`);
       throw new BusinessException(
         ErrorCode.AiUnavailable,
@@ -162,10 +164,17 @@ export class CvPipelineService implements OnModuleInit {
   async parse({ cvFileId, requestId }: CvJobData): Promise<void> {
     const cv = await this.dataSource.getRepository(CvFile).findOneBy({ id: cvFileId });
     if (!cv) return;
-    await this.applications().update(
-      { cvFileId, aiStatus: AiStatus.Pending },
-      { aiStatus: AiStatus.Processing },
-    );
+    const started = await this.applications()
+      .createQueryBuilder()
+      .update()
+      .set({ aiStatus: AiStatus.Processing })
+      .where({ cvFileId, aiStatus: AiStatus.Pending })
+      .returning(['id'])
+      .execute();
+    // F-NOTI-01
+    for (const { id } of started.raw as { id: string }[]) {
+      this.events.emit('application.changed', { applicationId: id });
+    }
 
     if (cv.parseStatus !== CvParseStatus.Parsed || !cv.text) {
       try {

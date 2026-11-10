@@ -5,12 +5,15 @@ import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { DataSource, In } from 'typeorm';
 import { AppModule } from '../src/app.module.js';
+import type { PaginationQueryDto } from '../src/common/dto/pagination-query.dto.js';
 import { AiStatus } from '../src/common/enums/ai-status.enum.js';
+import { AppEvents } from '../src/common/events/app-events.js';
 import { Role } from '../src/common/enums/role.enum.js';
 import { ScoreFlag } from '../src/common/enums/score-flag.enum.js';
 import { LLM_PROVIDER, LlmError, type JsonRequest } from '../src/modules/ai/ai.types.js';
 import { CvProfile } from '../src/modules/ai/entities/cv-profile.entity.js';
 import { AI_ERROR } from '../src/modules/ai/pipeline/cv-pipeline.service.js';
+import { PipelineOpsService } from '../src/modules/ai/pipeline/pipeline-ops.service.js';
 import { fakeExtract, fakeSuggest, FakeLlmProvider } from '../src/modules/ai/providers/fake.llm.js';
 import { makeDocx, makePdf, SAMPLE_CV } from '../src/modules/ai/testing/cv-fixtures.js';
 import { ApplicationStatusHistory } from '../src/modules/applications/entities/application-status-history.entity.js';
@@ -261,6 +264,56 @@ describe('AI pipeline (e2e, LLM giả)', () => {
     const done = await waitFor(first, settled);
     expect(done).toMatchObject({ aiStatus: AiStatus.Done, score: 38 });
     expect(extractCalls()).toBe(before);
+  });
+
+  it('F-NOTI-01: announces PROCESSING to realtime listeners, not only the final status', async () => {
+    const events = app.get(AppEvents);
+    const emit = vi.spyOn(events, 'emit');
+    try {
+      const created = await upload(ids.job, `live-${run}@example.com`, await makeDocx(SAMPLE_CV));
+      await waitFor(created.id, settled);
+      const changed = () =>
+        emit.mock.calls.filter(
+          ([name, payload]) =>
+            name === 'application.changed' &&
+            (payload as { applicationId: string }).applicationId === created.id,
+        ).length;
+
+      expect(changed()).toBeGreaterThanOrEqual(3);
+
+      const beforeRescore = changed();
+      await auth(request(server()).post(`/api/v1/applications/${created.id}/rescore`)).expect(202);
+      await waitFor(created.id, settled);
+
+      expect(changed() - beforeRescore).toBeGreaterThanOrEqual(2);
+    } finally {
+      emit.mockRestore();
+    }
+  });
+
+  it('Backend Architecture 13: lists an application stuck in PROCESSING, and retry finishes it', async () => {
+    const ops = app.get(PipelineOpsService);
+    const created = await upload(ids.job, `stuck-${run}@example.com`, await makeDocx(SAMPLE_CV));
+    await waitFor(created.id, settled);
+    const mine = async () =>
+      (await ops.findIssues({ page: 1, limit: 100, skip: 0 } as PaginationQueryDto)).items.filter(
+        (i) => i.id === created.id,
+      );
+
+    await ds.query(`UPDATE applications SET ai_status = 'PROCESSING' WHERE id = $1`, [created.id]);
+    expect(await mine()).toEqual([]);
+
+    await ds.query(
+      `UPDATE applications SET updated_at = now() - interval '10 minutes' WHERE id = $1`,
+      [created.id],
+    );
+    expect(await mine()).toEqual([
+      expect.objectContaining({ aiStatus: AiStatus.Processing, stuck: true }),
+    ]);
+
+    await ops.retry(created.id);
+    expect(await waitFor(created.id, settled)).toMatchObject({ aiStatus: AiStatus.Done });
+    expect(await mine()).toEqual([]);
   });
 
   it('marks a CV without text as FAILED with a reason (BR-FILE-04)', async () => {

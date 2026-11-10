@@ -64,7 +64,7 @@ export class PipelineOpsService {
         id: a.id,
         aiStatus: a.aiStatus,
         aiError: a.aiError,
-        stuck: a.aiStatus === AiStatus.Pending,
+        stuck: a.aiStatus !== AiStatus.Failed,
         createdAt: a.createdAt,
         updatedAt: a.updatedAt,
         candidate: { id: a.candidate!.id, fullName: a.candidate!.fullName },
@@ -131,6 +131,10 @@ export class PipelineOpsService {
             .orWhere(
               `app.aiStatus = :pending AND app.createdAt < now() - make_interval(mins => :minutes)`,
               { pending: AiStatus.Pending, minutes: STUCK_PENDING_MINUTES },
+            )
+            .orWhere(
+              `app.aiStatus = :processing AND app.updatedAt < now() - make_interval(mins => :minutes)`,
+              { processing: AiStatus.Processing, minutes: STUCK_PENDING_MINUTES },
             ),
         ),
       );
