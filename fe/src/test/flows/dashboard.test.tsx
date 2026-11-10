@@ -1,31 +1,17 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, screen } from '@testing-library/react'
 import { setupServer } from 'msw/node'
-import { createMemoryRouter, RouterProvider } from 'react-router'
 import DashboardPage from '@/features/dashboard/pages/DashboardPage'
 import { paths } from '@/routes/paths'
-import { useAuthStore } from '@/stores/auth.store'
 import { db } from '@/test/msw/data'
 import { allHandlers } from '@/test/msw/handlers'
-import { tokenFor, toUser } from '@/test/msw/http'
+import { renderRouteAs } from '@/test/render'
 
 const server = setupServer(...allHandlers)
 beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
 afterAll(() => server.close())
 
 function renderAs(email: string) {
-  const row = db.users.find((u) => u.email === email)!
-  useAuthStore.getState().setSession(toUser(row), tokenFor(row))
-  const router = createMemoryRouter([{ path: paths.home, element: <DashboardPage /> }], {
-    initialEntries: [paths.home],
-  })
-  render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  )
+  renderRouteAs(email, [{ path: paths.home, element: <DashboardPage /> }], paths.home)
 }
 
 // F-DASH-01

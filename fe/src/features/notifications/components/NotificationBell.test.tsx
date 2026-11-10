@@ -1,12 +1,9 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import { setupServer } from 'msw/node'
-import { createMemoryRouter, RouterProvider } from 'react-router'
-import { useAuthStore } from '@/stores/auth.store'
 import { useRealtimeStore } from '@/stores/realtime.store'
 import { db } from '@/test/msw/data'
 import { notificationHandlers } from '@/test/msw/handlers/notifications'
-import { tokenFor, toUser } from '@/test/msw/http'
+import { renderRoutes, signInAs } from '@/test/render'
 import { NotificationBell } from './NotificationBell'
 
 const server = setupServer(...notificationHandlers)
@@ -14,20 +11,10 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => server.close())
 
 function renderAs(email: string) {
-  const row = db.users.find((u) => u.email === email)!
-  useAuthStore.getState().setSession(toUser(row), tokenFor(row))
+  const row = signInAs(email)
   const unread = db.notifications.filter((n) => n.userId === row.id && !n.readAt).length
   useRealtimeStore.getState().setUnreadCount(unread)
-  const router = createMemoryRouter([{ path: '/', element: <NotificationBell /> }], {
-    initialEntries: ['/'],
-  })
-  render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  )
+  const { router } = renderRoutes([{ path: '/', element: <NotificationBell /> }], '/')
   return { row, unread, router }
 }
 

@@ -1,13 +1,10 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import { setupServer } from 'msw/node'
-import { createMemoryRouter, RouterProvider } from 'react-router'
 import { links, paths } from '@/routes/paths'
-import { useAuthStore } from '@/stores/auth.store'
 import { db } from '@/test/msw/data'
 import { applicationHandlers } from '@/test/msw/handlers/applications'
 import { authHandlers } from '@/test/msw/handlers/auth'
-import { tokenFor, toUser } from '@/test/msw/http'
+import { renderRouteAs } from '@/test/render'
 import ApplicationDetailPage from './ApplicationDetailPage'
 
 const server = setupServer(...authHandlers, ...applicationHandlers)
@@ -18,17 +15,10 @@ const visible = (a: (typeof db.applications)[number]) =>
   !db.candidates.find((c) => c.id === a.candidateId)?.anonymizedAt
 
 function renderAs(email: string, applicationId: string) {
-  const row = db.users.find((u) => u.email === email)!
-  useAuthStore.getState().setSession(toUser(row), tokenFor(row))
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  const router = createMemoryRouter(
+  renderRouteAs(
+    email,
     [{ path: paths.applicationDetail, element: <ApplicationDetailPage /> }],
-    { initialEntries: [links.applicationDetail(applicationId)] },
-  )
-  render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
+    links.applicationDetail(applicationId),
   )
 }
 
