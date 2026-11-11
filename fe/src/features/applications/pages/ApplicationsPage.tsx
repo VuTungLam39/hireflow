@@ -24,6 +24,7 @@ import { formatDate, formatDateTime, formatTime } from '@/lib/utils'
 import { links } from '@/routes/paths'
 import { useAuthStore } from '@/stores/auth.store'
 import { Role } from '@/types/user'
+import { CompareDialog } from '../components/CompareDialog'
 import { HrUploadDialog } from '../components/HrUploadDialog'
 import { QuickView } from '../components/QuickView'
 import { AiStatusBadge, ScoreBadge, ScoreFlags, StatusPill } from '../components/StatusBadges'
@@ -76,6 +77,7 @@ export default function ApplicationsPage() {
   const myFeedback = useMyFeedback(isInterviewer)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [peek, setPeek] = useState<string | null>(null)
+  const [compare, setCompare] = useState<{ jobId: string; ids: string[] } | null>(null)
   const bulk = useBulkChangeStatus()
   const scope = { jobId: params.jobId, search: params.search }
   const viewCounts = {
@@ -151,6 +153,13 @@ export default function ApplicationsPage() {
   const commonStatus = selectedItems.every((a) => a.status === selectedItems[0]?.status)
     ? selectedItems[0]?.status
     : undefined
+  // F3: so sánh 2–3 hồ sơ của cùng một tin
+  const compareJobId =
+    selectedItems.length >= 2 &&
+    selectedItems.length <= 3 &&
+    selectedItems.every((a) => a.job.id === selectedItems[0].job.id)
+      ? selectedItems[0].job.id
+      : null
   const bulkTarget: ApplicationStatus | undefined =
     commonStatus === 'NEW' ? 'SCREENING' : commonStatus === 'SCREENING' ? 'INTERVIEW' : undefined
 
@@ -405,6 +414,18 @@ export default function ApplicationsPage() {
                 Chọn hồ sơ cùng trạng thái Mới hoặc Sàng lọc để chuyển bước
               </span>
             )}
+            {compareJobId && (
+              <Button
+                size="sm"
+                variant="quiet"
+                className="text-white hover:bg-white/10"
+                onClick={() =>
+                  setCompare({ jobId: compareJobId, ids: selectedItems.map((a) => a.id) })
+                }
+              >
+                So sánh {selectedItems.length} hồ sơ
+              </Button>
+            )}
             <Button
               size="sm"
               variant="quiet"
@@ -416,6 +437,15 @@ export default function ApplicationsPage() {
           </>
         )}
       />
+
+      {compare && (
+        <CompareDialog
+          open
+          jobId={compare.jobId}
+          ids={compare.ids}
+          onClose={() => setCompare(null)}
+        />
+      )}
 
       <QuickView
         id={peek}

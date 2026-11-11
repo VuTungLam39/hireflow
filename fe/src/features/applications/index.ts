@@ -46,3 +46,4 @@ export type {
   HrUploadInput,
   StatusHistoryItem,
 } from './types'
+export { CompareDialog } from './components/CompareDialog'

@@ -200,6 +200,65 @@ export const applicationHandlers = [
     return ok({ ...note, author: userRef(user.id)! }, { status: 201 })
   }),
 
+  // F3 · BR-APP-13: giống BE – Interviewer bị chặn, 2–3 hồ sơ cùng tin, điểm phiếu theo tiêu chí
+  http.get(api('/jobs/:jobId/applications/compare'), async ({ request, params }) => {
+    await delay()
+    const user = authorize(request, Permission.ApplicationRead)
+    if (user instanceof Response) return user
+    if (user.role === Role.Interviewer) return fail(403, 'FORBIDDEN', 'Interviewers cannot compare')
+    const job = db.jobs.find((j) => j.id === params.jobId && inScope(user, j.departmentId))
+    if (!job) return notFound('Job')
+    const ids = (new URL(request.url).searchParams.get('ids') ?? '').split(',').filter(Boolean)
+    if (ids.length < 2 || ids.length > 3 || new Set(ids).size !== ids.length) {
+      return fail(400, 'VALIDATION_FAILED', 'ids must be 2-3 unique ids')
+    }
+    const apps = ids.map((id) =>
+      db.applications.find((a) => a.id === id && a.jobId === job.id && canSeeApplication(user, a)),
+    )
+    if (apps.some((a) => !a)) {
+      return fail(400, 'COMPARE_INVALID_SELECTION', 'All applications must belong to this job')
+    }
+    const avg = (xs: number[]) =>
+      xs.length ? Math.round((xs.reduce((x, y) => x + y, 0) / xs.length) * 10) / 10 : null
+    return ok({
+      job: { id: job.id, title: job.title, jdVersion: job.jdVersion },
+      requirements: job.requirements.map(({ id, label, type, weight, minYears }) => ({
+        id,
+        label,
+        type,
+        weight,
+        minYears,
+      })),
+      applications: apps.map((app) => {
+        const feedbacks = db.interviews
+          .filter((iv) => iv.applicationId === app!.id)
+          .flatMap((iv) => iv.feedbacks)
+        return {
+          ...toApplicationItem(app!),
+          source: app!.source,
+          stale: app!.scoredJdVersion !== null && app!.scoredJdVersion !== job.jdVersion,
+          criteria: job.requirements.map((r) => {
+            const item = app!.breakdown?.find((b) => b.requirementId === r.id)
+            return {
+              requirementId: r.id,
+              match: item ? item.match : null,
+              evidence: item?.evidence ?? null,
+              interviewAvg: avg(
+                feedbacks.flatMap((f) =>
+                  f.ratings.filter((x) => x.requirementId === r.id).map((x) => x.score),
+                ),
+              ),
+            }
+          }),
+          interviews: {
+            feedbackCount: feedbacks.length,
+            avgOverall: avg(feedbacks.map((f) => f.overall)),
+          },
+        }
+      }),
+    })
+  }),
+
   http.patch(api('/applications/:id/status'), async ({ request, params }) => {
     await delay()
     const user = authorize(request, Permission.ApplicationUpdateStatus)

@@ -42,6 +42,14 @@ export const applicationQueries = {
       queryFn: () => applicationsApi.get(id),
       staleTime: 30_000,
     }),
+  // F3: dưới applicationKeys.all nên đổi trạng thái hay chấm lại thì bảng so sánh cũng làm mới
+  compare: (jobId: string, ids: string[]) =>
+    queryOptions({
+      queryKey: [...applicationKeys.all, 'compare', jobId, ids] as const,
+      queryFn: () => applicationsApi.compare(jobId, ids),
+      enabled: ids.length >= 2 && ids.length <= 3,
+      staleTime: 30_000,
+    }),
 }
 
 export function useApplications(params: ApplicationListParams) {
