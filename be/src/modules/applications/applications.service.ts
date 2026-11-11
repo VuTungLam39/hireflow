@@ -1,4 +1,5 @@
 import { ForbiddenException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import {
   DataSource,
@@ -43,6 +44,7 @@ import {
   REOPEN_TO,
   stageSeconds,
 } from './application-status.js';
+import { BulkStatusDto } from './dto/bulk-status.dto.js';
 import { ChangeStatusDto } from './dto/change-status.dto.js';
 import { CreateNoteDto } from './dto/create-note.dto.js';
 import { CvTextDto } from './dto/cv-text.dto.js';
@@ -54,6 +56,19 @@ import { ApplicationStatusHistory } from './entities/application-status-history.
 import { Application, type BreakdownItem } from './entities/application.entity.js';
 
 type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId'>;
+
+// F2 · BR-APP-12: OFFER/HIRED cần HM duyệt từng người, WITHDRAWN là ứng viên tự rút
+const BULK_ALLOWED: readonly ApplicationStatus[] = [
+  ApplicationStatus.Screening,
+  ApplicationStatus.Interview,
+  ApplicationStatus.Rejected,
+];
+
+export interface BulkStatusResult {
+  succeeded: string[];
+  unchanged: string[];
+  failed: { id: string; code: string }[];
+}
 
 export const HR_CONSENT_VERSION = 'HR_CONFIRMED';
 // BR-APP-04
@@ -433,6 +448,56 @@ export class ApplicationsService {
     return this.findOne(id, user);
   }
 
+  // F2 · BR-APP-12: mỗi hồ sơ một transaction, chạy lần lượt; hồ sơ lỗi không kéo cả lô
+  async bulkChangeStatus(dto: BulkStatusDto, user: ScopeUser): Promise<BulkStatusResult> {
+    if (!BULK_ALLOWED.includes(dto.status)) {
+      throw new BusinessException(
+        ErrorCode.BulkStatusNotAllowed,
+        `Bulk change only allows ${BULK_ALLOWED.join(', ')}`,
+      );
+    }
+    if (dto.status === ApplicationStatus.Rejected && !dto.reason?.trim()) {
+      throw new BusinessException(ErrorCode.RejectReasonRequired, 'Reason is required');
+    }
+    const rows = await this.applicationsRepository
+      .createQueryBuilder('app')
+      .innerJoin('app.job', 'job')
+      .select(['app.id', 'app.status', 'job.id', 'job.departmentId'])
+      .where('app.id IN (:...ids)', { ids: dto.ids })
+      .getMany();
+    const byId = new Map(rows.map((a) => [a.id, a]));
+    const bulkId = randomUUID();
+    const result: BulkStatusResult = { succeeded: [], unchanged: [], failed: [] };
+
+    for (const id of [...dto.ids].sort()) {
+      const app = byId.get(id);
+      if (!app) {
+        result.failed.push({ id, code: ErrorCode.NotFound });
+      } else if (user.role === Role.HiringManager && app.job!.departmentId !== user.departmentId) {
+        result.failed.push({ id, code: ErrorCode.ScopeForbidden });
+      } else if (app.status === dto.status) {
+        result.unchanged.push(id);
+      } else if (app.status === ApplicationStatus.Offer) {
+        // BR-STS-05: từ chối offer là việc HM duyệt từng người qua decline-offer
+        result.failed.push({ id, code: ErrorCode.InvalidStatusTransition });
+      } else {
+        try {
+          await this.transition(id, dto.status, dto.reason ?? null, user, undefined, { bulkId });
+          result.succeeded.push(id);
+        } catch (error) {
+          if (error instanceof BusinessException) {
+            result.failed.push({ id, code: (error.getResponse() as { code: string }).code });
+          } else if (error instanceof NotFoundException) {
+            result.failed.push({ id, code: ErrorCode.NotFound });
+          } else {
+            throw error;
+          }
+        }
+      }
+    }
+    return result;
+  }
+
   // US-09, BR-STS-04
   async hire(id: string, user: ScopeUser) {
     await this.findWritable(id, user);
@@ -714,6 +779,7 @@ export class ApplicationsService {
     reason: string | null,
     user: ScopeUser,
     requiredFrom?: ApplicationStatus,
+    meta?: { bulkId: string },
   ): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       const app = await manager.findOne(Application, {
@@ -746,7 +812,7 @@ export class ApplicationsService {
           action: AuditAction.ApplicationStatusChanged,
           entity: AuditEntity.Application,
           entityId: id,
-          metadata: { from: app.status, to, reason: reason?.trim() || null },
+          metadata: { from: app.status, to, reason: reason?.trim() || null, ...meta },
         },
         manager,
       );

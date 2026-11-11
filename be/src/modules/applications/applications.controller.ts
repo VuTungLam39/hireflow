@@ -31,6 +31,7 @@ import type { UploadedCv } from '../files/cv-file.rules.js';
 import { CV_UPLOAD_OPTIONS } from '../files/cv-upload.options.js';
 import { exportFileName } from './application-export.js';
 import { ApplicationsService } from './applications.service.js';
+import { BulkStatusDto } from './dto/bulk-status.dto.js';
 import { ChangeStatusDto, DeclineOfferDto } from './dto/change-status.dto.js';
 import { CreateNoteDto } from './dto/create-note.dto.js';
 import { CvTextDto } from './dto/cv-text.dto.js';
@@ -106,6 +107,18 @@ export class ApplicationsController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.applicationsService.addNote(id, dto, user);
+  }
+
+  // F2 · BR-APP-12
+  @Post('bulk-status')
+  @HttpCode(HttpStatus.OK)
+  @Permissions(Permission.ApplicationUpdateStatus)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @ApiOperation({
+    summary: 'Đổi trạng thái hàng loạt (≤ 100 hồ sơ; chỉ SCREENING, INTERVIEW, REJECTED)',
+  })
+  bulkStatus(@Body() dto: BulkStatusDto, @CurrentUser() user: AuthUser) {
+    return this.applicationsService.bulkChangeStatus(dto, user);
   }
 
   @Patch(':id/status')

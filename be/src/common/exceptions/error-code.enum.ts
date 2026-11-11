@@ -44,6 +44,7 @@ export enum ErrorCode {
   FileTooLarge = 'FILE_TOO_LARGE',
   CvTextNotEditable = 'CV_TEXT_NOT_EDITABLE',
   ExportTooLarge = 'EXPORT_TOO_LARGE',
+  BulkStatusNotAllowed = 'BULK_STATUS_NOT_ALLOWED',
 
   // Interviews
   InterviewNotAllowed = 'INTERVIEW_NOT_ALLOWED',
