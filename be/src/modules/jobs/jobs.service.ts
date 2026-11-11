@@ -238,6 +238,58 @@ export class JobsService {
     return this.findOne(saved.id, user);
   }
 
+  // F4: bản nháp mới giữ JD, trường cấu trúc và tiêu chí phiên bản mới nhất (thành phiên bản 1);
+  // không copy hồ sơ, bỏ hạn nộp; không chạy match-job hay prerender vì tin còn DRAFT
+  async clone(id: string, user: ScopeUser): Promise<JobView> {
+    const src = await this.getOrFail(id);
+    await this.assertDepartment(src.departmentId);
+    const suffix = ' (bản sao)';
+    const newId = await this.dataSource.transaction(async (manager) => {
+      const job = await manager.save(
+        manager.create(Job, {
+          title: src.title.slice(0, 200 - suffix.length) + suffix,
+          departmentId: src.departmentId,
+          location: src.location,
+          jdText: src.jdText,
+          salaryMin: src.salaryMin,
+          salaryMax: src.salaryMax,
+          salaryVisibility: src.salaryVisibility,
+          level: src.level,
+          employmentType: src.employmentType,
+          workMode: src.workMode,
+          headcount: src.headcount,
+          benefits: src.benefits,
+          deadline: null,
+          status: JobStatus.Draft,
+          jdVersion: 1,
+          createdBy: user.id,
+        }),
+      );
+      const requirements = await manager.find(JobRequirement, {
+        where: { jobId: id, jdVersion: src.jdVersion },
+        order: { position: 'ASC' },
+      });
+      if (requirements.length) {
+        await manager.insert(
+          JobRequirement,
+          requirements.map((r) => ({
+            jobId: job.id,
+            jdVersion: 1,
+            position: r.position,
+            label: r.label,
+            type: r.type,
+            weight: r.weight,
+            minYears: r.minYears,
+            keywords: r.keywords,
+          })),
+        );
+      }
+      return job.id;
+    });
+    this.events.emit('job.changed', { jobId: newId });
+    return this.findOne(newId, user);
+  }
+
   // BR-JOB-04
   async update(id: string, dto: UpdateJobDto, user: ScopeUser): Promise<JobView> {
     const job = await this.getOrFail(id);

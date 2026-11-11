@@ -61,6 +61,17 @@ export class JobsController {
     return this.jobsService.create(dto, user);
   }
 
+  // F4
+  @Post(':id/clone')
+  @Permissions(Permission.JobCreate)
+  @ApiOperation({
+    summary: 'Nhân bản tin thành bản nháp, giữ JD và tiêu chí mới nhất (không copy hồ sơ)',
+  })
+  @ResponseMessage('Job created')
+  clone(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.jobsService.clone(id, user);
+  }
+
   @Patch(':id')
   @Permissions(Permission.JobUpdate)
   @ApiOperation({ summary: 'Sửa JD (không sửa được job CLOSED)' })
