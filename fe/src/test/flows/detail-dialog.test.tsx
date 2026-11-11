@@ -28,6 +28,10 @@ const server = setupServer(
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => server.close())
 
+let client: QueryClient
+// chờ request còn bay xong, tránh MSW bắn ProgressEvent sau khi jsdom bị dọn
+afterEach(() => waitFor(() => expect(client.isFetching() + client.isMutating()).toBe(0)))
+
 function renderAt(email: string, entry: string) {
   const row = db.users.find((u) => u.email === email)!
   useAuthStore.getState().setSession(toUser(row), tokenFor(row))
@@ -65,7 +69,7 @@ function renderAt(email: string, entry: string) {
   )
   render(
     <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      client={(client = new QueryClient({ defaultOptions: { queries: { retry: false } } }))}
     >
       <RouterProvider router={router} />
     </QueryClientProvider>,
