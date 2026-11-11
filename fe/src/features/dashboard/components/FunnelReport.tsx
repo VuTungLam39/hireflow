@@ -150,7 +150,7 @@ function StageRow({ stage }: { stage: FunnelStage }) {
   const notes = [
     stage.status === 'NEW' && 'Mọi hồ sơ đã nộp',
     stage.conversionFromPrev !== null && `${pct(stage.conversionFromPrev)} từ bước trước`,
-    stage.medianDaysInStage !== null && `thường ở bước này ${days(stage.medianDaysInStage)} ngày`,
+    stage.medianDaysInStage !== null && `thường ${days(stage.medianDaysInStage)} ngày ở bước`,
   ].filter(Boolean)
   const dropped = [
     stage.rejected > 0 && `${n(stage.rejected)} từ chối`,
@@ -158,7 +158,7 @@ function StageRow({ stage }: { stage: FunnelStage }) {
   ].filter(Boolean)
 
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 px-5 py-3 md:grid-cols-[8rem_minmax(0,1fr)_4.5rem_15rem]">
+    <li className="relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 px-5 py-3 md:grid-cols-[8rem_minmax(0,1fr)_4.5rem_15rem]">
       <span className="type-body-strong">{label}</span>
       <span className="num text-ink text-right font-semibold md:order-3">
         {n(stage.reached)}
@@ -174,7 +174,13 @@ function StageRow({ stage }: { stage: FunnelStage }) {
         />
       </span>
       <span className="type-caption col-span-2 md:order-4 md:col-span-1">
-        {notes.join(' · ')}
+        {/* mobile nối một dòng; từ md cột hẹp nên mỗi ý một dòng */}
+        {notes.map((note, i) => (
+          <span key={i} className="md:block">
+            {i > 0 && <span className="md:hidden"> · </span>}
+            {note}
+          </span>
+        ))}
         {dropped.length > 0 && <span className="block">Rơi ở đây: {dropped.join(' · ')}</span>}
       </span>
     </li>
