@@ -93,6 +93,23 @@ describe('detail dialog', () => {
     }
   })
 
+  it("shows the job's own funnel on the overview tab (F1)", async () => {
+    renderAt('hr@hireflow.dev', paths.jobs)
+    const job = db.jobs.find(
+      (j) => j.status === 'OPEN' && db.applications.some((a) => a.jobId === j.id),
+    )!
+    const [link] = await screen.findAllByRole('link', { name: job.title })
+    fireEvent.click(link.closest('tr')!)
+
+    const dialog = await screen.findByRole('dialog', { name: job.title }, { timeout: 8000 })
+    const heading = await within(dialog).findByRole(
+      'heading',
+      { level: 3, name: 'Phễu tuyển dụng' },
+      { timeout: 8000 },
+    )
+    expect(within(heading.closest('section')!).queryByRole('radiogroup')).not.toBeInTheDocument()
+  })
+
   it('opens the HR upload dialog from the job popup footer', async () => {
     renderAt('hr@hireflow.dev', paths.jobs)
     const job = db.jobs.find((j) => j.status === 'OPEN')!
@@ -102,6 +119,25 @@ describe('detail dialog', () => {
     const dialog = await screen.findByRole('dialog', { name: job.title }, { timeout: 8000 })
     fireEvent.click(within(dialog).getByRole('button', { name: 'Tải CV hộ ứng viên' }))
     expect(await screen.findByRole('dialog', { name: 'Tải CV hộ ứng viên' })).toBeInTheDocument()
+  })
+
+  it('clones a job from its popup and switches to the new draft (F4)', async () => {
+    const router = renderAt('hr@hireflow.dev', paths.jobs)
+    const job = db.jobs.find((j) => j.status === 'OPEN')!
+    const [link] = await screen.findAllByRole('link', { name: job.title })
+    fireEvent.click(link.closest('tr')!)
+
+    const dialog = await screen.findByRole('dialog', { name: job.title }, { timeout: 8000 })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Nhân bản' }))
+
+    const copy = await screen.findByRole(
+      'dialog',
+      { name: `${job.title} (bản sao)` },
+      { timeout: 8000 },
+    )
+    expect(copy).toBeInTheDocument()
+    expect(router.state.location.search).toContain('%3Acontent')
+    db.jobs.splice(db.jobs.length - 1, 1)
   })
 
   it('creates a job in a popup, then lands on the criteria tab of the new job', async () => {

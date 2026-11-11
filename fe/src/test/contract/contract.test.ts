@@ -67,6 +67,21 @@ async function collect(source: keyof typeof ACCOUNTS): Promise<Samples> {
   await take('GET /applications/:id', () => applicationsApi.get(appId))
   await take('GET /applications/:id/history', () => applicationsApi.history(appId))
   await take('GET /applications/:id/notes', () => applicationsApi.notes(appId))
+  // F2: hồ sơ đã ở trạng thái đích → unchanged, không đổi dữ liệu thật
+  const screening = apps.items.find((a) => a.status === 'SCREENING')
+  if (screening) {
+    await take('POST /applications/bulk-status', () =>
+      applicationsApi.bulkStatus({ ids: [screening.id], status: 'SCREENING' }),
+    )
+  }
+  // F3: 2 hồ sơ cùng tin trong trang đầu
+  const first = apps.items.find((a) => apps.items.some((b) => b !== a && b.job.id === a.job.id))
+  const second = first && apps.items.find((b) => b !== first && b.job.id === first.job.id)
+  if (first && second) {
+    await take('GET /jobs/:jobId/applications/compare', () =>
+      applicationsApi.compare(first.job.id, [first.id, second.id]),
+    )
+  }
   await take('GET /applications/:id/interviews', () => interviewsApi.forApplication(appId))
   await take('GET /interviews', () => interviewsApi.list({ includeCancelled: true }))
   await take('GET /interviews/interviewers', () => interviewsApi.interviewers())
@@ -74,6 +89,7 @@ async function collect(source: keyof typeof ACCOUNTS): Promise<Samples> {
   const candidates = await take('GET /candidates', () => candidatesApi.list({ limit: 20 }))
   await take('GET /candidates/:id', () => candidatesApi.get(candidates.items[0].id))
   await take('GET /dashboard/summary', () => dashboardApi.summary())
+  await take('GET /dashboard/funnel', () => dashboardApi.funnel({}))
   await take('GET /notifications', () => notificationsApi.list({ limit: 10 }))
   await take('GET /notifications/unread-count', () => notificationsApi.unreadCount())
   await take('GET /audit-logs', () =>
@@ -110,6 +126,9 @@ async function collect(source: keyof typeof ACCOUNTS): Promise<Samples> {
         jdText: draft.jdText,
       }),
     )
+    // F4: bản sao cũng là tin nháp chưa có hồ sơ nên xoá được ngay
+    const copy = await take('POST /jobs/:id/clone', () => jobsApi.clone(draft.id))
+    await jobsApi.remove(copy.id)
   } finally {
     await jobsApi.remove(draft.id)
   }

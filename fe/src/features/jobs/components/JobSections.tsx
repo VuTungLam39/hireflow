@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Trash2, Upload } from 'lucide-react'
+import { Copy, Trash2, Upload } from 'lucide-react'
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { ConfirmDialog } from '@/components/shared'
@@ -23,6 +23,7 @@ import {
 import { salaryOf } from '../lib/job-details'
 import { JobFacts } from './JobFacts'
 import {
+  useCloneJob,
   useCloseJob,
   useDeleteJob,
   usePublishJob,
@@ -434,6 +435,8 @@ export function JobActionBar({
   const canEdit = useCanEditJob(job)
   const canPublish = usePermission(Permission.JobPublish)
   const canUpload = usePermission(Permission.ApplicationCreate)
+  const canCreate = usePermission(Permission.JobCreate)
+  const clone = useCloneJob()
   const publish = usePublishJob()
   const close = useCloseJob()
   const remove = useDeleteJob()
@@ -444,6 +447,17 @@ export function JobActionBar({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      {canCreate && (
+        <Button
+          variant="quiet"
+          size="sm"
+          loading={clone.isPending}
+          onClick={() => clone.mutate(job.id)}
+        >
+          <Copy />
+          Nhân bản
+        </Button>
+      )}
       {deletable && (
         <Button variant="danger-quiet" size="sm" onClick={() => setConfirm('delete')}>
           <Trash2 />

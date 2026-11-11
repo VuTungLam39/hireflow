@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import {
   Can,
+  ConfirmDialog,
   DataTable,
   DensityToggle,
   FilterBar,
@@ -24,6 +25,7 @@ import { formatDate, formatDateTime, formatTime } from '@/lib/utils'
 import { links } from '@/routes/paths'
 import { useAuthStore } from '@/stores/auth.store'
 import { Role } from '@/types/user'
+import { CompareDialog } from '../components/CompareDialog'
 import { HrUploadDialog } from '../components/HrUploadDialog'
 import { QuickView } from '../components/QuickView'
 import { AiStatusBadge, ScoreBadge, ScoreFlags, StatusPill } from '../components/StatusBadges'
@@ -33,6 +35,7 @@ import {
   APPLICATION_STATUSES,
   APPLICATION_VIEWS,
   NEXT_STATUS,
+  REJECT_REASONS,
   SCORE_FAIR,
   SCORE_GOOD,
   type ApplicationStatus,
@@ -65,6 +68,8 @@ const FILTER_KEYS = [
 ] as const
 
 // US-06 · Design Spec 6.4
+const REJECTABLE_IN_BULK: readonly ApplicationStatus[] = ['NEW', 'SCREENING', 'INTERVIEW']
+
 export default function ApplicationsPage() {
   const [params, setParams] = useListParams(applicationListSchema)
   const [searchParams] = useSearchParams()
@@ -76,7 +81,9 @@ export default function ApplicationsPage() {
   const myFeedback = useMyFeedback(isInterviewer)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [peek, setPeek] = useState<string | null>(null)
+  const [compare, setCompare] = useState<{ jobId: string; ids: string[] } | null>(null)
   const bulk = useBulkChangeStatus()
+  const [rejectOpen, setRejectOpen] = useState(false)
   const scope = { jobId: params.jobId, search: params.search }
   const viewCounts = {
     new: useViewCount({ ...scope, status: 'NEW' }, !isInterviewer),
@@ -151,8 +158,22 @@ export default function ApplicationsPage() {
   const commonStatus = selectedItems.every((a) => a.status === selectedItems[0]?.status)
     ? selectedItems[0]?.status
     : undefined
+  // F3: so sánh 2–3 hồ sơ của cùng một tin
+  const compareJobId =
+    selectedItems.length >= 2 &&
+    selectedItems.length <= 3 &&
+    selectedItems.every((a) => a.job.id === selectedItems[0].job.id)
+      ? selectedItems[0].job.id
+      : null
   const bulkTarget: ApplicationStatus | undefined =
     commonStatus === 'NEW' ? 'SCREENING' : commonStatus === 'SCREENING' ? 'INTERVIEW' : undefined
+  // F2 · BR-APP-12: hồ sơ OFFER và đã kết thúc không từ chối theo lô
+  const rejectable = selectedItems.filter((a) => REJECTABLE_IN_BULK.includes(a.status))
+  const runBulk = (status: ApplicationStatus, reason?: string) =>
+    bulk.mutate(
+      { ids: selectedItems.map((a) => a.id), status, reason },
+      { onSuccess: ({ failed }) => setSelected(new Set(failed.map((f) => f.id))) },
+    )
 
   const columns: Column<ApplicationListItem>[] = [
     {
@@ -390,12 +411,7 @@ export default function ApplicationsPage() {
                   size="sm"
                   variant="inverse"
                   loading={bulk.isPending}
-                  onClick={() =>
-                    bulk.mutate(
-                      { ids: selectedItems.map((a) => a.id), status: bulkTarget },
-                      { onSuccess: () => setSelected(new Set()) },
-                    )
-                  }
+                  onClick={() => runBulk(bulkTarget)}
                 >
                   Chuyển {selectedItems.length} hồ sơ sang {APPLICATION_STATUS[bulkTarget].label}
                 </Button>
@@ -404,6 +420,31 @@ export default function ApplicationsPage() {
               <span className="text-[13px] text-white/70">
                 Chọn hồ sơ cùng trạng thái Mới hoặc Sàng lọc để chuyển bước
               </span>
+            )}
+            {rejectable.length > 0 && (
+              <Can permission={Permission.ApplicationUpdateStatus}>
+                <Button
+                  size="sm"
+                  variant="quiet"
+                  className="text-white hover:bg-white/10"
+                  disabled={bulk.isPending}
+                  onClick={() => setRejectOpen(true)}
+                >
+                  Từ chối {rejectable.length} hồ sơ
+                </Button>
+              </Can>
+            )}
+            {compareJobId && (
+              <Button
+                size="sm"
+                variant="quiet"
+                className="text-white hover:bg-white/10"
+                onClick={() =>
+                  setCompare({ jobId: compareJobId, ids: selectedItems.map((a) => a.id) })
+                }
+              >
+                So sánh {selectedItems.length} hồ sơ
+              </Button>
             )}
             <Button
               size="sm"
@@ -416,6 +457,38 @@ export default function ApplicationsPage() {
           </>
         )}
       />
+
+      <ConfirmDialog
+        open={rejectOpen}
+        onClose={() => setRejectOpen(false)}
+        title={`Từ chối ${rejectable.length} hồ sơ?`}
+        description={
+          rejectable.length < selectedItems.length
+            ? `Lý do dùng chung cho ${rejectable.length} hồ sơ. ${selectedItems.length - rejectable.length} hồ sơ ở bước Đề nghị hoặc đã kết thúc sẽ được bỏ qua.`
+            : `Lý do dùng chung cho ${rejectable.length} hồ sơ và được ghi vào lịch sử từng hồ sơ.`
+        }
+        confirmLabel={`Từ chối ${rejectable.length} hồ sơ`}
+        tone="danger"
+        requireReason={{
+          label: 'Lý do',
+          placeholder: 'Ví dụ: chưa đủ kinh nghiệm NestJS',
+          suggestions: REJECT_REASONS,
+        }}
+        loading={bulk.isPending}
+        onConfirm={(reason) => {
+          runBulk('REJECTED', reason)
+          setRejectOpen(false)
+        }}
+      />
+
+      {compare && (
+        <CompareDialog
+          open
+          jobId={compare.jobId}
+          ids={compare.ids}
+          onClose={() => setCompare(null)}
+        />
+      )}
 
       <QuickView
         id={peek}

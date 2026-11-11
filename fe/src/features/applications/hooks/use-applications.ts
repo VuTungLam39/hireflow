@@ -42,6 +42,14 @@ export const applicationQueries = {
       queryFn: () => applicationsApi.get(id),
       staleTime: 30_000,
     }),
+  // F3: dưới applicationKeys.all nên đổi trạng thái hay chấm lại thì bảng so sánh cũng làm mới
+  compare: (jobId: string, ids: string[]) =>
+    queryOptions({
+      queryKey: [...applicationKeys.all, 'compare', jobId, ids] as const,
+      queryFn: () => applicationsApi.compare(jobId, ids),
+      enabled: ids.length >= 2 && ids.length <= 3,
+      staleTime: 30_000,
+    }),
 }
 
 export function useApplications(params: ApplicationListParams) {
@@ -198,28 +206,26 @@ export function useUploadForCandidate(jobId: string) {
   return { ...mutation, progress }
 }
 
+// F2 · BR-APP-12: một request cho cả lô, kết quả theo từng hồ sơ
 export function useBulkChangeStatus() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ ids, status }: { ids: string[]; status: ApplicationStatus }) => {
-      const failed: string[] = []
-      for (const id of ids) {
-        try {
-          await applicationsApi.changeStatus(id, { status })
-        } catch {
-          failed.push(id)
-        }
-      }
-      return { done: ids.length - failed.length, failed }
-    },
-    onSuccess: ({ done, failed }, { status }) => {
+    mutationFn: applicationsApi.bulkStatus,
+    onSuccess: ({ succeeded, unchanged, failed }, { status }) => {
       const label = APPLICATION_STATUS[status].label
-      if (failed.length === 0) toast.success(`Đã chuyển ${done} hồ sơ sang “${label}”`)
-      else
-        toast.error(
-          `${done}/${done + failed.length} hồ sơ đã chuyển sang “${label}”. ${failed.length} hồ sơ vừa được người khác đổi – tải lại để xem.`,
-        )
+      const done =
+        status === 'REJECTED'
+          ? `Đã từ chối ${succeeded.length} hồ sơ`
+          : `Đã chuyển ${succeeded.length} hồ sơ sang “${label}”`
+      const extra = [
+        unchanged.length && `${unchanged.length} hồ sơ đã ở bước này`,
+        failed.length &&
+          `${failed.length} hồ sơ bỏ qua vì vừa được người khác đổi hoặc đang ở bước Đề nghị – vẫn được chọn để bạn xem lại`,
+      ].filter(Boolean)
+      const show = failed.length ? toast.warning : toast.success
+      show(done, extra.length ? { description: extra.join(' · ') } : undefined)
     },
+    onError: (error) => toast.error(getErrorMessage(error)),
     onSettled: () => queryClient.invalidateQueries({ queryKey: applicationKeys.all }),
   })
 }

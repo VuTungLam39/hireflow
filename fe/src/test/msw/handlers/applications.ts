@@ -6,7 +6,7 @@ import {
   SCORE_GOOD,
   type ApplicationStatus,
 } from '@/features/applications'
-import type { DashboardSummary } from '@/features/dashboard'
+import type { DashboardSummary, FunnelView } from '@/features/dashboard'
 import { Permission } from '@/lib/permissions'
 import { Role } from '@/types/user'
 import {
@@ -198,6 +198,112 @@ export const applicationHandlers = [
     }
     db.notes.push(note)
     return ok({ ...note, author: userRef(user.id)! }, { status: 201 })
+  }),
+
+  // F2 · BR-APP-12: giống BE – mỗi hồ sơ xét riêng, OFFER không từ chối theo lô
+  http.post(api('/applications/bulk-status'), async ({ request }) => {
+    await delay()
+    const user = authorize(request, Permission.ApplicationUpdateStatus)
+    if (user instanceof Response) return user
+    const { ids, status, reason } = (await request.json()) as {
+      ids: string[]
+      status: ApplicationStatus
+      reason?: string
+    }
+    if (
+      !Array.isArray(ids) ||
+      ids.length < 1 ||
+      ids.length > 100 ||
+      new Set(ids).size !== ids.length
+    ) {
+      return fail(400, 'VALIDATION_FAILED', 'ids must be 1-100 unique ids')
+    }
+    if (!['SCREENING', 'INTERVIEW', 'REJECTED'].includes(status)) {
+      return fail(
+        400,
+        'BULK_STATUS_NOT_ALLOWED',
+        'Bulk change only allows SCREENING, INTERVIEW, REJECTED',
+      )
+    }
+    if (status === 'REJECTED' && !reason?.trim()) {
+      return fail(400, 'REJECT_REASON_REQUIRED', 'Reason is required')
+    }
+    const result = {
+      succeeded: [] as string[],
+      unchanged: [] as string[],
+      failed: [] as { id: string; code: string }[],
+    }
+    for (const id of [...ids].sort()) {
+      const app = db.applications.find((a) => a.id === id)
+      if (!app || !canSeeApplication(user, app)) result.failed.push({ id, code: 'NOT_FOUND' })
+      else if (app.status === status) result.unchanged.push(id)
+      else if (app.status === 'OFFER' || !NEXT_STATUS[app.status].includes(status))
+        result.failed.push({ id, code: 'INVALID_STATUS_TRANSITION' })
+      else {
+        moveStatus(app, status, user, reason)
+        result.succeeded.push(id)
+      }
+    }
+    return ok(result)
+  }),
+
+  // F3 · BR-APP-13: giống BE – Interviewer bị chặn, 2–3 hồ sơ cùng tin, điểm phiếu theo tiêu chí
+  http.get(api('/jobs/:jobId/applications/compare'), async ({ request, params }) => {
+    await delay()
+    const user = authorize(request, Permission.ApplicationRead)
+    if (user instanceof Response) return user
+    if (user.role === Role.Interviewer) return fail(403, 'FORBIDDEN', 'Interviewers cannot compare')
+    const job = db.jobs.find((j) => j.id === params.jobId && inScope(user, j.departmentId))
+    if (!job) return notFound('Job')
+    const ids = (new URL(request.url).searchParams.get('ids') ?? '').split(',').filter(Boolean)
+    if (ids.length < 2 || ids.length > 3 || new Set(ids).size !== ids.length) {
+      return fail(400, 'VALIDATION_FAILED', 'ids must be 2-3 unique ids')
+    }
+    const apps = ids.map((id) =>
+      db.applications.find((a) => a.id === id && a.jobId === job.id && canSeeApplication(user, a)),
+    )
+    if (apps.some((a) => !a)) {
+      return fail(400, 'COMPARE_INVALID_SELECTION', 'All applications must belong to this job')
+    }
+    const avg = (xs: number[]) =>
+      xs.length ? Math.round((xs.reduce((x, y) => x + y, 0) / xs.length) * 10) / 10 : null
+    return ok({
+      job: { id: job.id, title: job.title, jdVersion: job.jdVersion },
+      requirements: job.requirements.map(({ id, label, type, weight, minYears }) => ({
+        id,
+        label,
+        type,
+        weight,
+        minYears,
+      })),
+      applications: apps.map((app) => {
+        const feedbacks = db.interviews
+          .filter((iv) => iv.applicationId === app!.id)
+          .flatMap((iv) => iv.feedbacks)
+        return {
+          ...toApplicationItem(app!),
+          source: app!.source,
+          stale: app!.scoredJdVersion !== null && app!.scoredJdVersion !== job.jdVersion,
+          criteria: job.requirements.map((r) => {
+            const item = app!.breakdown?.find((b) => b.requirementId === r.id)
+            return {
+              requirementId: r.id,
+              match: item ? item.match : null,
+              evidence: item?.evidence ?? null,
+              interviewAvg: avg(
+                feedbacks.flatMap((f) =>
+                  f.ratings.filter((x) => x.requirementId === r.id).map((x) => x.score),
+                ),
+              ),
+            }
+          }),
+          interviews: {
+            feedbackCount: feedbacks.length,
+            avgOverall: avg(feedbacks.map((f) => f.overall)),
+          },
+        }
+      }),
+    })
   }),
 
   http.patch(api('/applications/:id/status'), async ({ request, params }) => {
@@ -407,6 +513,80 @@ export const applicationHandlers = [
       url: URL.createObjectURL(blob),
       expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
     })
+  }),
+
+  // F1 · BR-REP-01: cùng định nghĩa với BE – cohort theo ngày nộp (giờ VN), tới bước k chặn bởi bước k-1
+  http.get(api('/dashboard/funnel'), async ({ request }) => {
+    await delay()
+    const user = authorize(request, Permission.DashboardRead)
+    if (user instanceof Response) return user
+    const p = new URL(request.url).searchParams
+    const to = p.get('to') ?? new Date().toISOString().slice(0, 10)
+    const from = p.get('from') ?? to
+    const jobId = p.get('jobId')
+    const span = (Date.parse(to) - Date.parse(from)) / 86_400_000 + 1
+    if (!(span >= 1 && span <= 366))
+      return fail(400, 'VALIDATION_FAILED', 'from..to must be 1-366 days')
+    if (jobId && !db.jobs.some((j) => j.id === jobId && inScope(user, j.departmentId))) {
+      return notFound('Job')
+    }
+    const start = Date.parse(`${from}T00:00:00+07:00`)
+    const end = Date.parse(`${to}T00:00:00+07:00`) + 86_400_000
+    const apps = visible(user).filter((a) => {
+      const at = Date.parse(a.createdAt)
+      return at >= start && at < end && (!jobId || a.jobId === jobId)
+    })
+    const ids = new Set(apps.map((a) => a.id))
+    const rows = db.history.filter((h) => ids.has(h.applicationId))
+    const sourceOf = new Map(apps.map((a) => [a.id, a.source]))
+    const STAGES = ['NEW', 'SCREENING', 'INTERVIEW', 'OFFER', 'HIRED'] as const
+    const reached = (i: number, source?: string): number => {
+      const raw = rows.filter(
+        (h) =>
+          h.toStatus === STAGES[i] &&
+          h.fromStatus === (i ? STAGES[i - 1] : null) &&
+          (!source || sourceOf.get(h.applicationId) === source),
+      ).length
+      return i ? Math.min(raw, reached(i - 1, source)) : raw
+    }
+    const ratio = (a: number, b: number) => (b ? Math.round((a / b) * 1000) / 1000 : 0)
+    const medianDays = (status: string) => {
+      const spans = rows
+        .filter((h) => h.fromStatus === status)
+        .map((h) => {
+          const prev = rows
+            .filter((x) => x.applicationId === h.applicationId && x.changedAt < h.changedAt)
+            .sort((x, y) => y.changedAt.localeCompare(x.changedAt))[0]
+          return prev ? (Date.parse(h.changedAt) - Date.parse(prev.changedAt)) / 86_400_000 : null
+        })
+        .filter((d): d is number => d !== null)
+        .sort((x, y) => x - y)
+      return spans.length ? Math.round(spans[Math.floor((spans.length - 1) / 2)] * 10) / 10 : null
+    }
+    const cohort = reached(0)
+    const view: FunnelView = {
+      range: { from, to },
+      generatedAt: new Date().toISOString(),
+      cohort,
+      stages: STAGES.map((status, i) => ({
+        status,
+        reached: reached(i),
+        conversionFromPrev: i ? ratio(reached(i), reached(i - 1)) : null,
+        conversionFromStart: ratio(reached(i), cohort),
+        medianDaysInStage: status === 'HIRED' ? null : medianDays(status),
+        rejected: rows.filter((h) => h.fromStatus === status && h.toStatus === 'REJECTED').length,
+        withdrawn: rows.filter((h) => h.fromStatus === status && h.toStatus === 'WITHDRAWN').length,
+      })),
+      bySource: [...new Set(apps.map((a) => a.source))].sort().map((source) => ({
+        source,
+        cohort: reached(0, source),
+        reachedInterview: reached(2, source),
+        hired: reached(4, source),
+      })),
+      reopened: rows.filter((h) => h.fromStatus === 'REJECTED' || h.fromStatus === 'WITHDRAWN')
+        .length,
+    }
+    return ok(view)
   }),
 
   http.get(api('/dashboard/summary'), async ({ request }) => {

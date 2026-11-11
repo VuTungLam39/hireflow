@@ -72,9 +72,40 @@ export interface HrUploadInput {
 }
 
 /** Ghi chú không sửa, không xoá (BR-APP-09) */
+// F2 · BR-APP-12: kết quả theo từng hồ sơ của POST /applications/bulk-status
+export interface BulkStatusResult {
+  succeeded: string[]
+  unchanged: string[]
+  failed: { id: string; code: string }[]
+}
+
 export interface ApplicationNote {
   id: string
   content: string
   author: { id: string; fullName: string }
   createdAt: string
+}
+
+/** F3 · BR-APP-13: GET /jobs/:jobId/applications/compare */
+export interface CompareCriterion {
+  requirementId: string
+  /** null = tiêu chí thêm sau khi chấm, hồ sơ chưa được chấm theo tiêu chí này */
+  match: MatchLevel | null
+  evidence: string | null
+  /** Điểm phiếu phỏng vấn trung bình (1–5) cho tiêu chí, null khi chưa có phiếu */
+  interviewAvg: number | null
+}
+
+export interface CompareApplication extends ApplicationListItem {
+  source: ApplicationSource
+  /** Chấm theo phiên bản tiêu chí cũ */
+  stale: boolean
+  criteria: CompareCriterion[]
+  interviews: { feedbackCount: number; avgOverall: number | null }
+}
+
+export interface CompareView {
+  job: { id: string; title: string; jdVersion: number }
+  requirements: Pick<Requirement, 'id' | 'label' | 'type' | 'weight' | 'minYears'>[]
+  applications: CompareApplication[]
 }
