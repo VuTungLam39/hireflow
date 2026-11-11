@@ -40,7 +40,6 @@ export function CompareDialog({ jobId, ids, open, onClose }: CompareDialogProps)
       onClose={onClose}
       label="So sánh ứng viên"
       size="lg"
-      fit={false}
       title={`So sánh ${ids.length} ứng viên`}
       subtitle={data?.job.title}
       tabs={
@@ -80,7 +79,7 @@ export function CompareDialog({ jobId, ids, open, onClose }: CompareDialogProps)
 function CompareTable({ data }: { data: CompareView }) {
   const cols = data.applications
   return (
-    <div className="-mx-1 overflow-x-auto px-1">
+    <div className="relative -mx-1 overflow-x-auto px-1">
       <table className="w-full min-w-[640px] table-fixed border-collapse text-sm">
         <caption className="sr-only">
           Mức khớp từng tiêu chí của {cols.map((a) => a.candidate.fullName).join(', ')}
