@@ -18,6 +18,10 @@ const NEXT: Record<ApplicationStatus, ApplicationStatus[]> = {
 export const canTransition = (from: ApplicationStatus, to: ApplicationStatus) =>
   NEXT[from].includes(to);
 
+// F1 · BR-REP-01: số giây hồ sơ đã ở bước trước, ghi vào lịch sử lúc chuyển
+export const stageSeconds = (enteredAt: Date, now: Date) =>
+  Math.max(0, Math.floor((now.getTime() - enteredAt.getTime()) / 1000));
+
 // BR-APP-05, F-APP-10
 export const REOPENABLE: readonly ApplicationStatus[] = [S.Rejected, S.Withdrawn];
 export const REOPEN_TO = S.Screening;

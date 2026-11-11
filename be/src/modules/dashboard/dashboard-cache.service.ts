@@ -55,6 +55,31 @@ export class DashboardCache implements OnModuleInit {
     return value;
   }
 
+  // F1: báo cáo chấp nhận trễ tới hết TTL, không xoá theo sự kiện để lô đổi trạng thái không làm mất cache
+  async getOrComputeFor<T>(
+    name: string,
+    ttlSeconds: number,
+    compute: () => Promise<T>,
+  ): Promise<T> {
+    const key = `${this.versionKey.replace(/version$/, '')}${name}`;
+    try {
+      const cached = await this.redis.get(key);
+      if (cached) {
+        this.stats.hits++;
+        return JSON.parse(cached) as T;
+      }
+    } catch (error) {
+      this.fail('read', error);
+      return compute();
+    }
+    this.stats.misses++;
+    const value = await compute();
+    await this.redis
+      .set(key, JSON.stringify(value), 'EX', ttlSeconds)
+      .catch((error: unknown) => this.fail('write', error));
+    return value;
+  }
+
   async invalidate(): Promise<void> {
     await this.redis
       .incr(this.versionKey)

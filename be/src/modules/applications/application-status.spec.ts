@@ -5,6 +5,7 @@ import {
   assertTransition,
   canTransition,
   REOPEN_TO,
+  stageSeconds,
 } from './application-status.js';
 
 const ALL = Object.values(S);
@@ -79,4 +80,12 @@ describe('assertReopenable (F-APP-10)', () => {
       expect(error?.code).toBe('INVALID_STATUS_TRANSITION');
     },
   );
+});
+
+describe('stageSeconds (F1, BR-REP-01)', () => {
+  it('floors to whole seconds and never goes negative', () => {
+    const t = new Date('2026-11-01T00:00:00Z');
+    expect(stageSeconds(t, new Date(t.getTime() + 90_999))).toBe(90);
+    expect(stageSeconds(t, new Date(t.getTime() - 5_000))).toBe(0);
+  });
 });

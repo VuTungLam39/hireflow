@@ -3,6 +3,7 @@ import type { DataSource, EntityTarget, ObjectLiteral } from 'typeorm';
 import { AiStatus } from '../../common/enums/ai-status.enum.js';
 import { ApplicationSource } from '../../common/enums/application-source.enum.js';
 import { ApplicationStatusHistory } from '../../modules/applications/entities/application-status-history.entity.js';
+import { stageSeconds } from '../../modules/applications/application-status.js';
 import { Application } from '../../modules/applications/entities/application.entity.js';
 import { Candidate } from '../../modules/candidates/entities/candidate.entity.js';
 import { CvFile, CvParseStatus } from '../../modules/files/entities/cv-file.entity.js';
@@ -195,6 +196,7 @@ export async function seedCandidates(
             fromStatus: step.fromStatus,
             toStatus: step.toStatus,
             reason: step.reason,
+            prevStageSeconds: i === 0 ? null : stageSeconds(steps[i - 1].changedAt, step.changedAt),
             changedBy:
               i === 0
                 ? source === ApplicationSource.HrUpload

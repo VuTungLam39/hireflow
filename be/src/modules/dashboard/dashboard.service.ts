@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { AiStatus } from '../../common/enums/ai-status.enum.js';
@@ -6,9 +6,13 @@ import { ApplicationStatus } from '../../common/enums/application-status.enum.js
 import { Role } from '../../common/enums/role.enum.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { applyDepartmentScope } from '../../common/utils/department-scope.js';
+import { vnToday } from '../../common/utils/vn-date.js';
+import { ApplicationStatusHistory } from '../applications/entities/application-status-history.entity.js';
 import { Application } from '../applications/entities/application.entity.js';
 import { Job, JobStatus } from '../jobs/entities/job.entity.js';
 import { DashboardCache } from './dashboard-cache.service.js';
+import type { QueryFunnelDto } from './dto/query-funnel.dto.js';
+import { buildFunnel, type FunnelView, type TransitionRow } from './funnel.js';
 
 type ScopeUser = Pick<AuthUser, 'role' | 'departmentId'>;
 
@@ -33,6 +37,13 @@ const STATUSES = Object.values(ApplicationStatus);
 
 const average = (sum: number, count: number) => (count ? Math.round(sum / count) : null);
 
+export const FUNNEL_CACHE_TTL_SECONDS = 300;
+const FUNNEL_DEFAULT_DAYS = 90;
+const FUNNEL_MAX_DAYS = 366;
+const DAY_MS = 86_400_000;
+const dayMs = (day: string) => Date.parse(`${day}T00:00:00Z`);
+const dayOf = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+
 @Injectable()
 export class DashboardService {
   constructor(
@@ -44,6 +55,56 @@ export class DashboardService {
   summary(user: ScopeUser): Promise<DashboardSummaryView> {
     const scope = user.role === Role.HiringManager ? `dept:${user.departmentId}` : 'all';
     return this.cache.getOrCompute(scope, () => this.compute(user));
+  }
+
+  // F1 · BR-REP-01: phễu theo cohort ngày nộp (giờ VN), cache 5 phút theo phạm vi + tham số
+  async funnel(query: QueryFunnelDto, user: ScopeUser): Promise<FunnelView> {
+    const to = query.to ?? vnToday();
+    const from = query.from ?? dayOf(dayMs(to) - (FUNNEL_DEFAULT_DAYS - 1) * DAY_MS);
+    const days = (dayMs(to) - dayMs(from)) / DAY_MS + 1;
+    if (Number.isNaN(days) || days < 1 || days > FUNNEL_MAX_DAYS) {
+      throw new BadRequestException(`from..to must be 1-${FUNNEL_MAX_DAYS} days`);
+    }
+    if (query.jobId) await this.assertJobInScope(query.jobId, user);
+
+    const scope = user.role === Role.HiringManager ? `dept:${user.departmentId}` : 'all';
+    const key = `funnel:${scope}:${from}:${to}:${query.jobId ?? 'all'}`;
+    return this.cache.getOrComputeFor(key, FUNNEL_CACHE_TTL_SECONDS, async () => {
+      const qb = this.dataSource
+        .getRepository(ApplicationStatusHistory)
+        .createQueryBuilder('h')
+        .innerJoin(Application, 'app', 'app.id = h.applicationId')
+        .innerJoin(Job, 'job', 'job.id = app.jobId')
+        .select('app.source', 'source')
+        .addSelect('h.fromStatus', 'fromStatus')
+        .addSelect('h.toStatus', 'toStatus')
+        .addSelect('COUNT(*)::int', 'n')
+        .addSelect('percentile_disc(0.5) WITHIN GROUP (ORDER BY h.prev_stage_seconds)', 'p50')
+        .where('app.createdAt >= :start AND app.createdAt < :end', {
+          start: new Date(`${from}T00:00:00+07:00`),
+          end: new Date(Date.parse(`${to}T00:00:00+07:00`) + DAY_MS),
+        })
+        .groupBy('app.source')
+        .addGroupBy('h.fromStatus')
+        .addGroupBy('h.toStatus');
+      if (query.jobId) qb.andWhere('app.jobId = :jobId', { jobId: query.jobId });
+      const rows = await applyDepartmentScope(
+        qb,
+        user,
+        'job.departmentId',
+      ).getRawMany<TransitionRow>();
+      return buildFunnel(rows, { from, to });
+    });
+  }
+
+  private async assertJobInScope(jobId: string, user: ScopeUser): Promise<void> {
+    const qb = this.dataSource
+      .getRepository(Job)
+      .createQueryBuilder('job')
+      .where('job.id = :jobId', { jobId });
+    if (!(await applyDepartmentScope(qb, user, 'job.departmentId').getExists())) {
+      throw new NotFoundException('Job not found');
+    }
   }
 
   private async compute(user: ScopeUser): Promise<DashboardSummaryView> {

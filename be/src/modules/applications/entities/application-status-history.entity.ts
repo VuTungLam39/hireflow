@@ -19,6 +19,10 @@ import { Application } from './application.entity.js';
   'CK_application_status_history_reject_reason',
   `"to_status" <> 'REJECTED' OR "reason" IS NOT NULL`,
 )
+@Check(
+  'CK_application_status_history_prev_stage_seconds',
+  `"prev_stage_seconds" IS NULL OR "prev_stage_seconds" >= 0`,
+)
 export class ApplicationStatusHistory {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -56,6 +60,10 @@ export class ApplicationStatusHistory {
     foreignKeyConstraintName: 'FK_application_status_history_changed_by',
   })
   changer?: User | null;
+
+  // F1 · BR-REP-01: NULL ở dòng đầu (nộp hồ sơ)
+  @Column({ type: 'integer', nullable: true })
+  prevStageSeconds: number | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   changedAt: Date;
