@@ -1,4 +1,4 @@
-import { cleanup, screen } from '@testing-library/react'
+import { cleanup, screen, within } from '@testing-library/react'
 import { setupServer } from 'msw/node'
 import DashboardPage from '@/features/dashboard/pages/DashboardPage'
 import { paths } from '@/routes/paths'
@@ -99,5 +99,19 @@ describe('dashboard', () => {
     expect(Number(todo.textContent!.split(' ')[0])).toBeGreaterThanOrEqual(failed)
     expect(todo.closest('li')!.querySelector('a')).toHaveAttribute('href', paths.aiQueue)
     expect(screen.queryByText(/CV không đọc được$/)).not.toBeInTheDocument()
+  })
+
+  it('shows the recruiting funnel below the key numbers (F1)', async () => {
+    renderAs('hm.eng@hireflow.dev')
+    const heading = await screen.findByRole(
+      'heading',
+      { level: 2, name: 'Phễu tuyển dụng' },
+      { timeout: 4000 },
+    )
+    const section = heading.closest('section')!
+    expect(
+      await within(section).findByRole('radiogroup', { name: 'Khoảng thời gian' }),
+    ).toBeVisible()
+    expect(await within(section).findAllByRole('listitem', {}, { timeout: 4000 })).toHaveLength(5)
   })
 })

@@ -93,6 +93,23 @@ describe('detail dialog', () => {
     }
   })
 
+  it("shows the job's own funnel on the overview tab (F1)", async () => {
+    renderAt('hr@hireflow.dev', paths.jobs)
+    const job = db.jobs.find(
+      (j) => j.status === 'OPEN' && db.applications.some((a) => a.jobId === j.id),
+    )!
+    const [link] = await screen.findAllByRole('link', { name: job.title })
+    fireEvent.click(link.closest('tr')!)
+
+    const dialog = await screen.findByRole('dialog', { name: job.title }, { timeout: 8000 })
+    const heading = await within(dialog).findByRole(
+      'heading',
+      { level: 3, name: 'Phễu tuyển dụng' },
+      { timeout: 8000 },
+    )
+    expect(within(heading.closest('section')!).queryByRole('radiogroup')).not.toBeInTheDocument()
+  })
+
   it('opens the HR upload dialog from the job popup footer', async () => {
     renderAt('hr@hireflow.dev', paths.jobs)
     const job = db.jobs.find((j) => j.status === 'OPEN')!

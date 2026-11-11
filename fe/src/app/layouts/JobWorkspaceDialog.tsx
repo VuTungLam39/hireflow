@@ -21,7 +21,16 @@ import { RankingWorkspace } from '@/features/ranking'
 import { useOpenDetail } from '@/hooks/use-detail'
 import { usePermission } from '@/hooks/use-permission'
 import { Permission } from '@/lib/permissions'
+import { FunnelReport } from '@/features/dashboard'
+import { shiftIsoDay, todayIsoDay } from '@/lib/vn-day'
 import { formatDate } from '@/lib/utils'
+
+// BE nhận tối đa 366 ngày: tin đăng lâu hơn thì xem 12 tháng gần nhất
+const funnelSince = (startedAt: string) => {
+  const start = todayIsoDay(new Date(startedAt))
+  const floor = shiftIsoDay(todayIsoDay(), -365)
+  return start > floor ? start : floor
+}
 
 const TABS = ['overview', 'content', 'criteria', 'applications', 'ranking', 'matches'] as const
 export type JobTab = (typeof TABS)[number]
@@ -126,6 +135,13 @@ export function JobWorkspaceDialog({ id, tab: initialTab, onClose }: JobWorkspac
                   jobId={id}
                   onOpenRanking={() => setTab('ranking')}
                   onOpenAll={() => openApplications()}
+                />
+              }
+              funnel={
+                <FunnelReport
+                  jobId={id}
+                  since={funnelSince(query.data.publishedAt ?? query.data.createdAt)}
+                  headingLevel="h3"
                 />
               }
             />

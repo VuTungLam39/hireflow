@@ -1,4 +1,4 @@
-import type { ApplicationStatus } from '@/features/applications'
+import type { ApplicationSource, ApplicationStatus } from '@/features/applications'
 
 /** GET /dashboard/summary – đã lọc theo scope của người xem (kickoff FR-DASH) */
 export interface DashboardSummary {
@@ -17,4 +17,31 @@ export interface DashboardSummary {
     avgScore: number | null
     hired: number
   }[]
+}
+
+/** F1 · BR-REP-01: GET /dashboard/funnel – cohort theo ngày nộp, đã lọc theo phạm vi */
+export interface FunnelParams {
+  from?: string
+  to?: string
+  jobId?: string
+}
+
+export interface FunnelStage {
+  status: 'NEW' | 'SCREENING' | 'INTERVIEW' | 'OFFER' | 'HIRED'
+  reached: number
+  /** 0..1, null ở bước đầu */
+  conversionFromPrev: number | null
+  conversionFromStart: number
+  medianDaysInStage: number | null
+  rejected: number
+  withdrawn: number
+}
+
+export interface FunnelView {
+  range: { from: string; to: string }
+  generatedAt: string
+  cohort: number
+  stages: FunnelStage[]
+  bySource: { source: ApplicationSource; cohort: number; reachedInterview: number; hired: number }[]
+  reopened: number
 }

@@ -6,7 +6,7 @@ import {
   SCORE_GOOD,
   type ApplicationStatus,
 } from '@/features/applications'
-import type { DashboardSummary } from '@/features/dashboard'
+import type { DashboardSummary, FunnelView } from '@/features/dashboard'
 import { Permission } from '@/lib/permissions'
 import { Role } from '@/types/user'
 import {
@@ -407,6 +407,80 @@ export const applicationHandlers = [
       url: URL.createObjectURL(blob),
       expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
     })
+  }),
+
+  // F1 · BR-REP-01: cùng định nghĩa với BE – cohort theo ngày nộp (giờ VN), tới bước k chặn bởi bước k-1
+  http.get(api('/dashboard/funnel'), async ({ request }) => {
+    await delay()
+    const user = authorize(request, Permission.DashboardRead)
+    if (user instanceof Response) return user
+    const p = new URL(request.url).searchParams
+    const to = p.get('to') ?? new Date().toISOString().slice(0, 10)
+    const from = p.get('from') ?? to
+    const jobId = p.get('jobId')
+    const span = (Date.parse(to) - Date.parse(from)) / 86_400_000 + 1
+    if (!(span >= 1 && span <= 366))
+      return fail(400, 'VALIDATION_FAILED', 'from..to must be 1-366 days')
+    if (jobId && !db.jobs.some((j) => j.id === jobId && inScope(user, j.departmentId))) {
+      return notFound('Job')
+    }
+    const start = Date.parse(`${from}T00:00:00+07:00`)
+    const end = Date.parse(`${to}T00:00:00+07:00`) + 86_400_000
+    const apps = visible(user).filter((a) => {
+      const at = Date.parse(a.createdAt)
+      return at >= start && at < end && (!jobId || a.jobId === jobId)
+    })
+    const ids = new Set(apps.map((a) => a.id))
+    const rows = db.history.filter((h) => ids.has(h.applicationId))
+    const sourceOf = new Map(apps.map((a) => [a.id, a.source]))
+    const STAGES = ['NEW', 'SCREENING', 'INTERVIEW', 'OFFER', 'HIRED'] as const
+    const reached = (i: number, source?: string): number => {
+      const raw = rows.filter(
+        (h) =>
+          h.toStatus === STAGES[i] &&
+          h.fromStatus === (i ? STAGES[i - 1] : null) &&
+          (!source || sourceOf.get(h.applicationId) === source),
+      ).length
+      return i ? Math.min(raw, reached(i - 1, source)) : raw
+    }
+    const ratio = (a: number, b: number) => (b ? Math.round((a / b) * 1000) / 1000 : 0)
+    const medianDays = (status: string) => {
+      const spans = rows
+        .filter((h) => h.fromStatus === status)
+        .map((h) => {
+          const prev = rows
+            .filter((x) => x.applicationId === h.applicationId && x.changedAt < h.changedAt)
+            .sort((x, y) => y.changedAt.localeCompare(x.changedAt))[0]
+          return prev ? (Date.parse(h.changedAt) - Date.parse(prev.changedAt)) / 86_400_000 : null
+        })
+        .filter((d): d is number => d !== null)
+        .sort((x, y) => x - y)
+      return spans.length ? Math.round(spans[Math.floor((spans.length - 1) / 2)] * 10) / 10 : null
+    }
+    const cohort = reached(0)
+    const view: FunnelView = {
+      range: { from, to },
+      generatedAt: new Date().toISOString(),
+      cohort,
+      stages: STAGES.map((status, i) => ({
+        status,
+        reached: reached(i),
+        conversionFromPrev: i ? ratio(reached(i), reached(i - 1)) : null,
+        conversionFromStart: ratio(reached(i), cohort),
+        medianDaysInStage: status === 'HIRED' ? null : medianDays(status),
+        rejected: rows.filter((h) => h.fromStatus === status && h.toStatus === 'REJECTED').length,
+        withdrawn: rows.filter((h) => h.fromStatus === status && h.toStatus === 'WITHDRAWN').length,
+      })),
+      bySource: [...new Set(apps.map((a) => a.source))].sort().map((source) => ({
+        source,
+        cohort: reached(0, source),
+        reachedInterview: reached(2, source),
+        hired: reached(4, source),
+      })),
+      reopened: rows.filter((h) => h.fromStatus === 'REJECTED' || h.fromStatus === 'WITHDRAWN')
+        .length,
+    }
+    return ok(view)
   }),
 
   http.get(api('/dashboard/summary'), async ({ request }) => {
