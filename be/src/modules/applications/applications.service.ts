@@ -543,11 +543,12 @@ export class ApplicationsService {
       } else if (app.status === dto.status) {
         result.unchanged.push(id);
       } else if (app.status === ApplicationStatus.Offer) {
-        // BR-STS-05: từ chối offer là việc HM duyệt từng người qua decline-offer
+        // quyết định ở bước OFFER xét từng người, không làm theo lô
         result.failed.push({ id, code: ErrorCode.InvalidStatusTransition });
       } else {
         try {
-          await this.transition(id, dto.status, dto.reason ?? null, user, undefined, { bulkId });
+          // requiredFrom = trạng thái vừa đọc: kiểm lại trong khoá dòng, hồ sơ bị đổi giữa chừng thì báo lỗi
+          await this.transition(id, dto.status, dto.reason ?? null, user, app.status, { bulkId });
           result.succeeded.push(id);
         } catch (error) {
           if (error instanceof BusinessException) {
