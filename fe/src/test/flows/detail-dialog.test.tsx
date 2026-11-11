@@ -28,6 +28,10 @@ const server = setupServer(
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => server.close())
 
+let client: QueryClient
+// chờ request còn bay xong, tránh MSW bắn ProgressEvent sau khi jsdom bị dọn
+afterEach(() => waitFor(() => expect(client.isFetching() + client.isMutating()).toBe(0)))
+
 function renderAt(email: string, entry: string) {
   const row = db.users.find((u) => u.email === email)!
   useAuthStore.getState().setSession(toUser(row), tokenFor(row))
@@ -65,7 +69,7 @@ function renderAt(email: string, entry: string) {
   )
   render(
     <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      client={(client = new QueryClient({ defaultOptions: { queries: { retry: false } } }))}
     >
       <RouterProvider router={router} />
     </QueryClientProvider>,
@@ -87,6 +91,17 @@ describe('detail dialog', () => {
     for (const name of [/Tiêu chí chấm/, /Hồ sơ/, 'Xếp hạng', 'Ứng viên cũ phù hợp']) {
       expect(within(dialog).getByRole('tab', { name })).toBeInTheDocument()
     }
+  })
+
+  it('opens the HR upload dialog from the job popup footer', async () => {
+    renderAt('hr@hireflow.dev', paths.jobs)
+    const job = db.jobs.find((j) => j.status === 'OPEN')!
+    const [link] = await screen.findAllByRole('link', { name: job.title })
+    fireEvent.click(link.closest('tr')!)
+
+    const dialog = await screen.findByRole('dialog', { name: job.title }, { timeout: 8000 })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tải CV hộ ứng viên' }))
+    expect(await screen.findByRole('dialog', { name: 'Tải CV hộ ứng viên' })).toBeInTheDocument()
   })
 
   it('creates a job in a popup, then lands on the criteria tab of the new job', async () => {
