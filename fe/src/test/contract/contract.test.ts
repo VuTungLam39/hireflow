@@ -110,6 +110,9 @@ async function collect(source: keyof typeof ACCOUNTS): Promise<Samples> {
         jdText: draft.jdText,
       }),
     )
+    // F4: bản sao cũng là tin nháp chưa có hồ sơ nên xoá được ngay
+    const copy = await take('POST /jobs/:id/clone', () => jobsApi.clone(draft.id))
+    await jobsApi.remove(copy.id)
   } finally {
     await jobsApi.remove(draft.id)
   }

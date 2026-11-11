@@ -1,5 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { useOpenDetail } from '@/hooks/use-detail'
 import { getErrorMessage } from '@/lib/errors'
 import { jobsApi } from '../api/jobs.api'
 import type { JobListParams } from '../schemas/job.schema'
@@ -92,6 +93,21 @@ function useJobAction(action: (id: string) => Promise<unknown>, message: string)
 
 export const usePublishJob = () => useJobAction(jobsApi.publish, 'Đã đăng tin tuyển dụng')
 export const useCloseJob = () => useJobAction(jobsApi.close, 'Đã đóng tin tuyển dụng')
+
+/** F4: nhân bản tin rồi mở ngay bản nháp ở tab Nội dung để HR sửa */
+export function useCloneJob() {
+  const queryClient = useQueryClient()
+  const openDetail = useOpenDetail()
+  return useMutation({
+    mutationFn: jobsApi.clone,
+    onSuccess: (job) => {
+      toast.success(`Đã tạo bản nháp “${job.title}”`)
+      openDetail('job', job.id, 'content')
+      return queryClient.invalidateQueries({ queryKey: jobKeys.lists() })
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  })
+}
 
 /** Xoá job nháp chưa có hồ sơ. Job đã mất nên chỉ làm mới danh sách, bỏ cache chi tiết. */
 export function useDeleteJob() {
