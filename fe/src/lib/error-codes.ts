@@ -34,6 +34,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   GALLERY_FULL: 'Thư viện đã đủ 8 ảnh. Xoá bớt một ảnh trước khi thêm',
   EXPORT_TOO_LARGE:
     'Bộ lọc khớp hơn 5.000 hồ sơ. Thu hẹp theo tin, trạng thái hoặc ngày nộp rồi xuất lại',
+  BULK_STATUS_NOT_ALLOWED: 'Chỉ chuyển hàng loạt sang Sàng lọc, Phỏng vấn hoặc Từ chối',
   COMPANY_PROFILE_INCOMPLETE: 'Trang công ty chưa đủ tên, logo và giới thiệu',
   FILE_TOO_LARGE: 'File lớn hơn 5MB',
   TOO_MANY_REQUESTS: 'Bạn thao tác quá nhanh, thử lại sau ít phút',
