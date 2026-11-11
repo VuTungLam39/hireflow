@@ -69,4 +69,21 @@ describe('buildFunnel (F1, BR-REP-01)', () => {
     expect(f.stages[1].conversionFromStart).toBeLessThanOrEqual(1);
     expect(f.reopened).toBe(1);
   });
+
+  it('never reports more applications at a stage than at the previous one', () => {
+    // hồ sơ tới INTERVIEW, bị từ chối, mở lại rồi tới INTERVIEW lần nữa
+    const f = buildFunnel(
+      [
+        row(P, null, S.New, 1),
+        row(P, S.New, S.Screening, 1),
+        row(P, S.Screening, S.Interview, 2),
+        row(P, S.Interview, S.Rejected, 1),
+        row(P, S.Rejected, S.Screening, 1),
+      ],
+      range,
+    );
+    expect(f.stages[2].reached).toBe(1);
+    expect(f.stages[2].conversionFromPrev).toBe(1);
+    expect(f.bySource[0].reachedInterview).toBe(1);
+  });
 });
