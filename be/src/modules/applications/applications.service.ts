@@ -37,7 +37,12 @@ import {
   EXPORT_BATCH,
   EXPORT_MAX_ROWS,
 } from './application-export.js';
-import { assertReopenable, assertTransition, REOPEN_TO } from './application-status.js';
+import {
+  assertReopenable,
+  assertTransition,
+  REOPEN_TO,
+  stageSeconds,
+} from './application-status.js';
 import { ChangeStatusDto } from './dto/change-status.dto.js';
 import { CreateNoteDto } from './dto/create-note.dto.js';
 import { CvTextDto } from './dto/cv-text.dto.js';
@@ -478,6 +483,7 @@ export class ApplicationsService {
         reason,
         changedBy: user.id,
         changedAt: now,
+        prevStageSeconds: stageSeconds(app.statusChangedAt, now),
       });
       await this.audit.record(
         {
@@ -732,6 +738,7 @@ export class ApplicationsService {
         reason: reason?.trim() || null,
         changedBy: user.id,
         changedAt: now,
+        prevStageSeconds: stageSeconds(app.statusChangedAt, now),
       });
       await this.audit.record(
         {

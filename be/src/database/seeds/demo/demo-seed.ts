@@ -11,7 +11,10 @@ import { CvProfile, type CvProfileData } from '../../../modules/ai/entities/cv-p
 import { AI_ERROR } from '../../../modules/ai/pipeline/cv-pipeline.service.js';
 import { scoreApplication, type ScoreResult } from '../../../modules/ai/scoring.js';
 import { makeDocx, makePdf } from '../../../modules/ai/testing/cv-fixtures.js';
-import { assertTransition } from '../../../modules/applications/application-status.js';
+import {
+  assertTransition,
+  stageSeconds,
+} from '../../../modules/applications/application-status.js';
 import {
   HR_CONSENT_VERSION,
   PUBLIC_CONSENT_VERSION,
@@ -557,6 +560,7 @@ async function seedApplications(
         reason: reason ?? null,
         changedBy: ctx.userIds.get(by)!,
         changedAt: stepAt,
+        prevStageSeconds: stageSeconds(changedAt, stepAt),
       });
       status = to;
       changedAt = stepAt;

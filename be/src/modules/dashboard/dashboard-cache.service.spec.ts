@@ -76,4 +76,17 @@ describe('DashboardCache', () => {
     expect(redis.set).not.toHaveBeenCalled();
     expect(cache.stats.errors).toBe(2);
   });
+
+  it('keeps TTL-cached reports across application changes (F1)', async () => {
+    const redis = fakeRedis();
+    const { cache, events } = make(redis);
+    const compute = vi.fn(async () => ({ cohort: 3 }));
+
+    await cache.getOrComputeFor('funnel:all', 300, compute);
+    expect(redis.set).toHaveBeenCalledWith('test:dashboard:funnel:all', '{"cohort":3}', 'EX', 300);
+    events.emit('application.changed', { applicationId: 'x' });
+    await vi.waitFor(() => expect(redis.incr).toHaveBeenCalledTimes(1));
+    expect(await cache.getOrComputeFor('funnel:all', 300, compute)).toEqual({ cohort: 3 });
+    expect(compute).toHaveBeenCalledTimes(1);
+  });
 });
