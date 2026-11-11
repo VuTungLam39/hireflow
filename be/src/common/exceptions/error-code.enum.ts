@@ -45,6 +45,7 @@ export enum ErrorCode {
   CvTextNotEditable = 'CV_TEXT_NOT_EDITABLE',
   ExportTooLarge = 'EXPORT_TOO_LARGE',
   BulkStatusNotAllowed = 'BULK_STATUS_NOT_ALLOWED',
+  CompareInvalidSelection = 'COMPARE_INVALID_SELECTION',
 
   // Interviews
   InterviewNotAllowed = 'INTERVIEW_NOT_ALLOWED',

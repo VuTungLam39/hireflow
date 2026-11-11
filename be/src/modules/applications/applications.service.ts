@@ -30,6 +30,9 @@ import { CvFile, CvParseStatus } from '../files/entities/cv-file.entity.js';
 import { FilesService } from '../files/files.service.js';
 import { JobRequirement } from '../jobs/entities/job-requirement.entity.js';
 import { Job, JobStatus } from '../jobs/entities/job.entity.js';
+import { InterviewFeedback } from '../interviews/entities/interview-feedback.entity.js';
+import { Interview } from '../interviews/entities/interview.entity.js';
+import { compareCriteria, type FeedbackRow, interviewSummary } from './compare.js';
 import {
   CSV_BOM,
   CSV_HEADER,
@@ -46,6 +49,7 @@ import {
 } from './application-status.js';
 import { BulkStatusDto } from './dto/bulk-status.dto.js';
 import { ChangeStatusDto } from './dto/change-status.dto.js';
+import { CompareApplicationsDto } from './dto/compare-applications.dto.js';
 import { CreateNoteDto } from './dto/create-note.dto.js';
 import { CvTextDto } from './dto/cv-text.dto.js';
 import { HrUploadDto } from './dto/hr-upload.dto.js';
@@ -384,6 +388,67 @@ export class ApplicationsService {
             textEnteredAt: app.cvFile.textEnteredAt,
           }
         : null,
+    };
+  }
+
+  // F3 · BR-APP-13: số query cố định (tin, hồ sơ, tiêu chí, phiếu); Interviewer không được so sánh (BR-INT-02)
+  async compare(jobId: string, dto: CompareApplicationsDto, user: ScopeUser) {
+    if (blind(user)) {
+      throw new ForbiddenException({
+        code: ErrorCode.Forbidden,
+        message: 'Interviewers cannot compare',
+      });
+    }
+    const jobQb = this.dataSource
+      .getRepository(Job)
+      .createQueryBuilder('job')
+      .select(['job.id', 'job.title', 'job.jdVersion'])
+      .where('job.id = :jobId', { jobId });
+    const job = await applyDepartmentScope(jobQb, user, 'job.departmentId').getOne();
+    if (!job) throw new NotFoundException('Job not found');
+
+    const apps = await this.listQuery(user)
+      .addSelect(['app.source', 'app.scoreBreakdown', 'app.scoredJdVersion'])
+      .andWhere('app.id IN (:...ids)', { ids: dto.ids })
+      .andWhere('app.jobId = :jobId', { jobId })
+      .getMany();
+    if (apps.length !== dto.ids.length) {
+      throw new BusinessException(
+        ErrorCode.CompareInvalidSelection,
+        'All applications must belong to this job',
+      );
+    }
+
+    const requirements = await this.dataSource.getRepository(JobRequirement).find({
+      select: ['id', 'label', 'type', 'weight', 'minYears'],
+      where: { jobId, jdVersion: job.jdVersion },
+      order: { position: 'ASC' },
+    });
+    const feedbacks = await this.dataSource
+      .getRepository(InterviewFeedback)
+      .createQueryBuilder('f')
+      .innerJoin(Interview, 'iv', 'iv.id = f.interviewId')
+      .select('iv.applicationId', 'applicationId')
+      .addSelect('f.overall', 'overall')
+      .addSelect('f.ratings', 'ratings')
+      .where('iv.applicationId IN (:...ids)', { ids: dto.ids })
+      .getRawMany<FeedbackRow>();
+
+    const byId = new Map(apps.map((a) => [a.id, a]));
+    return {
+      job: { id: job.id, title: job.title, jdVersion: job.jdVersion },
+      requirements,
+      applications: dto.ids.map((id) => {
+        const a = byId.get(id)!;
+        const own = feedbacks.filter((f) => f.applicationId === id);
+        return {
+          ...this.toListItem(a, user),
+          source: a.source,
+          stale: a.scoredJdVersion !== null && a.scoredJdVersion !== job.jdVersion,
+          criteria: compareCriteria(requirements, a.scoreBreakdown, own),
+          interviews: interviewSummary(own),
+        };
+      }),
     };
   }
 

@@ -33,6 +33,7 @@ import { exportFileName } from './application-export.js';
 import { ApplicationsService } from './applications.service.js';
 import { BulkStatusDto } from './dto/bulk-status.dto.js';
 import { ChangeStatusDto, DeclineOfferDto } from './dto/change-status.dto.js';
+import { CompareApplicationsDto } from './dto/compare-applications.dto.js';
 import { CreateNoteDto } from './dto/create-note.dto.js';
 import { CvTextDto } from './dto/cv-text.dto.js';
 import { HrUploadDto } from './dto/hr-upload.dto.js';
@@ -197,6 +198,21 @@ export class ApplicationsController {
 @Controller('jobs/:jobId/applications')
 export class JobApplicationsController {
   constructor(private readonly applicationsService: ApplicationsService) {}
+
+  // F3 · BR-APP-13
+  @Get('compare')
+  @Permissions(Permission.ApplicationRead)
+  @ApiOperation({
+    summary:
+      'So sánh 2–3 hồ sơ cùng tin theo tiêu chí, bằng chứng và phiếu phỏng vấn (Interviewer bị từ chối)',
+  })
+  compare(
+    @Param('jobId', ParseUUIDPipe) jobId: string,
+    @Query() dto: CompareApplicationsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.applicationsService.compare(jobId, dto, user);
+  }
 
   @Post()
   @Permissions(Permission.ApplicationCreate)
