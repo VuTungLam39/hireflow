@@ -10,6 +10,7 @@ import type {
   HrUploadInput,
   StatusHistoryItem,
   BulkStatusResult,
+  CompareView,
 } from '../types'
 
 /** Tải dạng text thì lỗi cũng là chuỗi: đọc lại thành JSON để getErrorMessage hiểu mã lỗi */
@@ -68,6 +69,13 @@ export const applicationsApi = {
 
   bulkStatus: async (input: { ids: string[]; status: ApplicationStatus; reason?: string }) =>
     (await api.post<ApiResponse<BulkStatusResult>>('/applications/bulk-status', input)).data.data,
+
+  compare: async (jobId: string, ids: string[]) =>
+    (
+      await api.get<ApiResponse<CompareView>>(`/jobs/${jobId}/applications/compare`, {
+        params: { ids: ids.join(',') },
+      })
+    ).data.data,
 
   /** OFFER → HIRED: route riêng, quyền application:approve-offer */
   hire: async (id: string) =>

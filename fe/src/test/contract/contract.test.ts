@@ -74,6 +74,14 @@ async function collect(source: keyof typeof ACCOUNTS): Promise<Samples> {
       applicationsApi.bulkStatus({ ids: [screening.id], status: 'SCREENING' }),
     )
   }
+  // F3: 2 hồ sơ cùng tin trong trang đầu
+  const first = apps.items.find((a) => apps.items.some((b) => b !== a && b.job.id === a.job.id))
+  const second = first && apps.items.find((b) => b !== first && b.job.id === first.job.id)
+  if (first && second) {
+    await take('GET /jobs/:jobId/applications/compare', () =>
+      applicationsApi.compare(first.job.id, [first.id, second.id]),
+    )
+  }
   await take('GET /applications/:id/interviews', () => interviewsApi.forApplication(appId))
   await take('GET /interviews', () => interviewsApi.list({ includeCancelled: true }))
   await take('GET /interviews/interviewers', () => interviewsApi.interviewers())

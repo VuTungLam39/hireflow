@@ -85,3 +85,27 @@ export interface ApplicationNote {
   author: { id: string; fullName: string }
   createdAt: string
 }
+
+/** F3 · BR-APP-13: GET /jobs/:jobId/applications/compare */
+export interface CompareCriterion {
+  requirementId: string
+  /** null = tiêu chí thêm sau khi chấm, hồ sơ chưa được chấm theo tiêu chí này */
+  match: MatchLevel | null
+  evidence: string | null
+  /** Điểm phiếu phỏng vấn trung bình (1–5) cho tiêu chí, null khi chưa có phiếu */
+  interviewAvg: number | null
+}
+
+export interface CompareApplication extends ApplicationListItem {
+  source: ApplicationSource
+  /** Chấm theo phiên bản tiêu chí cũ */
+  stale: boolean
+  criteria: CompareCriterion[]
+  interviews: { feedbackCount: number; avgOverall: number | null }
+}
+
+export interface CompareView {
+  job: { id: string; title: string; jdVersion: number }
+  requirements: Pick<Requirement, 'id' | 'label' | 'type' | 'weight' | 'minYears'>[]
+  applications: CompareApplication[]
+}

@@ -1,10 +1,15 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, ArrowRight, SlidersHorizontal } from 'lucide-react'
+import { ArrowLeft, ArrowRight, SlidersHorizontal, X } from 'lucide-react'
 import { useCallback, useDeferredValue, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { Can, EmptyState, ErrorState, PageHeader, SidePanel, Summary } from '@/components/shared'
 import { Button, Skeleton, buttonVariants } from '@/components/ui'
-import { applicationQueries, MatchIndicator, type MatchLevel } from '@/features/applications'
+import {
+  applicationQueries,
+  CompareDialog,
+  MatchIndicator,
+  type MatchLevel,
+} from '@/features/applications'
 import type { Requirement } from '@/features/jobs'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { Permission } from '@/lib/permissions'
@@ -60,6 +65,17 @@ function RankingView({
   const wide = useMediaQuery('(min-width: 64rem)')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [weightsOpen, setWeightsOpen] = useState(false)
+  // F3: khay so sánh tối đa 3 người, giữ trong phiên xem xếp hạng
+  const [compareIds, setCompareIds] = useState<string[]>([])
+  const [compareOpen, setCompareOpen] = useState(false)
+  const toggleCompare = useCallback(
+    (id: string) =>
+      setCompareIds((ids) =>
+        ids.includes(id) ? ids.filter((x) => x !== id) : ids.length < 3 ? [...ids, id] : ids,
+      ),
+    [],
+  )
+  const compare = { ids: compareIds, onToggle: toggleCompare }
 
   const savedWeights = useMemo(
     () => Object.fromEntries(data.requirements.map((r) => [r.id, r.weight])),
@@ -196,6 +212,7 @@ function RankingView({
                 selected={selected}
                 requirements={data.requirements}
                 topName={ranked[0]?.item.name}
+                compare={compare}
               />
             </aside>
           )}
@@ -209,8 +226,54 @@ function RankingView({
           onClose={() => setSelectedId(null)}
           title={selected ? `Vì sao ${selected.item.name} #${selected.rank}` : ''}
         >
-          <WhyPanel jobId={jobId} selected={selected} requirements={data.requirements} bare />
+          <WhyPanel
+            jobId={jobId}
+            selected={selected}
+            requirements={data.requirements}
+            compare={compare}
+            bare
+          />
         </SidePanel>
+      )}
+      {compareIds.length > 0 && (
+        <div
+          role="region"
+          aria-label="Khay so sánh"
+          className="border-line bg-surface shadow-float sticky bottom-3 z-10 flex flex-wrap items-center gap-2 rounded-md border px-4 py-2.5"
+        >
+          <span className="type-label mr-1">So sánh {compareIds.length}/3</span>
+          {compareIds.map((id) => {
+            const name = ranked.find((r) => r.item.id === id)?.item.name ?? 'Ứng viên'
+            return (
+              <span
+                key={id}
+                className="bg-sunken text-ink inline-flex items-center gap-1 rounded-sm py-0.5 pr-1 pl-2 text-[13px]"
+              >
+                {name}
+                <button
+                  type="button"
+                  aria-label={`Bỏ ${name} khỏi so sánh`}
+                  className="hover:bg-line text-ink-muted inline-flex size-6 items-center justify-center rounded-sm"
+                  onClick={() => toggleCompare(id)}
+                >
+                  <X className="size-3.5" />
+                </button>
+              </span>
+            )
+          })}
+          <Button
+            size="sm"
+            className="ml-auto"
+            disabled={compareIds.length < 2}
+            title={compareIds.length < 2 ? 'Chọn thêm ít nhất một người' : undefined}
+            onClick={() => setCompareOpen(true)}
+          >
+            So sánh
+          </Button>
+        </div>
+      )}
+      {compareOpen && (
+        <CompareDialog open jobId={jobId} ids={compareIds} onClose={() => setCompareOpen(false)} />
       )}
       <SidePanel
         variant="sheet"
@@ -293,12 +356,14 @@ function WhyPanel({
   selected,
   requirements,
   topName,
+  compare,
   bare,
 }: {
   jobId: string
   selected: Ranked<RankingInput> | null
   requirements: Requirement[]
   topName?: string
+  compare: { ids: string[]; onToggle: (id: string) => void }
   bare?: boolean
 }) {
   const detail = useQuery({
@@ -360,6 +425,19 @@ function WhyPanel({
         Mở bàn duyệt CV
         <ArrowRight />
       </Link>
+      <Button
+        variant="secondary"
+        className="mt-2 w-full"
+        disabled={!compare.ids.includes(selected.item.id) && compare.ids.length >= 3}
+        title={
+          !compare.ids.includes(selected.item.id) && compare.ids.length >= 3
+            ? 'Đã đủ 3 người trong khay so sánh'
+            : undefined
+        }
+        onClick={() => compare.onToggle(selected.item.id)}
+      >
+        {compare.ids.includes(selected.item.id) ? 'Bỏ khỏi so sánh' : 'Thêm vào so sánh'}
+      </Button>
     </div>
   )
 }
