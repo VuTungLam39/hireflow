@@ -9,6 +9,7 @@ import { cn, VN_TIME_ZONE } from '@/lib/utils'
 import { links, paths } from '@/routes/paths'
 import { useAuthStore } from '@/stores/auth.store'
 import { Role } from '@/types/user'
+import { FunnelReport } from '../components/FunnelReport'
 import { useDashboardSummary } from '../hooks/use-dashboard'
 import { useToday } from '../hooks/use-today'
 import { useDetailLink } from '@/hooks/use-detail'
@@ -251,6 +252,8 @@ export default function DashboardPage() {
           <KpiStrip items={kpis} loading={summary.isPending} />
         </section>
       )}
+
+      <FunnelReport />
 
       <section aria-labelledby="jobs-title">
         <div className="mb-3 flex items-baseline justify-between gap-3">

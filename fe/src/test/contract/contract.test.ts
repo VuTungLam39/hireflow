@@ -81,6 +81,7 @@ async function collect(source: keyof typeof ACCOUNTS): Promise<Samples> {
   const candidates = await take('GET /candidates', () => candidatesApi.list({ limit: 20 }))
   await take('GET /candidates/:id', () => candidatesApi.get(candidates.items[0].id))
   await take('GET /dashboard/summary', () => dashboardApi.summary())
+  await take('GET /dashboard/funnel', () => dashboardApi.funnel({}))
   await take('GET /notifications', () => notificationsApi.list({ limit: 10 }))
   await take('GET /notifications/unread-count', () => notificationsApi.unreadCount())
   await take('GET /audit-logs', () =>

@@ -11,10 +11,12 @@ interface JobOverviewProps {
   job: Job
   onOpenApplications: (status?: string) => void
   highlights?: ReactNode
+  /** F1: phễu của tin, do tầng layout ghép vào để jobs không phụ thuộc dashboard */
+  funnel?: ReactNode
 }
 
 // F-JOB-01
-export function JobOverview({ job, onOpenApplications, highlights }: JobOverviewProps) {
+export function JobOverview({ job, onOpenApplications, highlights, funnel }: JobOverviewProps) {
   const facts: [string, string][] = [
     ['Ngày tạo', formatDate(job.createdAt)],
     ['Cập nhật lần cuối', formatDate(job.updatedAt)],
@@ -90,6 +92,7 @@ export function JobOverview({ job, onOpenApplications, highlights }: JobOverview
       </section>
 
       {job.status !== 'DRAFT' && job.applicationCount > 0 && highlights}
+      {job.status !== 'DRAFT' && job.applicationCount > 0 && funnel}
 
       <section aria-labelledby="job-candidate-facts" className="space-y-3">
         <h3 id="job-candidate-facts" className="type-heading">
