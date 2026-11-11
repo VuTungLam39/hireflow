@@ -9,7 +9,8 @@ services:
     rootDir: be
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    healthCheckPath: /api/health
+    # chỉ process + DB: /api/health gọi cả B2, mà B2 có hạn mức giao dịch mỗi ngày
+    healthCheckPath: /api/health/live
     autoDeployTrigger: commit
     envVars:
       - key: NODE_ENV
