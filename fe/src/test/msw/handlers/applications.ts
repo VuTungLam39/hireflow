@@ -200,6 +200,53 @@ export const applicationHandlers = [
     return ok({ ...note, author: userRef(user.id)! }, { status: 201 })
   }),
 
+  // F2 · BR-APP-12: giống BE – mỗi hồ sơ xét riêng, OFFER không từ chối theo lô
+  http.post(api('/applications/bulk-status'), async ({ request }) => {
+    await delay()
+    const user = authorize(request, Permission.ApplicationUpdateStatus)
+    if (user instanceof Response) return user
+    const { ids, status, reason } = (await request.json()) as {
+      ids: string[]
+      status: ApplicationStatus
+      reason?: string
+    }
+    if (
+      !Array.isArray(ids) ||
+      ids.length < 1 ||
+      ids.length > 100 ||
+      new Set(ids).size !== ids.length
+    ) {
+      return fail(400, 'VALIDATION_FAILED', 'ids must be 1-100 unique ids')
+    }
+    if (!['SCREENING', 'INTERVIEW', 'REJECTED'].includes(status)) {
+      return fail(
+        400,
+        'BULK_STATUS_NOT_ALLOWED',
+        'Bulk change only allows SCREENING, INTERVIEW, REJECTED',
+      )
+    }
+    if (status === 'REJECTED' && !reason?.trim()) {
+      return fail(400, 'REJECT_REASON_REQUIRED', 'Reason is required')
+    }
+    const result = {
+      succeeded: [] as string[],
+      unchanged: [] as string[],
+      failed: [] as { id: string; code: string }[],
+    }
+    for (const id of [...ids].sort()) {
+      const app = db.applications.find((a) => a.id === id)
+      if (!app || !canSeeApplication(user, app)) result.failed.push({ id, code: 'NOT_FOUND' })
+      else if (app.status === status) result.unchanged.push(id)
+      else if (app.status === 'OFFER' || !NEXT_STATUS[app.status].includes(status))
+        result.failed.push({ id, code: 'INVALID_STATUS_TRANSITION' })
+      else {
+        moveStatus(app, status, user, reason)
+        result.succeeded.push(id)
+      }
+    }
+    return ok(result)
+  }),
+
   http.patch(api('/applications/:id/status'), async ({ request, params }) => {
     await delay()
     const user = authorize(request, Permission.ApplicationUpdateStatus)

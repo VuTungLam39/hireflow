@@ -72,6 +72,13 @@ export interface HrUploadInput {
 }
 
 /** Ghi chú không sửa, không xoá (BR-APP-09) */
+// F2 · BR-APP-12: kết quả theo từng hồ sơ của POST /applications/bulk-status
+export interface BulkStatusResult {
+  succeeded: string[]
+  unchanged: string[]
+  failed: { id: string; code: string }[]
+}
+
 export interface ApplicationNote {
   id: string
   content: string

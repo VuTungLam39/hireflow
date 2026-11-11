@@ -9,6 +9,7 @@ import type {
   ApplicationNote,
   HrUploadInput,
   StatusHistoryItem,
+  BulkStatusResult,
 } from '../types'
 
 /** Tải dạng text thì lỗi cũng là chuỗi: đọc lại thành JSON để getErrorMessage hiểu mã lỗi */
@@ -64,6 +65,9 @@ export const applicationsApi = {
   changeStatus: async (id: string, input: { status: ApplicationStatus; reason?: string }) =>
     (await api.patch<ApiResponse<ApplicationDetail>>(`/applications/${id}/status`, input)).data
       .data,
+
+  bulkStatus: async (input: { ids: string[]; status: ApplicationStatus; reason?: string }) =>
+    (await api.post<ApiResponse<BulkStatusResult>>('/applications/bulk-status', input)).data.data,
 
   /** OFFER → HIRED: route riêng, quyền application:approve-offer */
   hire: async (id: string) =>

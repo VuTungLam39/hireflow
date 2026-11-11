@@ -67,6 +67,13 @@ async function collect(source: keyof typeof ACCOUNTS): Promise<Samples> {
   await take('GET /applications/:id', () => applicationsApi.get(appId))
   await take('GET /applications/:id/history', () => applicationsApi.history(appId))
   await take('GET /applications/:id/notes', () => applicationsApi.notes(appId))
+  // F2: hồ sơ đã ở trạng thái đích → unchanged, không đổi dữ liệu thật
+  const screening = apps.items.find((a) => a.status === 'SCREENING')
+  if (screening) {
+    await take('POST /applications/bulk-status', () =>
+      applicationsApi.bulkStatus({ ids: [screening.id], status: 'SCREENING' }),
+    )
+  }
   await take('GET /applications/:id/interviews', () => interviewsApi.forApplication(appId))
   await take('GET /interviews', () => interviewsApi.list({ includeCancelled: true }))
   await take('GET /interviews/interviewers', () => interviewsApi.interviewers())
