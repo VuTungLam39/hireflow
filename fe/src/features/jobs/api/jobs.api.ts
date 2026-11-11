@@ -13,6 +13,9 @@ export const jobsApi = {
 
   create: async (input: JobInput) => (await api.post<ApiResponse<Job>>('/jobs', input)).data.data,
 
+  /** F4: bản nháp mới giữ JD, trường cấu trúc và tiêu chí mới nhất; không copy hồ sơ */
+  clone: async (id: string) => (await api.post<ApiResponse<Job>>(`/jobs/${id}/clone`)).data.data,
+
   update: async (id: string, input: JobInput) =>
     (await api.patch<ApiResponse<Job>>(`/jobs/${id}`, input)).data.data,
 

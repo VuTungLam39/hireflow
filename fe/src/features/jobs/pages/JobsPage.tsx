@@ -1,5 +1,6 @@
 import { DeadlineTag } from '../components/DeadlineTag'
 import {
+  Copy,
   Inbox,
   ListChecks,
   ListOrdered,
@@ -36,7 +37,7 @@ import { formatDate, formatDaysAgo } from '@/lib/utils'
 import { JobStatusBadge } from '../components/JobStatusBadge'
 import { PipelineCounts } from '../components/PipelineBar'
 import { JOB_STATUS, type JobStatus } from '../constants'
-import { useCloseJob, useJobs, usePublishJob } from '../hooks/use-jobs'
+import { useCloneJob, useCloseJob, useJobs, usePublishJob } from '../hooks/use-jobs'
 import { jobListSchema } from '../schemas/job.schema'
 import type { JobSummary } from '../types'
 
@@ -293,6 +294,8 @@ function RowMenu({ job, onAction }: { job: JobSummary; onAction: (a: PendingActi
   const canUpdate = usePermission(Permission.JobUpdate)
   const canPublish = usePermission(Permission.JobPublish)
   const canInvite = usePermission(Permission.ApplicationCreate)
+  const canCreate = usePermission(Permission.JobCreate)
+  const clone = useCloneJob()
   const detailLink = useDetailLink()
   const editable = canUpdate && job.status !== 'CLOSED'
   const go = () => setOpen(false)
@@ -329,6 +332,21 @@ function RowMenu({ job, onAction }: { job: JobSummary; onAction: (a: PendingActi
         <ListChecks />
         {editable ? 'Sửa tiêu chí chấm' : 'Xem tiêu chí chấm'}
       </Link>
+      {canCreate && (
+        <button
+          type="button"
+          role="menuitem"
+          className={menuItemClass}
+          disabled={clone.isPending}
+          onClick={() => {
+            go()
+            clone.mutate(job.id)
+          }}
+        >
+          <Copy />
+          Nhân bản thành tin nháp
+        </button>
+      )}
       {job.status !== 'DRAFT' && (
         <>
           <div className="border-line-soft my-1 border-t" />

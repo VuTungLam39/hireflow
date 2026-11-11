@@ -91,6 +91,31 @@ export const jobHandlers = [
     return ok(toJob(job), { status: 201, message: 'Job created' })
   }),
 
+  // F4: giống BE – bản nháp mới giữ JD, trường cấu trúc, tiêu chí mới nhất; bỏ hạn nộp, không có hồ sơ
+  http.post(api('/jobs/:id/clone'), async ({ request, params }) => {
+    await delay()
+    const user = authorize(request, Permission.JobCreate)
+    if (user instanceof Response) return user
+    const src = findJob(user, params.id)
+    if (src instanceof Response) return src
+    const now = new Date().toISOString()
+    const suffix = ' (bản sao)'
+    const job: JobRow = {
+      ...src,
+      id: uid('job'),
+      title: src.title.slice(0, 200 - suffix.length) + suffix,
+      status: 'DRAFT',
+      jdVersion: 1,
+      deadline: null,
+      requirements: src.requirements.map((r) => ({ ...r, id: uid('req') })),
+      publishedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    }
+    db.jobs.push(job)
+    return ok(toJob(job), { status: 201, message: 'Job created' })
+  }),
+
   http.patch(api('/jobs/:id'), async ({ request, params }) => {
     await delay()
     const user = authorize(request, Permission.JobUpdate)
