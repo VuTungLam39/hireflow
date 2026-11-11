@@ -69,7 +69,7 @@ Những chỗ phải xử lý để hydrate không lệch (đều có test, mụ
 - **Ngày giờ**: "3 ngày trước" phụ thuộc thời điểm render, ngày tuyệt đối phụ thuộc múi giờ máy build (UTC) và máy người xem. HTML dựng sẵn và lần hydrate đầu dùng ngày tuyệt đối theo giờ Việt Nam; ngày tương đối chỉ hiện sau khi hydrate (`useHydrated`).
 - **Không lộ dữ liệu nội bộ** (BR-JOB-07): HTML và cache nhúng chỉ chứa đúng dữ liệu API công khai trả về (không trọng số, không từ khoá) – có test.
 - **API ngủ hoặc lỗi lúc build** (Render free ngủ sau 15 phút): script chờ tối đa 90 s mỗi request; lỗi thì bỏ prerender, build vẫn qua và trang chạy CSR như cũ (`PRERENDER_STRICT=true` để build báo lỗi).
-- **Job mới chưa có file HTML**: Vercel không tìm thấy `jobs/<id>.html` thì rơi về `index.html` (SPA) – trang vẫn chạy, chỉ là CSR cho tới lần build kế tiếp.
+- **Job mới chưa có file HTML**: Vercel không tìm thấy `jobs/<id>.html` thì rơi về trang SPA (rewrite tới `/`, vì `cleanUrls` đổi `/index.html` thành `/`) – trang vẫn chạy, chỉ là CSR cho tới lần build kế tiếp.
 
 ## 3. "View source": CSR so với prerender
 
