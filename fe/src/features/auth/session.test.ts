@@ -1,7 +1,8 @@
 import { queryClient } from '@/lib/query-client'
 import { useAuthStore } from '@/stores/auth.store'
 import { Role, type User } from '@/types/user'
-import { resetRestoreSession, restoreSession } from './session'
+import { AxiosError } from 'axios'
+import { resetRestoreSession, restoreSession, sessionUnavailable } from './session'
 
 const mocks = vi.hoisted(() => ({
   refreshAccessToken: vi.fn<() => Promise<string>>(),
@@ -69,5 +70,20 @@ describe('restoreSession', () => {
     await restoreSession()
 
     expect(mocks.refreshAccessToken).not.toHaveBeenCalled()
+  })
+
+  it('keeps the session and allows a retry when the server does not answer', async () => {
+    useAuthStore.getState().setUser(user)
+    mocks.refreshAccessToken.mockRejectedValueOnce(new AxiosError('Network Error', 'ERR_NETWORK'))
+
+    await restoreSession()
+
+    expect(sessionUnavailable()).toBe(true)
+    expect(useAuthStore.getState().user).toEqual(user)
+
+    mocks.refreshAccessToken.mockRejectedValueOnce(new Error('401'))
+    await restoreSession()
+    expect(mocks.refreshAccessToken).toHaveBeenCalledTimes(2)
+    expect(sessionUnavailable()).toBe(false)
   })
 })

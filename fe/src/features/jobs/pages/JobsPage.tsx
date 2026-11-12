@@ -91,6 +91,7 @@ export default function JobsPage() {
   const [params, setParams] = useListParams(jobListSchema)
   const departments = useDepartmentOptions()
   const ownDepartmentOnly = useAuthStore((s) => s.user?.role === Role.HiringManager)
+  const isInterviewer = useAuthStore((s) => s.user?.role === Role.Interviewer)
   const query = useJobs(ownDepartmentOnly ? { ...params, departmentId: undefined } : params)
   const detailLink = useDetailLink()
   const openDetail = useOpenDetail()
@@ -200,7 +201,10 @@ export default function JobsPage() {
 
       <Tabs
         label="Lọc theo trạng thái tin"
-        tabs={TABS.map((t) => ({ id: t.id, label: t.label }))}
+        tabs={TABS.filter((t) => !isInterviewer || t.id === 'all' || t.id === 'OPEN').map((t) => ({
+          id: t.id,
+          label: t.label,
+        }))}
         value={params.status ?? 'all'}
         onChange={(id) => setParams({ status: id === 'all' ? null : (id as JobStatus) })}
       />

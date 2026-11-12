@@ -11,7 +11,7 @@ import { Role } from '@/types/user'
 import { useNow } from '../hooks/use-now'
 import { useInterviewBacklog, useInterviews } from '../hooks/use-interviews'
 import { formatDay, formatTime, isLink, vnDay } from '../lib/format'
-import { PENDING_LOOKBACK_DAYS, pendingOf, type PendingKind } from '../lib/pending'
+import { PENDING_LABEL, PENDING_LOOKBACK_DAYS, pendingOf, type PendingKind } from '../lib/pending'
 import type { Interview } from '../types'
 
 type View = 'list' | 'week'
@@ -44,12 +44,6 @@ function groupByDay(items: Interview[]) {
     groups.set(key, [...(groups.get(key) ?? []), iv])
   }
   return groups
-}
-
-const PENDING_LABEL: Record<PendingKind, { text: string; tone: string }> = {
-  'my-feedback': { text: 'Cần gửi phiếu', tone: 'text-warn' },
-  decision: { text: 'Chờ quyết định', tone: 'text-warn' },
-  feedback: { text: 'Chờ phiếu', tone: 'text-ink-muted' },
 }
 
 const listClass =
@@ -284,6 +278,8 @@ function AgendaRow({
     new Date(iv.scheduledAt).getTime() + iv.durationMinutes * 60_000,
   ).toISOString()
   const submitted = iv.interviewers.filter((p) => p.submitted).length
+  const userId = useAuthStore((s) => s.user?.id)
+  const onlyMe = iv.interviewers.length === 1 && iv.interviewers[0].id === userId
   return (
     <li className="grid gap-x-6 gap-y-1 px-5 py-3.5 md:grid-cols-[8.5rem_minmax(0,1fr)_auto] md:items-start">
       <p className={cn('num', cancelled ? 'text-ink-muted line-through' : 'text-ink')}>
@@ -308,12 +304,16 @@ function AgendaRow({
           </span>
         </p>
         <p className="type-caption flex min-w-0 flex-wrap gap-x-1">
-          <span className="truncate">
-            {iv.interviewers
-              .map((p) => `${p.fullName}${p.submitted ? ' (đã gửi phiếu)' : ''}`)
-              .join(', ')}
-          </span>
-          <span>·</span>
+          {!onlyMe && (
+            <>
+              <span className="truncate">
+                {iv.interviewers
+                  .map((p) => `${p.fullName}${p.submitted ? ' (đã gửi phiếu)' : ''}`)
+                  .join(', ')}
+              </span>
+              <span>·</span>
+            </>
+          )}
           <Location value={iv.location} />
         </p>
         {cancelled && iv.cancelReason && (

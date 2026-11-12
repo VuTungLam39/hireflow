@@ -4,6 +4,12 @@ export const PENDING_LOOKBACK_DAYS = 30
 
 export type PendingKind = 'my-feedback' | 'decision' | 'feedback'
 
+export const PENDING_LABEL: Record<PendingKind, { text: string; tone: string }> = {
+  'my-feedback': { text: 'Cần gửi phiếu', tone: 'text-warn' },
+  decision: { text: 'Chờ quyết định', tone: 'text-warn' },
+  feedback: { text: 'Chờ phiếu', tone: 'text-ink-muted' },
+}
+
 export const isAwaitingDecision = (iv: Interview) =>
   iv.status !== 'CANCELLED' && iv.feedbacks.length > 0 && iv.application?.status === 'INTERVIEW'
 

@@ -33,7 +33,7 @@ export function GalleryLightbox({
     <dialog
       ref={ref}
       aria-label="Thư viện ảnh"
-      onClose={onClose}
+      onClose={(e) => e.target === e.currentTarget && onClose()}
       onClick={(e) => e.target === e.currentTarget && onClose()}
       onKeyDown={(e) => {
         if (count < 2) return

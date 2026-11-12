@@ -69,7 +69,7 @@ export function CommandPalette({
   return (
     <dialog
       ref={ref}
-      onClose={onClose}
+      onClose={(e) => e.target === e.currentTarget && onClose()}
       onClick={(e) => e.target === e.currentTarget && onClose()}
       aria-label="Tìm nhanh"
       className="border-line bg-surface shadow-float backdrop:bg-ink/40 mx-auto mt-[12vh] w-[calc(100%-2rem)] max-w-[600px] rounded-md border p-0"

@@ -157,7 +157,7 @@ export function ScheduleInterviewDialog({
             <Spinner />
           ) : !interviewers.data?.length ? (
             <p className="text-ink-muted text-sm">
-              Chưa có tài khoản vai trò Người phỏng vấn. Nhờ Admin tạo ở trang Người dùng.
+              Chưa có tài khoản vai trò Interviewer. Nhờ Admin tạo ở trang Người dùng.
             </p>
           ) : (
             <Controller

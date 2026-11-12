@@ -93,7 +93,7 @@ export function DetailDialog<T extends string>({
   return (
     <dialog
       ref={ref}
-      onClose={onClose}
+      onClose={(e) => e.target === e.currentTarget && onClose()}
       onClick={(e) => e.target === e.currentTarget && onClose()}
       aria-labelledby={titleId}
       className={cn(
