@@ -192,7 +192,7 @@ export default function InterviewsPage() {
             <Skeleton key={i} className="h-16" />
           ))}
         </div>
-      ) : query.isError ? (
+      ) : query.isError && !query.data ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : view === 'week' ? (
         <WeekView

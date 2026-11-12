@@ -60,7 +60,7 @@ export function CompareDialog({ jobId, ids, open, onClose }: CompareDialogProps)
         <p role="alert" className="type-body py-6">
           {getErrorMessage(query.error)}. Đóng hộp thoại và chọn lại hồ sơ.
         </p>
-      ) : query.isError ? (
+      ) : query.isError && !query.data ? (
         <ErrorState title="Chưa mở được bảng so sánh" error={query.error} onRetry={query.refetch} />
       ) : wide ? (
         <CompareTable data={data!} />

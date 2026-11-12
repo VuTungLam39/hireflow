@@ -25,4 +25,23 @@ describe('getErrorMessage', () => {
     const validation = apiError('VALIDATION_FAILED', [{ field: 'title', messages: ['Quá ngắn'] }])
     expect(getErrorMessage(validation)).not.toBe('Quá ngắn')
   })
+
+  it('never shows the raw English axios message, e.g. a 502 while the API restarts', () => {
+    const gateway = new AxiosError(
+      'Request failed with status code 502',
+      'ERR_BAD_RESPONSE',
+      undefined,
+      undefined,
+      {
+        status: 502,
+        statusText: 'Bad Gateway',
+        headers: {},
+        config: { headers: new AxiosHeaders() },
+        data: '',
+      },
+    )
+    expect(getErrorMessage(gateway)).toBe('Máy chủ tạm thời không phản hồi')
+    const unknown = new AxiosError('Request failed with status code 418')
+    expect(getErrorMessage(unknown)).toBe('Có trục trặc khi tải dữ liệu')
+  })
 })

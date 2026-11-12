@@ -60,7 +60,8 @@ export default function ApplicationDetailPage() {
   useCrumb(app?.candidate.fullName, nav.backTo)
 
   if (isPending) return <ReviewSkeleton />
-  if (isError) return <ErrorState title="Chưa mở được hồ sơ" error={error} onRetry={refetch} />
+  if (isError && !app)
+    return <ErrorState title="Chưa mở được hồ sơ" error={error} onRetry={refetch} />
 
   const select = (reqId: string) => {
     setActiveId(reqId)

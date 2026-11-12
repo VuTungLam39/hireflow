@@ -49,7 +49,7 @@ export function QuickView({ id, listQuery, hideScore, onClose }: QuickViewProps)
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-16 w-full" />
         </div>
-      ) : query.isError ? (
+      ) : query.isError && !query.data ? (
         <ErrorState error={query.error} onRetry={query.refetch} />
       ) : (
         app && (

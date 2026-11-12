@@ -32,7 +32,7 @@ export default function PublicJobDetailPage() {
         <Skeleton className="h-64 w-full max-w-[680px]" />
       </div>
     )
-  if (isError && getErrorCode(error) === 'NOT_FOUND')
+  if (isError && !job && getErrorCode(error) === 'NOT_FOUND')
     return (
       <EmptyState
         title="Vị trí này đã đóng hoặc không còn"
@@ -44,7 +44,8 @@ export default function PublicJobDetailPage() {
         }
       />
     )
-  if (isError) return <ErrorState title="Chưa mở được vị trí này" error={error} onRetry={refetch} />
+  if (isError && !job)
+    return <ErrorState title="Chưa mở được vị trí này" error={error} onRetry={refetch} />
 
   const must = job.requirements.filter((r) => r.type === 'MUST')
   const nice = job.requirements.filter((r) => r.type === 'NICE')

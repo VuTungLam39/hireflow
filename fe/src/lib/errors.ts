@@ -24,6 +24,8 @@ export function getErrorMessage(error: unknown, fallback = 'Có trục trặc kh
     if (error.response?.data?.message) return error.response.data.message
     if (error.code === 'ERR_NETWORK') return 'Không kết nối được tới máy chủ'
     if (error.code === 'ECONNABORTED') return 'Máy chủ phản hồi quá lâu'
+    if ((error.response?.status ?? 0) >= 500) return 'Máy chủ tạm thời không phản hồi'
+    return fallback
   }
   if (error instanceof Error && error.message) return error.message
   return fallback

@@ -50,7 +50,7 @@ export function CandidateDialog({ id, onClose }: { id: string; onClose: () => vo
             <Skeleton key={i} className="h-14 w-full" />
           ))}
         </div>
-      ) : query.isError ? (
+      ) : query.isError && !query.data ? (
         <ErrorState title="Chưa mở được ứng viên" error={query.error} onRetry={query.refetch} />
       ) : tab === 'cand-apps' ? (
         <CandidateApplications candidate={query.data} />

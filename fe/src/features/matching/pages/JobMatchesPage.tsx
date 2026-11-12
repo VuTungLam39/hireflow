@@ -75,7 +75,8 @@ export function JobMatchesView({ jobId, embedded }: { jobId: string; embedded?: 
         <SearchingSkeleton />
       </div>
     )
-  if (isError) return <ErrorState title="Chưa tải được gợi ý" error={error} onRetry={refetch} />
+  if (isError && !data)
+    return <ErrorState title="Chưa tải được gợi ý" error={error} onRetry={refetch} />
 
   const { job, items, pending } = data
   const searching = job.status !== 'DRAFT' && pending && items.length === 0

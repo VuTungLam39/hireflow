@@ -108,7 +108,7 @@ export default function PublicJobsPage() {
             </div>
           ))}
         </div>
-      ) : isError ? (
+      ) : isError && !data ? (
         <ErrorState title="Chưa tải được danh sách việc làm" error={error} onRetry={refetch} />
       ) : items.length === 0 ? (
         <EmptyState

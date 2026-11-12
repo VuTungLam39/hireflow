@@ -31,7 +31,7 @@ export default function JobFormPage() {
         </div>
       </div>
     )
-  if (id && job.isError)
+  if (id && job.isError && !job.data)
     return <ErrorState title="Chưa mở được tin" error={job.error} onRetry={job.refetch} />
 
   return <JobFormContent job={job.data} />

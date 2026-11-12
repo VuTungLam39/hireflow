@@ -107,7 +107,7 @@ export function ApplicationDialog({ id, onClose }: ApplicationDialogProps) {
             <Skeleton key={i} className="h-14 w-full" />
           ))}
         </div>
-      ) : query.isError ? (
+      ) : query.isError && !query.data ? (
         <ErrorState title="Chưa mở được hồ sơ" error={query.error} onRetry={query.refetch} />
       ) : (
         <>

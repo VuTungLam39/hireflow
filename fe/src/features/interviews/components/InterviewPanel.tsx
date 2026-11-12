@@ -65,7 +65,7 @@ export function InterviewPanel({
   const now = useNow()
 
   if (isPending) return <Skeleton className="h-24" />
-  if (isError) return <p className="text-bad text-sm">Không tải được lịch phỏng vấn.</p>
+  if (isError && !data) return <p className="text-bad text-sm">Không tải được lịch phỏng vấn.</p>
 
   const interviews = data ?? []
   const canSchedule = canManage && applicationStatus === 'INTERVIEW'

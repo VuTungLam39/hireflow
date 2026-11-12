@@ -70,7 +70,7 @@ export function JobApplicationsList({
             <Skeleton key={i} className="h-12 w-full" />
           ))}
         </div>
-      ) : query.isError ? (
+      ) : query.isError && !query.data ? (
         <ErrorState error={query.error} onRetry={query.refetch} />
       ) : !items?.length ? (
         <EmptyState

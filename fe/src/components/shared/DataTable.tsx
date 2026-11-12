@@ -83,7 +83,7 @@ export function DataTable<T>({
   caption,
 }: DataTableProps<T>) {
   if (isPending) return <TableSkeleton columns={columns.length} density={density} />
-  if (isError) return <ErrorState error={error} onRetry={onRetry} />
+  if (isError && !data) return <ErrorState error={error} onRetry={onRetry} />
   if (!data?.length)
     return <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />
 

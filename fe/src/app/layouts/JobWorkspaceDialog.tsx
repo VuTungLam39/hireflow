@@ -126,7 +126,7 @@ export function JobWorkspaceDialog({ id, tab: initialTab, onClose }: JobWorkspac
             <Skeleton key={i} className="h-10 w-full" />
           ))}
         </div>
-      ) : query.isError ? (
+      ) : query.isError && !query.data ? (
         <ErrorState title="Chưa mở được tin" error={query.error} onRetry={query.refetch} />
       ) : (
         <>

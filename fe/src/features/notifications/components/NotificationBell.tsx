@@ -102,7 +102,7 @@ export function NotificationBell({ align = 'left' }: NotificationBellProps) {
             <Skeleton className="h-4 w-3/5" />
             <Skeleton className="h-4 w-2/3" />
           </div>
-        ) : list.isError ? (
+        ) : list.isError && !list.data ? (
           <p className="text-bad p-4 text-[13px]">
             Chưa tải được thông báo. Mở lại để thử lần nữa.
           </p>

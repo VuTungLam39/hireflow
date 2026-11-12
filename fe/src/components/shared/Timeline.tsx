@@ -39,7 +39,7 @@ export function Timeline({ items, className }: { items: TimelineEntry[]; classNa
             </div>
             {item.meta && <p className="type-caption">{item.meta}</p>}
             {item.quote && (
-              <blockquote className="border-line text-ink-2 bg-sunken/60 mt-1.5 rounded-xs border-l-2 px-3 py-1.5 text-[13px]">
+              <blockquote className="border-line text-ink-2 bg-sunken/60 mt-1.5 rounded-xs border-l px-3 py-1.5 text-[13px]">
                 {item.quote}
               </blockquote>
             )}

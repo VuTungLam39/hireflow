@@ -46,7 +46,8 @@ export function RankingWorkspace({ jobId, embedded, onOpenApplications }: Worksp
         <Skeleton className="h-96 w-full" />
       </div>
     )
-  if (isError) return <ErrorState title="Chưa tải được xếp hạng" error={error} onRetry={refetch} />
+  if (isError && !data)
+    return <ErrorState title="Chưa tải được xếp hạng" error={error} onRetry={refetch} />
   return <RankingView data={data} embedded={embedded} onOpenApplications={onOpenApplications} />
 }
 

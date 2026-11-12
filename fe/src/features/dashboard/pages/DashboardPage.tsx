@@ -244,7 +244,7 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {summary.isError ? (
+      {summary.isError && !summary.data ? (
         <ErrorState error={summary.error} onRetry={summary.refetch} />
       ) : (
         <section aria-label="Số liệu chính">
