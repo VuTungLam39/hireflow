@@ -39,7 +39,11 @@ export function CvSheet({
       aria-label="Nội dung CV"
       className={cn('border-line bg-surface relative rounded-md border', className)}
     >
-      <div ref={boxRef} className="relative h-full overflow-y-auto px-6 py-8 sm:px-10 sm:py-10">
+      <div
+        ref={boxRef}
+        tabIndex={0}
+        className="relative h-full overflow-y-auto px-6 py-8 sm:px-10 sm:py-10"
+      >
         {header}
         <div className="type-read mx-auto">
           {paragraphs.map((para, i) => {
