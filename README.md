@@ -121,7 +121,8 @@ Cập nhật 12/11/2026. Chi tiết từng feature: tài liệu "Danh mục Feat
 | Mở rộng MVP 2 E1–E7: tìm kiếm lai, tin có cấu trúc, `/careers`, SEO, gợi ý câu hỏi phỏng vấn, xuất CSV | Xong | E2E theo từng hạng mục; số đo tìm kiếm lai ở [be/docs/ai-eval.md](be/docs/ai-eval.md) |
 | Mở rộng sau deploy F1–F4: phễu, đổi trạng thái hàng loạt, so sánh ứng viên, nhân bản tin | Xong, đã kiểm trên production | E2E `funnel`, `bulk-status`, `compare`, `clone-job` (`be/test/`); số đo phễu trên 200k hồ sơ ~275 ms |
 | Health check không gọi B2 cho Render (`/api/health/live`) | Xong | E2E `be/test/app.e2e-spec.ts` |
-| Thử khôi phục backup Neon, load test k6 | Chưa làm | – |
+| Thử khôi phục backup Neon (point-in-time) | Đã thử 12/11 | Tạo branch từ thời điểm cũ: đủ 10 bảng, cùng migration mới nhất, số dòng khớp production. Cách làm ở [Deploy, bước 8](#8-thử-khôi-phục-backup-neon) |
+| Load test k6 | Chưa làm | – |
 
 ---
 
@@ -455,6 +456,17 @@ Nếu `/api/health` trả HTML hoặc không phản hồi: URL Render thật kh�
 ### 7. Giữ API không ngủ (tuỳ chọn)
 
 Tạo một job miễn phí ở https://cron-job.org gọi `https://<domain-vercel>/api/health/live` mỗi 10 phút. Dùng `/live` chứ không dùng `/api/health`, vì `/live` không gọi B2 nên không tốn hạn mức giao dịch. Render free có 750 giờ mỗi tháng, đủ cho một service chạy cả tháng. Nếu có ngân sách, nâng `hireflow-api` lên gói Starter (7$/tháng) để bỏ hẳn chế độ ngủ.
+
+### 8. Thử khôi phục backup Neon
+
+Neon giữ lịch sử thay đổi trong một khoảng thời gian (gói free ngắn, xem trên giao diện), nên khôi phục là tạo **branch mới** từ thời điểm cũ, không ghi đè production. Không dùng nút Restore trên branch production.
+
+1. Neon → **Branches** → **New branch**: parent là branch production, chọn **Specific date and time**, đặt tên `restore-test`.
+2. **Connect** → branch `restore-test`, tắt Connection pooling, copy chuỗi kết nối (host `ep-...` phải khác production).
+3. So số dòng các bảng chính và migration mới nhất giữa branch mới và production (chỉ đọc, trong transaction `READ ONLY`).
+4. Kiểm xong thì xoá branch `restore-test`.
+
+Đã thử ngày 12/11/2026: đủ 10 bảng, migration mới nhất `AddHistoryPrevStageSeconds1792600000021`, số dòng khớp production.
 
 ### Deploy tự động
 
