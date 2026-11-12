@@ -4,7 +4,7 @@
 
 HR đăng tin tuyển dụng, ứng viên nộp CV, hệ thống tự đọc CV và xếp hạng ứng viên theo mô tả công việc (JD). Mỗi điểm số đi kèm **trích dẫn nguyên văn từ CV** làm bằng chứng, và code kiểm tra trích dẫn đó có thật trong CV. HR chỉnh trọng số tiêu chí thì bảng xếp hạng đổi ngay, không tốn thêm lần gọi LLM nào.
 
-> Dự án thực tập tại NCC (10/2026). **MVP 1 đã đủ tính năng** (53/53 feature, mốc M4 ngày 26/10/2026); MVP 2 đang làm, hạn hoàn thiện cả hai bản là **01/11/2026**. Xem [Trạng thái](#trạng-thái) và [Kịch bản demo](#kịch-bản-demo-15-phút).
+> Dự án thực tập tại NCC (10–11/2026). **MVP 1** (53/53 feature, 26/10) và **MVP 2** (demo 01/11) đã xong, kèm hai đợt mở rộng E1–E7 (04–05/11) và F1–F4 (11/11). **Đang chạy production:** https://hireflow-gray-zeta.vercel.app. Xem [Trạng thái](#trạng-thái) và [Kịch bản demo](#kịch-bản-demo-15-phút).
 
 ---
 
@@ -73,13 +73,22 @@ HireFlow xử lý ba vấn đề của cách "gửi CV cho LLM rồi nhận đi�
 - **Kho ứng viên, HR tải CV hộ, ẩn danh ứng viên** theo yêu cầu (Nghị định 13/2023).
 - **Hàng đợi AI cho Admin:** xem hồ sơ chấm lỗi hoặc kẹt, chạy lại.
 
-### MVP 2 (đến 01/11/2026)
+### MVP 2 (xong 01/11/2026)
 
 Đã làm: **gợi ý ứng viên cũ khi đăng tin** (tối đa 10 người từ 50 điểm, mỗi tiêu chí kèm đoạn trích đã kiểm; mời vào tin bằng một thao tác, không gọi LLM) · mở lại hồ sơ đã kết thúc (về Sàng lọc CV, bắt buộc lý do) · nhập text CV thủ công cho CV ảnh scan · job định kỳ tự ẩn danh ứng viên hết hạn lưu CV và dọn refresh token hết hạn · **thông báo realtime (SSE)** khi CV chấm xong hoặc lỗi, chuông thông báo, thay việc hỏi lại mỗi 3 giây · **nhật ký kiểm toán** (xem CV, đổi trạng thái, ẩn danh, đổi quyền; chỉ ghi thêm) · cache Redis cho dashboard (230 ms → 10 ms) · bộ đánh giá chất lượng AI (10 CV × 2 JD) · prerender trang job công khai · cấu hình deploy (Vercel + Render + Neon + Backblaze B2) + CI.
 
 Đã làm thêm: **phỏng vấn và phiếu đánh giá** với role Interviewer (đặt lịch, chặn trùng giờ, Interviewer chỉ thấy hồ sơ được giao và chấm độc lập không thấy điểm AI, phiếu 1–5 theo tiêu chí sửa trong 24 giờ).
 
-Còn lại: tìm kiếm kết hợp (full-text + vector) · cổng chất lượng production · deploy thật.
+### Mở rộng MVP 2 (04–05/11/2026)
+
+**E1** tìm kiếm lai full-text không dấu + vector (gộp RRF) cho Hỏi kho CV và Kho ứng viên · **E2** tin có cấu trúc (lương, cấp bậc, hình thức, chế độ, số lượng, hạn nộp, quyền lợi) · **E3** hồ sơ công ty, trang `/careers` · **E4** SEO trang tuyển dụng (JSON-LD, sitemap) · **E5** gợi ý câu hỏi phỏng vấn theo tiêu chí và CV · **E6** xuất CSV hồ sơ theo bộ lọc, có ghi nhật ký · **E7** số liệu trang Hôm nay. Giao diện làm lại theo Design Spec v1.0 "Bàn duyệt hồ sơ".
+
+### Mở rộng sau deploy (11/11/2026)
+
+- **F1 Báo cáo phễu tuyển dụng:** tỉ lệ chuyển bước, số ngày trung vị ở mỗi bước, số hồ sơ rơi ở mỗi bước, chia theo nguồn hồ sơ. Ở trang Hôm nay và trong từng tin.
+- **F2 Đổi trạng thái hàng loạt:** tối đa 100 hồ sơ mỗi lần, một request, kết quả theo từng hồ sơ (thành công / không đổi / lỗi); từ chối hàng loạt dùng chung một lý do, không từ chối hồ sơ ở bước Đề nghị.
+- **F3 So sánh 2–3 ứng viên** cùng tin theo từng tiêu chí: mức khớp, trích dẫn, điểm phiếu phỏng vấn; cảnh báo hồ sơ chấm theo tiêu chí cũ.
+- **F4 Nhân bản tin** thành bản nháp, chỉ copy tiêu chí của phiên bản mới nhất.
 
 ### Không nằm trong phạm vi
 
@@ -89,7 +98,7 @@ Tự động loại ứng viên · lương, ký offer điện tử · SSO, mobil
 
 ## Trạng thái
 
-Cập nhật 27/10/2026. Chi tiết từng feature: tài liệu "Danh mục Feature theo Actor" (thư mục `docs/`, không đưa lên git).
+Cập nhật 12/11/2026. Chi tiết từng feature: tài liệu "Danh mục Feature theo Actor" (thư mục `docs/`, không đưa lên git).
 
 | Phần | Trạng thái | Minh chứng |
 | --- | --- | --- |
@@ -104,12 +113,15 @@ Cập nhật 27/10/2026. Chi tiết từng feature: tài liệu "Danh mục Feat
 | Rate limit theo người dùng và theo tài khoản, `npm audit` trong CI, coverage service lõi | Xong | Coverage 92,6% (mục tiêu 70%) |
 | Prerender trang job công khai (SSG + hydrate), tài liệu rendering | Xong | [fe/docs/rendering.md](fe/docs/rendering.md) |
 | `docker compose up` chạy toàn hệ thống, kiểm giao diện 3 role × 3 độ rộng | Xong | [fe/docs/qa-responsive.md](fe/docs/qa-responsive.md) |
-| Cấu hình deploy Vercel + Render + Neon + Backblaze B2 | Xong phần code, chưa deploy thật | Mục [Deploy](#deploy) |
+| Deploy Vercel + Render + Neon + Backblaze B2 | Đang chạy production (từ 11/11) | https://hireflow-gray-zeta.vercel.app; `scripts/smoke.mjs` đạt 12/12 mục (có đăng nhập, refresh cookie, SSE) |
 | Gợi ý ứng viên cũ khi đăng tin, mời vào tin (US-10) | Xong | E2E `be/test/matching.e2e-spec.ts`; tin nháp demo “Fullstack Developer (NestJS + React)” |
 | Mở lại hồ sơ đã kết thúc, nhập text CV thủ công, tự ẩn danh khi hết hạn lưu, dọn token (D5) | Xong | E2E `be/test/data-lifecycle.e2e-spec.ts`, `ai-pipeline.e2e-spec.ts` (CV scan → nhập text → có điểm) |
 | Cache dashboard, thông báo realtime (SSE), nhật ký kiểm toán (D6) | Xong | E2E `be/test/realtime-audit.e2e-spec.ts`; số đo cache ở [perf-report.md](be/docs/perf-report.md) mục 3.5 |
 | Phỏng vấn, phiếu đánh giá, role Interviewer (D7) | Xong | E2E `be/test/interviews.e2e-spec.ts`; FE `fe/src/test/flows/interviews.test.tsx` |
-| MVP 2 còn lại: tìm kiếm kết hợp, cổng chất lượng production, deploy thật | Đang làm (28–30/10) | – |
+| Mở rộng MVP 2 E1–E7: tìm kiếm lai, tin có cấu trúc, `/careers`, SEO, gợi ý câu hỏi phỏng vấn, xuất CSV | Xong | E2E theo từng hạng mục; số đo tìm kiếm lai ở [be/docs/ai-eval.md](be/docs/ai-eval.md) |
+| Mở rộng sau deploy F1–F4: phễu, đổi trạng thái hàng loạt, so sánh ứng viên, nhân bản tin | Xong, đã kiểm trên production | E2E `funnel`, `bulk-status`, `compare`, `clone-job` (`be/test/`); số đo phễu trên 200k hồ sơ ~275 ms |
+| Health check không gọi B2 cho Render (`/api/health/live`) | Xong | E2E `be/test/app.e2e-spec.ts` |
+| Thử khôi phục backup Neon, load test k6 | Chưa làm | – |
 
 ---
 
@@ -319,8 +331,10 @@ Dự phòng khi không có mạng hoặc hết hạn mức AI: đặt `LLM_PROVI
 
 Frontend chạy trên **Vercel**, API và worker chạy trên **Render**. Tất cả đều dùng gói miễn phí.
 
+**Production:** https://hireflow-gray-zeta.vercel.app (API gốc: `https://hireflow-api-z99n.onrender.com`, chỉ gọi qua `/api` của Vercel).
+
 ```
-Trình duyệt ──► Vercel (hireflow.vercel.app)
+Trình duyệt ──► Vercel (hireflow-gray-zeta.vercel.app)
                  ├─ /*      → file tĩnh của fe/dist
                  └─ /api/*  → chuyển tiếp sang Render ──► hireflow-api (NestJS + 4 worker BullMQ)
                                                            ├─ Neon            PostgreSQL + pgvector
@@ -440,7 +454,7 @@ Nếu `/api/health` trả HTML hoặc không phản hồi: URL Render thật kh�
 
 ### 7. Giữ API không ngủ (tuỳ chọn)
 
-Tạo một job miễn phí ở https://cron-job.org gọi `https://<domain-vercel>/api/health` mỗi 10 phút. Render free có 750 giờ mỗi tháng, đủ cho một service chạy cả tháng. Nếu có ngân sách, nâng `hireflow-api` lên gói Starter (7$/tháng) để bỏ hẳn chế độ ngủ.
+Tạo một job miễn phí ở https://cron-job.org gọi `https://<domain-vercel>/api/health/live` mỗi 10 phút. Dùng `/live` chứ không dùng `/api/health`, vì `/live` không gọi B2 nên không tốn hạn mức giao dịch. Render free có 750 giờ mỗi tháng, đủ cho một service chạy cả tháng. Nếu có ngân sách, nâng `hireflow-api` lên gói Starter (7$/tháng) để bỏ hẳn chế độ ngủ.
 
 ### Deploy tự động
 
@@ -578,12 +592,16 @@ Ngày 26/10/2026 lịch được rút lại: hoàn thiện cả MVP 1 và MVP 2 
 | 26/10 (D4) | Đặc tả US-10 và BR-MATCH-01 → 04; gợi ý ứng viên cũ + mời vào tin | Xong (sớm 2 ngày) |
 | 27/10 (D5) | Job định kỳ tự ẩn danh khi hết hạn lưu, dọn token; mở lại hồ sơ đã kết thúc; nhập text CV thủ công | Xong |
 | 27/10 (D6) | Cache dashboard; thông báo realtime (SSE); nhật ký kiểm toán (kéo lên từ 28–29/10 vì chưa có tài khoản deploy) | Xong |
-| 28/10 | Deploy thật (Vercel + Render + Neon + Backblaze B2), backup và thử khôi phục | |
-| 29/10 | ai-eval 30 CV | |
+| 28/10 | Deploy thật (Vercel + Render + Neon + Backblaze B2), backup và thử khôi phục | Deploy dời sang 10–11/11; thử khôi phục chưa làm |
+| 29/10 | ai-eval 30 CV | Chưa làm (bộ hiện có 10 CV × 2 JD) |
 | 27/10 (D7) | Phỏng vấn + role Interviewer; chốt các quy tắc ⚠ (BR-MATCH-01, 04, BR-NOTI-01, BR-AUDIT-01, BR-INT-01 → 03) | Xong |
 | 30/10 | Load test k6, cổng chất lượng production. Ngừng thêm tính năng cuối ngày | |
 | 31/10 | Kịch bản demo gộp MVP 1 + 2, tập demo trên bản deploy, báo cáo cuối kỳ, sửa lỗi | |
 | 01/11 | Buổi demo duy nhất | **Phát hành MVP 2** |
+| 03–04/11 | Làm lại giao diện theo Design Spec v1.0 "Bàn duyệt hồ sơ" (PR #34 → #38) | Xong |
+| 04–05/11 | Mở rộng MVP 2: E1 → E7 | Xong |
+| 10–11/11 | Deploy production; health check `/api/health/live` | Xong |
+| 11/11 | Mở rộng sau deploy: F1 → F4 | Xong |
 
 Giao diện (chốt 30/10): demo dùng theme Indigo Night, bỏ icon lấp lánh và đổi "Điểm AI" thành "Mức phù hợp". Đặc tả thẩm mỹ mới "Bàn duyệt hồ sơ" (Design Spec v1.0, ước tính 4–5 ngày) làm sau buổi demo.
 
