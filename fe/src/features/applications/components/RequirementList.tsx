@@ -63,8 +63,8 @@ export function RequirementList({
             <MatchIndicator level={level} rejected={!!item?.rejectedEvidence} className="mt-1" />
 
             {item?.evidence && (
-              <blockquote className="type-body mt-2 italic">
-                “<span className="mark-evidence not-italic">{item.evidence}</span>”
+              <blockquote className="type-body mt-2">
+                “<span className="mark-evidence">{item.evidence}</span>”
               </blockquote>
             )}
 

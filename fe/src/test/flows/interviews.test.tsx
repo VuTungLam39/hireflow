@@ -59,6 +59,7 @@ describe('interviews', () => {
     expect(await screen.findByRole('link', { name })).toBeInTheDocument()
     expect(screen.getByText('Cần gửi phiếu')).toBeInTheDocument()
     expect(screen.getAllByRole('link')).toHaveLength(1)
+    expect(screen.queryByText(/Bùi Minh Khoa/)).not.toBeInTheDocument()
   })
 
   it('BR-INT-02: an interviewer cannot open an application they are not assigned to', async () => {
@@ -69,6 +70,7 @@ describe('interviews', () => {
   it('BR-INT-03: the assigned interviewer rates every criterion and submits feedback', async () => {
     const iv = pastInterview()
     renderAt('interviewer@hireflow.dev', links.applicationDetail(iv.applicationId))
+    expect(await screen.findByText('Cần gửi phiếu')).toBeInTheDocument()
     fireEvent.click(await screen.findByRole('button', { name: 'Gửi phiếu đánh giá' }))
     expect(screen.getByText(/Mức phù hợp được ẩn để bạn chấm độc lập/)).toBeInTheDocument()
     const dialog = await screen.findByRole('dialog')

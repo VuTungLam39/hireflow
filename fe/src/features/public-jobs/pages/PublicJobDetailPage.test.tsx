@@ -91,4 +91,22 @@ describe('PublicJobDetailPage', () => {
       paths.publicJobs,
     )
   })
+
+  it('a closed or unknown job explains it and links to open positions instead of a retry', async () => {
+    open('00000000-0000-4000-8000-000000000000')
+    expect(await screen.findByText('Vị trí này đã đóng hoặc không còn')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Thử lại' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Xem vị trí đang tuyển' })).toHaveAttribute(
+      'href',
+      paths.publicJobs,
+    )
+  })
+
+  it('an empty form asks for each field instead of calling it invalid', async () => {
+    open(db.jobs.find((j) => j.status === 'OPEN')!.id)
+    fireEvent.click(await screen.findByRole('button', { name: 'Nộp hồ sơ' }))
+    expect(await screen.findByText('Nhập email')).toBeInTheDocument()
+    expect(screen.getByText('Nhập số điện thoại')).toBeInTheDocument()
+    expect(screen.queryByText('Email không hợp lệ')).not.toBeInTheDocument()
+  })
 })

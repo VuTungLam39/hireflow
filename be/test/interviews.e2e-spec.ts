@@ -261,6 +261,9 @@ describe('Interviews (e2e)', () => {
 
       const jobs = await as('ivA', request(server()).get('/api/v1/jobs?limit=100')).expect(200);
       expect(jobs.body.data.map((j: { id: string }) => j.id)).toEqual([ids.job]);
+      expect(jobs.body.data[0].applicationCount).toBe(1);
+      const job = await as('ivA', request(server()).get(`/api/v1/jobs/${ids.job}`)).expect(200);
+      expect(job.body.data.applicationCount).toBe(1);
       await as('ivA', request(server()).get(`/api/v1/jobs/${ids.otherJob}`)).expect(404);
       await as('ivA', request(server()).get(`/api/v1/jobs/${ids.job}/ranking`)).expect(404);
 

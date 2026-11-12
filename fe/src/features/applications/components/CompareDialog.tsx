@@ -60,7 +60,7 @@ export function CompareDialog({ jobId, ids, open, onClose }: CompareDialogProps)
         <p role="alert" className="type-body py-6">
           {getErrorMessage(query.error)}. Đóng hộp thoại và chọn lại hồ sơ.
         </p>
-      ) : query.isError ? (
+      ) : query.isError && !query.data ? (
         <ErrorState title="Chưa mở được bảng so sánh" error={query.error} onRetry={query.refetch} />
       ) : wide ? (
         <CompareTable data={data!} />
@@ -201,8 +201,8 @@ function CriterionCell({ item }: { item: CompareCriterion | undefined }) {
     <div className="space-y-1">
       <MatchIndicator level={item.match} />
       {item.evidence && (
-        <p className="type-body line-clamp-2 text-[13px] italic" title={item.evidence}>
-          “<span className="mark-evidence not-italic">{item.evidence}</span>”
+        <p className="type-body line-clamp-2 text-[13px]" title={item.evidence}>
+          “<span className="mark-evidence">{item.evidence}</span>”
         </p>
       )}
       {item.interviewAvg !== null && (

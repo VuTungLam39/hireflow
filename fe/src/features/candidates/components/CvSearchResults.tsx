@@ -89,7 +89,7 @@ export function CvSearchResults({
         ))}
       </div>
     )
-  if (query.isError)
+  if (query.isError && !query.data)
     return <ErrorState title="Chưa tìm được trong CV" error={query.error} onRetry={query.refetch} />
 
   const { items, degraded } = query.data

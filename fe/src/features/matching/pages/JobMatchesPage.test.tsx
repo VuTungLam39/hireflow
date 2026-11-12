@@ -52,7 +52,7 @@ describe('JobMatchesPage', () => {
     const card = buttons[0].closest('[data-match-card]') as HTMLElement
     fireEvent.click(buttons[0])
     expect(await within(card).findByText('Đã mời')).toBeInTheDocument()
-    expect(within(card).getByRole('link', { name: 'Xem hồ sơ →' })).toBeInTheDocument()
+    expect(within(card).getByRole('link', { name: 'Xem hồ sơ' })).toBeInTheDocument()
   })
 
   it('says the search is slow after 30 s, stops polling and lets HR retry', async () => {

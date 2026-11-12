@@ -22,7 +22,8 @@ export default function CandidateDetailPage() {
         <Skeleton className="h-64 w-full" />
       </div>
     )
-  if (isError) return <ErrorState title="Chưa mở được ứng viên" error={error} onRetry={refetch} />
+  if (isError && !candidate)
+    return <ErrorState title="Chưa mở được ứng viên" error={error} onRetry={refetch} />
 
   const anonymized = !!candidate.anonymizedAt
 

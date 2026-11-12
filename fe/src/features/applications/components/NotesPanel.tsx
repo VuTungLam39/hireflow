@@ -36,7 +36,7 @@ export function NotesPanel({ applicationId }: { applicationId: string }) {
 
       {isPending ? (
         <Skeleton className="h-16" />
-      ) : isError ? (
+      ) : isError && !data ? (
         <ErrorState error={error} onRetry={refetch} />
       ) : data.length === 0 ? (
         <EmptyState

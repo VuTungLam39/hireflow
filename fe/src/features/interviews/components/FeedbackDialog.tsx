@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Dialog, FormField, Textarea } from '@/components/ui'
+import { Button, Dialog, DialogFooter, FormField, Textarea } from '@/components/ui'
 import { getErrorMessage } from '@/lib/errors'
 import { cn, formatTimeOnDate } from '@/lib/utils'
 import { useSubmitFeedback } from '../hooks/use-interviews'
@@ -156,14 +156,14 @@ export function FeedbackDialog({
             {error}
           </p>
         )}
-        <div className="flex justify-end gap-2">
+        <DialogFooter>
           <Button type="button" variant="secondary" onClick={onClose} disabled={submit.isPending}>
             Huỷ
           </Button>
           <Button type="button" loading={submit.isPending} onClick={save}>
             {existing ? 'Lưu thay đổi' : 'Gửi phiếu'}
           </Button>
-        </div>
+        </DialogFooter>
       </div>
     </Dialog>
   )

@@ -119,4 +119,4 @@ export function Popover({
 }
 
 export const menuItemClass =
-  'flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-left text-sm text-ink-2 transition-colors hover:bg-sunken hover:text-ink focus-visible:bg-sunken focus-visible:outline-none disabled:text-ink-faint disabled:hover:bg-transparent [&_svg]:size-4 [&_svg]:text-ink-muted'
+  'flex w-full items-center gap-2.5 rounded-inset px-2.5 py-2 text-left text-sm text-ink-2 transition-colors hover:bg-sunken hover:text-ink focus-visible:bg-sunken focus-visible:outline-none disabled:text-ink-faint disabled:hover:bg-transparent [&_svg]:size-4 [&_svg]:text-ink-muted'

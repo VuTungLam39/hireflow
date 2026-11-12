@@ -31,9 +31,26 @@ export function KpiStrip({
       )}
     >
       {items.map((kpi, i) => {
-        const body = (
-          <>
-            <dt className="type-caption">{kpi.label}</dt>
+        return (
+          <div
+            key={kpi.label}
+            className={cn(
+              'min-w-0 flex-1 py-4 sm:px-6 sm:first:pl-0',
+              i % 2 === 1 && 'border-line border-l pl-4 sm:border-l-0',
+              i >= 2 && 'border-line border-t sm:border-t-0',
+              i % 2 === 0 && 'pr-4',
+              kpi.to && 'hover:[&_.type-figure]:text-brand relative',
+            )}
+          >
+            <dt className="type-caption">
+              {kpi.to ? (
+                <Link to={kpi.to} className="after:absolute after:inset-0">
+                  {kpi.label}
+                </Link>
+              ) : (
+                kpi.label
+              )}
+            </dt>
             <dd className="mt-1">
               {loading ? (
                 <Skeleton className="h-9 w-20" />
@@ -56,25 +73,6 @@ export function KpiStrip({
               <dd className={cn('num mt-0.5 text-[13px]', toneClass[kpi.compareTone ?? 'muted'])}>
                 {kpi.compare}
               </dd>
-            )}
-          </>
-        )
-        return (
-          <div
-            key={kpi.label}
-            className={cn(
-              'min-w-0 flex-1 py-4 sm:px-6 sm:first:pl-0',
-              i % 2 === 1 && 'border-line border-l pl-4 sm:border-l-0',
-              i >= 2 && 'border-line border-t sm:border-t-0',
-              i % 2 === 0 && 'pr-4',
-            )}
-          >
-            {kpi.to ? (
-              <Link to={kpi.to} className="group hover:[&_.type-figure]:text-brand block">
-                {body}
-              </Link>
-            ) : (
-              body
             )}
           </div>
         )

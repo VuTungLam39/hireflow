@@ -28,7 +28,7 @@ export function FilterBar({ children, active = [], onReset, trailing }: FilterBa
         >
           <X className="size-4" />
           Xoá lọc
-          <span className="num text-ink-faint font-normal">{active.length}</span>
+          <span className="num text-ink-muted font-normal">{active.length}</span>
         </button>
       )}
       {trailing && <div className="ml-auto flex items-center gap-2">{trailing}</div>}
@@ -64,8 +64,8 @@ export function FilterTrigger({ label, value, onClear, className, ...props }: Fi
         type="button"
         {...props}
         className={cn(
-          'group hover:bg-brand/5 inline-flex items-center gap-1.5 rounded-l-[5px] pr-2 pl-3 text-sm whitespace-nowrap transition-colors',
-          !onClear && 'rounded-r-[5px]',
+          'group hover:bg-brand/5 rounded-l-inset inline-flex items-center gap-1.5 pr-2 pl-3 text-sm whitespace-nowrap transition-colors',
+          !onClear && 'rounded-r-inset',
           className,
         )}
       >
@@ -78,7 +78,7 @@ export function FilterTrigger({ label, value, onClear, className, ...props }: Fi
           type="button"
           aria-label={`Bỏ lọc ${label}`}
           onClick={onClear}
-          className="border-brand/20 text-brand hover:bg-brand/10 inline-flex w-8 items-center justify-center rounded-r-[5px] border-l transition-colors"
+          className="border-brand/20 text-brand hover:bg-brand/10 rounded-r-inset inline-flex w-8 items-center justify-center border-l transition-colors"
         >
           <X className="size-3.5" />
         </button>
@@ -233,7 +233,7 @@ export function DensityToggle({
           aria-checked={value === v}
           onClick={() => onChange(v)}
           className={cn(
-            'h-7 rounded-[5px] border px-2.5',
+            'rounded-inset h-7 border px-2.5',
             value === v ? 'border-line bg-surface text-ink' : 'text-ink-muted border-transparent',
           )}
         >

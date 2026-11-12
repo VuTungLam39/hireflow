@@ -69,7 +69,7 @@ export function CommandPalette({
   return (
     <dialog
       ref={ref}
-      onClose={onClose}
+      onClose={(e) => e.target === e.currentTarget && onClose()}
       onClick={(e) => e.target === e.currentTarget && onClose()}
       aria-label="Tìm nhanh"
       className="border-line bg-surface shadow-float backdrop:bg-ink/40 mx-auto mt-[12vh] w-[calc(100%-2rem)] max-w-[600px] rounded-md border p-0"
@@ -101,7 +101,7 @@ export function CommandPalette({
                   select(flat[active])
                 }
               }}
-              className="text-ink placeholder:text-ink-faint h-12 min-w-0 flex-1 bg-transparent text-[15px] outline-none"
+              className="text-ink placeholder:text-ink-muted h-12 min-w-0 flex-1 bg-transparent text-[15px] outline-none"
             />
             {loading && <Spinner className="text-ink-muted size-4" />}
             <Kbd>Esc</Kbd>
@@ -130,7 +130,7 @@ export function CommandPalette({
                           onPointerMove={() => setActive(i)}
                           onClick={() => select(item)}
                           className={cn(
-                            'flex cursor-pointer items-center gap-3 rounded-sm px-2.5 py-2',
+                            'rounded-inset flex cursor-pointer items-center gap-3 px-2.5 py-2',
                             i === active ? 'bg-sunken text-ink' : 'text-ink-2',
                           )}
                         >

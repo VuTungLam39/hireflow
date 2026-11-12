@@ -41,7 +41,7 @@ export default function CareersPage() {
         <Skeleton className="h-24 w-full max-w-[680px]" />
       </div>
     )
-  if (isError) {
+  if (isError && !company) {
     return getErrorCode(error) === 'COMPANY_PROFILE_INCOMPLETE' ? (
       <EmptyState
         title="Trang giới thiệu công ty đang được cập nhật"

@@ -9,7 +9,12 @@ export const passwordSchema = z
     'Mật khẩu ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số',
   )
 
-export const emailSchema = z.string().trim().toLowerCase().email('Email không hợp lệ')
+export const emailSchema = z
+  .string()
+  .trim()
+  .min(1, 'Nhập email')
+  .toLowerCase()
+  .email('Email không hợp lệ')
 
 export const loginSchema = z.object({
   email: emailSchema,

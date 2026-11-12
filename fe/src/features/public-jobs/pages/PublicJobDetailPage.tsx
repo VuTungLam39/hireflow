@@ -1,9 +1,10 @@
 import { ArrowLeft, Check } from 'lucide-react'
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { Link, useParams } from 'react-router'
-import { ErrorState } from '@/components/shared'
+import { EmptyState, ErrorState } from '@/components/shared'
 import { Skeleton, buttonVariants } from '@/components/ui'
 import { useDocumentTitle } from '@/hooks/use-document-title'
+import { getErrorCode } from '@/lib/errors'
 import { cn, formatDate, formatDaysAgo } from '@/lib/utils'
 import { jobTitle } from '@/prerender/shared'
 import { paths } from '@/routes/paths'
@@ -31,7 +32,20 @@ export default function PublicJobDetailPage() {
         <Skeleton className="h-64 w-full max-w-[680px]" />
       </div>
     )
-  if (isError) return <ErrorState title="Chưa mở được vị trí này" error={error} onRetry={refetch} />
+  if (isError && !job && getErrorCode(error) === 'NOT_FOUND')
+    return (
+      <EmptyState
+        title="Vị trí này đã đóng hoặc không còn"
+        description="Đường dẫn có thể đã cũ. Bạn xem các vị trí HireFlow đang tuyển nhé."
+        action={
+          <Link to={paths.publicJobs} className={buttonVariants({ variant: 'secondary' })}>
+            Xem vị trí đang tuyển
+          </Link>
+        }
+      />
+    )
+  if (isError && !job)
+    return <ErrorState title="Chưa mở được vị trí này" error={error} onRetry={refetch} />
 
   const must = job.requirements.filter((r) => r.type === 'MUST')
   const nice = job.requirements.filter((r) => r.type === 'NICE')
@@ -129,6 +143,9 @@ export default function PublicJobDetailPage() {
                   Bộ phận tuyển dụng sẽ đọc CV và liên hệ qua email trong vòng 7 ngày làm việc nếu
                   bạn phù hợp với vị trí.
                 </p>
+                <Link to={paths.publicJobs} className={buttonVariants({ variant: 'secondary' })}>
+                  Xem vị trí khác
+                </Link>
               </div>
             ) : (
               <>

@@ -13,7 +13,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   [Role.Admin]: 'Admin',
   [Role.Hr]: 'HR',
   [Role.HiringManager]: 'Hiring Manager',
-  [Role.Interviewer]: 'Người phỏng vấn',
+  [Role.Interviewer]: 'Interviewer',
 }
 
 export interface User {

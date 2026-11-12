@@ -47,7 +47,10 @@ function SampleCv() {
 export function AuthLayout() {
   return (
     <div className="bg-canvas grid min-h-dvh lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
-      <section className="bg-rail text-rail-text relative hidden flex-col px-12 py-10 lg:flex xl:px-16">
+      <aside
+        aria-label="Giới thiệu HireFlow"
+        className="bg-rail text-rail-text relative hidden flex-col px-12 py-10 lg:flex xl:px-16"
+      >
         <BrandMark onDark tagline />
         <div className="my-auto max-w-[520px] space-y-10 py-12">
           <div className="space-y-4">
@@ -60,7 +63,7 @@ export function AuthLayout() {
           <SampleCv />
         </div>
         <p className="text-rail-muted text-xs">© 2026 HireFlow · Dự án thực tập NCC</p>
-      </section>
+      </aside>
 
       <main className="flex items-center justify-center px-4 py-10 sm:px-6">
         <div className="w-full max-w-[360px]">

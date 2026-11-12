@@ -9,10 +9,11 @@ import { useApply } from '../hooks/use-public-jobs'
 
 const applySchema = z.object({
   fullName: z.string().trim().min(2, 'Nhập họ tên').max(100),
-  email: z.string().trim().toLowerCase().email('Email không hợp lệ'),
+  email: z.string().trim().min(1, 'Nhập email').toLowerCase().email('Email không hợp lệ'),
   phone: z
     .string()
     .trim()
+    .min(1, 'Nhập số điện thoại')
     .regex(/^(\+84|0)\d{9,10}$/, 'Số điện thoại không hợp lệ'),
   cv: z.instanceof(File, { message: 'Vui lòng chọn file CV' }).nullable().refine(Boolean, {
     message: 'Vui lòng chọn file CV',

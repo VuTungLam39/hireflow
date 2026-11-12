@@ -24,6 +24,8 @@ import { Permission } from '@/lib/permissions'
 import { FunnelReport } from '@/features/dashboard'
 import { shiftIsoDay, todayIsoDay } from '@/lib/vn-day'
 import { formatDate } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth.store'
+import { Role } from '@/types/user'
 
 // BE nhận tối đa 366 ngày: tin đăng lâu hơn thì xem 12 tháng gần nhất
 const funnelSince = (startedAt: string) => {
@@ -47,6 +49,8 @@ export function JobWorkspaceDialog({ id, tab: initialTab, onClose }: JobWorkspac
   const job = query.data
   const canEdit = useCanEditJob(job)
   const canInvite = usePermission(Permission.ApplicationCreate)
+  const canSeeFunnel = usePermission(Permission.DashboardRead)
+  const isInterviewer = useAuthStore((s) => s.user?.role === Role.Interviewer)
   const openDetail = useOpenDetail()
   const [tab, setTab] = useState<JobTab>(
     TABS.includes(initialTab as JobTab) ? (initialTab as JobTab) : 'overview',
@@ -63,7 +67,7 @@ export function JobWorkspaceDialog({ id, tab: initialTab, onClose }: JobWorkspac
         ...(live
           ? [
               { id: 'applications' as const, label: 'Hồ sơ', count: job.applicationCount },
-              { id: 'ranking' as const, label: 'Xếp hạng' },
+              ...(isInterviewer ? [] : [{ id: 'ranking' as const, label: 'Xếp hạng' }]),
               ...(canInvite ? [{ id: 'matches' as const, label: 'Ứng viên cũ phù hợp' }] : []),
             ]
           : []),
@@ -122,7 +126,7 @@ export function JobWorkspaceDialog({ id, tab: initialTab, onClose }: JobWorkspac
             <Skeleton key={i} className="h-10 w-full" />
           ))}
         </div>
-      ) : query.isError ? (
+      ) : query.isError && !query.data ? (
         <ErrorState title="Chưa mở được tin" error={query.error} onRetry={query.refetch} />
       ) : (
         <>
@@ -138,11 +142,13 @@ export function JobWorkspaceDialog({ id, tab: initialTab, onClose }: JobWorkspac
                 />
               }
               funnel={
-                <FunnelReport
-                  jobId={id}
-                  since={funnelSince(query.data.publishedAt ?? query.data.createdAt)}
-                  headingLevel="h3"
-                />
+                canSeeFunnel && (
+                  <FunnelReport
+                    jobId={id}
+                    since={funnelSince(query.data.publishedAt ?? query.data.createdAt)}
+                    headingLevel="h3"
+                  />
+                )
               }
             />
           )}

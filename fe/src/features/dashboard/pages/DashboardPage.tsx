@@ -228,7 +228,6 @@ export default function DashboardPage() {
                     to={todo.to}
                     className="group hover:bg-canvas flex items-center gap-4 px-5 py-3.5 transition-colors"
                   >
-                    <span aria-hidden className="bg-marker-strong h-5 w-1 shrink-0 rounded-full" />
                     <span className="min-w-0 flex-1">
                       <span className="type-body-strong block">{todo.text(todo.count!)}</span>
                       {todo.hint && <span className="type-caption block">{todo.hint}</span>}
@@ -245,7 +244,7 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {summary.isError ? (
+      {summary.isError && !summary.data ? (
         <ErrorState error={summary.error} onRetry={summary.refetch} />
       ) : (
         <section aria-label="Số liệu chính">

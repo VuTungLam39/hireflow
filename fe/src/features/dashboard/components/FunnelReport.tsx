@@ -66,7 +66,7 @@ export function FunnelReport({ jobId, since, headingLevel: Heading = 'h2' }: Fun
               <Skeleton key={i} className="h-6 w-full" />
             ))}
           </div>
-        ) : query.isError ? (
+        ) : query.isError && !query.data ? (
           <ErrorState
             className="p-5"
             title="Chưa tải được phễu tuyển dụng"

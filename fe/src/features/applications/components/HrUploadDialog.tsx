@@ -11,7 +11,7 @@ import type { ApplicationDetail } from '../types'
 
 const uploadSchema = z.object({
   fullName: z.string().trim().min(2, 'Nhập họ tên').max(100),
-  email: z.string().trim().toLowerCase().email('Email không hợp lệ'),
+  email: z.string().trim().min(1, 'Nhập email').toLowerCase().email('Email không hợp lệ'),
   // Tuỳ chọn khi HR tải hộ; có nhập thì phải đúng định dạng
   phone: z
     .string()

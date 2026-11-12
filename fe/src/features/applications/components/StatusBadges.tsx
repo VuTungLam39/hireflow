@@ -127,13 +127,14 @@ export function ScoreBadge({
 }) {
   if (score === null)
     return (
-      <span className={cn('text-ink-muted num', className)} aria-label="Chưa chấm">
+      <span role="img" className={cn('text-ink-muted num', className)} aria-label="Chưa chấm">
         —
       </span>
     )
   const tone = scoreTone(score)
   return (
     <span
+      role="img"
       className={cn('inline-flex items-center justify-end gap-2', className)}
       aria-label={`Mức phù hợp ${score} trên 100, ${tone.label}${stale ? ', điểm cũ' : ''}`}
     >

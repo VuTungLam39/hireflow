@@ -61,7 +61,7 @@ export default function PublicJobsPage() {
           size="lg"
           value={params.search}
           onChange={(value) => setParams({ search: value })}
-          placeholder="Tìm vị trí, ví dụ: Backend, Marketing"
+          placeholder="Tìm vị trí, ví dụ: Backend"
           label="Tìm vị trí"
           className="max-w-md"
         />
@@ -108,7 +108,7 @@ export default function PublicJobsPage() {
             </div>
           ))}
         </div>
-      ) : isError ? (
+      ) : isError && !data ? (
         <ErrorState title="Chưa tải được danh sách việc làm" error={error} onRetry={refetch} />
       ) : items.length === 0 ? (
         <EmptyState

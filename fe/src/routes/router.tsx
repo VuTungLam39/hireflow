@@ -10,7 +10,7 @@ import { MainLayout } from '@/app/layouts/MainLayout'
 import { PublicLayout } from '@/app/layouts/PublicLayout'
 import { PageLoader } from '@/components/ui'
 import { applicationListSchema, applicationQueries } from '@/features/applications'
-import { restoreSession } from '@/features/auth'
+import { restoreSession, sessionUnavailable } from '@/features/auth'
 import { parseListParams } from '@/hooks/use-list-params'
 import { Permission } from '@/lib/permissions'
 import { queryClient } from '@/lib/query-client'
@@ -44,6 +44,12 @@ async function applicationsLoader({ request }: LoaderFunctionArgs) {
 
 async function sessionLoader() {
   await restoreSession()
+  return null
+}
+
+async function protectedLoader() {
+  await restoreSession()
+  if (sessionUnavailable()) throw new Response(null, { status: 503 })
   return null
 }
 
@@ -90,7 +96,7 @@ export const routes: RouteObject[] = [
       },
       {
         element: <ProtectedRoute />,
-        loader: sessionLoader,
+        loader: protectedLoader,
         children: [
           {
             element: <MainLayout />,

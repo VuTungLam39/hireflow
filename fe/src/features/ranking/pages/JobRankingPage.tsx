@@ -46,7 +46,8 @@ export function RankingWorkspace({ jobId, embedded, onOpenApplications }: Worksp
         <Skeleton className="h-96 w-full" />
       </div>
     )
-  if (isError) return <ErrorState title="Chưa tải được xếp hạng" error={error} onRetry={refetch} />
+  if (isError && !data)
+    return <ErrorState title="Chưa tải được xếp hạng" error={error} onRetry={refetch} />
   return <RankingView data={data} embedded={embedded} onOpenApplications={onOpenApplications} />
 }
 
@@ -194,7 +195,7 @@ function RankingView({
           }
         />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
           <RankingTable
             rows={ranked}
             requirements={data.requirements}
@@ -409,8 +410,8 @@ function WhyPanel({
               {detail.isPending
                 ? level > 0 && <Skeleton className="mt-1 h-4 w-4/5" />
                 : quote && (
-                    <p className="type-body mt-0.5 text-[13px] italic">
-                      “<span className="mark-evidence not-italic">{quote}</span>”
+                    <p className="type-body mt-0.5 text-[13px]">
+                      “<span className="mark-evidence">{quote}</span>”
                     </p>
                   )}
             </li>

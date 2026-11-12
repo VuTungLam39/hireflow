@@ -15,7 +15,7 @@ export function HistoryTimeline({ applicationId }: { applicationId: string }) {
         <Skeleton className="h-10 w-1/2" />
       </div>
     )
-  if (isError) return <ErrorState error={error} onRetry={refetch} />
+  if (isError && !data) return <ErrorState error={error} onRetry={refetch} />
 
   return (
     <Timeline

@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router'
 import { ErrorState, SidePanel } from '@/components/shared'
 import { Skeleton, buttonVariants } from '@/components/ui'
+import { InterviewPanel } from '@/features/interviews'
 import { formatDate } from '@/lib/utils'
 import { links } from '@/routes/paths'
 import { APPLICATION_SOURCE, type MatchLevel } from '../constants'
@@ -33,7 +34,7 @@ export function QuickView({ id, listQuery, hideScore, onClose }: QuickViewProps)
           <Link
             to={links.applicationDetail(id)}
             state={{ listQuery } satisfies ReviewState}
-            className={buttonVariants()}
+            className={buttonVariants({ variant: hideScore ? 'secondary' : undefined })}
           >
             Mở bàn duyệt CV
             <ArrowRight />
@@ -49,7 +50,7 @@ export function QuickView({ id, listQuery, hideScore, onClose }: QuickViewProps)
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-16 w-full" />
         </div>
-      ) : query.isError ? (
+      ) : query.isError && !query.data ? (
         <ErrorState error={query.error} onRetry={query.refetch} />
       ) : (
         app && (
@@ -65,6 +66,17 @@ export function QuickView({ id, listQuery, hideScore, onClose }: QuickViewProps)
               {app.candidate.email}
               {app.candidate.phone && ` · ${app.candidate.phone}`}
             </p>
+
+            {hideScore && (
+              <section>
+                <h3 className="type-heading mb-2">Phỏng vấn</h3>
+                <InterviewPanel
+                  applicationId={app.id}
+                  applicationStatus={app.status}
+                  requirements={app.requirements}
+                />
+              </section>
+            )}
 
             {!hideScore && app.aiStatus === 'DONE' && app.score !== null && (
               <section>
@@ -92,8 +104,8 @@ export function QuickView({ id, listQuery, hideScore, onClose }: QuickViewProps)
                           rejected={!!b?.rejectedEvidence}
                         />
                         {b?.evidence && (
-                          <p className="type-body mt-0.5 text-[13px] italic">
-                            “<span className="mark-evidence not-italic">{b.evidence}</span>”
+                          <p className="type-body mt-0.5 text-[13px]">
+                            “<span className="mark-evidence">{b.evidence}</span>”
                           </p>
                         )}
                       </li>

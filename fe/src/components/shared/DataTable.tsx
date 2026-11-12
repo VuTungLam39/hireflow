@@ -83,7 +83,7 @@ export function DataTable<T>({
   caption,
 }: DataTableProps<T>) {
   if (isPending) return <TableSkeleton columns={columns.length} density={density} />
-  if (isError) return <ErrorState error={error} onRetry={onRetry} />
+  if (isError && !data) return <ErrorState error={error} onRetry={onRetry} />
   if (!data?.length)
     return <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />
 
@@ -233,17 +233,13 @@ export function DataTable<T>({
                         />
                       </td>
                     )}
-                    {columns.map((col, i) => (
+                    {columns.map((col) => (
                       <td
                         key={col.key}
                         className={cn(
                           tdClass,
                           rowH,
                           col.align === 'right' && 'num text-right',
-                          i === 0 &&
-                            !selection &&
-                            active &&
-                            'shadow-[inset_2px_0_0_var(--color-brand)]',
                           col.className,
                         )}
                       >

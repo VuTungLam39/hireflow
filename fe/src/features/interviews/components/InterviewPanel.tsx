@@ -11,6 +11,7 @@ import { useApplicationInterviews, useCancelInterview } from '../hooks/use-inter
 import { averageOverall, formatSlot, isLink } from '../lib/format'
 import { useNow } from '../hooks/use-now'
 import { INTERVIEW_STATUS } from '../lib/constants'
+import { PENDING_LABEL, pendingOf } from '../lib/pending'
 import type { Interview, InterviewFeedback } from '../types'
 import { FeedbackDialog } from './FeedbackDialog'
 import { QuestionSuggestions } from './QuestionSuggestions'
@@ -41,7 +42,7 @@ function FeedbackView({ feedback }: { feedback: InterviewFeedback }) {
         ))}
       </ul>
       {feedback.comment && <p className="text-ink-2 whitespace-pre-line">{feedback.comment}</p>}
-      <p className="text-ink-faint text-xs">Gửi {formatDateTime(feedback.submittedAt)}</p>
+      <p className="text-ink-muted text-xs">Gửi {formatDateTime(feedback.submittedAt)}</p>
     </div>
   )
 }
@@ -65,7 +66,7 @@ export function InterviewPanel({
   const now = useNow()
 
   if (isPending) return <Skeleton className="h-24" />
-  if (isError) return <p className="text-bad text-sm">Không tải được lịch phỏng vấn.</p>
+  if (isError && !data) return <p className="text-bad text-sm">Không tải được lịch phỏng vấn.</p>
 
   const interviews = data ?? []
   const canSchedule = canManage && applicationStatus === 'INTERVIEW'
@@ -95,6 +96,7 @@ export function InterviewPanel({
             const assigned = iv.interviewers.some((i) => i.id === userId)
             const editableMine = !mine || new Date(mine.editableUntil).getTime() > now
             const avg = averageOverall(iv.feedbacks.map((f) => f.overall))
+            const pending = pendingOf(iv, { now, userId, isInterviewer })
             return (
               <li key={iv.id} className="border-line bg-surface space-y-3 rounded-md border p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -123,10 +125,14 @@ export function InterviewPanel({
                   <span
                     className={cn(
                       'text-[13px] font-medium',
-                      iv.status === 'COMPLETED' ? 'text-good-ink' : 'text-ink-muted',
+                      pending
+                        ? PENDING_LABEL[pending].tone
+                        : iv.status === 'COMPLETED'
+                          ? 'text-good-ink'
+                          : 'text-ink-muted',
                     )}
                   >
-                    {INTERVIEW_STATUS[iv.status].label}
+                    {pending ? PENDING_LABEL[pending].text : INTERVIEW_STATUS[iv.status].label}
                   </span>
                 </div>
 

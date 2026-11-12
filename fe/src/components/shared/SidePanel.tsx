@@ -38,7 +38,7 @@ export function SidePanel({
   return (
     <dialog
       ref={ref}
-      onClose={onClose}
+      onClose={(e) => e.target === e.currentTarget && onClose()}
       onClick={(e) => e.target === e.currentTarget && onClose()}
       aria-labelledby={titleId}
       style={sheet ? undefined : ({ '--panel-w': `${width}px` } as CSSProperties)}

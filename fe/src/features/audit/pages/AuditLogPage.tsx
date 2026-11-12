@@ -146,7 +146,7 @@ export default function AuditLogPage() {
             <Skeleton key={i} className="h-12" />
           ))}
         </div>
-      ) : query.isError ? (
+      ) : query.isError && !query.data ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : logs.length === 0 ? (
         <EmptyState

@@ -90,7 +90,7 @@ export default function CompanyPage() {
             <Skeleton key={i} className="h-40 w-full" />
           ))}
         </div>
-      ) : isError ? (
+      ) : isError && !company ? (
         <ErrorState title="Chưa tải được hồ sơ công ty" error={error} onRetry={refetch} />
       ) : (
         <>

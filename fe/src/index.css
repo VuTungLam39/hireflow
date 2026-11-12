@@ -59,6 +59,8 @@
   /* 3.6 */
   --radius-xs: 2px;
   --radius-sm: 6px;
+  /* phần tử nằm trong khung có padding nhỏ: bo trong = bo ngoài – padding */
+  --radius-inset: 4px;
   --radius-md: 10px;
   --radius-lg: 10px;
   --radius-xl: 10px;
@@ -147,6 +149,8 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+    accent-color: var(--color-brand);
+    scrollbar-color: var(--color-line-strong) transparent;
   }
 
   body {
@@ -207,14 +211,24 @@
     @apply animate-fade-in;
   }
 
+  /* Giảm chuyển động: bỏ dịch và phóng, giữ phản hồi bằng màu và độ mờ */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
+      transition-property: color, background-color, border-color, opacity, box-shadow !important;
+    }
+    .animate-float-in,
+    .animate-slide-in-right,
+    .animate-slide-in-up,
+    dialog[open] {
+      animation: fade-in 120ms linear both !important;
+    }
+    .animate-skeleton,
+    .animate-progress,
+    .animate-caret {
+      animation: none !important;
     }
   }
 }

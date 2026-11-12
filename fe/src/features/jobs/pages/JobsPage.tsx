@@ -1,6 +1,7 @@
 import { DeadlineTag } from '../components/DeadlineTag'
 import {
   Copy,
+  Eye,
   Inbox,
   ListChecks,
   ListOrdered,
@@ -62,7 +63,7 @@ function JobMobileRow({ job }: { job: JobSummary }) {
         </p>
         {job.status !== 'DRAFT' && (
           <span className="num shrink-0 text-[13px]">
-            <span className={job.applicationCount ? 'text-ink font-semibold' : 'text-ink-faint'}>
+            <span className={job.applicationCount ? 'text-ink font-semibold' : 'text-ink-muted'}>
               {job.applicationCount.toLocaleString('vi-VN')}
             </span>
             <span className="text-ink-muted"> hồ sơ</span>
@@ -90,6 +91,7 @@ export default function JobsPage() {
   const [params, setParams] = useListParams(jobListSchema)
   const departments = useDepartmentOptions()
   const ownDepartmentOnly = useAuthStore((s) => s.user?.role === Role.HiringManager)
+  const isInterviewer = useAuthStore((s) => s.user?.role === Role.Interviewer)
   const query = useJobs(ownDepartmentOnly ? { ...params, departmentId: undefined } : params)
   const detailLink = useDetailLink()
   const openDetail = useOpenDetail()
@@ -149,7 +151,7 @@ export default function JobsPage() {
       className: 'w-60',
       cell: (job) =>
         job.status === 'DRAFT' ? (
-          <span className="text-ink-faint" title="Tin nháp chưa nhận hồ sơ">
+          <span className="text-ink-muted" title="Tin nháp chưa nhận hồ sơ">
             —
           </span>
         ) : (
@@ -199,7 +201,10 @@ export default function JobsPage() {
 
       <Tabs
         label="Lọc theo trạng thái tin"
-        tabs={TABS.map((t) => ({ id: t.id, label: t.label }))}
+        tabs={TABS.filter((t) => !isInterviewer || t.id === 'all' || t.id === 'OPEN').map((t) => ({
+          id: t.id,
+          label: t.label,
+        }))}
         value={params.status ?? 'all'}
         onChange={(id) => setParams({ status: id === 'all' ? null : (id as JobStatus) })}
       />
@@ -294,6 +299,7 @@ function RowMenu({ job, onAction }: { job: JobSummary; onAction: (a: PendingActi
   const canUpdate = usePermission(Permission.JobUpdate)
   const canPublish = usePermission(Permission.JobPublish)
   const canInvite = usePermission(Permission.ApplicationCreate)
+  const isInterviewer = useAuthStore((s) => s.user?.role === Role.Interviewer)
   const canCreate = usePermission(Permission.JobCreate)
   const clone = useCloneJob()
   const detailLink = useDetailLink()
@@ -320,7 +326,7 @@ function RowMenu({ job, onAction }: { job: JobSummary; onAction: (a: PendingActi
         className={menuItemClass}
         onClick={go}
       >
-        <Pencil />
+        {editable ? <Pencil /> : <Eye />}
         {editable ? 'Sửa nội dung tin' : 'Xem nội dung tin'}
       </Link>
       <Link
@@ -359,15 +365,17 @@ function RowMenu({ job, onAction }: { job: JobSummary; onAction: (a: PendingActi
             <Inbox />
             Hồ sơ của tin
           </Link>
-          <Link
-            role="menuitem"
-            to={detailLink('job', job.id, 'ranking')}
-            className={menuItemClass}
-            onClick={go}
-          >
-            <ListOrdered />
-            Xếp hạng ứng viên
-          </Link>
+          {!isInterviewer && (
+            <Link
+              role="menuitem"
+              to={detailLink('job', job.id, 'ranking')}
+              className={menuItemClass}
+              onClick={go}
+            >
+              <ListOrdered />
+              Xếp hạng ứng viên
+            </Link>
+          )}
           {canInvite && (
             <Link
               role="menuitem"

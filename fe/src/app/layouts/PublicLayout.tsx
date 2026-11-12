@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet } from 'react-router'
 import { usePublicCompany } from '@/features/company'
+import { useFocusMainOnNavigate } from '@/hooks/use-focus-main'
 import { cn } from '@/lib/utils'
 import { paths } from '@/routes/paths'
 import { BrandMark } from './BrandMark'
@@ -12,6 +13,7 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
 
 export function PublicLayout() {
   const { data: company } = usePublicCompany()
+  useFocusMainOnNavigate()
   return (
     <div className="bg-surface text-ink-2 flex min-h-dvh flex-col">
       <a
@@ -48,7 +50,11 @@ export function PublicLayout() {
           </Link>
         </div>
       </header>
-      <main id="main" className="mx-auto w-full max-w-[960px] flex-1 px-4 pt-10 pb-16 sm:pt-14">
+      <main
+        id="main"
+        tabIndex={-1}
+        className="mx-auto w-full max-w-[960px] flex-1 px-4 pt-10 pb-16 outline-none sm:pt-14"
+      >
         <Outlet />
       </main>
       <footer className="border-line type-caption border-t">

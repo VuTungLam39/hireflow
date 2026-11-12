@@ -59,7 +59,7 @@ const columns: Column<CandidateListItem>[] = [
 
 // App Screens 7.4
 function LastJob({ candidate: c }: { candidate: CandidateListItem }) {
-  if (!c.lastJob) return <span className="text-ink-faint">—</span>
+  if (!c.lastJob) return <span className="text-ink-muted">—</span>
   const others = c.applicationCount - 1
   return (
     <div className="min-w-0">

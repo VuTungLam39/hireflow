@@ -1,5 +1,6 @@
 import { Outlet, useMatches } from 'react-router'
 import { useMe } from '@/features/auth'
+import { useFocusMainOnNavigate } from '@/hooks/use-focus-main'
 import { useRealtimeConnection } from '@/features/notifications'
 import { cn } from '@/lib/utils'
 import { DetailHost } from './DetailHost'
@@ -14,6 +15,7 @@ export interface RouteHandle {
 export function MainLayout() {
   useMe()
   useRealtimeConnection()
+  useFocusMainOnNavigate()
   const matches = useMatches()
   const fullWidth = matches.some((m) => (m.handle as RouteHandle | undefined)?.fullWidth)
 
