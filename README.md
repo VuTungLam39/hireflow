@@ -433,7 +433,7 @@ Không dùng `--reset` trên database thật. Seed tự chặn khi DB đích kh�
 
 ### 6. Kiểm tra `TRUST_PROXY`
 
-Rate limit dựa vào IP người dùng (`req.ip`). Request đi qua 2 lớp: Vercel ghi IP thật vào `X-Forwarded-For`, rồi Render nối thêm IP của Vercel. Vì vậy `render.yaml` đặt sẵn `TRUST_PROXY=2`. Kiểm tra lại như sau:
+Rate limit dựa vào IP người dùng (`req.ip`). Đo trên production ngày 12/11/2026, `X-Forwarded-For` có 4 địa chỉ: IP người dùng, IP của Vercel, IP Cloudflare (lớp ngoài của Render) và IP bộ cân bằng tải nội bộ của Render. Vì vậy `render.yaml` đặt `TRUST_PROXY=4`. Giá trị cũ `2` làm `req.ip` thành IP Cloudflare, nên mọi người dùng chung một giới hạn tần suất. Kiểm tra lại như sau:
 
 1. Trên Render, đặt `DEBUG_CLIENT_IP=true` (service tự deploy lại).
 2. Mở `https://<domain-vercel>/api/health/ip` và so `ip` với IP thật của bạn (xem ở https://api.ipify.org).

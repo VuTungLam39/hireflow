@@ -19,8 +19,9 @@ services:
         value: api
       - key: CORS_ORIGINS
         sync: false
+      # người dùng → Vercel → Cloudflare (lớp ngoài của Render) → LB nội bộ Render (đo 12/11/2026)
       - key: TRUST_PROXY
-        value: '2'
+        value: '4'
       - key: DEBUG_CLIENT_IP
         value: 'false'
 
