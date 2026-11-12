@@ -391,21 +391,21 @@ function WeekView({
                   return (
                     <li
                       key={iv.id}
-                      className={cn(
-                        'border-line bg-canvas rounded-sm border-l-2 px-2 py-1.5',
-                        cancelled
-                          ? 'border-l-ink-faint opacity-70'
-                          : needsFeedback(iv)
-                            ? 'border-l-warn'
-                            : 'border-l-brand',
-                      )}
+                      className={cn('bg-canvas rounded-sm px-2 py-1.5', cancelled && 'opacity-70')}
                     >
                       <p
                         className={cn(
-                          'num text-[13px] font-semibold',
+                          'num flex items-center gap-1.5 text-[13px] font-semibold',
                           cancelled ? 'text-ink-muted line-through' : 'text-ink',
                         )}
                       >
+                        <span
+                          aria-hidden
+                          className={cn(
+                            'size-1.5 shrink-0 rounded-full',
+                            cancelled ? 'bg-ink-faint' : needsFeedback(iv) ? 'bg-warn' : 'bg-brand',
+                          )}
+                        />
                         {formatTime(iv.scheduledAt)}
                       </p>
                       <Link

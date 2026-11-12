@@ -41,7 +41,7 @@ function FeedbackView({ feedback }: { feedback: InterviewFeedback }) {
         ))}
       </ul>
       {feedback.comment && <p className="text-ink-2 whitespace-pre-line">{feedback.comment}</p>}
-      <p className="text-ink-faint text-xs">Gửi {formatDateTime(feedback.submittedAt)}</p>
+      <p className="text-ink-muted text-xs">Gửi {formatDateTime(feedback.submittedAt)}</p>
     </div>
   )
 }

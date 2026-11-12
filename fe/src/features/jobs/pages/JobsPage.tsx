@@ -62,7 +62,7 @@ function JobMobileRow({ job }: { job: JobSummary }) {
         </p>
         {job.status !== 'DRAFT' && (
           <span className="num shrink-0 text-[13px]">
-            <span className={job.applicationCount ? 'text-ink font-semibold' : 'text-ink-faint'}>
+            <span className={job.applicationCount ? 'text-ink font-semibold' : 'text-ink-muted'}>
               {job.applicationCount.toLocaleString('vi-VN')}
             </span>
             <span className="text-ink-muted"> hồ sơ</span>
@@ -149,7 +149,7 @@ export default function JobsPage() {
       className: 'w-60',
       cell: (job) =>
         job.status === 'DRAFT' ? (
-          <span className="text-ink-faint" title="Tin nháp chưa nhận hồ sơ">
+          <span className="text-ink-muted" title="Tin nháp chưa nhận hồ sơ">
             —
           </span>
         ) : (

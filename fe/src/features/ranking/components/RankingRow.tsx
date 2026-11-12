@@ -23,7 +23,7 @@ interface RankingRowProps {
 export function RankDelta({ delta }: { delta: number }) {
   if (delta === 0)
     return (
-      <span className="text-ink-faint w-7 text-xs" aria-label="Không đổi hạng">
+      <span className="text-ink-muted w-7 text-xs" aria-label="Không đổi hạng">
         –
       </span>
     )

@@ -24,7 +24,7 @@ interface PipelineCountsProps {
 // Design Spec 6.5 · App Screens 7.4
 export function PipelineCounts({ pipeline, total, jobId, className }: PipelineCountsProps) {
   if (total === 0) {
-    return <span className={cn('num text-ink-faint block text-right', className)}>0</span>
+    return <span className={cn('num text-ink-muted block text-right', className)}>0</span>
   }
   const parts = PIPELINE_STAGES.filter((s) => pipeline[s.key] > 0)
   const totalText = total.toLocaleString('vi-VN')
@@ -61,7 +61,7 @@ export function PipelineCounts({ pipeline, total, jobId, className }: PipelineCo
             <Fragment key={s.key}>
               {i > 0 && ' '}
               <span className="whitespace-nowrap">
-                {i > 0 && <span className="text-ink-faint mr-1">·</span>}
+                {i > 0 && <span aria-hidden className="text-ink-faint mr-1">·</span>}
                 {jobId && status ? (
                   <Link
                     tabIndex={-1}

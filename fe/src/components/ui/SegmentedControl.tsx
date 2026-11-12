@@ -38,7 +38,7 @@ export function SegmentedControl<T extends string>({
             aria-checked={active}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'rounded-[5px] border px-3 font-medium whitespace-nowrap transition-colors duration-150',
+              'rounded-inset border px-3 font-medium whitespace-nowrap transition-colors duration-150',
               size === 'sm' ? 'h-7 text-[13px]' : 'h-8 text-sm',
               active
                 ? 'border-line bg-surface text-ink'

@@ -25,6 +25,12 @@ const rules = [
     name: 'Chữ "AI" trên giao diện',
     re: />[^<{]*\bAI\b[^<]*<|(?:label|title|description|placeholder|aria-label)[:=]\s*['"][^'"]*\bAI\b[^'"]*['"]/g,
   },
+  // Rà soát UI/UX: chỉ cảnh báo, chưa chặn CI
+  { name: 'Viền nhấn một bên (side-tab)', re: /\bborder-[lr]-(2|4|8|\[\d+px\])\b/g, advisory: true },
+  { name: 'Chữ nghiêng', re: /\bitalic\b/g, advisory: true },
+  { name: 'Font mono', re: /\bfont-mono\b/g, advisory: true },
+  { name: 'Bo góc tuỳ ý', re: /\brounded-\[[^\]]+\]/g, advisory: true },
+  { name: 'Ký tự thay icon', re: />\s*[★☆✓✔✕✖➜⚠🔥✨🚀]/gu, skip: /\.css$/, advisory: true },
 ]
 
 const files = []
@@ -51,8 +57,8 @@ for (const rule of rules) {
       where.set(relative(root, file), n)
     }
   }
-  failed += hits
-  rows.push({ rule: rule.name, files: where.size, hits })
+  if (!rule.advisory) failed += hits
+  rows.push({ rule: rule.name, files: where.size, hits, ...(rule.advisory ? { mode: 'cảnh báo' } : {}) })
   if (hits && process.argv.includes('--verbose'))
     for (const [f, n] of where) console.log(`  ${rule.name}: ${f} (${n})`)
 }

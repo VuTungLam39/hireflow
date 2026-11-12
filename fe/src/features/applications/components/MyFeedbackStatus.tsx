@@ -4,7 +4,7 @@ import type { MyFeedback } from '../hooks/use-my-feedback'
 
 // BR-INT-03 · App Screens 7.5
 export function MyFeedbackStatus({ value }: { value: MyFeedback | undefined }) {
-  if (!value) return <span className="text-ink-faint">—</span>
+  if (!value) return <span className="text-ink-muted">—</span>
   if (value.kind === 'sent')
     return (
       <span className="text-good-ink inline-flex items-center gap-1 text-[13px] font-medium whitespace-nowrap">
