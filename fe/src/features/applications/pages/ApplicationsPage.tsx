@@ -422,9 +422,11 @@ export default function ApplicationsPage() {
                       </Button>
                     </Can>
                   ) : (
-                    <span className="text-[13px] text-white/70">
-                      Chọn hồ sơ cùng trạng thái Mới hoặc Sàng lọc để chuyển bước
-                    </span>
+                    <Can permission={Permission.ApplicationUpdateStatus}>
+                      <span className="text-[13px] text-white/70">
+                        Chọn hồ sơ cùng trạng thái Mới hoặc Sàng lọc để chuyển bước
+                      </span>
+                    </Can>
                   )}
                   {rejectable.length > 0 && (
                     <Can permission={Permission.ApplicationUpdateStatus}>

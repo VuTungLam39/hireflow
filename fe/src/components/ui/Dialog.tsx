@@ -65,5 +65,14 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
 }
 
 export function DialogFooter({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn('mt-6 flex flex-wrap justify-end gap-2', className)}>{children}</div>
+  return (
+    <div
+      className={cn(
+        'bg-surface border-line-soft sticky bottom-0 -mx-5 mt-6 -mb-5 flex flex-wrap justify-end gap-2 border-t px-5 py-4 sm:-mx-6 sm:-mb-6 sm:px-6',
+        className,
+      )}
+    >
+      {children}
+    </div>
+  )
 }

@@ -7,7 +7,10 @@ import { ApplicationStatus } from '../../common/enums/application-status.enum.js
 import type { ScoreFlag } from '../../common/enums/score-flag.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
-import { applyDepartmentScope } from '../../common/utils/department-scope.js';
+import {
+  applyDepartmentScope,
+  applyInterviewerScope,
+} from '../../common/utils/department-scope.js';
 import { normalizeKeywords } from '../../common/utils/text.js';
 import { CvPipelineService } from '../ai/pipeline/cv-pipeline.service.js';
 import { RequirementsSuggester } from '../ai/requirements-suggester.service.js';
@@ -174,7 +177,10 @@ export class JobsService {
     if (query.search) qb.andWhere('job.title ILIKE :search', { search: `%${query.search}%` });
 
     const [jobs, total] = await qb.getManyAndCount();
-    const pipelines = await this.pipelines(jobs.map((j) => j.id));
+    const pipelines = await this.pipelines(
+      jobs.map((j) => j.id),
+      user,
+    );
     return new PaginatedResult(
       jobs.map((j) => this.toSummary(j, pipelines.get(j.id))),
       total,
@@ -187,7 +193,7 @@ export class JobsService {
     const job = await this.findScoped(id, user);
     const [requirements, pipelines] = await Promise.all([
       this.currentRequirements(job),
-      this.pipelines([job.id]),
+      this.pipelines([job.id], user),
     ]);
     return {
       ...this.toSummary(job, pipelines.get(job.id)),
@@ -575,10 +581,10 @@ export class JobsService {
   }
 
   // Kickoff 14, Database Design Q6
-  private async pipelines(jobIds: string[]): Promise<Map<string, JobPipeline>> {
+  private async pipelines(jobIds: string[], user: ScopeUser): Promise<Map<string, JobPipeline>> {
     if (!jobIds.length) return new Map();
     const S = ApplicationStatus;
-    const rows = await this.dataSource
+    const qb = this.dataSource
       .getRepository(Application)
       .createQueryBuilder('app')
       .select('app.jobId', 'jobId')
@@ -593,8 +599,12 @@ export class JobsService {
         'closed',
       )
       .where('app.jobId IN (:...jobIds)', { jobIds })
-      .groupBy('app.jobId')
-      .getRawMany<JobPipeline & { jobId: string }>();
+      .groupBy('app.jobId');
+    // BR-INT-02
+    if (user.role === Role.Interviewer) {
+      applyInterviewerScope(qb, user, { applicationIdColumn: '"app"."id"' });
+    }
+    const rows = await qb.getRawMany<JobPipeline & { jobId: string }>();
     return new Map(rows.map(({ jobId, ...pipeline }) => [jobId, pipeline]));
   }
 
