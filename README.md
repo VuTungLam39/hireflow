@@ -340,7 +340,7 @@ Các file cấu hình: [`render.yaml`](render.yaml) (Blueprint của Render) và
 | Render web (free) | 512 MB RAM, 0,1 CPU. Ngủ sau 15 phút không có request, mở lại mất khoảng 1 phút | Lúc ngủ, worker cũng dừng: CV vừa nộp chỉ được xử lý khi API thức dậy. Xem bước 7 |
 | Render Key Value (free) | 25 MB, **không lưu xuống đĩa** | Redis khởi động lại thì job đang chờ trong hàng đợi bị mất |
 | Neon (free) | 0,5 GB, tự tạm dừng khi không dùng | Truy vấn đầu tiên sau khi tạm dừng chậm hơn một chút |
-| Backblaze B2 | 10 GB, tải xuống miễn phí tới 3 lần dung lượng lưu | Server ở Mỹ hoặc châu Âu, mỗi lần đọc/ghi file chậm thêm khoảng 0,2 giây |
+| Backblaze B2 | 10 GB, tải xuống miễn phí tới 3 lần dung lượng lưu; **hạn mức giao dịch mỗi ngày** (reset 07:00 giờ VN) | Server ở Mỹ hoặc châu Âu, mỗi lần đọc/ghi file chậm thêm khoảng 0,2 giây. Vượt hạn mức thì B2 từ chối mọi request: vì vậy Render kiểm `/api/health/live` (không gọi B2), còn `/api/health` giữ kết quả kho file 5 phút |
 | Vercel (Hobby) | Chỉ dùng cho mục đích phi thương mại | Đủ cho demo và thực tập |
 
 ### 1. Neon (database)

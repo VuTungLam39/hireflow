@@ -7,6 +7,7 @@ import { DataSource, In } from 'typeorm';
 import { AppModule } from '../src/app.module.js';
 import { Role } from '../src/common/enums/role.enum.js';
 import { Department } from '../src/modules/departments/entities/department.entity.js';
+import { StorageService } from '../src/modules/files/storage/storage.service.js';
 import { RefreshTokensService } from '../src/modules/refresh-tokens/refresh-tokens.service.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
@@ -90,6 +91,22 @@ describe('App (e2e)', () => {
     expect(res.body.data.status).toBe('ok');
     expect(Object.keys(res.body.data.info).sort()).toEqual(['database', 'redis', 'storage']);
     expect(res.body.data.info.storage).toMatchObject({ status: 'up', driver: 'local' });
+  });
+
+  it('GET /api/health/live checks only the database, never the file store', async () => {
+    const ping = vi.spyOn(app.get(StorageService), 'ping');
+    const res = await request(server()).get('/api/health/live').expect(200);
+    expect(Object.keys(res.body.data.info)).toEqual(['database']);
+    expect(ping).not.toHaveBeenCalled();
+    ping.mockRestore();
+  });
+
+  it('GET /api/health reuses the file store result instead of calling it on every probe', async () => {
+    const ping = vi.spyOn(app.get(StorageService), 'ping');
+    await request(server()).get('/api/health').expect(200);
+    await request(server()).get('/api/health').expect(200);
+    expect(ping).not.toHaveBeenCalled();
+    ping.mockRestore();
   });
 
   describe('auth', () => {

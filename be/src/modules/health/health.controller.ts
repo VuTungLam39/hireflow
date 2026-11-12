@@ -14,8 +14,12 @@ import type { Request } from 'express';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { QUEUE } from '../ai/pipeline/queues.js';
 import { StorageService } from '../files/storage/storage.service.js';
+import { cachedCheck } from './cached-check.js';
 
 const CHECK_TIMEOUT_MS = 3_000;
+// B2 tính tiền và có hạn mức giao dịch mỗi ngày: Render hỏi health mỗi 10 s thì một ngày tiêu ~8.640 lần
+const STORAGE_OK_CACHE_MS = 5 * 60_000;
+const STORAGE_FAIL_CACHE_MS = 60_000;
 
 // Kickoff 19
 @ApiTags('Health')
@@ -32,9 +36,24 @@ export class HealthController {
     @InjectQueue(QUEUE.parse) private readonly queue: Queue,
   ) {}
 
+  private readonly storagePing = cachedCheck(STORAGE_OK_CACHE_MS, STORAGE_FAIL_CACHE_MS);
+
+  // Render healthCheckPath: chỉ process + DB, không gọi kho file nên không tốn giao dịch B2
+  @Get('live')
+  @HealthCheck()
+  @ApiOperation({
+    summary: 'Kiểm tra cho nền tảng deploy: server và database (không gọi kho lưu file)',
+  })
+  live() {
+    return this.health.check([() => this.db.pingCheck('database')]);
+  }
+
   @Get()
   @HealthCheck()
-  @ApiOperation({ summary: 'Kiểm tra server, database, Redis (queue) và kho lưu file' })
+  @ApiOperation({
+    summary:
+      'Kiểm tra server, database, Redis (queue) và kho lưu file (kết quả kho file giữ 5 phút)',
+  })
   check() {
     return this.health.check([
       () => this.db.pingCheck('database'),
@@ -49,7 +68,7 @@ export class HealthController {
         this.indicators
           .check('storage')
           .attempt(async () => {
-            await this.storage.ping();
+            await this.storagePing(() => this.storage.ping());
             return { driver: this.storage.driver };
           })
           .withTimeout(CHECK_TIMEOUT_MS),
