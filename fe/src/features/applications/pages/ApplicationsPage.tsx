@@ -179,10 +179,11 @@ export default function ApplicationsPage() {
     {
       key: 'candidate',
       header: 'Ứng viên',
+      className: 'w-[32%]',
       cell: (a) => (
         <div className="flex items-center gap-3">
           <Avatar name={a.candidate.fullName} size="sm" />
-          <div className="min-w-0">
+          <div className="max-w-64 min-w-0">
             <p className="text-ink truncate font-medium">{a.candidate.fullName}</p>
             <p className="type-caption truncate">{a.candidate.email}</p>
           </div>
@@ -400,62 +401,67 @@ export default function ApplicationsPage() {
         onRowClick={(a) => setPeek(a.id)}
         onRowOpen={open}
         selection={isInterviewer ? undefined : { selected, onChange: (next) => setSelected(next) }}
-        bulkBar={(count) => (
-          <>
-            <span className="px-1 text-sm">
-              Đã chọn <strong className="text-white">{count}</strong> hồ sơ
-            </span>
-            {bulkTarget && NEXT_STATUS[commonStatus!].includes(bulkTarget) ? (
-              <Can permission={Permission.ApplicationUpdateStatus}>
-                <Button
-                  size="sm"
-                  variant="inverse"
-                  loading={bulk.isPending}
-                  onClick={() => runBulk(bulkTarget)}
-                >
-                  Chuyển {selectedItems.length} hồ sơ sang {APPLICATION_STATUS[bulkTarget].label}
-                </Button>
-              </Can>
-            ) : (
-              <span className="text-[13px] text-white/70">
-                Chọn hồ sơ cùng trạng thái Mới hoặc Sàng lọc để chuyển bước
-              </span>
-            )}
-            {rejectable.length > 0 && (
-              <Can permission={Permission.ApplicationUpdateStatus}>
-                <Button
-                  size="sm"
-                  variant="quiet"
-                  className="text-white hover:bg-white/10"
-                  disabled={bulk.isPending}
-                  onClick={() => setRejectOpen(true)}
-                >
-                  Từ chối {rejectable.length} hồ sơ
-                </Button>
-              </Can>
-            )}
-            {compareJobId && (
-              <Button
-                size="sm"
-                variant="quiet"
-                className="text-white hover:bg-white/10"
-                onClick={() =>
-                  setCompare({ jobId: compareJobId, ids: selectedItems.map((a) => a.id) })
-                }
-              >
-                So sánh {selectedItems.length} hồ sơ
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant="quiet"
-              className="text-white/80 hover:bg-white/10 hover:text-white"
-              onClick={() => setSelected(new Set())}
-            >
-              Bỏ chọn
-            </Button>
-          </>
-        )}
+        bulkBar={
+          peek
+            ? undefined
+            : (count) => (
+                <>
+                  <span className="px-1 text-sm">
+                    Đã chọn <strong className="text-white">{count}</strong> hồ sơ
+                  </span>
+                  {bulkTarget && NEXT_STATUS[commonStatus!].includes(bulkTarget) ? (
+                    <Can permission={Permission.ApplicationUpdateStatus}>
+                      <Button
+                        size="sm"
+                        variant="inverse"
+                        loading={bulk.isPending}
+                        onClick={() => runBulk(bulkTarget)}
+                      >
+                        Chuyển {selectedItems.length} hồ sơ sang{' '}
+                        {APPLICATION_STATUS[bulkTarget].label}
+                      </Button>
+                    </Can>
+                  ) : (
+                    <span className="text-[13px] text-white/70">
+                      Chọn hồ sơ cùng trạng thái Mới hoặc Sàng lọc để chuyển bước
+                    </span>
+                  )}
+                  {rejectable.length > 0 && (
+                    <Can permission={Permission.ApplicationUpdateStatus}>
+                      <Button
+                        size="sm"
+                        variant="quiet"
+                        className="text-white hover:bg-white/10"
+                        disabled={bulk.isPending}
+                        onClick={() => setRejectOpen(true)}
+                      >
+                        Từ chối {rejectable.length} hồ sơ
+                      </Button>
+                    </Can>
+                  )}
+                  {compareJobId && (
+                    <Button
+                      size="sm"
+                      variant="quiet"
+                      className="text-white hover:bg-white/10"
+                      onClick={() =>
+                        setCompare({ jobId: compareJobId, ids: selectedItems.map((a) => a.id) })
+                      }
+                    >
+                      So sánh {selectedItems.length} hồ sơ
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="quiet"
+                    className="text-white/80 hover:bg-white/10 hover:text-white"
+                    onClick={() => setSelected(new Set())}
+                  >
+                    Bỏ chọn
+                  </Button>
+                </>
+              )
+        }
       />
 
       <ConfirmDialog

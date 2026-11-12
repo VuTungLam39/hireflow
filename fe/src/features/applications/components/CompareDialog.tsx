@@ -201,8 +201,8 @@ function CriterionCell({ item }: { item: CompareCriterion | undefined }) {
     <div className="space-y-1">
       <MatchIndicator level={item.match} />
       {item.evidence && (
-        <p className="type-body line-clamp-2 text-[13px] italic" title={item.evidence}>
-          “<span className="mark-evidence not-italic">{item.evidence}</span>”
+        <p className="type-body line-clamp-2 text-[13px]" title={item.evidence}>
+          “<span className="mark-evidence">{item.evidence}</span>”
         </p>
       )}
       {item.interviewAvg !== null && (

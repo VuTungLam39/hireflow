@@ -92,8 +92,8 @@ export function QuickView({ id, listQuery, hideScore, onClose }: QuickViewProps)
                           rejected={!!b?.rejectedEvidence}
                         />
                         {b?.evidence && (
-                          <p className="type-body mt-0.5 text-[13px] italic">
-                            “<span className="mark-evidence not-italic">{b.evidence}</span>”
+                          <p className="type-body mt-0.5 text-[13px]">
+                            “<span className="mark-evidence">{b.evidence}</span>”
                           </p>
                         )}
                       </li>

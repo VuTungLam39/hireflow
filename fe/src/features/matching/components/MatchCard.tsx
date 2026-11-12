@@ -1,4 +1,4 @@
-import { Check, UserPlus } from 'lucide-react'
+import { ArrowRight, Check, UserPlus } from 'lucide-react'
 import { Link } from 'react-router'
 import { Can } from '@/components/shared'
 import { Avatar, Button } from '@/components/ui'
@@ -49,9 +49,9 @@ export function MatchCard({ match, canInvite, inviting, onInvite }: MatchCardPro
             <ScoreFlags flags={match.flags} />
           </div>
           {quote?.evidence && (
-            <p className="type-body text-[13px] italic">
-              <span className="text-ink-muted not-italic">{quote.label}: </span>“
-              <span className="mark-evidence not-italic">{quote.evidence}</span>”
+            <p className="type-body text-[13px]">
+              <span className="text-ink-muted">{quote.label}: </span>“
+              <span className="mark-evidence">{quote.evidence}</span>”
             </p>
           )}
         </div>
@@ -64,9 +64,10 @@ export function MatchCard({ match, canInvite, inviting, onInvite }: MatchCardPro
             <span className="text-good-ink font-medium">Đã mời</span>·
             <Link
               to={detailLink('application', match.applicationId)}
-              className="text-brand font-medium hover:underline"
+              className="text-brand inline-flex items-center gap-1 font-medium hover:underline"
             >
-              Xem hồ sơ →
+              Xem hồ sơ
+              <ArrowRight className="size-4" />
             </Link>
           </span>
         ) : (

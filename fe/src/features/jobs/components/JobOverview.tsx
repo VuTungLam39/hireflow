@@ -1,3 +1,4 @@
+import { ArrowRight } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { cn, formatDate } from '@/lib/utils'
 import { PIPELINE_STAGES } from '../constants'
@@ -34,9 +35,10 @@ export function JobOverview({ job, onOpenApplications, highlights, funnel }: Job
             <button
               type="button"
               onClick={() => onOpenApplications()}
-              className="text-brand text-sm font-medium hover:underline"
+              className="text-brand inline-flex items-center gap-1 text-sm font-medium hover:underline"
             >
-              Xem {job.applicationCount.toLocaleString('vi-VN')} hồ sơ →
+              Xem {job.applicationCount.toLocaleString('vi-VN')} hồ sơ
+              <ArrowRight className="size-4" />
             </button>
           )}
         </div>

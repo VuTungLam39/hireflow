@@ -21,12 +21,7 @@ interface RankingRowProps {
 }
 
 export function RankDelta({ delta }: { delta: number }) {
-  if (delta === 0)
-    return (
-      <span className="text-ink-muted w-7 text-xs" aria-label="Không đổi hạng">
-        –
-      </span>
-    )
+  if (delta === 0) return <span className="w-7" role="img" aria-label="Không đổi hạng" />
   return (
     <span
       className={cn('num w-7 text-xs font-semibold', delta > 0 ? 'text-good-ink' : 'text-bad')}
@@ -71,12 +66,7 @@ export const RankingRow = memo(function RankingRow({
         selected ? 'bg-brand-soft/60' : 'hover:bg-canvas',
       )}
     >
-      <td
-        className={cn(
-          'h-[52px] py-2 pr-2 pl-4',
-          selected && 'shadow-[inset_2px_0_0_var(--color-brand)]',
-        )}
-      >
+      <td className="h-[52px] py-2 pr-2 pl-4">
         <span className="flex items-baseline gap-2">
           <span
             className={cn(

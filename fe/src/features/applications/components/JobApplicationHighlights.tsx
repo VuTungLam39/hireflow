@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { ArrowRight } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Skeleton } from '@/components/ui'
@@ -83,9 +84,10 @@ function HighlightList({
         <button
           type="button"
           onClick={onAction}
-          className="text-brand text-sm font-medium hover:underline"
+          className="text-brand inline-flex items-center gap-1 text-sm font-medium hover:underline"
         >
-          {action} →
+          {action}
+          <ArrowRight className="size-4" />
         </button>
       </div>
       {pending ? (
