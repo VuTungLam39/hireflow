@@ -61,7 +61,7 @@ export default function PublicJobsPage() {
           size="lg"
           value={params.search}
           onChange={(value) => setParams({ search: value })}
-          placeholder="Tìm vị trí, ví dụ: Backend, Marketing"
+          placeholder="Tìm vị trí, ví dụ: Backend"
           label="Tìm vị trí"
           className="max-w-md"
         />
