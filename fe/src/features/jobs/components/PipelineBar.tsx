@@ -61,7 +61,11 @@ export function PipelineCounts({ pipeline, total, jobId, className }: PipelineCo
             <Fragment key={s.key}>
               {i > 0 && ' '}
               <span className="whitespace-nowrap">
-                {i > 0 && <span aria-hidden className="text-ink-faint mr-1">·</span>}
+                {i > 0 && (
+                  <span aria-hidden className="text-ink-faint mr-1">
+                    ·
+                  </span>
+                )}
                 {jobId && status ? (
                   <Link
                     tabIndex={-1}

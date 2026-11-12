@@ -62,7 +62,11 @@ export function Summary({ items }: { items: (ReactNode | false | null | undefine
     <>
       {shown.map((item, i) => (
         <span key={i}>
-          {i > 0 && <span aria-hidden className="text-ink-faint mx-1.5">·</span>}
+          {i > 0 && (
+            <span aria-hidden className="text-ink-faint mx-1.5">
+              ·
+            </span>
+          )}
           <SummaryItem item={item} />
         </span>
       ))}
