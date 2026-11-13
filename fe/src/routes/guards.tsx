@@ -32,9 +32,11 @@ export function PermissionRoute({
   return <Outlet />
 }
 
-/** Trang login: đã đăng nhập thì chuyển về trang chủ */
+/** Trang login: đã đăng nhập thì chuyển về trang định vào trước đó, mặc định trang chủ */
 export function GuestRoute() {
   const isAuthenticated = useIsAuthenticated()
-  if (isAuthenticated) return <Navigate to={paths.home} replace />
+  const from = (useLocation().state as { from?: string } | null)?.from
+  // Cùng đích với useLogin: loader của trang đích còn chạy thì không bị chen về trang chủ
+  if (isAuthenticated) return <Navigate to={from ?? paths.home} replace />
   return <Outlet />
 }

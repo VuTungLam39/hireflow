@@ -1,4 +1,4 @@
-import { api } from '@/lib/api-client'
+import { api, SLOW_TIMEOUT_MS } from '@/lib/api-client'
 import type { ApiResponse, CursorMeta } from '@/types/api'
 import type {
   FeedbackInput,
@@ -16,6 +16,8 @@ export const interviewsApi = {
     (
       await api.post<ApiResponse<{ items: QuestionSuggestion[]; cached: boolean }>>(
         `/interviews/${id}/question-suggestions`,
+        null,
+        { timeout: SLOW_TIMEOUT_MS },
       )
     ).data.data,
 

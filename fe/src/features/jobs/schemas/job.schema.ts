@@ -5,6 +5,10 @@ import {
   BENEFITS_MAX,
   EMPLOYMENT_TYPE,
   HEADCOUNT_MAX,
+  KEYWORD_LENGTH_MAX,
+  KEYWORDS_MAX,
+  REQUIREMENTS_MAX,
+  SALARY_MAX_MILLION,
   JOB_LEVEL,
   JOB_SORT_FIELDS,
   JOB_STATUS,
@@ -40,6 +44,10 @@ const millionsText = z
   .refine(
     (v) => v === '' || (/^\d{1,4}([.,]\d{1,2})?$/.test(v) && Number(v.replace(',', '.')) > 0),
     'Nhập số triệu, ví dụ 25 hoặc 12,5',
+  )
+  .refine(
+    (v) => v === '' || Number(v.replace(',', '.')) <= SALARY_MAX_MILLION,
+    `Tối đa ${SALARY_MAX_MILLION.toLocaleString('vi-VN')} triệu`,
   )
 const toVnd = (v: string) => (v === '' ? null : Math.round(Number(v.replace(',', '.')) * MILLION))
 const fromVnd = (v: number | null) => (v === null ? '' : String(v / MILLION).replace('.', ','))
@@ -119,11 +127,25 @@ const requirementRowSchema = z.object({
   weight: z.number().int().min(WEIGHT_MIN).max(WEIGHT_MAX),
   minYears: z.number().min(0).max(30).nullable(),
   /** Trên form nhập dạng "nestjs, nest.js" */
-  keywords: z.string().trim().min(1, 'Nhập ít nhất 1 từ khoá'),
+  keywords: z
+    .string()
+    .trim()
+    .min(1, 'Nhập ít nhất 1 từ khoá')
+    .refine(
+      (v) => v.split(',').filter((k) => k.trim()).length <= KEYWORDS_MAX,
+      `Tối đa ${KEYWORDS_MAX} từ khoá`,
+    )
+    .refine(
+      (v) => v.split(',').every((k) => k.trim().length <= KEYWORD_LENGTH_MAX),
+      `Mỗi từ khoá tối đa ${KEYWORD_LENGTH_MAX} ký tự`,
+    ),
 })
 
 export const requirementsFormSchema = z.object({
-  requirements: z.array(requirementRowSchema).min(1, 'Cần ít nhất 1 tiêu chí'),
+  requirements: z
+    .array(requirementRowSchema)
+    .min(1, 'Cần ít nhất 1 tiêu chí')
+    .max(REQUIREMENTS_MAX, `Tối đa ${REQUIREMENTS_MAX} tiêu chí`),
 })
 export type RequirementsForm = z.infer<typeof requirementsFormSchema>
 export type RequirementRow = RequirementsForm['requirements'][number]

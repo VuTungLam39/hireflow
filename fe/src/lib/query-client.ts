@@ -15,6 +15,8 @@ export const queryClient = new QueryClient({
     },
     mutations: {
       retry: false,
+      // Mất mạng thì báo lỗi ngay thay vì treo nút rồi tự gửi khi có mạng lại
+      networkMode: 'always',
     },
   },
 })

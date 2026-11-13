@@ -13,6 +13,9 @@ export const api = axios.create({
   withCredentials: true,
 })
 
+// P1-01: tải file qua mạng chậm, LLM (BE chờ tới 20 giây) và Render free thức dậy (~1 phút) vượt 15 giây
+export const SLOW_TIMEOUT_MS = 120_000
+
 // Gắn access token vào mọi request
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken

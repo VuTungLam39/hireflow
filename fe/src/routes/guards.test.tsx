@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { createMemoryRouter, RouterProvider } from 'react-router'
+import { act, fireEvent, render, screen } from '@testing-library/react'
+import { createMemoryRouter, RouterProvider, useLocation, useNavigate } from 'react-router'
 import { Permission } from '@/lib/permissions'
 import { useAuthStore } from '@/stores/auth.store'
 import { Role, type User } from '@/types/user'
@@ -62,5 +62,48 @@ describe('route guards', () => {
     useAuthStore.getState().setSession({ ...user, role: Role.Admin }, tokens)
     renderAt('/users')
     expect(screen.getByText('users page')).toBeInTheDocument()
+  })
+
+  // Trang đích có loader: GuestRoute không được chen ngang về trang chủ khi loader còn chạy
+  it('returns to the deep link after login even when the target route has a loader', async () => {
+    function LoginStub() {
+      const navigate = useNavigate()
+      const from = (useLocation().state as { from?: string } | null)?.from ?? '/'
+      return (
+        <button
+          onClick={() => {
+            useAuthStore.getState().setSession(user, tokens)
+            navigate(from, { replace: true })
+          }}
+        >
+          sign in
+        </button>
+      )
+    }
+    const router = createMemoryRouter(
+      [
+        { element: <GuestRoute />, children: [{ path: '/login', element: <LoginStub /> }] },
+        {
+          element: <ProtectedRoute />,
+          children: [
+            { path: '/', element: <p>home page</p> },
+            {
+              path: '/applications',
+              loader: () => new Promise((r) => setTimeout(() => r(null), 30)),
+              element: <p>applications page</p>,
+            },
+          ],
+        },
+      ],
+      { initialEntries: ['/applications?xem=application:1'] },
+    )
+    render(<RouterProvider router={router} />)
+    const button = await screen.findByText('sign in')
+    await act(async () => {
+      fireEvent.click(button)
+      await new Promise((r) => setTimeout(r, 80))
+    })
+    expect(await screen.findByText('applications page')).toBeInTheDocument()
+    expect(router.state.location.search).toBe('?xem=application:1')
   })
 })
