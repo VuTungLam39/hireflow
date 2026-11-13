@@ -48,6 +48,8 @@ export function JobInfoSection({
   onCreated?: (id: string) => void
 }) {
   const canEdit = useCanEditJob(job)
+  // BR-JOB-11
+  const departmentLocked = !!job && job.applicationCount > 0
   const departments = useDepartmentOptions()
   const saveJob = useSaveJob()
   const {
@@ -147,11 +149,20 @@ export function JobInfoSection({
             />
           </FormField>
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Phòng ban" htmlFor="job-dept" error={errors.departmentId?.message}>
+            <FormField
+              label="Phòng ban"
+              htmlFor="job-dept"
+              error={errors.departmentId?.message}
+              hint={
+                departmentLocked
+                  ? 'Tin đã có hồ sơ nên không đổi được phòng ban. Cần chuyển phòng thì đóng tin và nhân bản.'
+                  : undefined
+              }
+            >
               <Select
                 id="job-dept"
                 className="w-full"
-                disabled={!canEdit}
+                disabled={!canEdit || departmentLocked}
                 {...register('departmentId')}
               >
                 <option value="">Chọn phòng ban</option>

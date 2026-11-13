@@ -454,6 +454,26 @@ describe('Jobs (e2e)', () => {
   });
 
   describe('delete, close and department rules', () => {
+    it('BR-JOB-11: the department is locked once the job has applications', async () => {
+      const moved = await as('hr', request(server()).patch(`/api/v1/jobs/${jobA}`))
+        .send({ departmentId: dep.b })
+        .expect(409);
+      expect(moved.body.code).toBe('JOB_NOT_EDITABLE');
+      expect(moved.body.errors).toEqual([expect.objectContaining({ field: 'departmentId' })]);
+      await as('hr', request(server()).patch(`/api/v1/jobs/${jobA}`))
+        .send({ departmentId: dep.a, location: 'Hà Nội' })
+        .expect(200);
+
+      const empty = await as('hr', request(server()).post('/api/v1/jobs'))
+        .send(jobBody(dep.a, `Chọn nhầm phòng ${run}`))
+        .expect(201);
+      jobIds.push(empty.body.data.id);
+      const fixed = await as('hr', request(server()).patch(`/api/v1/jobs/${empty.body.data.id}`))
+        .send({ departmentId: dep.b })
+        .expect(200);
+      expect(fixed.body.data.department.id).toBe(dep.b);
+    });
+
     it('cannot delete a job that is not a DRAFT without applications (BR-JOB-04)', async () => {
       const res = await as('hr', request(server()).delete(`/api/v1/jobs/${jobA}`)).expect(409);
       expect(res.body.code).toBe('JOB_NOT_DELETABLE');

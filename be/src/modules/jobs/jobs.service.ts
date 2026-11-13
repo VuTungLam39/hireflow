@@ -301,7 +301,10 @@ export class JobsService {
     const job = await this.getOrFail(id);
     this.assertEditable(job);
     this.assertDetails(dto, job);
-    if (dto.departmentId) await this.assertDepartment(dto.departmentId);
+    if (dto.departmentId && dto.departmentId !== job.departmentId) {
+      await this.assertDepartmentMovable(id);
+      await this.assertDepartment(dto.departmentId);
+    }
     await this.jobsRepository.update(id, dto);
     if (job.status === JobStatus.Open) this.prerender.schedule('job.updated');
     this.events.emit('job.changed', { jobId: id });
@@ -663,6 +666,17 @@ export class JobsService {
       ErrorCode.JobNotEditable,
       'Closed jobs cannot be edited',
       HttpStatus.CONFLICT,
+    );
+  }
+
+  // BR-JOB-11
+  private async assertDepartmentMovable(id: string): Promise<void> {
+    if (!(await this.dataSource.getRepository(Application).existsBy({ jobId: id }))) return;
+    throw new BusinessException(
+      ErrorCode.JobNotEditable,
+      'The department cannot change once the job has applications',
+      HttpStatus.CONFLICT,
+      [{ field: 'departmentId', messages: ['Tin đã có hồ sơ nên không đổi được phòng ban'] }],
     );
   }
 

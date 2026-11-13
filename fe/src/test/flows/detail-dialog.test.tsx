@@ -179,6 +179,25 @@ describe('detail dialog', () => {
     expect(router.state.location.search).toMatch(/xem=job%3A.+%3Acriteria/)
   })
 
+  it('BR-JOB-11: locks the department of a job with applications, other fields still save', async () => {
+    const job = db.jobs.find(
+      (j) => j.status === 'OPEN' && db.applications.some((a) => a.jobId === j.id),
+    )!
+    const before = { location: job.location, departmentId: job.departmentId }
+    renderAt('hr@hireflow.dev', `${paths.jobs}?xem=${encodeURIComponent(`job:${job.id}:content`)}`)
+
+    const dialog = await screen.findByRole('dialog', { name: job.title }, { timeout: 8000 })
+    const department = await within(dialog).findByLabelText('Phòng ban')
+    expect(department).toBeDisabled()
+    expect(within(dialog).getByText(/không đổi được phòng ban/)).toBeInTheDocument()
+
+    fireEvent.change(within(dialog).getByLabelText('Địa điểm'), { target: { value: 'Đà Nẵng' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Lưu nội dung tin' }))
+    await waitFor(() => expect(job.location).toBe('Đà Nẵng'), { timeout: 8000 })
+    expect(job.departmentId).toBe(before.departmentId)
+    Object.assign(job, before)
+  })
+
   it('offers the department filter to HR but not to a hiring manager', async () => {
     renderAt('hr@hireflow.dev', paths.jobs)
     expect(await screen.findByRole('button', { name: /Phòng ban/ })).toBeInTheDocument()
