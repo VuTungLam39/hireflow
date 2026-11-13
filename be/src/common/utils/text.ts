@@ -17,3 +17,5 @@ export const normalizeText = (value: string) =>
 export const normalizeKeywords = (keywords: string[]) => [
   ...new Set(keywords.map(foldText).filter(Boolean)),
 ];
+
+export const escapeLike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`);

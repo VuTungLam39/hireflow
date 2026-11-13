@@ -181,3 +181,30 @@ SELECT cf.id,
 FROM cv_files cf WHERE cf.text IS NOT NULL
 ON CONFLICT DO NOTHING;
 ```
+
+## 9. Đo lại sau MVP 2 (13/11/2026)
+
+Số liệu thô: `docs/perf/phase5.md` (trước khi phân trang lịch phỏng vấn) và `docs/perf/phase5-after.md` (sau). Điều kiện giống mục 1 (`PERF_REQUESTS=50 PERF_CONCURRENCY=5 npm run perf -- phase5`), Postgres 18 trong docker-compose. `seed:perf` có thêm 20 Interviewer, 52.105 buổi phỏng vấn (mọi hồ sơ từ INTERVIEW trở lên), 200.000 thông báo (người nhận nhiều nhất 28.437) và 280.357 dòng nhật ký kiểm toán. Mặc định của `perf-run` là 200 request, 10 đồng thời; số liệu ở các mục trên đo với 50 request, 5 đồng thời.
+
+| Kịch bản | p95 (ms) | Query/request |
+|---|---:|---|
+| 15 kịch bản ở mục 2 | 22 → 300 (xếp hạng job đông nhất cao nhất) | không đổi |
+| Phễu tuyển dụng 90 ngày – Admin | 22 | 1 (cache Redis) |
+| Phễu tuyển dụng – job đông nhất | 25 | 2 |
+| So sánh 3 hồ sơ | 50 | 5 |
+| Lịch phỏng vấn 30 ngày – Admin | 378 (500 buổi, bị cắt) → **131** (1 trang 200) | 3 |
+| Phỏng vấn tồn đọng – Admin | 111 → 168 (1 trang 200) | 3 |
+| Lịch phỏng vấn – Interviewer | 44 | 3 |
+| Bảng hồ sơ – Interviewer | 81 | 4 |
+| Thông báo – HR nhiều nhất | 47 | 3 |
+| Số thông báo chưa đọc – HR | 20 | 2 |
+| Nhật ký kiểm toán – trang đầu | 36 | 2 |
+| Tin công khai – trang đầu | 23 | 2 |
+
+Đo riêng (route có throttle 10/phút nên gọi tuần tự 4 lần): xuất CSV job đông nhất (1.154 dòng, 203 kB) p50 283 ms; xuất 4.871 dòng (gần trần 5.000, 881 kB) p50 939 ms.
+
+Nhận xét:
+- Số query mỗi request vẫn là hằng số ở mọi kịch bản mới.
+- Lịch phỏng vấn và xếp hạng tốn thời gian ở Node (dựng và serialize 500 buổi, 1.154 dòng xếp hạng ~407 kB), không ở DB (12,8 ms và ~35 ms). Đẩy phép chiếu `score_breakdown` xuống DB cho xếp hạng không cải thiện đo được nên không giữ.
+- `GET /interviews` từng giới hạn 500 buổi mà không báo bị cắt (một tuần ở mật độ perf có ~545 buổi). Đã đổi sang phân trang cursor theo `(scheduled_at, id)`, mặc định 100, tối đa 200 mỗi trang; FE đi hết các trang của khoảng đang xem.
+- Giữa các lần đo, xếp hạng job đông nhất dao động 300–337 ms (5 đồng thời), sát mục tiêu.

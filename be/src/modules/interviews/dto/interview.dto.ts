@@ -93,6 +93,20 @@ export class QueryInterviewDto {
   @Transform(({ value }) => value === true || value === 'true')
   @IsBoolean()
   open?: boolean;
+
+  @ApiPropertyOptional({ description: 'Gửi lại đúng meta.nextCursor của trang trước' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  cursor?: string;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: 200, default: 100 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  limit: number = 100;
 }
 
 export class RatingDto {

@@ -6,12 +6,14 @@ import {
   type OnModuleInit,
 } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { Brackets, DataSource, EntityManager, In } from 'typeorm';
+import { Brackets, DataSource, EntityManager, In, MoreThan } from 'typeorm';
 import { ApplicationStatus } from '../../common/enums/application-status.enum.js';
 import { Role } from '../../common/enums/role.enum.js';
 import { AppEvents } from '../../common/events/app-events.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
+import { CursorResult } from '../../common/dto/cursor-result.dto.js';
+import { decodeCursor, encodeCursor } from '../../common/utils/cursor.js';
 import { applyDepartmentScope } from '../../common/utils/department-scope.js';
 import {
   InterviewQuestionSuggester,
@@ -109,7 +111,7 @@ export class InterviewsService implements OnModuleInit {
   }
 
   // F-INT-01, F-INT-02
-  async list(query: QueryInterviewDto, user: ScopeUser): Promise<InterviewView[]> {
+  async list(query: QueryInterviewDto, user: ScopeUser): Promise<CursorResult<InterviewView>> {
     const from = query.from ? new Date(query.from) : new Date(Date.now() - DAY_MS);
     const to = query.to ? new Date(query.to) : new Date(Date.now() + 30 * DAY_MS);
     const qb = this.dataSource
@@ -118,9 +120,18 @@ export class InterviewsService implements OnModuleInit {
       .innerJoin('iv.application', 'app')
       .innerJoin('app.job', 'job')
       .select('iv.id', 'id')
+      .addSelect('iv.scheduledAt', 'scheduledAt')
       .where('iv.scheduledAt >= :from AND iv.scheduledAt < :to', { from, to })
       .orderBy('iv.scheduledAt', 'ASC')
-      .limit(500);
+      .addOrderBy('iv.id', 'ASC')
+      .limit(query.limit + 1);
+    if (query.cursor) {
+      const { createdAt, id } = decodeCursor(query.cursor);
+      qb.andWhere("(date_trunc('milliseconds', iv.scheduledAt), iv.id) > (:cursorAt, :cursorId)", {
+        cursorAt: createdAt,
+        cursorId: id,
+      });
+    }
     if (!query.includeCancelled) {
       qb.andWhere('iv.status <> :cancelled', { cancelled: InterviewStatus.Cancelled });
     }
@@ -139,8 +150,20 @@ export class InterviewsService implements OnModuleInit {
       );
     }
     applyDepartmentScope(qb, user, 'job.departmentId', { applicationIdColumn: '"app"."id"' });
-    const ids = (await qb.getRawMany<{ id: string }>()).map((r) => r.id);
-    return this.views(ids, user, true);
+    const rows = await qb.getRawMany<{ id: string; scheduledAt: Date }>();
+    const page = rows.slice(0, query.limit);
+    const last = page.at(-1);
+    return new CursorResult(
+      await this.views(
+        page.map((r) => r.id),
+        user,
+        true,
+      ),
+      query.limit,
+      rows.length > query.limit && last
+        ? encodeCursor({ createdAt: new Date(last.scheduledAt), id: last.id })
+        : null,
+    );
   }
 
   // F-INT-01, BR-INT-02
@@ -238,6 +261,7 @@ export class InterviewsService implements OnModuleInit {
       const beforeIds = before.map((a) => a.userId);
       const interviewerIds = dto.interviewerIds ?? beforeIds;
       if (dto.interviewerIds) await this.assertInterviewers(manager, dto.interviewerIds);
+      else await this.lockUsers(manager, interviewerIds);
 
       const start = dto.scheduledAt ? new Date(dto.scheduledAt) : iv.scheduledAt;
       const duration = dto.durationMinutes ?? iv.durationMinutes;
@@ -473,15 +497,19 @@ export class InterviewsService implements OnModuleInit {
       .getRepository(Application)
       .findOne({ select: ['id', 'status'], where: { id: applicationId } });
     if (!app || !TERMINAL.includes(app.status)) return 0;
+    const upcoming = () => ({
+      status: InterviewStatus.Scheduled,
+      scheduledAt: MoreThan(new Date()),
+    });
     const pending = await this.dataSource.getRepository(Interview).find({
       select: ['id'],
-      where: { applicationId, status: InterviewStatus.Scheduled },
+      where: { applicationId, ...upcoming() },
     });
     for (const { id } of pending) {
       const assignees = await this.dataSource.transaction(async (manager) => {
         const res = await manager.update(
           Interview,
-          { id, status: InterviewStatus.Scheduled },
+          { id, ...upcoming() },
           { status: InterviewStatus.Cancelled, cancelReason: `Hồ sơ đã chuyển sang ${app.status}` },
         );
         if (!res.affected) return [];
@@ -505,10 +533,21 @@ export class InterviewsService implements OnModuleInit {
     }
   }
 
+  // BR-INT-01
+  private lockUsers(manager: EntityManager, ids: string[]) {
+    return manager.find(User, {
+      select: ['id'],
+      where: { id: In(ids) },
+      order: { id: 'ASC' },
+      lock: { mode: 'pessimistic_write' },
+    });
+  }
+
   private async assertInterviewers(manager: EntityManager, ids: string[]) {
     const found = await manager.find(User, {
       select: ['id'],
       where: { id: In(ids), role: Role.Interviewer, isActive: true },
+      order: { id: 'ASC' },
       lock: { mode: 'pessimistic_write' },
     });
     if (found.length !== ids.length) {

@@ -138,7 +138,18 @@ async function main() {
   const [manager] = await ds.query(
     `SELECT u.email FROM users u WHERE u.role = 'hiring_manager' ORDER BY u.email LIMIT 1`,
   );
-  const tokens = { admin: await login('admin@perf.local'), hm: await login(manager.email) };
+  const [owner] = await ds.query(
+    `SELECT u.email FROM notifications n JOIN users u ON u.id = n.user_id GROUP BY u.email ORDER BY COUNT(*) DESC LIMIT 1`,
+  );
+  const [interviewer] = await ds.query(
+    `SELECT u.email FROM interview_assignees ia JOIN users u ON u.id = ia.user_id GROUP BY u.email ORDER BY COUNT(*) DESC LIMIT 1`,
+  );
+  const tokens = {
+    admin: await login('admin@perf.local'),
+    hm: await login(manager.email),
+    hr: await login(owner.email),
+    iv: await login(interviewer.email),
+  };
 
   const [busiest] = await ds.query(
     `SELECT job_id AS id FROM applications GROUP BY job_id ORDER BY COUNT(*) DESC LIMIT 1`,
@@ -146,6 +157,12 @@ async function main() {
   const [sample] = await ds.query(
     `SELECT a.id, c.full_name AS name FROM applications a JOIN candidates c ON c.id = a.candidate_id ORDER BY a.id LIMIT 1`,
   );
+  const compareIds = (
+    await ds.query(
+      `SELECT id FROM applications WHERE job_id = $1 AND score IS NOT NULL ORDER BY score DESC LIMIT 3`,
+      [busiest.id],
+    )
+  ).map((r: { id: string }) => r.id);
   const searchTerm = String(sample.name)
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
@@ -223,6 +240,34 @@ async function main() {
     { name: 'Kho ứng viên – Hiring Manager', who: 'hm', path: '/candidates?limit=20' },
     { name: 'Dashboard – Admin', who: 'admin', path: '/dashboard/summary' },
     { name: 'Dashboard – Hiring Manager', who: 'hm', path: '/dashboard/summary' },
+    // MVP 2
+    { name: 'Phễu tuyển dụng 90 ngày – Admin', who: 'admin', path: '/dashboard/funnel' },
+    {
+      name: 'Phễu tuyển dụng – job đông nhất',
+      who: 'admin',
+      path: `/dashboard/funnel?jobId=${busiest.id}`,
+    },
+    {
+      name: 'So sánh 3 hồ sơ',
+      who: 'admin',
+      path: `/jobs/${busiest.id}/applications/compare?ids=${compareIds.join(',')}`,
+    },
+    {
+      name: 'Lịch phỏng vấn 30 ngày – Admin (1 trang 200)',
+      who: 'admin',
+      path: '/interviews?limit=200',
+    },
+    {
+      name: 'Phỏng vấn tồn đọng – Admin (1 trang 200)',
+      who: 'admin',
+      path: '/interviews?open=true&limit=200',
+    },
+    { name: 'Lịch phỏng vấn – Interviewer', who: 'iv', path: '/interviews?open=true' },
+    { name: 'Bảng hồ sơ – Interviewer', who: 'iv', path: '/applications?page=1&limit=20' },
+    { name: 'Thông báo – HR nhiều nhất', who: 'hr', path: '/notifications?limit=20' },
+    { name: 'Số thông báo chưa đọc – HR', who: 'hr', path: '/notifications/unread-count' },
+    { name: 'Nhật ký kiểm toán – trang đầu', who: 'admin', path: '/audit-logs?limit=50' },
+    { name: 'Tin công khai – trang đầu', who: 'admin', path: '/public/jobs?limit=20' },
   ];
 
   const http: HttpResult[] = [];

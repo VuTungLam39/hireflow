@@ -16,6 +16,7 @@ import { safeUrl } from '../utils/safe-url.js';
 // Mã lỗi PostgreSQL thường gặp
 const PG_UNIQUE_VIOLATION = '23505';
 const PG_FOREIGN_KEY_VIOLATION = '23503';
+const PG_CHECK_VIOLATION = '23514';
 
 const ERROR_CODES = new Set<string>(Object.values(ErrorCode));
 
@@ -83,6 +84,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       } else if (pgCode === PG_FOREIGN_KEY_VIOLATION) {
         statusCode = HttpStatus.BAD_REQUEST;
         message = 'Related resource not found';
+      } else if (pgCode === PG_CHECK_VIOLATION) {
+        statusCode = HttpStatus.BAD_REQUEST;
+        message = 'Validation failed';
+        const constraint = (exception.driverError as { constraint?: string }).constraint;
+        this.logger.warn(
+          `[${request.headers[REQUEST_ID_HEADER] as string}] ${request.method} ${safeUrl(request.originalUrl)} check ${constraint ?? '?'}`,
+        );
       }
     }
 

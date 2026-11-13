@@ -273,8 +273,12 @@ export class CvPipelineService implements OnModuleInit {
       return;
     }
     const requirements = await this.requirementsOf(app.jobId, app.job!.jdVersion);
-    await this.saveScore(app.id, app.job!.jdVersion, requirements, profile, app.cvFile.text);
-    this.events.emit('application.ai-finished', { applicationId: app.id, aiStatus: AiStatus.Done });
+    if (await this.saveScore(app.id, app.job!.jdVersion, requirements, profile, app.cvFile.text)) {
+      this.events.emit('application.ai-finished', {
+        applicationId: app.id,
+        aiStatus: AiStatus.Done,
+      });
+    }
   }
 
   // BR-AI-05: tính lại bằng code, không gọi LLM
@@ -295,8 +299,7 @@ export class CvPipelineService implements OnModuleInit {
     for (const app of apps) {
       const profile = byFile.get(app.cvFileId!);
       if (!profile || !app.cvFile?.text) continue;
-      await this.saveScore(app.id, jdVersion, requirements, profile, app.cvFile.text);
-      count++;
+      if (await this.saveScore(app.id, jdVersion, requirements, profile, app.cvFile.text)) count++;
     }
     if (count) this.events.emit('job.changed', { jobId: id });
     return count;
@@ -308,18 +311,24 @@ export class CvPipelineService implements OnModuleInit {
     requirements: JobRequirement[],
     profile: CvProfile,
     cvText: string,
-  ) {
+  ): Promise<boolean> {
     const result = scoreApplication(requirements, profile.data.skills, maskPii(cvText));
-    await this.applications().update(applicationId, {
-      score: result.score,
-      scoreBreakdown: result.breakdown,
-      flags: result.flags,
-      scoredJdVersion: jdVersion,
-      scoredAt: new Date(),
-      aiStatus: AiStatus.Done,
-      aiError: null,
-    });
+    // BR-DATA-03
+    const { affected } = await this.applications().update(
+      { id: applicationId, cvFileId: profile.cvFileId },
+      {
+        score: result.score,
+        scoreBreakdown: result.breakdown,
+        flags: result.flags,
+        scoredJdVersion: jdVersion,
+        scoredAt: new Date(),
+        aiStatus: AiStatus.Done,
+        aiError: null,
+      },
+    );
+    if (!affected) return false;
     this.events.emit('application.changed', { applicationId });
+    return true;
   }
 
   // ---------- thất bại sau khi hết lượt retry ----------

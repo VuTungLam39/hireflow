@@ -1,4 +1,5 @@
 import type { ScoreFlag } from '../../common/enums/score-flag.enum.js';
+import { escapeLike } from '../../common/utils/text.js';
 import type { RequirementType } from '../jobs/entities/job-requirement.entity.js';
 import { type ExtractedSkill, scoreApplication, type ScoringRequirement } from '../ai/scoring.js';
 
@@ -72,5 +73,5 @@ export function rankMatches(
 }
 
 export const likePatterns = (keywords: string[]) => [
-  ...new Set(keywords.map((k) => `%${k.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)),
+  ...new Set(keywords.map((k) => `%${escapeLike(k)}%`)),
 ];

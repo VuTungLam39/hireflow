@@ -12,12 +12,13 @@ import { Role } from '../src/common/enums/role.enum.js';
 import { ScoreFlag } from '../src/common/enums/score-flag.enum.js';
 import { LLM_PROVIDER, LlmError, type JsonRequest } from '../src/modules/ai/ai.types.js';
 import { CvProfile } from '../src/modules/ai/entities/cv-profile.entity.js';
-import { AI_ERROR } from '../src/modules/ai/pipeline/cv-pipeline.service.js';
+import { AI_ERROR, CvPipelineService } from '../src/modules/ai/pipeline/cv-pipeline.service.js';
 import { PipelineOpsService } from '../src/modules/ai/pipeline/pipeline-ops.service.js';
 import { fakeExtract, fakeSuggest, FakeLlmProvider } from '../src/modules/ai/providers/fake.llm.js';
 import { makeDocx, makePdf, SAMPLE_CV } from '../src/modules/ai/testing/cv-fixtures.js';
 import { ApplicationStatusHistory } from '../src/modules/applications/entities/application-status-history.entity.js';
 import { Application } from '../src/modules/applications/entities/application.entity.js';
+import { CandidatesService } from '../src/modules/candidates/candidates.service.js';
 import { Candidate } from '../src/modules/candidates/entities/candidate.entity.js';
 import { Department } from '../src/modules/departments/entities/department.entity.js';
 import { CvFile } from '../src/modules/files/entities/cv-file.entity.js';
@@ -60,7 +61,8 @@ describe('AI pipeline (e2e, LLM giả)', () => {
   let ds: DataSource;
   const run = randomUUID().slice(0, 8);
   let token = '';
-  const ids = { dep: '', job: '', job2: '' };
+  const ids = { dep: '', job: '', job2: '', hr: '' };
+  const anonymized: string[] = [];
 
   const llm = new FakeLlmProvider({
     'extract-cv': (req: JsonRequest) => {
@@ -162,7 +164,7 @@ describe('AI pipeline (e2e, LLM giả)', () => {
         requirement(job.id, 3, 'React', RequirementType.Nice, 1, null, ['react']),
         requirement(job2.id, 1, 'Docker', RequirementType.Must, 1, null, ['docker']),
       ]);
-    Object.assign(ids, { dep: dep.id, job: job.id, job2: job2.id });
+    Object.assign(ids, { dep: dep.id, job: job.id, job2: job2.id, hr: hr.id });
 
     const login = await request(server())
       .post('/api/v1/auth/login')
@@ -175,7 +177,7 @@ describe('AI pipeline (e2e, LLM giả)', () => {
     const candidates = await ds
       .getRepository(Candidate)
       .find({ where: { fullName: `Ứng viên ${run}` }, withDeleted: true });
-    const candidateIds = candidates.map((c) => c.id);
+    const candidateIds = [...candidates.map((c) => c.id), ...anonymized];
     const files = await ds.getRepository(CvFile).findBy({ candidateId: In(candidateIds) });
     const apps = await ds.getRepository(Application).find({
       where: { jobId: In([ids.job, ids.job2]) },
@@ -434,5 +436,31 @@ describe('AI pipeline (e2e, LLM giả)', () => {
       request(server()).post(`/api/v1/jobs/${ids.job2}/requirements/suggest`),
     ).expect(503);
     expect(res.body.code).toBe('AI_UNAVAILABLE');
+  });
+
+  it('BR-DATA-03: anonymizing while a score is computed keeps the evidence deleted and ends the AI wait', async () => {
+    const created = await upload(ids.job2, `anon-${run}@example.com`, await makeDocx(SAMPLE_CV));
+    await waitFor(created.id, settled);
+    const row = await ds.getRepository(Application).findOneOrFail({
+      where: { id: created.id },
+      relations: { cvFile: true },
+    });
+    const profile = await ds.getRepository(CvProfile).findOneByOrFail({ cvFileId: row.cvFileId! });
+    const requirements = await ds.getRepository(JobRequirement).findBy({ jobId: ids.job2 });
+    await ds.getRepository(Application).update(created.id, { aiStatus: AiStatus.Processing });
+
+    anonymized.push(row.candidateId);
+    await app
+      .get(CandidatesService)
+      .anonymize(row.candidateId, { id: ids.hr, role: Role.Admin, departmentId: null });
+    const pipeline = app.get(CvPipelineService) as unknown as {
+      saveScore: (...args: unknown[]) => Promise<unknown>;
+    };
+    await pipeline.saveScore(created.id, 1, requirements, profile, row.cvFile!.text);
+
+    const after = await ds.getRepository(Application).findOneByOrFail({ id: created.id });
+    expect(after.scoreBreakdown).toBeNull();
+    expect(after.aiStatus).toBe(AiStatus.Failed);
+    expect(after.aiError).toBe(AI_ERROR.anonymized);
   });
 });

@@ -493,11 +493,41 @@ describe('Interviews (e2e)', () => {
       await as('ivB', request(server()).get(`/api/v1/applications/${apps.b}`)).expect(404);
     });
 
-    it('BR-INT-01: rejecting the application cancels its upcoming interviews', async () => {
+    it('BR-INT-01: moving an interview locks its interviewers, so a parallel booking cannot slip past the clash check', async () => {
+      const res = await schedule('hr', apps.b, {
+        scheduledAt: inDays(7),
+        interviewerIds: [userIds.ivB],
+      }).expect(201);
+      const runner = ds.createQueryRunner();
+      await runner.startTransaction();
+      await runner.query('SELECT id FROM users WHERE id = $1 FOR NO KEY UPDATE', [userIds.ivB]);
+      let done = false;
+      const move = as('hr', request(server()).patch(`/api/v1/interviews/${res.body.data.id}`))
+        .send({ scheduledAt: inDays(7, 14) })
+        .then((r) => {
+          done = true;
+          return r;
+        });
+      await new Promise((r) => setTimeout(r, 400));
+      const waited = !done;
+      await runner.commitTransaction();
+      await runner.release();
+      expect((await move).status).toBe(200);
+      expect(waited).toBe(true);
+    });
+
+    it('BR-INT-01: rejecting the application cancels its upcoming interviews, not the ones already held', async () => {
       const res = await schedule('hr', apps.b, {
         scheduledAt: inDays(5),
         interviewerIds: [userIds.ivA],
       }).expect(201);
+      const held = await schedule('hr', apps.b, {
+        scheduledAt: inDays(6),
+        interviewerIds: [userIds.ivB],
+      }).expect(201);
+      await ds
+        .getRepository(Interview)
+        .update(held.body.data.id, { scheduledAt: new Date(Date.now() - 3_600_000) });
       await as('hr', request(server()).patch(`/api/v1/applications/${apps.b}/status`))
         .send({ status: 'REJECTED', reason: 'Không phù hợp' })
         .expect(200);
@@ -508,6 +538,33 @@ describe('Interviews (e2e)', () => {
           ).toBe('CANCELLED'),
         { timeout: 5000 },
       );
+      expect(
+        (await ds.getRepository(Interview).findOneByOrFail({ id: held.body.data.id })).status,
+      ).toBe('SCHEDULED');
+    });
+
+    it('pages the calendar by cursor in time order, without gaps or repeats', async () => {
+      const all = await as(
+        'hr',
+        request(server()).get('/api/v1/interviews?includeCancelled=true'),
+      ).expect(200);
+      const ids = all.body.data.map((i: { id: string }) => i.id);
+      expect(ids.length).toBeGreaterThanOrEqual(3);
+      expect(all.body.meta.nextCursor).toBeNull();
+
+      const paged: string[] = [];
+      let cursor: string | undefined;
+      do {
+        const res = await as('hr', request(server()).get('/api/v1/interviews'))
+          .query({ includeCancelled: true, limit: 1, ...(cursor && { cursor }) })
+          .expect(200);
+        expect(res.body.data).toHaveLength(1);
+        paged.push(res.body.data[0].id);
+        cursor = res.body.meta.nextCursor ?? undefined;
+      } while (cursor);
+      expect(paged).toEqual(ids);
+
+      await as('hr', request(server()).get('/api/v1/interviews?cursor=abc')).expect(400);
     });
   });
 

@@ -526,6 +526,17 @@ describe('Applications (e2e)', () => {
       expect(await ds.getRepository(CvFile).countBy({ candidateId: candidate.id })).toBe(1);
     });
 
+    it('BR-CAND-01: a new email sent to two jobs at once gives one candidate with both applications', async () => {
+      const twin = `a-twin-${run}@example.com`;
+      const results = await Promise.all(
+        [ids.jobA, ids.jobB].map((jobId) => upload('hr', jobId, { ...fields, email: twin }, file)),
+      );
+      const candidate = await ds.getRepository(Candidate).findOneBy({ email: twin });
+      if (candidate) extraCandidates.push(candidate.id);
+      expect(results.map((r) => r.status)).toEqual([201, 201]);
+      expect(await ds.getRepository(Application).countBy({ candidateId: candidate!.id })).toBe(2);
+    });
+
     it.each([
       [
         'a closed job',

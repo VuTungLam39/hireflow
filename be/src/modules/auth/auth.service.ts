@@ -16,6 +16,9 @@ import { UsersService } from '../users/users.service.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 
+// OWASP A07
+const DUMMY_HASH = '$2b$10$d.IGWAG1Qd3fUHu06u8zkuAjAJxXffnvOhVb9Z77/2F./alKFpkU.';
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
@@ -36,7 +39,9 @@ export class AuthService {
 
   async login(dto: LoginDto, meta: SessionMeta): Promise<{ user: User; tokens: AuthTokens }> {
     const user = await this.usersService.findByEmailWithPassword(dto.email);
-    if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
+    // OWASP A07
+    const valid = await bcrypt.compare(dto.password, user?.passwordHash ?? DUMMY_HASH);
+    if (!user || !valid) {
       this.loginFailed(dto.email, user ? 'wrong_password' : 'unknown_email', meta);
       throw new UnauthorizedException('Invalid email or password');
     }

@@ -1,5 +1,5 @@
 import { api } from '@/lib/api-client'
-import type { ApiResponse } from '@/types/api'
+import type { ApiResponse, CursorMeta } from '@/types/api'
 import type {
   FeedbackInput,
   Interview,
@@ -19,8 +19,19 @@ export const interviewsApi = {
       )
     ).data.data,
 
-  list: async (params: InterviewListParams) =>
-    (await api.get<ApiResponse<Interview[]>>('/interviews', { params })).data.data,
+  // F-INT-02
+  list: async (params: InterviewListParams) => {
+    const items: Interview[] = []
+    let cursor: string | undefined
+    do {
+      const res = await api.get<ApiResponse<Interview[], CursorMeta>>('/interviews', {
+        params: { ...params, limit: 200, cursor },
+      })
+      items.push(...res.data.data)
+      cursor = res.data.meta?.nextCursor ?? undefined
+    } while (cursor)
+    return items
+  },
 
   forApplication: async (applicationId: string) =>
     (await api.get<ApiResponse<Interview[]>>(`/applications/${applicationId}/interviews`)).data

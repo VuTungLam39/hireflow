@@ -1,15 +1,18 @@
 import { HttpStatus, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { CursorResult } from '../../common/dto/cursor-result.dto.js';
+import { AiStatus } from '../../common/enums/ai-status.enum.js';
 import { ApplicationSource } from '../../common/enums/application-source.enum.js';
 import type { ApplicationStatus } from '../../common/enums/application-status.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { decodeCursor, encodeCursor } from '../../common/utils/cursor.js';
 import { appConfig } from '../../config/app.config.js';
+import { AI_ERROR } from '../ai/pipeline/errors.js';
 import { applyCandidateScope, applyDepartmentScope } from '../../common/utils/department-scope.js';
+import { escapeLike } from '../../common/utils/text.js';
 import { Application } from '../applications/entities/application.entity.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity.js';
@@ -62,8 +65,6 @@ const EMPTY_STAT: ApplicationStat = {
 };
 
 const EXPIRED_BATCH = 100;
-
-const escapeLike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 @Injectable()
 export class CandidatesService {
@@ -212,6 +213,11 @@ export class CandidatesService {
         withDeleted: true,
       });
       await manager.update(Application, { candidateId: id }, { scoreBreakdown: null });
+      await manager.update(
+        Application,
+        { candidateId: id, aiStatus: In([AiStatus.Pending, AiStatus.Processing]) },
+        { aiStatus: AiStatus.Failed, aiError: AI_ERROR.anonymized },
+      );
       await manager.delete(CvFile, { candidateId: id });
       await manager.delete(JobMatch, { candidateId: id });
       await manager.update(Candidate, id, {

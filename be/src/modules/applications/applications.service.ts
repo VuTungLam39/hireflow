@@ -19,6 +19,7 @@ import { ScoreFlag } from '../../common/enums/score-flag.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { applyDepartmentScope } from '../../common/utils/department-scope.js';
+import { escapeLike } from '../../common/utils/text.js';
 import { vnToday } from '../../common/utils/vn-date.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity.js';
@@ -114,6 +115,11 @@ export interface ApplicationDetailView extends Omit<ApplicationListItemView, 'ca
 // BR-INT-02: Interviewer đánh giá độc lập, không thấy điểm và bằng chứng của AI
 const blind = (user: ScopeUser) => user.role === Role.Interviewer;
 
+const constraintOf = (error: unknown) =>
+  error instanceof QueryFailedError
+    ? (error.driverError as { constraint?: string }).constraint
+    : undefined;
+
 const EXPORT_FILTERS = [
   'jobId',
   'status',
@@ -132,8 +138,6 @@ const describeFilters = (query: QueryApplicationDto) =>
   EXPORT_FILTERS.filter((k) => query[k] !== undefined && query[k] !== '')
     .map((k) => `${k}=${String(query[k])}`)
     .join('&');
-
-const escapeLike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 @Injectable()
 export class ApplicationsService {
@@ -762,8 +766,8 @@ export class ApplicationsService {
     const storageKey = reusable ? null : await this.filesService.store(cv);
 
     let result: { applicationId: string; storedUnused: boolean };
-    try {
-      result = await this.dataSource.transaction(async (manager) => {
+    const attempt = () =>
+      this.dataSource.transaction(async (manager) => {
         const candidate = await this.candidatesService.upsertForApplication(
           manager,
           contact,
@@ -781,6 +785,12 @@ export class ApplicationsService {
           changedBy: opts.by,
         });
         return { applicationId: id, storedUnused: !!(reused && storageKey) };
+      });
+    try {
+      // BR-CAND-01
+      result = await attempt().catch((error: unknown) => {
+        if (constraintOf(error) === 'UQ_candidates_email') return attempt();
+        throw error;
       });
     } catch (error) {
       if (storageKey) await this.filesService.removeStored(storageKey);
@@ -941,9 +951,7 @@ export class ApplicationsService {
   }
 
   private duplicateOr(error: unknown): unknown {
-    const pg =
-      error instanceof QueryFailedError ? (error.driverError as { constraint?: string }) : null;
-    return pg?.constraint === 'UQ_applications_job_id_candidate_id' ? this.duplicate() : error;
+    return constraintOf(error) === 'UQ_applications_job_id_candidate_id' ? this.duplicate() : error;
   }
 
   private anonymized() {
