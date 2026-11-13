@@ -122,7 +122,7 @@ Cập nhật 12/11/2026. Chi tiết từng feature: tài liệu "Danh mục Feat
 | Mở rộng sau deploy F1–F4: phễu, đổi trạng thái hàng loạt, so sánh ứng viên, nhân bản tin | Xong, đã kiểm trên production | E2E `funnel`, `bulk-status`, `compare`, `clone-job` (`be/test/`); số đo phễu trên 200k hồ sơ ~275 ms |
 | Health check không gọi B2 cho Render (`/api/health/live`) | Xong | E2E `be/test/app.e2e-spec.ts` |
 | Thử khôi phục backup Neon (point-in-time) | Đã thử 12/11 | Tạo branch từ thời điểm cũ: đủ 10 bảng, cùng migration mới nhất, số dòng khớp production. Cách làm ở [Deploy, bước 8](#8-thử-khôi-phục-backup-neon) |
-| Load test k6 | Chưa làm | – |
+| Load test k6 (DB 200k hồ sơ, 50 người dùng ảo) | Đã chạy 12/11: 0 lỗi, ~105 request/s; p95 tổng 363 ms, vượt mục tiêu 300 ms ở 3 API do payload của API xếp hạng; bỏ xếp hạng thì p95 82 ms | Mục [Load test k6](#load-test-k6); script `be/scripts/load.k6.js` |
 
 ---
 
@@ -516,6 +516,32 @@ Trước khi mở PR, cả bốn lệnh `lint`, `typecheck`, `test`, `build` ph�
 | [fe/docs/rendering.md](fe/docs/rendering.md) | CSR/SSR/SSG/ISR, prerender, Lighthouse, waterfall loader, React Profiler bảng xếp hạng |
 | [fe/docs/qa-responsive.md](fe/docs/qa-responsive.md) | Kiểm giao diện 3 role × 360/768/1280px trên hệ thống chạy bằng compose |
 
+### Load test k6
+
+`be/scripts/load.k6.js` mô phỏng HR làm việc: mỗi vòng gọi 7 API đọc (danh sách hồ sơ, danh sách lọc theo tin + trạng thái + điểm, tin, xếp hạng, kho ứng viên, dashboard, phễu) rồi nghỉ 1 giây; tải tăng 0 → 20 → 50 người dùng ảo trong 2 phút. Ngưỡng đạt: p95 < 300 ms mỗi API, lỗi < 1%.
+
+```bash
+# API trỏ vào DB perf (xem perf-report), tắt rate limit vì đây là đo sức chịu tải
+PORT=3001 DB_DATABASE=ncc_intern_perf THROTTLE_LIMIT=1000000 LLM_PROVIDERS=fake node dist/main.js
+BASE_URL=http://localhost:3001 K6_EMAIL=admin@perf.local K6_PASSWORD=<mật khẩu seed perf> k6 run scripts/load.k6.js
+```
+
+Kết quả 12/11/2026 (k6, API và PostgreSQL chạy chung một laptop; 2 lượt cho số gần như nhau): 12.728 request, **0 lỗi**, ~105 request/s.
+
+| API | p95 | Đạt |
+| --- | ---: | --- |
+| Phễu `/dashboard/funnel` (cache 5 phút) | 110 ms | ✔ |
+| Dashboard `/dashboard/summary` (cache) | 150 ms | ✔ |
+| Hồ sơ lọc theo tin + trạng thái + điểm | 207 ms | ✔ |
+| Danh sách tin | 231 ms | ✔ |
+| Danh sách hồ sơ không lọc (phân trang offset) | 430 ms | ✘ |
+| Xếp hạng một tin (~1.000 hồ sơ mỗi tin) | 429 ms | ✘ |
+| Kho ứng viên (đếm hồ sơ mỗi ứng viên) | 444 ms | ✘ |
+
+**Nguyên nhân: API xếp hạng.** Đo từng request một (perf-report) cả ba đều đạt: kho ứng viên 15 ms, xếp hạng 158 ms (phần lớn là dựng JSON `score_breakdown` của ~1.050 hồ sơ, query chỉ 8 ms). Dưới tải, xếp hạng trả payload lớn (cả lượt nhận ~758 MB) và việc dựng JSON chạy trên luồng chính của Node, nên mọi request khác phải chờ. Chạy lại bỏ xếp hạng (`SKIP=ranking`) xác nhận điều này: 15.842 request, 0 lỗi, ~131 request/s, **p95 tổng 82 ms**, mọi API dưới 100 ms (danh sách hồ sơ 430 → 91 ms, kho ứng viên 444 → 97 ms).
+
+Payload đầy đủ của xếp hạng là có chủ đích, để FE tự tính lại điểm khi kéo trọng số mà không gọi lại API (US-05). Hướng xử lý nếu cần chịu tải cao: cache kết quả xếp hạng theo tin và phiên bản tiêu chí, hoặc rút gọn `score_breakdown` chỉ còn các trường FE dùng. Production hiện chỉ có 31 hồ sơ nên chưa chạm giới hạn này.
+
 ---
 
 ## Xác thực và bảo mật
@@ -607,7 +633,7 @@ Ngày 26/10/2026 lịch được rút lại: hoàn thiện cả MVP 1 và MVP 2 
 | 28/10 | Deploy thật (Vercel + Render + Neon + Backblaze B2), backup và thử khôi phục | Deploy dời sang 10–11/11; thử khôi phục chưa làm |
 | 29/10 | ai-eval 30 CV | Chưa làm (bộ hiện có 10 CV × 2 JD) |
 | 27/10 (D7) | Phỏng vấn + role Interviewer; chốt các quy tắc ⚠ (BR-MATCH-01, 04, BR-NOTI-01, BR-AUDIT-01, BR-INT-01 → 03) | Xong |
-| 30/10 | Load test k6, cổng chất lượng production. Ngừng thêm tính năng cuối ngày | |
+| 30/10 | Load test k6, cổng chất lượng production. Ngừng thêm tính năng cuối ngày | Load test k6 làm ngày 12/11 (mục [Load test k6](#load-test-k6)) |
 | 31/10 | Kịch bản demo gộp MVP 1 + 2, tập demo trên bản deploy, báo cáo cuối kỳ, sửa lỗi | |
 | 01/11 | Buổi demo duy nhất | **Phát hành MVP 2** |
 | 03–04/11 | Làm lại giao diện theo Design Spec v1.0 "Bàn duyệt hồ sơ" (PR #34 → #38) | Xong |
