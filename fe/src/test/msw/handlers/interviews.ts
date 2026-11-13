@@ -1,6 +1,7 @@
 import { delay, http } from 'msw'
 import type { Interview } from '@/features/interviews'
 import { Permission } from '@/lib/permissions'
+import type { CursorMeta } from '@/types/api'
 import { Role } from '@/types/user'
 import { db, uid, type InterviewRow } from '../data'
 import {
@@ -105,7 +106,18 @@ export const interviewHandlers = [
         )
       })
       .sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt))
-    return ok(rows.map((iv) => toInterview(iv, user.id, true)))
+    const limit = Math.min(Number(p.get('limit') ?? 100), 200)
+    const start = Number(p.get('cursor') ?? 0)
+    const hasNextPage = rows.length > start + limit
+    const meta: CursorMeta = {
+      limit,
+      nextCursor: hasNextPage ? String(start + limit) : null,
+      hasNextPage,
+    }
+    return ok(
+      rows.slice(start, start + limit).map((iv) => toInterview(iv, user.id, true)),
+      { meta },
+    )
   }),
 
   http.get(api('/applications/:id/interviews'), async ({ request, params }) => {
