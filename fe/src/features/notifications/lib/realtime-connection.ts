@@ -68,14 +68,22 @@ export function connectRealtime({ onEvent, onStatus }: Handlers): () => void {
     let attempt = 0
     while (!stopped) {
       const startedAt = Date.now()
+      let ended = false
       try {
         await readOnce()
+        ended = true
       } catch {
         if (stopped) return
       }
-      onStatus(false)
       if (stopped) return
-      if (Date.now() - startedAt > IDLE_TIMEOUT_MS) attempt = 0
+      const longLived = Date.now() - startedAt > IDLE_TIMEOUT_MS
+      // BR-ACC-04, BR-ACC-07
+      if (ended && longLived) {
+        attempt = 0
+        continue
+      }
+      onStatus(false)
+      if (longLived) attempt = 0
       await wait(RECONNECT_DELAYS_MS[Math.min(attempt++, RECONNECT_DELAYS_MS.length - 1)])
     }
   })()

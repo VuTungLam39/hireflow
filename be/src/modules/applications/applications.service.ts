@@ -918,6 +918,8 @@ export class ApplicationsService {
 
   // BR-ACC-07
   private async findWritable(id: string, user: ScopeUser): Promise<void> {
+    // BR-INT-02, BR-APP-09
+    if (user.role === Role.Interviewer) return this.findReadable(id, user);
     const app = await this.applicationsRepository
       .createQueryBuilder('app')
       .innerJoin('app.job', 'job')
