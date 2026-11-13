@@ -66,6 +66,23 @@ describe('connectRealtime', () => {
     expect(status.at(-1)).toBe(false)
   })
 
+  it('BR-ACC-04: reconnects at once, still connected, when the server ends a long-lived stream', async () => {
+    useAuthStore.getState().setAccessToken('t1')
+    vi.spyOn(Date, 'now').mockReturnValueOnce(0)
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(sse(['event: ready\ndata: {"unreadCount":0}\n\n']))
+      .mockImplementation(() => new Promise(() => {}))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const status: boolean[] = []
+    const close = connectRealtime({ onEvent: () => {}, onStatus: (c) => status.push(c) })
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2), { timeout: 500 })
+    expect(status).toEqual([true])
+    close()
+    vi.restoreAllMocks()
+  })
+
   it('refreshes the access token once on 401, then reconnects with the new one', async () => {
     useAuthStore.getState().setAccessToken('expired')
     const fetchMock = vi

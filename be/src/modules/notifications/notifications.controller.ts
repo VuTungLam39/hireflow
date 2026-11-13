@@ -6,11 +6,12 @@ import {
   ParseUUIDPipe,
   Patch,
   Query,
+  Req,
   Res,
 } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Authenticated } from '../../common/decorators/permissions.decorator.js';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator.js';
@@ -21,6 +22,14 @@ import { NotificationsService } from './notifications.service.js';
 import { type RealtimeEvent, RealtimeHub } from './realtime-hub.service.js';
 
 export const SSE_HEARTBEAT_MS = 25_000;
+
+// BR-ACC-04, BR-ACC-07
+export function tokenExpiresAt(authorization: string | undefined): number | null {
+  const payload = authorization?.split('.')[1];
+  if (!payload) return null;
+  const { exp } = JSON.parse(Buffer.from(payload, 'base64url').toString()) as { exp?: number };
+  return typeof exp === 'number' ? exp * 1000 : null;
+}
 
 // F-NOTI-01, US-12
 @ApiTags('Notifications')
@@ -66,7 +75,11 @@ export class NotificationsController {
     summary:
       'Stream SSE: ready → notification (của mình) · application (đổi trạng thái/AI, theo phạm vi)',
   })
-  async stream(@CurrentUser() user: AuthUser, @Res() res: Response): Promise<void> {
+  async stream(
+    @CurrentUser() user: AuthUser,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
     res.status(HttpStatus.OK).set({
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-cache, no-transform',
@@ -93,8 +106,12 @@ export class NotificationsController {
     const heartbeat = setInterval(() => {
       if (!res.writableEnded) res.write(': ping\n\n');
     }, SSE_HEARTBEAT_MS);
+    // BR-ACC-04, BR-ACC-07
+    const expiresAt = tokenExpiresAt(req.headers.authorization);
+    const expiry = expiresAt && setTimeout(() => res.end(), Math.max(0, expiresAt - Date.now()));
     res.on('close', () => {
       clearInterval(heartbeat);
+      if (expiry) clearTimeout(expiry);
       unsubscribe();
     });
 

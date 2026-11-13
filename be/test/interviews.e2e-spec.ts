@@ -256,6 +256,15 @@ describe('Interviews (e2e)', () => {
       await as('ivA', request(server()).get(`/api/v1/applications/${apps.b}`)).expect(404);
       await as('ivA', request(server()).get(`/api/v1/applications/${apps.other}`)).expect(404);
 
+      // BR-APP-09
+      const note = (id: string) =>
+        as('ivA', request(server()).post(`/api/v1/applications/${id}/notes`)).send({
+          content: 'Ghi chú của người phỏng vấn',
+        });
+      await note(apps.a).expect(201);
+      await note(apps.b).expect(404);
+      await note(apps.other).expect(404);
+
       await as('ivA', request(server()).get(`/api/v1/files/${cvs.a}/url`)).expect(200);
       await as('ivA', request(server()).get(`/api/v1/files/${cvs.other}/url`)).expect(404);
 

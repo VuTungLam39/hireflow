@@ -1,4 +1,5 @@
 import { INestApplication } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'node:crypto';
@@ -288,6 +289,22 @@ describe('Dashboard cache, realtime notifications, audit log (e2e)', () => {
       const res = await fetch(`${base}/api/v1/notifications/stream`);
       expect(res.status).toBe(401);
     });
+
+    it('BR-ACC-04, BR-ACC-07: the stream ends when its access token expires', async () => {
+      const token = await app
+        .get(JwtService)
+        .signAsync(
+          { sub: userIds.hmB, email: emails.hmB, role: Role.HiringManager },
+          { secret: process.env.JWT_ACCESS_SECRET, expiresIn: 2 },
+        );
+      const res = await fetch(`${base}/api/v1/notifications/stream`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      expect(res.status).toBe(200);
+      const started = Date.now();
+      await res.text();
+      expect(Date.now() - started).toBeLessThan(5_000);
+    }, 10_000);
   });
 
   describe('dashboard cache', () => {
