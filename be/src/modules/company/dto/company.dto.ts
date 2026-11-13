@@ -144,6 +144,9 @@ export class UpdateCompanyDto {
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    Array.isArray(value) ? value.map((v) => trim({ value: v })) : value,
+  )
   @IsArray()
   @ArrayMaxSize(5)
   @IsString({ each: true })

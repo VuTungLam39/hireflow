@@ -42,6 +42,9 @@ export class RequirementInputDto {
   minYears: number | null = null;
 
   @ApiProperty({ type: [String], example: ['nestjs', 'nest.js'] })
+  @Transform(({ value }) =>
+    Array.isArray(value) ? value.map((k) => (typeof k === 'string' ? k.trim() : k)) : value,
+  )
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(20)

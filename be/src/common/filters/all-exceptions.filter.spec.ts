@@ -12,6 +12,7 @@ import {
 import { Test } from '@nestjs/testing';
 import { IsEmail } from 'class-validator';
 import request from 'supertest';
+import { QueryFailedError } from 'typeorm';
 import { PaginationQueryDto } from '../dto/pagination-query.dto.js';
 import { BusinessException } from '../exceptions/business.exception.js';
 import { ErrorCode } from '../exceptions/error-code.enum.js';
@@ -55,6 +56,14 @@ class ProbeController {
   @Get('crash')
   crash() {
     throw new Error('db password is hunter2');
+  }
+
+  @Get('check-violation')
+  checkViolation() {
+    throw new QueryFailedError('INSERT …', [], {
+      code: '23514',
+      constraint: 'CK_job_requirements_keywords',
+    } as unknown as Error);
   }
 
   @Post('validate')
@@ -109,6 +118,12 @@ describe('AllExceptionsFilter + request-id (HTTP)', () => {
     const res = await request(server()).get('/t/crash').expect(500);
     expect(res.body).toMatchObject({ code: 'INTERNAL_ERROR', message: 'Internal server error' });
     expect(JSON.stringify(res.body)).not.toContain('hunter2');
+  });
+
+  it('turns a CHECK violation the DTO missed into 400, without the constraint name', async () => {
+    const res = await request(server()).get('/t/check-violation').expect(400);
+    expect(res.body).toMatchObject({ code: 'VALIDATION_FAILED', message: 'Validation failed' });
+    expect(JSON.stringify(res.body)).not.toContain('CK_');
   });
 
   it('returns VALIDATION_FAILED with errors per field', async () => {

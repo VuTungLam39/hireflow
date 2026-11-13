@@ -6,6 +6,7 @@ import { PaginatedResult } from '../../common/dto/paginated-result.dto.js';
 import { Role } from '../../common/enums/role.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { FieldError } from '../../common/interfaces/api-response.interface.js';
+import { escapeLike } from '../../common/utils/text.js';
 import { AuditService } from '../audit/audit.service.js';
 import {
   AuditAction,
@@ -63,7 +64,7 @@ export class UsersService {
 
     if (query.search) {
       qb.andWhere('(user.email ILIKE :search OR user.fullName ILIKE :search)', {
-        search: `%${query.search}%`,
+        search: `%${escapeLike(query.search)}%`,
       });
     }
     if (query.role) {

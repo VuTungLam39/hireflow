@@ -126,9 +126,10 @@ describe('Jobs (e2e)', () => {
 
     it('validates the body and the department', async () => {
       const bad = await as('hr', request(server()).post('/api/v1/jobs'))
-        .send({ ...jobBody(dep.a), title: 'Ngắn', jdText: 'quá ngắn' })
+        .send({ ...jobBody(dep.a), title: 'Ngắn', jdText: 'quá ngắn', benefits: 'x'.repeat(5001) })
         .expect(400);
       expect(bad.body.errors.map((e: { field: string }) => e.field).sort()).toEqual([
+        'benefits',
         'jdText',
         'title',
       ]);
@@ -172,6 +173,12 @@ describe('Jobs (e2e)', () => {
       await as('hr', request(server()).put(`/api/v1/jobs/${jobA}/requirements`))
         .send({ requirements: [] })
         .expect(400);
+      const blank = await as('hr', request(server()).put(`/api/v1/jobs/${jobA}/requirements`))
+        .send({ requirements: [{ ...requirements[0], keywords: ['  '] }] })
+        .expect(400);
+      expect(blank.body.errors).toEqual([
+        expect.objectContaining({ field: 'requirements.0.keywords' }),
+      ]);
     });
 
     it('saving requirements creates a new version and normalizes keywords (BR-JOB-06)', async () => {

@@ -1,4 +1,4 @@
-import { foldText, normalizeKeywords, normalizeText } from './text.js';
+import { escapeLike, foldText, normalizeKeywords, normalizeText } from './text.js';
 
 describe('foldText', () => {
   it.each([
@@ -24,5 +24,11 @@ describe('normalizeText', () => {
   it('keeps Vietnamese marks but unifies case, Unicode form and spaces', () => {
     const decomposed = 'Kinh nghiệm  3\n năm'.normalize('NFD');
     expect(normalizeText(decomposed)).toBe('kinh nghiệm 3 năm');
+  });
+});
+
+describe('escapeLike', () => {
+  it('treats %, _ and backslash as plain characters', () => {
+    expect(escapeLike(String.raw`50%_off\x`)).toBe(String.raw`50\%\_off\\x`);
   });
 });

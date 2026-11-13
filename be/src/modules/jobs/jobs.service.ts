@@ -11,7 +11,7 @@ import {
   applyDepartmentScope,
   applyInterviewerScope,
 } from '../../common/utils/department-scope.js';
-import { normalizeKeywords } from '../../common/utils/text.js';
+import { escapeLike, normalizeKeywords } from '../../common/utils/text.js';
 import { CvPipelineService } from '../ai/pipeline/cv-pipeline.service.js';
 import { RequirementsSuggester } from '../ai/requirements-suggester.service.js';
 import { Application } from '../applications/entities/application.entity.js';
@@ -137,8 +137,6 @@ export function publicSalary(
   }
   return { mode: 'NEGOTIABLE' };
 }
-
-const escapeLike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 @Injectable()
 export class JobsService {

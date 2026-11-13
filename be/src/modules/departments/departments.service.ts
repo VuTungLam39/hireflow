@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
 import { PaginatedResult } from '../../common/dto/paginated-result.dto.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
+import { escapeLike } from '../../common/utils/text.js';
 import { Job } from '../jobs/entities/job.entity.js';
 import { User } from '../users/entities/user.entity.js';
 import { CreateDepartmentDto } from './dto/create-department.dto.js';
@@ -31,7 +32,7 @@ export class DepartmentsService {
 
     if (query.search) {
       qb.andWhere('(department.name ILIKE :search OR department.code ILIKE :search)', {
-        search: `%${query.search}%`,
+        search: `%${escapeLike(query.search)}%`,
       });
     }
 

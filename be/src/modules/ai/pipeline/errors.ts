@@ -6,6 +6,7 @@ export const AI_ERROR = {
   unreadable: 'File CV bị lỗi hoặc không đúng định dạng PDF/DOCX.',
   tooLarge: 'File DOCX quá lớn sau khi giải nén.',
   fileMissing: 'Không tìm thấy file CV trong kho lưu trữ.',
+  anonymized: 'Ứng viên đã được ẩn danh, không còn CV để chấm.',
   invalidOutput: 'AI trả kết quả sai cấu trúc sau 3 lần thử.',
   config: 'Cấu hình AI chưa đúng, liên hệ Admin.',
   unavailable: 'Dịch vụ AI tạm thời không phản hồi. Bấm Chấm lại để thử lại.',

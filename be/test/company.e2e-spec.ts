@@ -159,6 +159,7 @@ describe('Company profile and public media (e2e)', () => {
       'benefits',
     ],
     [{ foundedYear: 1500 }, 'foundedYear'],
+    [{ industries: ['Phần mềm', '   '] }, 'industries'],
   ])('BR-ORG-02: rejects %o', async (body, field) => {
     const res = await put(body).expect(400);
     expect(res.body.errors).toEqual([expect.objectContaining({ field })]);
