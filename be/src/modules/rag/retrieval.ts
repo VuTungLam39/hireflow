@@ -49,7 +49,8 @@ export function retrieveChunks(
     RRF_K,
   ];
   let scope = '';
-  if (user.role === Role.HiringManager) {
+  if (user.role !== Role.Admin && user.role !== Role.Hr) {
+    if (user.role !== Role.HiringManager || !user.departmentId) return Promise.resolve([]);
     params.push(user.departmentId);
     scope = `AND j.department_id = $${params.length}`;
   }

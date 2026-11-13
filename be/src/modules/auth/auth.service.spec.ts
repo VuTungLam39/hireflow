@@ -62,6 +62,16 @@ describe('AuthService', () => {
     expect(result.tokens).toMatchObject({ accessToken: 'access-1', refreshToken: 'refresh-1' });
   });
 
+  it('OWASP A07: an unknown email still runs bcrypt, so timing does not reveal accounts', async () => {
+    users.findByEmailWithPassword.mockResolvedValue(null);
+    const compare = vi.spyOn(bcrypt, 'compare');
+    await expect(
+      service.login({ email: 'nobody@example.com', password: 'Password123' }, {}),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(compare).toHaveBeenCalledTimes(1);
+    compare.mockRestore();
+  });
+
   it('refresh revokes everything when the user was disabled meanwhile', async () => {
     tokens.rotate.mockResolvedValue({ userId: 'u-1', token: 'refresh-2' });
     users.findById.mockResolvedValue({ ...hr, isActive: false });
