@@ -123,7 +123,20 @@ export const jobHandlers = [
     const job = findJob(user, params.id)
     if (job instanceof Response) return job
     if (job.status === 'CLOSED') return notEditable()
-    Object.assign(job, (await request.json()) as JobInput, { updatedAt: new Date().toISOString() })
+    const input = (await request.json()) as JobInput
+    // BR-JOB-11
+    if (
+      input.departmentId &&
+      input.departmentId !== job.departmentId &&
+      db.applications.some((a) => a.jobId === job.id)
+    ) {
+      return fail(
+        409,
+        'JOB_NOT_EDITABLE',
+        'The department cannot change once the job has applications',
+      )
+    }
+    Object.assign(job, input, { updatedAt: new Date().toISOString() })
     return ok(toJob(job))
   }),
 
