@@ -165,6 +165,15 @@ if (email && password) {
     });
     assert(res.status === 200 || res.status === 403, `HTTP ${res.status}`);
   });
+  await check('Lịch phỏng vấn phân trang cursor (meta.nextCursor)', async () => {
+    const res = await get(`${api}/v1/interviews?limit=1`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const body = await res.json();
+    assert(res.status === 200, `HTTP ${res.status} ${body.code ?? ''}`);
+    assert(body.data.length <= 1 && 'nextCursor' in (body.meta ?? {}), 'thiếu meta.nextCursor');
+    return `${body.data.length} buổi, còn trang sau: ${body.meta.nextCursor ? 'có' : 'không'}`;
+  });
 } else {
   results.push({
     check: 'Đăng nhập, refresh, SSE',
