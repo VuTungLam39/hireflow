@@ -85,3 +85,8 @@ export type SalaryVisibility = keyof typeof SALARY_VISIBILITY
 
 export const HEADCOUNT_MAX = 999
 export const BENEFITS_MAX = 5000
+/** Cùng giới hạn với BE (SALARY_LIMIT, REQUIREMENTS ArrayMaxSize) */
+export const SALARY_MAX_MILLION = 2000
+export const REQUIREMENTS_MAX = 20
+export const KEYWORDS_MAX = 20
+export const KEYWORD_LENGTH_MAX = 50

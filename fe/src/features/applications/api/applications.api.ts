@@ -1,5 +1,5 @@
 import { isAxiosError, type AxiosProgressEvent } from 'axios'
-import { api } from '@/lib/api-client'
+import { api, SLOW_TIMEOUT_MS } from '@/lib/api-client'
 import type { ApiResponse, Paginated } from '@/types/api'
 import type { ApplicationStatus } from '../constants'
 import type { ApplicationListParams } from '../schemas/application.schema'
@@ -107,6 +107,7 @@ export const applicationsApi = {
       {
         // Bỏ Content-Type mặc định (json) để trình duyệt tự đặt multipart boundary
         headers: { 'Content-Type': undefined },
+        timeout: SLOW_TIMEOUT_MS,
         onUploadProgress: (e: AxiosProgressEvent) =>
           e.total && onProgress?.(Math.round((e.loaded / e.total) * 100)),
       },

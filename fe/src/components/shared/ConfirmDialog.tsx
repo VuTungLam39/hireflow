@@ -74,6 +74,7 @@ export function ConfirmDialog({
               placeholder={requireReason.placeholder}
               invalid={touched && reasonMissing}
               value={reason}
+              maxLength={1000}
               onChange={(e) => setReason(e.target.value)}
             />
           </FormField>

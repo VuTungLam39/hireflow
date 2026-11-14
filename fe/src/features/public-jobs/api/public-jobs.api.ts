@@ -1,5 +1,5 @@
 import type { AxiosProgressEvent } from 'axios'
-import { api } from '@/lib/api-client'
+import { api, SLOW_TIMEOUT_MS } from '@/lib/api-client'
 import type { ApiResponse, Paginated } from '@/types/api'
 import type { PublicJobsListParams } from '../schemas'
 import type { PublicDepartmentCount, PublicJob, PublicJobSummary } from '../types'
@@ -43,6 +43,7 @@ export const publicJobsApi = {
     await api.post(`/public/jobs/${jobId}/apply`, form, {
       // Bỏ Content-Type mặc định (json) để trình duyệt tự đặt multipart boundary
       headers: { 'Content-Type': undefined },
+      timeout: SLOW_TIMEOUT_MS,
       onUploadProgress: (e: AxiosProgressEvent) =>
         e.total && onProgress?.(Math.round((e.loaded / e.total) * 100)),
     })

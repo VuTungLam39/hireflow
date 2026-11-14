@@ -38,7 +38,7 @@ const requires = (permission: Permission, children: object[], fallbackTo?: strin
 async function applicationsLoader({ request }: LoaderFunctionArgs) {
   await restoreSession() // đã chạy ở loader gốc thì trả về ngay
   const params = parseListParams(applicationListSchema, new URL(request.url).searchParams)
-  void queryClient.ensureQueryData(applicationQueries.list(params))
+  void queryClient.prefetchQuery(applicationQueries.list(params))
   return null
 }
 

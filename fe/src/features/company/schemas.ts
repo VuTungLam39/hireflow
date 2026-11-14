@@ -27,7 +27,12 @@ export const companyInfoSchema = z.object({
   industries: z
     .string()
     .trim()
-    .refine((v) => v.split(',').filter((s) => s.trim()).length <= 5, 'Tối đa 5 lĩnh vực'),
+    .refine((v) => v.split(',').filter((s) => s.trim()).length <= 5, 'Tối đa 5 lĩnh vực')
+    .refine(
+      (v) =>
+        v.split(',').every((s) => !s.trim() || (s.trim().length >= 2 && s.trim().length <= 50)),
+      'Mỗi lĩnh vực 2–50 ký tự',
+    ),
   website: httpsUrl,
   linkedin: httpsUrl,
   facebook: httpsUrl,

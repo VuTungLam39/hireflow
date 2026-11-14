@@ -1,4 +1,4 @@
-import { api } from '@/lib/api-client'
+import { api, SLOW_TIMEOUT_MS } from '@/lib/api-client'
 import type { ApiResponse, Paginated } from '@/types/api'
 import type { JobListParams } from '../schemas/job.schema'
 import type { Job, JobInput, JobSummary, RequirementInput } from '../types'
@@ -21,7 +21,11 @@ export const jobsApi = {
 
   /** AI tách JD đã lưu thành tiêu chí gợi ý (US-02). HR sửa rồi mới lưu. */
   suggestRequirements: async (id: string) =>
-    (await api.post<ApiResponse<RequirementInput[]>>(`/jobs/${id}/requirements/suggest`)).data.data,
+    (
+      await api.post<ApiResponse<RequirementInput[]>>(`/jobs/${id}/requirements/suggest`, null, {
+        timeout: SLOW_TIMEOUT_MS,
+      })
+    ).data.data,
 
   /** Thay toàn bộ tiêu chí → BE tăng jdVersion và tính lại điểm trong queue (202) */
   saveRequirements: async (id: string, requirements: RequirementInput[]) =>

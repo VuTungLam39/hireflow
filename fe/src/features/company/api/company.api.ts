@@ -1,5 +1,5 @@
 import { env } from '@/config/env'
-import { api } from '@/lib/api-client'
+import { api, SLOW_TIMEOUT_MS } from '@/lib/api-client'
 import type { ApiResponse } from '@/types/api'
 import type { Company, CompanyInput, CompanyMedia, MediaKind, PublicCompany } from '../types'
 
@@ -21,6 +21,7 @@ export const companyApi = {
       await api.post<ApiResponse<CompanyMedia>>('/company/media', form, {
         // Bỏ Content-Type mặc định (json) để trình duyệt tự đặt multipart boundary
         headers: { 'Content-Type': undefined },
+        timeout: SLOW_TIMEOUT_MS,
       })
     ).data.data
   },

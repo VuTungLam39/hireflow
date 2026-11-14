@@ -6,6 +6,20 @@ import { hydrateQueryCache, readPrerenderPayload, resolveLazyRoutes } from '@/pr
 import { createAppRouter, ROOT_ROUTE_ID, routes } from '@/routes/router'
 import './index.css'
 
+// P2-03: tab mở từ bản cũ gọi file JS đã bị thay sau deploy → tải lại một lần để lấy bản mới
+const RELOAD_KEY = 'hf.chunk-reload-at'
+window.addEventListener('vite:preloadError', (event) => {
+  if (!navigator.onLine) return
+  try {
+    if (Date.now() - Number(sessionStorage.getItem(RELOAD_KEY) ?? 0) < 10_000) return
+    sessionStorage.setItem(RELOAD_KEY, String(Date.now()))
+  } catch {
+    return
+  }
+  event.preventDefault()
+  window.location.reload()
+})
+
 async function bootstrap() {
   const container = document.getElementById('root')!
   const prerendered = readPrerenderPayload()

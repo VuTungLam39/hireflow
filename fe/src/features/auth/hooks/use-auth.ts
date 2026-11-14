@@ -13,6 +13,7 @@ export const authKeys = {
 /** Đăng nhập rồi quay lại trang người dùng định vào trước đó (nếu có) */
 export function useLogin() {
   const setSession = useAuthStore((s) => s.setSession)
+  const queryClient = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as { from?: string } | null)?.from ?? paths.home
@@ -20,6 +21,8 @@ export function useLogin() {
   return useMutation({
     mutationFn: authApi.login,
     onSuccess: ({ user, tokens }) => {
+      // Phiên trước mất giữa chừng không qua useLogout: bỏ cache của người dùng trước
+      queryClient.clear()
       setSession(user, tokens)
       toast.success(`Xin chào, ${user.fullName}`)
       navigate(from, { replace: true })
