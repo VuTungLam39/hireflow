@@ -195,7 +195,9 @@ describe('Company profile and public media (e2e)', () => {
 
     const image = await request(server()).get(`/api/v1${logo.body.data.url}`).expect(200);
     expect(image.headers['content-type']).toBe('image/png');
-    expect(image.headers['cache-control']).toBe('public, max-age=31536000, s-maxage=31536000, immutable');
+    expect(image.headers['cache-control']).toBe(
+      'public, max-age=31536000, s-maxage=31536000, immutable',
+    );
     expect(image.headers['x-content-type-options']).toBe('nosniff');
   });
 
