@@ -14,7 +14,7 @@ import { AI_ERROR } from '../src/modules/ai/pipeline/errors.js';
 import { ApplicationStatusHistory } from '../src/modules/applications/entities/application-status-history.entity.js';
 import { Application } from '../src/modules/applications/entities/application.entity.js';
 import { AuditAction, AuditLog } from '../src/modules/audit/entities/audit-log.entity.js';
-import { ANONYMIZED_NAME } from '../src/modules/candidates/candidates.service.js';
+import { ANONYMIZED_NAME, ERASED_TEXT } from '../src/modules/candidates/candidates.service.js';
 import { Candidate } from '../src/modules/candidates/entities/candidate.entity.js';
 import { Department } from '../src/modules/departments/entities/department.entity.js';
 import { CvFile, CvParseStatus } from '../src/modules/files/entities/cv-file.entity.js';
@@ -287,6 +287,24 @@ describe('Data lifecycle (e2e)', () => {
         lastAppliedAt: new Date(),
       });
 
+      const secret = `Nguyễn Bí Mật ${run}`;
+      await ds.query(
+        `INSERT INTO application_notes (application_id, author_id, content) VALUES ($1, $2, $3)`,
+        [expiredApp.id, ids.hr, `Gọi ${secret} lúc 9h`],
+      );
+      await ds.query(
+        `INSERT INTO application_status_history (application_id, from_status, to_status, reason, changed_by) VALUES ($1, 'SCREENING', 'REJECTED', $2, $3)`,
+        [expiredApp.id, `${secret} đã nhận việc nơi khác`, ids.hr],
+      );
+      const [{ id: interviewId }] = await ds.query(
+        `INSERT INTO interviews (application_id, round, scheduled_at, location, status, cancel_reason, created_by) VALUES ($1, 1, now(), 'Phòng họp', 'CANCELLED', $2, $3) RETURNING id`,
+        [expiredApp.id, `${secret} xin dời`, ids.hr],
+      );
+      await ds.query(
+        `INSERT INTO interview_feedbacks (interview_id, author_id, overall, ratings, comment, editable_until) VALUES ($1, $2, 4, '[{"requirementId":"r1","label":"NestJS","score":4}]', $3, now())`,
+        [interviewId, ids.hr, `${secret} trả lời tốt`],
+      );
+
       const invited = await candidate('InvitedOnly');
       const invitedOwn = await application(invited.id, { source: ApplicationSource.PublicForm });
       await backdate('applications', invitedOwn.id, months + 1);
@@ -331,6 +349,25 @@ describe('Data lifecycle (e2e)', () => {
       expect(
         await ds.getRepository(Application).findOneByOrFail({ id: expiredApp.id }),
       ).toMatchObject({ status: ApplicationStatus.Rejected, score: 70, scoreBreakdown: null });
+
+      // BR-DATA-03: không còn chữ tự do nhắc tới ứng viên; điểm theo tiêu chí giữ lại
+      const leftovers = await ds.query(
+        `SELECT (SELECT count(*) FROM application_notes WHERE application_id = $1)::int AS notes,
+                (SELECT array_agg(reason) FROM application_status_history WHERE application_id = $1 AND reason IS NOT NULL) AS reasons,
+                (SELECT cancel_reason FROM interviews WHERE id = $2) AS cancel,
+                (SELECT comment FROM interview_feedbacks WHERE interview_id = $2) AS comment,
+                (SELECT ratings FROM interview_feedbacks WHERE interview_id = $2) AS ratings`,
+        [expiredApp.id, interviewId],
+      );
+      expect(leftovers[0]).toEqual({
+        notes: 0,
+        reasons: [ERASED_TEXT],
+        cancel: ERASED_TEXT,
+        comment: null,
+        ratings: [{ requirementId: 'r1', label: 'NestJS', score: 4 }],
+      });
+      await ds.query(`DELETE FROM interview_feedbacks WHERE interview_id = $1`, [interviewId]);
+      await ds.query(`DELETE FROM interviews WHERE id = $1`, [interviewId]);
 
       expect(
         await ds.getRepository(AuditLog).findOneByOrFail({

@@ -346,7 +346,7 @@ describe('Dashboard cache, realtime notifications, audit log (e2e)', () => {
         action: 'APPLICATION_STATUS_CHANGED',
         entity: 'application',
         entityId: ids.app,
-        metadata: { from: 'SCREENING', to: 'REJECTED', reason: 'Chưa đủ kinh nghiệm' },
+        metadata: { from: 'SCREENING', to: 'REJECTED', hasReason: true },
         requestId: `rt-${run}`,
         ip: expect.any(String),
         actor: { id: userIds.hr, fullName: 'RT HR', email: emails.hr },

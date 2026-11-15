@@ -3,6 +3,7 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
+  ListObjectVersionsCommand,
   PutObjectCommand,
   S3Client,
   S3ServiceException,
@@ -88,8 +89,30 @@ export class S3StorageService extends StorageService implements OnModuleInit {
     }
   }
 
+  // BR-DATA-03: B2 giữ mọi phiên bản, xoá không kèm VersionId chỉ ẩn file
   async remove(key: string): Promise<void> {
-    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+    const versions = await this.versionsOf(key);
+    if (!versions.length) {
+      await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+      return;
+    }
+    for (const VersionId of versions) {
+      await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key, VersionId }));
+    }
+  }
+
+  private async versionsOf(key: string): Promise<string[]> {
+    try {
+      const { Versions = [], DeleteMarkers = [] } = await this.client.send(
+        new ListObjectVersionsCommand({ Bucket: this.bucket, Prefix: key }),
+      );
+      return [...Versions, ...DeleteMarkers]
+        .filter((v) => v.Key === key && v.VersionId)
+        .map((v) => v.VersionId!);
+    } catch (error) {
+      this.logger.warn(`Cannot list versions of ${key}: ${(error as Error).message}`);
+      return [];
+    }
   }
 
   // Kickoff 19

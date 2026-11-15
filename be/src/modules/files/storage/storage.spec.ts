@@ -100,13 +100,40 @@ describe('S3StorageService', () => {
     await expect(storage.get('cv/none.pdf')).rejects.toBeInstanceOf(StorageNotFoundError);
   });
 
-  it('deletes by key', async () => {
+  it('BR-DATA-03: deletes every version and delete marker of the key, not others with the same prefix', async () => {
+    send.mockResolvedValueOnce({
+      Versions: [
+        { Key: 'cv/a.pdf', VersionId: 'v2' },
+        { Key: 'cv/a.pdf', VersionId: 'v1' },
+        { Key: 'cv/a.pdf.bak', VersionId: 'x1' },
+      ],
+      DeleteMarkers: [{ Key: 'cv/a.pdf', VersionId: 'm1' }],
+    });
     send.mockResolvedValue({});
     await storage.remove('cv/a.pdf');
-    expect(command()).toMatchObject({
+    expect(command(0)).toMatchObject({
+      name: 'ListObjectVersionsCommand',
+      input: { Bucket: 'hireflow-cv', Prefix: 'cv/a.pdf' },
+    });
+    expect([1, 2, 3].map((i) => command(i).input)).toEqual([
+      { Bucket: 'hireflow-cv', Key: 'cv/a.pdf', VersionId: 'v2' },
+      { Bucket: 'hireflow-cv', Key: 'cv/a.pdf', VersionId: 'v1' },
+      { Bucket: 'hireflow-cv', Key: 'cv/a.pdf', VersionId: 'm1' },
+    ]);
+    expect(send).toHaveBeenCalledTimes(4);
+  });
+
+  it('falls back to a plain delete when the store lists no versions or cannot list them', async () => {
+    send.mockResolvedValueOnce({}).mockResolvedValue({});
+    await storage.remove('cv/a.pdf');
+    expect(command(1)).toMatchObject({
       name: 'DeleteObjectCommand',
       input: { Bucket: 'hireflow-cv', Key: 'cv/a.pdf' },
     });
+    send.mockReset();
+    send.mockRejectedValueOnce(new Error('NotImplemented')).mockResolvedValue({});
+    await storage.remove('cv/b.pdf');
+    expect(command(1).input).toEqual({ Bucket: 'hireflow-cv', Key: 'cv/b.pdf' });
   });
 
   it('creates the bucket only when it does not exist', async () => {

@@ -216,6 +216,6 @@ describe('Applications CSV export (e2e)', () => {
       take: 1,
     });
     expect(log).toMatchObject({ entity: 'application', entityId: null });
-    expect(log.metadata).toEqual({ rows: 2, filters: `status=NEW&search=${run}` });
+    expect(log.metadata).toEqual({ rows: 2, filters: 'status=NEW&search=*' });
   });
 });
