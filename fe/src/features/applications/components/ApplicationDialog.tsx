@@ -100,7 +100,7 @@ export function ApplicationDialog({ id, onClose }: ApplicationDialogProps) {
       }
     >
       {query.isPending ? (
-        <div aria-busy aria-label="Đang tải hồ sơ" className="space-y-3">
+        <div role="status" aria-busy aria-label="Đang tải hồ sơ" className="space-y-3">
           <Skeleton className="h-9 w-28" />
           <Skeleton className="h-2 w-full" />
           {Array.from({ length: 4 }, (_, i) => (

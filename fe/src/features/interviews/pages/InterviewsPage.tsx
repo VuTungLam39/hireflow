@@ -181,7 +181,7 @@ export default function InterviewsPage() {
       </div>
 
       {query.isPending ? (
-        <div aria-busy aria-label="Đang tải lịch" className="space-y-3">
+        <div role="status" aria-busy aria-label="Đang tải lịch" className="space-y-3">
           {Array.from({ length: 4 }, (_, i) => (
             <Skeleton key={i} className="h-16" />
           ))}
@@ -290,7 +290,7 @@ function AgendaRow({
           {formatTime(iv.scheduledAt)}–{formatTime(end)}
         </span>
       </p>
-      <div className={cn('min-w-0', cancelled && 'opacity-70')}>
+      <div className={cn('min-w-0', cancelled && 'text-ink-muted')}>
         <p className={cn('truncate', cancelled && 'line-through')}>
           <Link
             to={detailLink('application', iv.applicationId)}
@@ -391,7 +391,10 @@ function WeekView({
                   return (
                     <li
                       key={iv.id}
-                      className={cn('bg-canvas rounded-sm px-2 py-1.5', cancelled && 'opacity-70')}
+                      className={cn(
+                        'bg-canvas rounded-sm px-2 py-1.5',
+                        cancelled && 'text-ink-muted',
+                      )}
                     >
                       <p
                         className={cn(

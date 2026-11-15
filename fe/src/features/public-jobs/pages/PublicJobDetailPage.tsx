@@ -26,7 +26,7 @@ export default function PublicJobDetailPage() {
 
   if (isPending)
     return (
-      <div className="space-y-4" aria-busy aria-label="Đang tải vị trí">
+      <div role="status" className="space-y-4" aria-busy aria-label="Đang tải vị trí">
         <Skeleton className="h-4 w-28" />
         <Skeleton className="h-11 w-96 max-w-full" />
         <Skeleton className="h-64 w-full max-w-[680px]" />

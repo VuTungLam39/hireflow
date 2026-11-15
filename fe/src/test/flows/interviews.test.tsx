@@ -171,6 +171,21 @@ describe('interviews', () => {
     ).toBe(true)
   })
 
+  it('Q1, BR-STS-01: moving to OFFER without any feedback warns but still allows it', async () => {
+    const app = db.applications.find(
+      (a) =>
+        a.status === 'INTERVIEW' &&
+        !db.interviews.some((i) => i.applicationId === a.id && i.feedbacks.length),
+    )!
+    renderAt('hr@hireflow.dev', links.applicationDetail(app.id))
+    fireEvent.click(await screen.findByRole('button', { name: /Chuyển sang Đề nghị/ }))
+    const dialog = await screen.findByRole('dialog', { name: /Chuyển sang Đề nghị/ })
+    expect(
+      await within(dialog).findByText(/Hồ sơ chưa có phiếu đánh giá phỏng vấn nào/),
+    ).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: /Chuyển sang Đề nghị/ })).toBeEnabled()
+  })
+
   it('HR cannot schedule while the application is not in INTERVIEW', async () => {
     const app = db.applications.find((a) => a.status === 'SCREENING')!
     renderAt('hr@hireflow.dev', links.applicationDetail(app.id))

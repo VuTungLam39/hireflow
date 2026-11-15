@@ -35,7 +35,7 @@ export default function CareersPage() {
 
   if (isPending)
     return (
-      <div className="space-y-6" aria-busy aria-label="Đang tải trang công ty">
+      <div role="status" className="space-y-6" aria-busy aria-label="Đang tải trang công ty">
         <Skeleton className="aspect-[10/3] w-full rounded-md" />
         <Skeleton className="h-11 w-96 max-w-full" />
         <Skeleton className="h-24 w-full max-w-[680px]" />

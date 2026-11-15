@@ -17,7 +17,7 @@ export default function CandidateDetailPage() {
 
   if (isPending)
     return (
-      <div aria-busy aria-label="Đang tải ứng viên" className="space-y-6">
+      <div role="status" aria-busy aria-label="Đang tải ứng viên" className="space-y-6">
         <Skeleton className="h-10 w-72" />
         <Skeleton className="h-64 w-full" />
       </div>

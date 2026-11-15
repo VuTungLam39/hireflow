@@ -78,6 +78,7 @@ export function CvSearchResults({
     return (
       <div
         className="border-line divide-line-soft divide-y border-y"
+        role="status"
         aria-busy
         aria-label="Đang tìm"
       >

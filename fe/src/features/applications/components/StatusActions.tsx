@@ -2,6 +2,7 @@ import { ArrowRight, Check, MoreHorizontal, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 import { ConfirmDialog } from '@/components/shared'
 import { Button, Popover, menuItemClass } from '@/components/ui'
+import { useApplicationInterviews } from '@/features/interviews'
 import { usePermission } from '@/hooks/use-permission'
 import { Permission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
@@ -37,6 +38,10 @@ export function StatusActions({ applicationId, status, className }: StatusAction
   const changeStatus = useChangeStatus(applicationId)
   const [target, setTarget] = useState<ApplicationStatus | null>(null)
   const [menu, setMenu] = useState(false)
+  // Q1, BR-STS-01
+  const interviews = useApplicationInterviews(applicationId, { enabled: target === 'OFFER' })
+  const noFeedback =
+    target === 'OFFER' && !!interviews.data && !interviews.data.some((iv) => iv.feedbacks.length)
 
   const allowed = (next: ApplicationStatus) => {
     if (next === 'HIRED') return canApprove
@@ -137,7 +142,9 @@ export function StatusActions({ applicationId, status, className }: StatusAction
           target && APPLICATION_STATUS[target].terminal
             ? 'Đây là trạng thái kết thúc. Muốn xét lại sau này, bạn có thể mở lại hồ sơ.'
             : target
-              ? `Hồ sơ sẽ chuyển sang “${APPLICATION_STATUS[target].label}” và được ghi vào lịch sử.`
+              ? `Hồ sơ sẽ chuyển sang “${APPLICATION_STATUS[target].label}” và được ghi vào lịch sử.${
+                  noFeedback ? ' Hồ sơ chưa có phiếu đánh giá phỏng vấn nào.' : ''
+                }`
               : undefined
         }
         confirmLabel={target ? label(target) : 'Xác nhận'}

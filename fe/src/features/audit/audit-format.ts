@@ -47,7 +47,8 @@ export function describeAudit(log: AuditLogItem): string {
       return [
         `${statusLabel(m.from)} → ${statusLabel(m.to)}`,
         m.reopen ? '(mở lại)' : null,
-        m.reason ? `· Lý do: ${m.reason}` : null,
+        // BR-DATA-03
+        m.reason ? `· Lý do: ${m.reason}` : m.hasReason ? '· Có ghi lý do' : null,
       ]
         .filter(Boolean)
         .join(' ')

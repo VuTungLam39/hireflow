@@ -23,7 +23,7 @@ export default function JobFormPage() {
 
   if (id && job.isPending)
     return (
-      <div aria-busy aria-label="Đang tải tin" className="space-y-6">
+      <div role="status" aria-busy aria-label="Đang tải tin" className="space-y-6">
         <Skeleton className="h-10 w-96 max-w-full" />
         <div className="grid gap-10 lg:grid-cols-2">
           <Skeleton className="h-96" />

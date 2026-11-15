@@ -109,6 +109,7 @@ export function Tabs<T extends string>({
               )}
             >
               {tab.label}
+              {!!tab.count && ' '}
               {!!tab.count && (
                 <span
                   className={cn(
@@ -120,7 +121,10 @@ export function Tabs<T extends string>({
                     tab.count > 0 && tab.tone === 'bad' && 'text-bad font-semibold',
                   )}
                 >
+                  {/* P3-05 */}
+                  <span className="sr-only">(</span>
                   {tab.count.toLocaleString('vi-VN')}
+                  <span className="sr-only">)</span>
                 </span>
               )}
             </button>

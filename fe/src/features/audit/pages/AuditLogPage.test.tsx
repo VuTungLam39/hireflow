@@ -78,6 +78,13 @@ describe('AuditLogPage', () => {
     expect(
       describeAudit({
         ...base,
+        action: 'APPLICATION_STATUS_CHANGED',
+        metadata: { from: 'SCREENING', to: 'REJECTED', hasReason: true },
+      }),
+    ).toBe('Sàng lọc → Từ chối · Có ghi lý do')
+    expect(
+      describeAudit({
+        ...base,
         action: 'APPLICATIONS_EXPORTED',
         metadata: { rows: 1250, filters: 'status=NEW&search=an' },
       }),

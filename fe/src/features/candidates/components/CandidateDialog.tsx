@@ -45,7 +45,7 @@ export function CandidateDialog({ id, onClose }: { id: string; onClose: () => vo
       onTab={setTab}
     >
       {query.isPending ? (
-        <div aria-busy aria-label="Đang tải ứng viên" className="space-y-3">
+        <div role="status" aria-busy aria-label="Đang tải ứng viên" className="space-y-3">
           {Array.from({ length: 3 }, (_, i) => (
             <Skeleton key={i} className="h-14 w-full" />
           ))}

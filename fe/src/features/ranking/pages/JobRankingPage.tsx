@@ -40,7 +40,7 @@ export function RankingWorkspace({ jobId, embedded, onOpenApplications }: Worksp
 
   if (isPending)
     return (
-      <div aria-busy aria-label="Đang tải xếp hạng" className="space-y-6">
+      <div role="status" aria-busy aria-label="Đang tải xếp hạng" className="space-y-6">
         <Skeleton className="h-10 w-96 max-w-full" />
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-96 w-full" />
