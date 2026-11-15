@@ -4,3 +4,10 @@
 # OS / IDE
 .DS_Store
 Thumbs.db
+
+# Cấu hình cá nhân của Claude Code, cache Python và binary của skill (cài lại skill để có)
+.claude/settings.local.json
+__pycache__/
+.agents/skills/*/scripts/bin/
+.claude/skills/*/scripts/bin/
+.github/skills/*/scripts/bin/
