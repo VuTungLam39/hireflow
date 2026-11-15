@@ -19,7 +19,10 @@ import type { Request, Response } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Authenticated } from '../../common/decorators/permissions.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
-import { LoginAccountThrottlerGuard } from '../../common/guards/user-throttler.guard.js';
+import {
+  LOGIN_PER_IP,
+  LoginAccountThrottlerGuard,
+} from '../../common/guards/user-throttler.guard.js';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator.js';
 import { jwtConfig } from '../../config/jwt.config.js';
 import type { SessionMeta } from '../refresh-tokens/refresh-tokens.service.js';
@@ -63,7 +66,7 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle({ default: LOGIN_PER_IP })
   @UseGuards(LoginAccountThrottlerGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)

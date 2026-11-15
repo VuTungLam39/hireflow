@@ -55,7 +55,7 @@ export class PublicJobsController {
 
   // BR-APP-06
   @Post(':id/apply')
-  @Throttle({ default: { limit: 10, ttl: HOUR_MS } })
+  @Throttle({ default: { limit: 30, ttl: HOUR_MS } })
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Ứng viên nộp CV (không trả id, điểm, trạng thái)' })
   @ResponseMessage('Application submitted')
