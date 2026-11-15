@@ -211,6 +211,19 @@ export async function prerenderPublicPages(options: PrerenderOptions): Promise<P
     })
   }
 
+  resetCache()
+  pages.push({
+    path: paths.privacy,
+    file: 'chinh-sach-du-lieu.html',
+    head: buildHead({
+      title: `Chính sách dữ liệu ứng viên – ${SITE_NAME}`,
+      description: 'Cách bản demo HireFlow xử lý, lưu trữ và xoá dữ liệu trong hồ sơ ứng viên.',
+      path: paths.privacy,
+      siteUrl: options.siteUrl,
+    }),
+    ...(await renderUrl(paths.privacy)),
+  })
+
   queryClient.clear()
   return pages
 }

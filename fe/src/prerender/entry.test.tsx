@@ -102,8 +102,15 @@ describe('F-PUB-04: prerender trang công khai', () => {
     stubApi()
     const pages = await prerenderPublicPages({ apiUrl: API, siteUrl: 'https://hireflow.example' })
 
-    expect(pages.map((p) => p.file)).toEqual(['jobs.html', `jobs/${job.id}.html`])
-    const [list, page] = pages
+    expect(pages.map((p) => p.file)).toEqual([
+      'jobs.html',
+      `jobs/${job.id}.html`,
+      'chinh-sach-du-lieu.html',
+    ])
+    const [list, page, privacy] = pages
+    expect(privacy.html).toContain('Chính sách dữ liệu ứng viên')
+    expect(privacy.html).toContain('wdonglin39@gmail.com')
+    expect(privacy.html).toContain('Bản demo thực tập')
     expect(list.html).toContain('Backend Developer (NestJS)')
     expect(list.head).toContain('<title>Việc làm đang tuyển – HireFlow Careers</title>')
     expect(list.html).toContain('Kinh doanh')
@@ -155,7 +162,12 @@ describe('F-PUB-04: prerender trang công khai', () => {
     stubApi({ withCompany: true })
     const pages = await prerenderPublicPages({ apiUrl: API, siteUrl: 'https://hireflow.example' })
 
-    expect(pages.map((p) => p.file)).toEqual(['jobs.html', `jobs/${job.id}.html`, 'careers.html'])
+    expect(pages.map((p) => p.file)).toEqual([
+      'jobs.html',
+      `jobs/${job.id}.html`,
+      'careers.html',
+      'chinh-sach-du-lieu.html',
+    ])
     const [list, detailPage, careers] = pages
     expect(careers.html).toContain('Công ty Cổ phần HireFlow')
     expect(careers.html).toContain('Bảo hiểm sức khoẻ')
@@ -171,7 +183,11 @@ describe('F-PUB-04: prerender trang công khai', () => {
   it('BR-ORG-01: hồ sơ chưa công khai thì không dựng /careers, các trang khác vẫn dựng', async () => {
     stubApi()
     const pages = await prerenderPublicPages({ apiUrl: API })
-    expect(pages.map((p) => p.file)).toEqual(['jobs.html', `jobs/${job.id}.html`])
+    expect(pages.map((p) => p.file)).toEqual([
+      'jobs.html',
+      `jobs/${job.id}.html`,
+      'chinh-sach-du-lieu.html',
+    ])
     expect(pages[1].html).not.toContain('href="/careers"')
   })
 

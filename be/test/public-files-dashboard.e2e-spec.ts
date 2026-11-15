@@ -230,7 +230,7 @@ describe('Public jobs, CV files, dashboard (e2e)', () => {
       const candidate = await ds
         .getRepository(Candidate)
         .findOneByOrFail({ email: `p-c1-${run}@gmail.com` });
-      expect(candidate.consentVersion).toBe('v1');
+      expect(candidate.consentVersion).toBe('v2');
       const created = await ds
         .getRepository(Application)
         .findOneByOrFail({ candidateId: candidate.id });

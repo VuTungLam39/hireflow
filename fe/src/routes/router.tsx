@@ -80,6 +80,10 @@ export const routes: RouteObject[] = [
             path: paths.careers,
             lazy: page(() => import('@/features/public-jobs/pages/CareersPage')),
           },
+          {
+            path: paths.privacy,
+            lazy: page(() => import('@/features/public-jobs/pages/PrivacyPolicyPage')),
+          },
         ],
       },
       {

@@ -140,8 +140,9 @@ export default function PublicJobDetailPage() {
                 </span>
                 <h2 className="type-heading text-xl">Chúng tôi đã nhận hồ sơ của bạn</h2>
                 <p className="type-body">
-                  Bộ phận tuyển dụng sẽ đọc CV và liên hệ qua email trong vòng 7 ngày làm việc nếu
-                  bạn phù hợp với vị trí.
+                  Hồ sơ của bạn đã được tiếp nhận vào hệ thống tuyển dụng. Bộ phận tuyển dụng sẽ xem
+                  xét và liên hệ trực tiếp nếu hồ sơ phù hợp. Hệ thống không gửi email xác nhận tự
+                  động.
                 </p>
                 <Link to={paths.publicJobs} className={buttonVariants({ variant: 'secondary' })}>
                   Xem vị trí khác
