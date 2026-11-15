@@ -3,6 +3,7 @@ import { usePublicCompany } from '@/features/company'
 import { useFocusMainOnNavigate } from '@/hooks/use-focus-main'
 import { cn } from '@/lib/utils'
 import { paths } from '@/routes/paths'
+import { DemoNotice } from '@/features/public-jobs'
 import { BrandMark } from './BrandMark'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -55,12 +56,15 @@ export function PublicLayout() {
         tabIndex={-1}
         className="mx-auto w-full max-w-[960px] flex-1 px-4 pt-10 pb-16 outline-none sm:pt-14"
       >
+        <DemoNotice className="mb-8" />
         <Outlet />
       </main>
       <footer className="border-line type-caption border-t">
         <div className="mx-auto flex max-w-[960px] flex-wrap items-center justify-between gap-2 px-4 py-6">
           <span>© 2026 HireFlow</span>
-          <span>Dữ liệu ứng viên được xử lý theo Nghị định 13/2023/NĐ-CP.</span>
+          <Link to={paths.privacy} className="hover:text-ink rounded-sm underline">
+            Chính sách dữ liệu ứng viên
+          </Link>
         </div>
       </footer>
     </div>

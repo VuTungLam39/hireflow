@@ -120,7 +120,7 @@ export function JobWorkspaceDialog({ id, tab: initialTab, onClose }: JobWorkspac
       }
     >
       {query.isPending ? (
-        <div aria-busy aria-label="Đang tải tin" className="space-y-3">
+        <div role="status" aria-busy aria-label="Đang tải tin" className="space-y-3">
           <Skeleton className="h-24 w-full" />
           {Array.from({ length: 4 }, (_, i) => (
             <Skeleton key={i} className="h-10 w-full" />

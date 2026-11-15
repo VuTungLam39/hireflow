@@ -61,7 +61,7 @@ export function FunnelReport({ jobId, since, headingLevel: Heading = 'h2' }: Fun
 
       <div className="border-line bg-surface -mx-4 border-y md:mx-0 md:rounded-md md:border">
         {query.isPending ? (
-          <div aria-busy aria-label="Đang tải phễu" className="space-y-4 p-5">
+          <div role="status" aria-busy aria-label="Đang tải phễu" className="space-y-4 p-5">
             {Array.from({ length: 5 }, (_, i) => (
               <Skeleton key={i} className="h-6 w-full" />
             ))}

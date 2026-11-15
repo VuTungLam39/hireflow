@@ -77,7 +77,7 @@ export interface BulkStatusResult {
 
 export const HR_CONSENT_VERSION = 'HR_CONFIRMED';
 // BR-APP-04
-export const PUBLIC_CONSENT_VERSION = 'v1';
+export const PUBLIC_CONSENT_VERSION = 'v2';
 const VN_OFFSET = '+07:00';
 const DAY_MS = 86_400_000;
 
@@ -136,7 +136,7 @@ const EXPORT_FILTERS = [
 /** Nhật ký kiểm toán: bộ lọc đã dùng, dạng "status=NEW&jobId=…" */
 const describeFilters = (query: QueryApplicationDto) =>
   EXPORT_FILTERS.filter((k) => query[k] !== undefined && query[k] !== '')
-    .map((k) => `${k}=${String(query[k])}`)
+    .map((k) => `${k}=${k === 'search' ? '*' : String(query[k])}`)
     .join('&');
 
 @Injectable()
@@ -626,7 +626,7 @@ export class ApplicationsService {
           action: AuditAction.ApplicationStatusChanged,
           entity: AuditEntity.Application,
           entityId: id,
-          metadata: { from: app.status, to: REOPEN_TO, reason, reopen: true },
+          metadata: { from: app.status, to: REOPEN_TO, hasReason: true, reopen: true },
         },
         manager,
       );
@@ -888,7 +888,7 @@ export class ApplicationsService {
           action: AuditAction.ApplicationStatusChanged,
           entity: AuditEntity.Application,
           entityId: id,
-          metadata: { from: app.status, to, reason: reason?.trim() || null, ...meta },
+          metadata: { from: app.status, to, hasReason: Boolean(reason?.trim()), ...meta },
         },
         manager,
       );

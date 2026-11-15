@@ -141,7 +141,7 @@ export default function AuditLogPage() {
       </FilterBar>
 
       {query.isPending ? (
-        <div className="space-y-2">
+        <div role="status" aria-busy aria-label="Đang tải nhật ký" className="space-y-2">
           {Array.from({ length: 6 }, (_, i) => (
             <Skeleton key={i} className="h-12" />
           ))}

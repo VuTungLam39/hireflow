@@ -1,7 +1,7 @@
 import { isAxiosError } from 'axios'
 import { refreshAccessToken } from '@/lib/api-client'
 import { queryClient } from '@/lib/query-client'
-import { useAuthStore } from '@/stores/auth.store'
+import { hasSessionHint, useAuthStore } from '@/stores/auth.store'
 import { authApi } from './api/auth.api'
 import { authKeys } from './hooks/use-auth'
 
@@ -13,7 +13,10 @@ let unavailable = false
  * nhưng cookie refresh token (httpOnly) vẫn còn → đổi lấy access token mới rồi tải user.
  * Gọi ở loader gốc của router; chỉ chạy một lần cho mỗi lần tải trang.
  */
-export function restoreSession(): Promise<void> {
+export function restoreSession({ guestPage = false } = {}): Promise<void> {
+  // P3-01
+  if (guestPage && !restorePromise && !useAuthStore.getState().accessToken && !hasSessionHint())
+    return Promise.resolve()
   restorePromise ??= (async () => {
     unavailable = false
     if (useAuthStore.getState().accessToken) return

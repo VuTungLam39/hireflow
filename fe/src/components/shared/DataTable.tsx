@@ -131,7 +131,10 @@ export function DataTable<T>({
 
   return (
     <div className="space-y-4">
-      <div className={cn('relative', isFetching && 'opacity-70 transition-opacity')}>
+      <div
+        aria-busy={isFetching || undefined}
+        className={cn('relative', isFetching && 'opacity-70 transition-opacity')}
+      >
         {isFetching && (
           <Spinner className="text-brand absolute -top-6 right-0 size-3.5" label="Đang cập nhật" />
         )}
@@ -342,6 +345,7 @@ function TableSkeleton({ columns, density }: { columns: number; density: Density
   return (
     <div
       className="border-line bg-surface -mx-4 overflow-hidden border-y md:mx-0 md:rounded-md md:border"
+      role="status"
       aria-busy
       aria-label="Đang tải"
     >

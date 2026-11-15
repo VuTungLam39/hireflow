@@ -80,7 +80,8 @@ export function InterviewPanel({
             <CalendarPlus />
             Đặt lịch phỏng vấn
           </Button>
-          {!canSchedule && (
+          {/* P3-02 */}
+          {(applicationStatus === 'NEW' || applicationStatus === 'SCREENING') && (
             <p className="text-ink-muted text-xs">Chuyển hồ sơ sang “Phỏng vấn” để đặt lịch.</p>
           )}
         </div>

@@ -85,7 +85,7 @@ export default function CompanyPage() {
         }
       />
       {isPending ? (
-        <div aria-busy aria-label="Đang tải hồ sơ công ty" className="space-y-4">
+        <div role="status" aria-busy aria-label="Đang tải hồ sơ công ty" className="space-y-4">
           {Array.from({ length: 3 }, (_, i) => (
             <Skeleton key={i} className="h-40 w-full" />
           ))}

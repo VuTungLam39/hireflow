@@ -13,10 +13,11 @@ export const interviewKeys = {
 }
 
 // F-INT-01, F-INT-02
-export function useApplicationInterviews(applicationId: string) {
+export function useApplicationInterviews(applicationId: string, { enabled = true } = {}) {
   return useQuery({
     queryKey: interviewKeys.forApplication(applicationId),
     queryFn: () => interviewsApi.forApplication(applicationId),
+    enabled,
   })
 }
 

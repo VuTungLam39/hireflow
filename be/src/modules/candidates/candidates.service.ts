@@ -26,6 +26,7 @@ import { Candidate } from './entities/candidate.entity.js';
 type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId'>;
 
 export const ANONYMIZED_NAME = 'Ứng viên đã ẩn danh';
+export const ERASED_TEXT = '[Đã xoá khi ẩn danh]';
 
 export interface CandidateListItemView {
   id: string;
@@ -220,6 +221,21 @@ export class CandidatesService {
       );
       await manager.delete(CvFile, { candidateId: id });
       await manager.delete(JobMatch, { candidateId: id });
+      // BR-DATA-03: chữ tự do về ứng viên
+      const apps = `SELECT id FROM applications WHERE candidate_id = $1`;
+      await manager.query(`DELETE FROM application_notes WHERE application_id IN (${apps})`, [id]);
+      await manager.query(
+        `UPDATE application_status_history SET reason = $2 WHERE reason IS NOT NULL AND application_id IN (${apps})`,
+        [id, ERASED_TEXT],
+      );
+      await manager.query(
+        `UPDATE interviews SET cancel_reason = $2 WHERE cancel_reason IS NOT NULL AND application_id IN (${apps})`,
+        [id, ERASED_TEXT],
+      );
+      await manager.query(
+        `UPDATE interview_feedbacks SET comment = NULL WHERE interview_id IN (SELECT id FROM interviews WHERE application_id IN (${apps}))`,
+        [id],
+      );
       await manager.update(Candidate, id, {
         fullName: ANONYMIZED_NAME,
         email: `anon+${id}@invalid.local`,

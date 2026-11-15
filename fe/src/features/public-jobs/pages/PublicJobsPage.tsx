@@ -54,8 +54,7 @@ export default function PublicJobsPage() {
       <header className="max-w-2xl space-y-5">
         <h1 className="type-display">Cơ hội nghề nghiệp tại HireFlow</h1>
         <p className="type-read-lg">
-          Chúng tôi đọc mọi hồ sơ và phản hồi trong vòng 7 ngày làm việc. Nộp CV chỉ mất khoảng một
-          phút.
+          Chọn vị trí phù hợp và gửi hồ sơ. Nộp CV chỉ mất khoảng một phút.
         </p>
         <SearchInput
           size="lg"

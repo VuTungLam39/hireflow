@@ -325,7 +325,7 @@ function ActivityTabs({
 
 function ReviewSkeleton() {
   return (
-    <div aria-busy aria-label="Đang tải hồ sơ">
+    <div role="status" aria-busy aria-label="Đang tải hồ sơ">
       <Skeleton className="h-4 w-32" />
       <Skeleton className="mt-4 h-10 w-80 max-w-full" />
       <Skeleton className="mt-2 h-4 w-96 max-w-full" />

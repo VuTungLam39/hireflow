@@ -26,6 +26,7 @@ export const paths = {
   publicJobs: '/jobs',
   publicJobDetail: '/jobs/:id',
   careers: '/careers',
+  privacy: '/chinh-sach-du-lieu',
 } as const
 
 const withQuery = (path: string, query?: Record<string, string | undefined>) => {

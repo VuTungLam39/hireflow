@@ -6,6 +6,7 @@ import { FileUploader } from '@/components/shared'
 import { Button, Dialog, FormField, Input } from '@/components/ui'
 import { CV_ACCEPT, CV_MAX_SIZE } from '@/features/public-jobs'
 import { applyServerErrors, getErrorCode, getErrorMessage } from '@/lib/errors'
+import { paths } from '@/routes/paths'
 import { useUploadForCandidate } from '../hooks/use-applications'
 import type { ApplicationDetail } from '../types'
 
@@ -146,8 +147,16 @@ export function HrUploadDialog({
               {...register('consentConfirmed')}
             />
             <span>
-              Tôi xác nhận ứng viên đã đồng ý cho công ty lưu trữ và xử lý dữ liệu cá nhân trong CV
-              cho mục đích tuyển dụng (Nghị định 13/2023/NĐ-CP).
+              Tôi xác nhận ứng viên đã được thông báo và đồng ý với{' '}
+              <a
+                href={paths.privacy}
+                target="_blank"
+                rel="noopener"
+                className="text-brand underline"
+              >
+                Chính sách dữ liệu ứng viên
+              </a>
+              , kể cả việc dùng trí tuệ nhân tạo để đọc và chấm CV.
             </span>
           </label>
           {errors.consentConfirmed && (

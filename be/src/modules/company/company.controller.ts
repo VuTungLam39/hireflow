@@ -103,7 +103,8 @@ export class PublicCompanyController {
       .set({
         'Content-Type': mime,
         'Content-Length': String(body.length),
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        // P3-11
+        'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
         'X-Content-Type-Options': 'nosniff',
         'Content-Disposition': 'inline',
       })

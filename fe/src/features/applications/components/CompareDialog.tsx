@@ -51,7 +51,7 @@ export function CompareDialog({ jobId, ids, open, onClose }: CompareDialogProps)
       onTab={setTab}
     >
       {query.isPending ? (
-        <div aria-busy aria-label="Đang tải bảng so sánh" className="space-y-3">
+        <div role="status" aria-busy aria-label="Đang tải bảng so sánh" className="space-y-3">
           {Array.from({ length: 5 }, (_, i) => (
             <Skeleton key={i} className="h-12 w-full" />
           ))}

@@ -28,7 +28,9 @@ function renderPage() {
 describe('CompanyPage', () => {
   it('BR-ORG-01: says the public page is hidden until there is a logo, then shows it once uploaded', async () => {
     renderPage()
-    const status = await screen.findByRole('status')
+    const status = await screen
+      .findByText(/Trang công ty chưa hiện công khai/)
+      .then((el) => el.closest('[role=status]') as HTMLElement)
     expect(status).toHaveTextContent('Trang công ty chưa hiện công khai')
     expect(status).toHaveTextContent('Logo: còn thiếu')
 

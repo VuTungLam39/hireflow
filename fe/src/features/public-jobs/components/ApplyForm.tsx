@@ -4,8 +4,10 @@ import { z } from 'zod'
 import { FileUploader } from '@/components/shared'
 import { Button, FormField, Input } from '@/components/ui'
 import { applyServerErrors, getErrorCode, getErrorMessage } from '@/lib/errors'
+import { paths } from '@/routes/paths'
 import { CV_ACCEPT, CV_MAX_SIZE } from '../constants'
 import { useApply } from '../hooks/use-public-jobs'
+import { DemoNotice } from './DemoNotice'
 
 const applySchema = z.object({
   fullName: z.string().trim().min(2, 'Nhập họ tên').max(100),
@@ -125,8 +127,12 @@ export function ApplyForm({ jobId, onSuccess }: ApplyFormProps) {
             {...register('consent')}
           />
           <span>
-            Tôi đồng ý để công ty lưu trữ và xử lý dữ liệu cá nhân trong CV cho mục đích tuyển dụng,
-            tối đa 12 tháng, theo Nghị định 13/2023/NĐ-CP.
+            Tôi đã đọc{' '}
+            <a href={paths.privacy} target="_blank" rel="noopener" className="text-brand underline">
+              Chính sách dữ liệu ứng viên
+            </a>{' '}
+            và đồng ý cho hệ thống xử lý thông tin trong hồ sơ này như mô tả, gồm việc dùng dịch vụ
+            trí tuệ nhân tạo ở nước ngoài để đọc và chấm mức phù hợp của CV.
           </span>
         </label>
         {errors.consent && (
@@ -142,6 +148,7 @@ export function ApplyForm({ jobId, onSuccess }: ApplyFormProps) {
         </p>
       )}
 
+      <DemoNotice />
       <Button type="submit" size="lg" className="w-full" loading={apply.isPending}>
         Nộp hồ sơ
       </Button>
