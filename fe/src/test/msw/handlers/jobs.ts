@@ -156,6 +156,8 @@ export const jobHandlers = [
 
   // LLM giả: tìm từ khoá kỹ năng xuất hiện trong JD
   http.post(api('/jobs/:id/requirements/suggest'), async ({ request, params }) => {
+    if ((await request.clone().text()) === 'null')
+      return fail(400, 'BAD_REQUEST', 'Unexpected token n')
     await latency(1500)
     const user = authorize(request, Permission.JobUpdate)
     if (user instanceof Response) return user

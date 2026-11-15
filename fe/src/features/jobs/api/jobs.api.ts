@@ -22,9 +22,13 @@ export const jobsApi = {
   /** AI tách JD đã lưu thành tiêu chí gợi ý (US-02). HR sửa rồi mới lưu. */
   suggestRequirements: async (id: string) =>
     (
-      await api.post<ApiResponse<RequirementInput[]>>(`/jobs/${id}/requirements/suggest`, null, {
-        timeout: SLOW_TIMEOUT_MS,
-      })
+      await api.post<ApiResponse<RequirementInput[]>>(
+        `/jobs/${id}/requirements/suggest`,
+        undefined,
+        {
+          timeout: SLOW_TIMEOUT_MS,
+        },
+      )
     ).data.data,
 
   /** Thay toàn bộ tiêu chí → BE tăng jdVersion và tính lại điểm trong queue (202) */
