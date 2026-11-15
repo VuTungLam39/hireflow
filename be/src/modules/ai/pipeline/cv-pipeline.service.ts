@@ -32,6 +32,13 @@ const PARSE_ERROR: Record<CvParseError['reason'], string> = {
 };
 
 const ACTIVE = In([AiStatus.Pending, AiStatus.Processing]);
+const LIVE_JOB_STATES = new Set([
+  'waiting',
+  'active',
+  'delayed',
+  'prioritized',
+  'waiting-children',
+]);
 
 @Injectable()
 export class CvPipelineService implements OnModuleInit {
@@ -119,6 +126,17 @@ export class CvPipelineService implements OnModuleInit {
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
+  }
+
+  // Phase 5 O2
+  async hasLiveJob(app: { id: string; cvFileId: string; jdVersion: number }): Promise<boolean> {
+    const jobs = await Promise.all([
+      this.parseQueue.getJob(jobId.parse(app.cvFileId)),
+      this.extractQueue.getJob(jobId.extract(app.cvFileId, this.ai.promptVersion)),
+      this.scoreQueue.getJob(jobId.score(app.id, app.jdVersion)),
+    ]);
+    const states = await Promise.all(jobs.map((job) => job?.getState()));
+    return states.some((state) => state !== undefined && LIVE_JOB_STATES.has(state));
   }
 
   // Kickoff 12: job.requirements.updated, BR-AI-05

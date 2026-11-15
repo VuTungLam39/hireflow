@@ -1,6 +1,12 @@
 import { InjectQueue } from '@nestjs/bullmq';
-import { Injectable, Logger, type OnApplicationBootstrap } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  type OnApplicationBootstrap,
+  type OnModuleDestroy,
+} from '@nestjs/common';
 import { Queue } from 'bullmq';
+import { PipelineOpsService } from '../ai/pipeline/pipeline-ops.service.js';
 import { QUEUE } from '../ai/pipeline/queues.js';
 import { CandidatesService } from '../candidates/candidates.service.js';
 import { RefreshTokensService } from '../refresh-tokens/refresh-tokens.service.js';
@@ -11,17 +17,42 @@ import {
   type MaintenanceTask,
 } from './maintenance.tasks.js';
 
+export const SELF_HEAL_INTERVAL_MS = 10 * 60_000;
+
 @Injectable()
-export class MaintenanceService implements OnApplicationBootstrap {
+export class MaintenanceService implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(MaintenanceService.name);
+  private healTimer?: NodeJS.Timeout;
 
   constructor(
     @InjectQueue(QUEUE.maintenance) private readonly queue: Queue,
     private readonly candidates: CandidatesService,
     private readonly tokens: RefreshTokensService,
+    private readonly ops: PipelineOpsService,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
+    await this.ensureSchedules();
+    // Phase 5 O2: vòng ngoài Redis
+    this.healTimer = setInterval(() => void this.heal(), SELF_HEAL_INTERVAL_MS);
+    this.healTimer.unref();
+  }
+
+  onModuleDestroy(): void {
+    clearInterval(this.healTimer);
+  }
+
+  async heal(): Promise<number> {
+    await this.ensureSchedules();
+    try {
+      return await this.ops.requeueLost();
+    } catch (error) {
+      this.logger.error(`Cannot requeue lost AI jobs: ${(error as Error).message}`);
+      return 0;
+    }
+  }
+
+  private async ensureSchedules(): Promise<void> {
     for (const [task, pattern] of Object.entries(MAINTENANCE_SCHEDULE)) {
       try {
         await this.queue.upsertJobScheduler(
