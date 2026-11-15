@@ -10,6 +10,8 @@ export const ERROR_MESSAGES: Record<string, string> = {
   FORBIDDEN: 'Bạn không có quyền thực hiện thao tác này',
   SCOPE_FORBIDDEN: 'Dữ liệu này nằm ngoài phạm vi phòng ban của bạn',
   NOT_FOUND: 'Không tìm thấy dữ liệu',
+  CONFLICT: 'Dữ liệu vừa bị thay đổi hoặc đã tồn tại. Tải lại rồi thử lại',
+  VALIDATION_FAILED: 'Dữ liệu nhập chưa hợp lệ, kiểm tra lại các ô được đánh dấu',
   EMAIL_EXISTS: 'Email đã tồn tại',
   DEPARTMENT_IN_USE: 'Phòng ban còn người dùng hoặc tin tuyển dụng, không thể xoá',
   JOB_NOT_PUBLISHABLE: 'Chỉ đăng được tin ở trạng thái Nháp và có ít nhất 1 tiêu chí',
