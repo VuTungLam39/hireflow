@@ -2,7 +2,7 @@ import { HttpStatus, Inject, Injectable, UnauthorizedException } from '@nestjs/c
 import type { ConfigType } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { IsNull, Not, Repository } from 'typeorm';
+import { IsNull, MoreThan, Not, Repository } from 'typeorm';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import { jwtConfig } from '../../config/jwt.config.js';
 import { AuditService } from '../audit/audit.service.js';
@@ -15,6 +15,7 @@ export interface SessionMeta {
 }
 
 export const TOKEN_PURGE_AFTER_DAYS = 30;
+export const REUSE_GRACE_MS = 10_000;
 
 export const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
 
@@ -38,6 +39,7 @@ export class RefreshTokensService {
       throw new UnauthorizedException('Invalid refresh token');
     }
     if (current.revokedAt) {
+      if (await this.withinGrace(current)) return this.successor(current, meta);
       await this.revokeFamily(current.familyId);
       await this.recordReuse(current, meta);
       throw this.reused();
@@ -54,6 +56,8 @@ export class RefreshTokensService {
     });
 
     if (!next) {
+      const latest = await this.tokensRepository.findOneBy({ id: current.id });
+      if (latest && (await this.withinGrace(latest))) return this.successor(latest, meta);
       await this.revokeFamily(current.familyId);
       await this.recordReuse(current, meta);
       throw this.reused();
@@ -124,6 +128,23 @@ export class RefreshTokensService {
       ip: meta.ip ?? null,
     });
     return token;
+  }
+
+  // Backend Architecture 10.5: khoảng ân hạn cho refresh song song
+  private async withinGrace(token: RefreshToken): Promise<boolean> {
+    if (!token.revokedAt || Date.now() - token.revokedAt.getTime() > REUSE_GRACE_MS) return false;
+    return this.tokensRepository.exists({
+      where: {
+        familyId: token.familyId,
+        revokedAt: IsNull(),
+        createdAt: MoreThan(token.createdAt),
+      },
+    });
+  }
+
+  private async successor(token: RefreshToken, meta: SessionMeta) {
+    const next = await this.insert(token.userId, token.familyId, meta, this.tokensRepository);
+    return { userId: token.userId, token: next };
   }
 
   private reused() {

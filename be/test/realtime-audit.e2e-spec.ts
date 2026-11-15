@@ -17,7 +17,11 @@ import {
   NotificationType,
 } from '../src/modules/notifications/entities/notification.entity.js';
 import { NotificationsService } from '../src/modules/notifications/notifications.service.js';
-import { RefreshTokensService } from '../src/modules/refresh-tokens/refresh-tokens.service.js';
+import {
+  hashToken,
+  RefreshTokensService,
+  REUSE_GRACE_MS,
+} from '../src/modules/refresh-tokens/refresh-tokens.service.js';
 import { AiStatus } from '../src/common/enums/ai-status.enum.js';
 import { Candidate } from '../src/modules/candidates/entities/candidate.entity.js';
 import { DashboardCache } from '../src/modules/dashboard/dashboard-cache.service.js';
@@ -407,6 +411,10 @@ describe('Dashboard cache, realtime notifications, audit log (e2e)', () => {
       const tokens = app.get(RefreshTokensService);
       const first = await tokens.issue(userIds.hr2, { userAgent: 'e2e', ip: '127.0.0.1' });
       await tokens.rotate(first);
+      await ds.query(
+        `UPDATE refresh_tokens SET revoked_at = now() - make_interval(secs => $2) WHERE token_hash = $1`,
+        [hashToken(first), REUSE_GRACE_MS / 1000 + 10],
+      );
       await expect(
         tokens.rotate(first, { userAgent: 'attacker', ip: '203.0.113.9' }),
       ).rejects.toThrow();
