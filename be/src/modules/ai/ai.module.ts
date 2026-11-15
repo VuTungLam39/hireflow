@@ -59,6 +59,7 @@ import { RequirementsSuggester } from './requirements-suggester.service.js';
     LLM_PROVIDER,
     EMBEDDING_PROVIDER,
     CvPipelineService,
+    PipelineOpsService,
     RequirementsSuggester,
     InterviewQuestionSuggester,
   ],

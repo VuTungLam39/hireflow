@@ -32,6 +32,13 @@ const PARSE_ERROR: Record<CvParseError['reason'], string> = {
 };
 
 const ACTIVE = In([AiStatus.Pending, AiStatus.Processing]);
+const LIVE_JOB_STATES = new Set([
+  'waiting',
+  'active',
+  'delayed',
+  'prioritized',
+  'waiting-children',
+]);
 
 @Injectable()
 export class CvPipelineService implements OnModuleInit {
@@ -119,6 +126,17 @@ export class CvPipelineService implements OnModuleInit {
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
+  }
+
+  // Phase 5 O2
+  async hasLiveJob(app: { id: string; cvFileId: string; jdVersion: number }): Promise<boolean> {
+    const jobs = await Promise.all([
+      this.parseQueue.getJob(jobId.parse(app.cvFileId)),
+      this.extractQueue.getJob(jobId.extract(app.cvFileId, this.ai.promptVersion)),
+      this.scoreQueue.getJob(jobId.score(app.id, app.jdVersion)),
+    ]);
+    const states = await Promise.all(jobs.map((job) => job?.getState()));
+    return states.some((state) => state !== undefined && LIVE_JOB_STATES.has(state));
   }
 
   // Kickoff 12: job.requirements.updated, BR-AI-05
@@ -218,11 +236,16 @@ export class CvPipelineService implements OnModuleInit {
 
   // Kickoff 8.1: extract-cv, BR-AI-06
   async extract({ cvFileId, requestId }: CvJobData): Promise<void> {
-    const cv = await this.dataSource.getRepository(CvFile).findOneBy({ id: cvFileId });
+    const cv = await this.dataSource
+      .getRepository(CvFile)
+      .findOne({ where: { id: cvFileId }, relations: { candidate: true } });
     if (!cv?.text) return;
 
     if (!(await this.findProfile(cvFileId))) {
-      const { data, model, inputTokens, outputTokens } = await this.callExtract(cv.text);
+      const { data, model, inputTokens, outputTokens } = await this.callExtract(
+        cv.text,
+        cv.candidate?.fullName,
+      );
       await this.dataSource
         .createQueryBuilder()
         .insert()
@@ -254,8 +277,8 @@ export class CvPipelineService implements OnModuleInit {
     }
   }
 
-  private callExtract(text: string) {
-    return extractProfile(this.llm, text, (attempt, error) =>
+  private callExtract(text: string, fullName?: string) {
+    return extractProfile(this.llm, text, fullName, (attempt, error) =>
       this.logger.warn(`extract-cv invalid output (attempt ${attempt}): ${error.message}`),
     );
   }
@@ -264,7 +287,7 @@ export class CvPipelineService implements OnModuleInit {
   async score({ applicationId, requestId }: ScoreJobData): Promise<void> {
     const app = await this.applications().findOne({
       where: { id: applicationId },
-      relations: { job: true, cvFile: true },
+      relations: { job: true, cvFile: true, candidate: true },
     });
     if (!app?.cvFile?.text) return;
     const profile = await this.findProfile(app.cvFileId!);
@@ -273,7 +296,16 @@ export class CvPipelineService implements OnModuleInit {
       return;
     }
     const requirements = await this.requirementsOf(app.jobId, app.job!.jdVersion);
-    if (await this.saveScore(app.id, app.job!.jdVersion, requirements, profile, app.cvFile.text)) {
+    if (
+      await this.saveScore(
+        app.id,
+        app.job!.jdVersion,
+        requirements,
+        profile,
+        app.cvFile.text,
+        app.candidate?.fullName,
+      )
+    ) {
       this.events.emit('application.ai-finished', {
         applicationId: app.id,
         aiStatus: AiStatus.Done,
@@ -288,7 +320,7 @@ export class CvPipelineService implements OnModuleInit {
     const requirements = await this.requirementsOf(id, jdVersion);
     const apps = await this.applications().find({
       where: { jobId: id, aiStatus: AiStatus.Done, cvFileId: Not(IsNull()) },
-      relations: { cvFile: true },
+      relations: { cvFile: true, candidate: true },
     });
     const profiles = await this.dataSource.getRepository(CvProfile).findBy({
       cvFileId: In([...new Set(apps.map((a) => a.cvFileId!))]),
@@ -299,7 +331,18 @@ export class CvPipelineService implements OnModuleInit {
     for (const app of apps) {
       const profile = byFile.get(app.cvFileId!);
       if (!profile || !app.cvFile?.text) continue;
-      if (await this.saveScore(app.id, jdVersion, requirements, profile, app.cvFile.text)) count++;
+      const text = app.cvFile.text;
+      if (
+        await this.saveScore(
+          app.id,
+          jdVersion,
+          requirements,
+          profile,
+          text,
+          app.candidate?.fullName,
+        )
+      )
+        count++;
     }
     if (count) this.events.emit('job.changed', { jobId: id });
     return count;
@@ -311,8 +354,9 @@ export class CvPipelineService implements OnModuleInit {
     requirements: JobRequirement[],
     profile: CvProfile,
     cvText: string,
+    fullName?: string,
   ): Promise<boolean> {
-    const result = scoreApplication(requirements, profile.data.skills, maskPii(cvText));
+    const result = scoreApplication(requirements, profile.data.skills, maskPii(cvText, fullName));
     // BR-DATA-03
     const { affected } = await this.applications().update(
       { id: applicationId, cvFileId: profile.cvFileId },

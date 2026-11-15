@@ -19,6 +19,11 @@ import {
 } from '../src/modules/jobs/entities/job-requirement.entity.js';
 import { Job, JobStatus } from '../src/modules/jobs/entities/job.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
+import { getQueueToken } from '@nestjs/bullmq';
+import type { Queue } from 'bullmq';
+import { jobId, QUEUE } from '../src/modules/ai/pipeline/queues.js';
+import { MaintenanceService } from '../src/modules/maintenance/maintenance.service.js';
+import { MAINTENANCE_TASK } from '../src/modules/maintenance/maintenance.tasks.js';
 import { setupApp } from '../src/setup-app.js';
 
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -214,6 +219,35 @@ describe('Admin AI queue (e2e)', () => {
     expect(res.body.data.queued).toBeGreaterThanOrEqual(1);
     await waitDone(apps.stuck);
     expect((await issues()).filter((i) => i.job.id === ids.job)).toEqual([]);
+  });
+
+  it('Phase 5 O2: the self-heal loop requeues an application whose job Redis lost, not one still queued', async () => {
+    const maintenance = app.get(MaintenanceService);
+    const parse = app.get<Queue>(getQueueToken(QUEUE.parse));
+    const lost = await ds.getRepository(Application).findOneByOrFail({ id: apps.stuck });
+    await ds.query(
+      `UPDATE applications SET ai_status = 'PENDING', created_at = now() - interval '10 minutes' WHERE id = $1`,
+      [lost.id],
+    );
+    const queued = await parse.add(
+      'parse',
+      { cvFileId: lost.cvFileId! },
+      { jobId: jobId.parse(lost.cvFileId!), delay: 60_000 },
+    );
+
+    await maintenance.heal();
+    expect(await statusOf(lost.id)).toBe(AiStatus.Pending);
+
+    await queued.remove();
+    await maintenance.heal();
+    await waitDone(lost.id);
+  });
+
+  it('Phase 5 O2: the self-heal loop recreates the daily schedules Redis lost', async () => {
+    const queue = app.get<Queue>(getQueueToken(QUEUE.maintenance));
+    await queue.removeJobScheduler(MAINTENANCE_TASK.anonymizeExpired);
+    await app.get(MaintenanceService).heal();
+    expect(await queue.getJobScheduler(MAINTENANCE_TASK.anonymizeExpired)).toBeTruthy();
   });
 
   it('reports job counts for every pipeline queue', async () => {

@@ -54,12 +54,16 @@ export interface QuestionSuggestion {
 }
 
 /** Dòng CV nhắc tới tiêu chí (theo nhãn hoặc từ khoá, không dấu), đã che email và số điện thoại */
-export function relevantCvLines(cvText: string | null, req: QuestionRequirement): string[] {
+export function relevantCvLines(
+  cvText: string | null,
+  req: QuestionRequirement,
+  fullName?: string | null,
+): string[] {
   if (!cvText) return [];
   const needles = [
     ...new Set([req.label, ...req.keywords].map(foldText).filter((n) => n.length >= 2)),
   ];
-  return maskPii(cvText)
+  return maskPii(cvText, fullName)
     .split(/\n+/)
     .map((line) => line.trim())
     .filter((line) => line.length > 0 && needles.some((n) => foldText(line).includes(n)))
@@ -77,13 +81,14 @@ export class InterviewQuestionSuggester {
     jobTitle: string,
     requirements: QuestionRequirement[],
     cvText: string | null,
+    fullName?: string | null,
   ): Promise<QuestionSuggestion[]> {
     const criteria: QuestionCriterion[] = requirements.map((r, i) => ({
       code: `T${i + 1}`,
       label: r.label,
       required: r.required,
       keywords: r.keywords,
-      cvLines: relevantCvLines(cvText, r),
+      cvLines: relevantCvLines(cvText, r, fullName),
     }));
     try {
       const result = await this.llm.generateJson({

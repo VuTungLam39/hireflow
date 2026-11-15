@@ -104,6 +104,31 @@ export class PipelineOpsService {
     return { queued, failed: rows.length - queued };
   }
 
+  // Phase 5 O2
+  async requeueLost(): Promise<number> {
+    const rows = await this.issuesQuery()
+      .andWhere('app.aiStatus != :failedStatus', { failedStatus: AiStatus.Failed })
+      .innerJoin('app.job', 'job')
+      .select('app.id', 'id')
+      .addSelect('app.cvFileId', 'cvFileId')
+      .addSelect('job.jdVersion', 'jdVersion')
+      .orderBy('app.updatedAt', 'ASC')
+      .limit(RETRY_ALL_LIMIT)
+      .getRawMany<{ id: string; cvFileId: string; jdVersion: number }>();
+    let queued = 0;
+    for (const row of rows) {
+      if (await this.pipeline.hasLiveJob(row)) continue;
+      try {
+        await this.pipeline.rescore(row.id);
+        queued++;
+      } catch (error) {
+        this.logger.warn(`requeue ${row.id} skipped: ${(error as Error).message}`);
+      }
+    }
+    if (queued) this.logger.warn(`Requeued ${queued} applications whose AI job was lost`);
+    return queued;
+  }
+
   async queueCounts(): Promise<QueueCountsView[]> {
     return Promise.all(
       this.queues.map(async (queue) => {

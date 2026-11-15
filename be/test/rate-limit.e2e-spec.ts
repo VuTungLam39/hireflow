@@ -78,13 +78,26 @@ describe('Rate limit (e2e)', () => {
     expect(res.body.code).toBe('TOO_MANY_REQUESTS');
   });
 
-  it('Kickoff 16: login is still limited to 5 tries a minute per IP', async () => {
+  it('Kickoff 16: login allows 30 tries a minute per IP so a shared office IP is not blocked', async () => {
     const ip = nextIp();
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 30; i++) {
       await login(`rl-ip-${i}-${run}@example.com`, 'Wrong123', ip).expect(401);
     }
-    await login(`rl-ip-5-${run}@example.com`, 'Wrong123', ip).expect(429);
-  });
+    const res = await login(`rl-ip-30-${run}@example.com`, 'Wrong123', ip).expect(429);
+    expect(res.body.code).toBe('TOO_MANY_REQUESTS');
+  }, 30_000);
+
+  it('BR-APP-06: public apply allows 30 submissions an hour per IP', async () => {
+    const ip = nextIp();
+    const apply = () =>
+      request(server())
+        .post(`/api/v1/public/jobs/${randomUUID()}/apply`)
+        .set('X-Forwarded-For', ip)
+        .field('fullName', 'Rate Limit');
+    for (let i = 0; i < 30; i++) expect((await apply()).status).not.toBe(429);
+    const res = await apply().expect(429);
+    expect(res.body.code).toBe('TOO_MANY_REQUESTS');
+  }, 30_000);
 
   it('BR-AI-10: chat allows 20 questions a minute per user, not per IP', async () => {
     const sharedIp = nextIp();
