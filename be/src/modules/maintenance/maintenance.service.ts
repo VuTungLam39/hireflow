@@ -18,11 +18,13 @@ import {
 } from './maintenance.tasks.js';
 
 export const SELF_HEAL_INTERVAL_MS = 10 * 60_000;
+export const FIRST_HEAL_DELAY_MS = 60_000;
 
 @Injectable()
 export class MaintenanceService implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(MaintenanceService.name);
   private healTimer?: NodeJS.Timeout;
+  private firstHeal?: NodeJS.Timeout;
 
   constructor(
     @InjectQueue(QUEUE.maintenance) private readonly queue: Queue,
@@ -36,10 +38,13 @@ export class MaintenanceService implements OnApplicationBootstrap, OnModuleDestr
     // Phase 5 O2: vòng ngoài Redis
     this.healTimer = setInterval(() => void this.heal(), SELF_HEAL_INTERVAL_MS);
     this.healTimer.unref();
+    this.firstHeal = setTimeout(() => void this.heal(), FIRST_HEAL_DELAY_MS);
+    this.firstHeal.unref();
   }
 
   onModuleDestroy(): void {
     clearInterval(this.healTimer);
+    clearTimeout(this.firstHeal);
   }
 
   async heal(): Promise<number> {

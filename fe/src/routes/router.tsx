@@ -42,8 +42,13 @@ async function applicationsLoader({ request }: LoaderFunctionArgs) {
   return null
 }
 
-async function sessionLoader() {
-  await restoreSession()
+const GUEST_PAGES = [paths.login, paths.publicJobs, paths.careers, paths.privacy]
+
+async function sessionLoader({ request }: LoaderFunctionArgs) {
+  const path = new URL(request.url).pathname
+  await restoreSession({
+    guestPage: GUEST_PAGES.some((p) => path === p || path.startsWith(`${p}/`)),
+  })
   return null
 }
 

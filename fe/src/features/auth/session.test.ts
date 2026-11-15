@@ -33,6 +33,31 @@ describe('restoreSession', () => {
     mocks.me.mockReset()
   })
 
+  it('P3-01: a guest page skips /auth/refresh when this browser never signed in', async () => {
+    localStorage.removeItem('hf_session')
+    await restoreSession({ guestPage: true })
+    expect(mocks.refreshAccessToken).not.toHaveBeenCalled()
+  })
+
+  it('P3-01: a guest page still restores the session of someone who signed in before', async () => {
+    localStorage.setItem('hf_session', '1')
+    mocks.refreshAccessToken.mockImplementation(async () => {
+      useAuthStore.getState().setAccessToken('t')
+      return 't'
+    })
+    mocks.me.mockResolvedValue(user)
+    await restoreSession({ guestPage: true })
+    expect(mocks.refreshAccessToken).toHaveBeenCalledTimes(1)
+    expect(useAuthStore.getState().user).toEqual(user)
+  })
+
+  it('P3-01: signing out or a rejected refresh forgets the hint', () => {
+    useAuthStore.getState().setAccessToken('t')
+    expect(localStorage.getItem('hf_session')).toBe('1')
+    useAuthStore.getState().clear()
+    expect(localStorage.getItem('hf_session')).toBeNull()
+  })
+
   it('restores token and user from the refresh cookie', async () => {
     mocks.refreshAccessToken.mockImplementation(async () => {
       useAuthStore.getState().setAccessToken('new-token')
