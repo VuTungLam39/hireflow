@@ -8,7 +8,11 @@ import { AppModule } from '../src/app.module.js';
 import { Role } from '../src/common/enums/role.enum.js';
 import { Department } from '../src/modules/departments/entities/department.entity.js';
 import { StorageService } from '../src/modules/files/storage/storage.service.js';
-import { RefreshTokensService } from '../src/modules/refresh-tokens/refresh-tokens.service.js';
+import {
+  hashToken,
+  RefreshTokensService,
+  REUSE_GRACE_MS,
+} from '../src/modules/refresh-tokens/refresh-tokens.service.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
 
@@ -123,9 +127,16 @@ describe('App (e2e)', () => {
       expect((await refresh(next).expect(200)).body.data.accessToken).toBeTruthy();
     });
 
-    it('reusing an old refresh token revokes the whole chain (BE-06)', async () => {
+    const backdateRotation = (cookie: string, ms: number) =>
+      dataSource.query(
+        `UPDATE refresh_tokens SET revoked_at = now() - make_interval(secs => $2) WHERE token_hash = $1`,
+        [hashToken(cookie.replace('refresh_token=', '')), ms / 1000],
+      );
+
+    it('reusing an old refresh token after the grace window revokes the whole chain (BE-06)', async () => {
       const first = await sessionOf(hrEmail);
       const second = refreshCookieOf(await refresh(first).expect(200));
+      await backdateRotation(first, REUSE_GRACE_MS + 10_000);
 
       const reused = await refresh(first).expect(401);
       expect(reused.body.code).toBe('REFRESH_TOKEN_REUSED');
@@ -133,6 +144,31 @@ describe('App (e2e)', () => {
 
       const after = await refresh(second).expect(401);
       expect(after.body.code).toBe('REFRESH_TOKEN_REUSED');
+    });
+
+    it('two tabs refreshing with the same cookie at once both stay signed in', async () => {
+      const shared = await sessionOf(hrEmail);
+      const [a, b] = await Promise.all([refresh(shared), refresh(shared)]);
+      expect([a.status, b.status]).toEqual([200, 200]);
+      const [nextA, nextB] = [refreshCookieOf(a), refreshCookieOf(b)];
+      expect(nextA).not.toBe(nextB);
+      await refresh(nextA).expect(200);
+      await refresh(nextB).expect(200);
+    });
+
+    it('re-sending a just-rotated token (F5 twice, navigation mid-refresh) does not sign out', async () => {
+      const first = await sessionOf(hrEmail);
+      const second = refreshCookieOf(await refresh(first).expect(200));
+      const again = refreshCookieOf(await refresh(first).expect(200));
+      await refresh(second).expect(200);
+      await refresh(again).expect(200);
+    });
+
+    it('the grace window never revives a chain revoked by logout', async () => {
+      const current = await sessionOf(hrEmail);
+      await asHr(request(server()).post('/api/v1/auth/logout')).set('Cookie', current).expect(200);
+      const res = await refresh(current).expect(401);
+      expect(res.body.code).toBe('REFRESH_TOKEN_REUSED');
     });
 
     it('rejects a missing or unknown refresh token with 401 UNAUTHORIZED', async () => {
