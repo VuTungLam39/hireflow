@@ -18,6 +18,19 @@ describe('maskPii', () => {
     expect(maskPii(input)).toBe(expected);
   });
 
+  it('masks the candidate full name in any case and spacing, not words that only contain it', () => {
+    const text = 'NGUYỄN  VĂN AN\nỨng viên Nguyễn Văn An, 3 năm NestJS\nNguyễn Văn Anh là mentor';
+    expect(maskPii(text, ' Nguyễn Văn An ')).toBe(
+      '[NAME]\nỨng viên [NAME], 3 năm NestJS\nNguyễn Văn Anh là mentor',
+    );
+  });
+
+  it('ignores an empty or one-letter name and escapes regex characters', () => {
+    expect(maskPii('A biết NestJS', 'A')).toBe('A biết NestJS');
+    expect(maskPii('An biết NestJS', '')).toBe('An biết NestJS');
+    expect(maskPii('Lê (Tom) biết NestJS', 'Lê (Tom)')).toBe('[NAME] biết NestJS');
+  });
+
   it('keeps years, ids and version numbers', () => {
     const text = '3 năm (2021-2024), MSSV 20194567, Node.js 20.11.1, lương 15000000';
     expect(maskPii(text)).toBe(text);

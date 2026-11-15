@@ -366,9 +366,11 @@ export class InterviewsService implements OnModuleInit {
         order: { position: 'ASC' },
       }),
       iv.application!.cvFileId
-        ? this.dataSource
-            .getRepository(CvFile)
-            .findOne({ select: ['id', 'text'], where: { id: iv.application!.cvFileId } })
+        ? this.dataSource.getRepository(CvFile).findOne({
+            select: { id: true, text: true, candidate: { id: true, fullName: true } },
+            relations: { candidate: true },
+            where: { id: iv.application!.cvFileId },
+          })
         : null,
     ]);
     if (!requirements.length) return { items: [], cached: false };
@@ -381,6 +383,7 @@ export class InterviewsService implements OnModuleInit {
         keywords: r.keywords,
       })),
       cv?.text ?? null,
+      cv?.candidate?.fullName,
     );
     if (this.questionCache.size >= QUESTION_CACHE_MAX) {
       this.questionCache.delete(this.questionCache.keys().next().value!);

@@ -25,6 +25,7 @@ export interface ExtractedProfile {
 export async function extractProfile(
   llm: LlmProvider,
   cvText: string,
+  fullName?: string | null,
   onInvalid?: (attempt: number, error: LlmError) => void,
 ): Promise<ExtractedProfile> {
   let lastError: LlmError | undefined;
@@ -33,7 +34,7 @@ export async function extractProfile(
       const result = await llm.generateJson({
         task: 'extract-cv',
         system: EXTRACT_CV_SYSTEM,
-        prompt: extractCvPrompt(maskPii(cvText)),
+        prompt: extractCvPrompt(maskPii(cvText, fullName)),
         schema: EXTRACT_CV_SCHEMA,
         maxOutputTokens: 4096,
         signal: AbortSignal.timeout(LLM_STEP_TIMEOUT_MS),

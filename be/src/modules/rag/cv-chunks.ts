@@ -74,7 +74,7 @@ function piecesOf(lines: string[]): string[] {
 }
 
 // Kickoff 8.5, BR-AI-09
-export function chunkCv(text: string): CvChunkDraft[] {
+export function chunkCv(text: string, fullName?: string | null): CvChunkDraft[] {
   const groups: { section: CvSection; lines: string[] }[] = [];
   let current = { section: 'summary' as CvSection, lines: [] as string[] };
   groups.push(current);
@@ -95,7 +95,7 @@ export function chunkCv(text: string): CvChunkDraft[] {
   const drafts: CvChunkDraft[] = [];
   for (const group of groups) {
     for (const piece of piecesOf(group.lines)) {
-      const content = maskPii(piece);
+      const content = maskPii(piece, fullName);
       drafts.push({
         section: group.section,
         position: drafts.length,

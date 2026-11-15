@@ -231,6 +231,23 @@ describe('AI pipeline (e2e, LLM giả)', () => {
     expect(prompt.prompt).not.toContain('0912 345 678');
   });
 
+  it('BR-AI-09: masks the candidate full name before calling the LLM, and still scores', async () => {
+    const name = `Ứng viên ${run}`;
+    const created = await upload(
+      ids.job,
+      `named-${run}@example.com`,
+      await makeDocx([`${name.toUpperCase()} – Backend Developer`, ...SAMPLE_CV.slice(2)]),
+    );
+    const done = await waitFor(created.id, settled);
+    expect(done).toMatchObject({ aiStatus: AiStatus.Done, score: 83 });
+    const prompts = llm.calls
+      .filter((c): c is JsonRequest => 'prompt' in c && c.task === 'extract-cv')
+      .map((c) => c.prompt);
+    const mine = prompts.find((p) => p.includes('[NAME] – Backend Developer'));
+    expect(mine).toBeDefined();
+    expect(mine!.toLowerCase()).not.toContain(name.toLowerCase());
+  });
+
   it('extracts each CV once per prompt version, even across jobs (BR-AI-06)', async () => {
     const before = extractCalls();
     const second = await upload(ids.job2, email, await makeDocx(SAMPLE_CV));

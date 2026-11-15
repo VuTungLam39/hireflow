@@ -109,11 +109,13 @@ export class RagService implements OnApplicationBootstrap {
         `EMBEDDING_DIM=${this.embedding.dimension} does not match cv_chunks vector(${CV_CHUNK_DIMENSION})`,
       );
     }
-    const cv = await this.dataSource
-      .getRepository(CvFile)
-      .findOne({ select: ['id', 'text'], where: { id: cvFileId } });
+    const cv = await this.dataSource.getRepository(CvFile).findOne({
+      select: { id: true, text: true, candidate: { id: true, fullName: true } },
+      relations: { candidate: true },
+      where: { id: cvFileId },
+    });
     if (!cv?.text) return 0;
-    const chunks = chunkCv(cv.text);
+    const chunks = chunkCv(cv.text, cv.candidate?.fullName);
     if (!chunks.length) return 0;
 
     const vectors = await this.embedding.embed(
