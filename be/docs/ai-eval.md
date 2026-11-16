@@ -28,7 +28,7 @@ Tài liệu này là phần "đánh giá chất lượng AI" của Kickoff mục
 
 ## 2. Kết quả
 
-Model `gemini/gemini-3.5-flash-lite` (gói miễn phí của Google AI Studio), ngày 25/10/2026.
+Model `gemini/gemini-3.5-flash-lite` (gói miễn phí của Google AI Studio), ngày 25/10/2026 (v1 → v3) và 16/11/2026 (v4).
 
 | Lần chạy | Prompt | Ô tiêu chí đúng | Cặp đúng điểm | Sai số điểm TB | Bằng chứng LLM trích có thật | Bằng chứng hiển thị có thật | Injection bị làm theo | Thời gian p50 / p95 | Token vào / ra mỗi CV |
 |---|---|---|---|---|---|---|---|---|---|
@@ -36,7 +36,9 @@ Model `gemini/gemini-3.5-flash-lite` (gói miễn phí của Google AI Studio), 
 | [20261025-1557](ai-eval/20261025-1557-v2.md) | v2 | 90/90 | 20/20 | 0 | 62/62 | 25/25 | 0/1 | 1,9 s / 4,9 s | 651 / 424 |
 | [20261025-1558](ai-eval/20261025-1558-v2.md) | v2 | 89/90 (98,9%) | 19/20 | 0,7 | 61/61 | 24/24 | 0/1 | 1,8 s / 2,4 s | 651 / 420 |
 | [20261025-1601](ai-eval/20261025-1601-v3.md) | **v3** | **90/90** | **20/20** | 0 | 62/62 | 25/25 | 0/1 | 1,8 s / 2,6 s | 708 / 414 |
-| [20261025-1602](ai-eval/20261025-1602-v3.md) | **v3** | **90/90** | **20/20** | 0 | 62/62 | 25/25 | 0/1 | 1,7 s / 2,4 s | 708 / 416 |
+| [20261025-1602](ai-eval/20261025-1602-v3.md) | v3 | 90/90 | 20/20 | 0 | 62/62 | 25/25 | 0/1 | 1,7 s / 2,4 s | 708 / 416 |
+| [20261116-0355](ai-eval/20261116-0355-v4.md) | **v4** | **90/90** | **20/20** | 0 | 65/65 | 25/25 | 0/1 | 1,9 s / 2,8 s | 821 / 443 |
+| [20261116-0357](ai-eval/20261116-0357-v4.md) | **v4** | **90/90** | **20/20** | 0 | 68/68 | 25/25 | 0/1 | 1,9 s / 4,4 s | 821 / 462 |
 
 Không lần chạy nào phải thử lại vì LLM trả sai schema, không CV nào trích xuất lỗi.
 
@@ -67,8 +69,9 @@ Lần 2 chậm hơn vì giới hạn 10 lần gọi LLM mỗi phút: CV sau ph�
 | v1 → v2 | cv05: "Đang tự học PostgreSQL và Docker" bị trích thành kỹ năng | Thực tập sinh được cộng điểm như có kinh nghiệm (19 → 56 điểm), không bị gắn cờ thiếu PostgreSQL | Chỉ đưa vào kỹ năng đã dùng trong công việc, dự án hoặc học tập có kết quả; bỏ qua "đang học", "đang tìm hiểu", "muốn học" |
 | v1 → v2 | cv10: câu "bán hàng B2B …, dùng HubSpot" chỉ trích được HubSpot | Ứng viên bán hàng B2B 2 năm bị chấm thiếu tiêu chí bắt buộc (71 → 29 điểm) | Liệt kê cả kỹ năng nghiệp vụ, không chỉ công cụ; một câu nhiều kỹ năng thì tách nhiều mục |
 | v2 → v3 | cv08: lần chạy thứ hai bỏ sót "Tiếng Anh: TOEIC 750" (lần thứ nhất thì có) | Kết quả dao động giữa các lần gọi dù đã đặt `temperature: 0` | Ngoại ngữ luôn là một mục riêng, tên là ngôn ngữ, kể cả khi CV chỉ ghi chứng chỉ hoặc mức độ |
+| v3 → v4 | CV demo Trương Minh Hiếu (16/11, ngoài bộ dữ liệu): LLM chỉ trích dòng "Kỹ năng", bỏ "REST API và microservices" trong mô tả công việc, "AWS Certified Developer" trong mục chứng chỉ và lĩnh vực "fintech" ghi cạnh tên công ty. Lặp lại 5/5 lần | 73 điểm và cờ thiếu tiêu chí bắt buộc, trong khi HR đọc CV thấy đủ cả 7 tiêu chí (100 điểm) | Đọc hết CV, không chỉ mục Kỹ năng; lấy cả kiến trúc, cách làm, nền tảng cloud (kể cả trong tên chứng chỉ) và lĩnh vực đã làm. Sau sửa: 5/5 lần 100 điểm; bộ dữ liệu vẫn 90/90 ở 2 lần chạy |
 
-Mỗi lần đổi prompt đều tăng `AI_PROMPT_VERSION` (mặc định trong code nay là `v3`), nên hồ sơ đã trích bằng prompt cũ sẽ được trích lại khi chấm lại thay vì dùng cache cũ (BR-AI-06, BR-AI-08).
+Mỗi lần đổi prompt đều tăng `AI_PROMPT_VERSION` (mặc định trong code nay là `v4`), nên hồ sơ đã trích bằng prompt cũ sẽ được trích lại khi chấm lại thay vì dùng cache cũ (BR-AI-06, BR-AI-08).
 
 ## 4. Giới hạn của kết quả
 
@@ -76,6 +79,7 @@ Mỗi lần đổi prompt đều tăng `AI_PROMPT_VERSION` (mặc định trong 
 - **Thời gian ở bảng chính là thời gian gọi LLM; đường đi đầy đủ đo riêng ở mục 2.1.** Hàng đợi `extract-cv` giới hạn 10 CV mỗi phút (`AI_LLM_PER_MINUTE`, theo hạn mức gói miễn phí). Nộp dồn khoảng 30 CV cùng lúc thì CV cuối phải chờ khoảng 3 phút, vượt mục tiêu 60 giây. Mục tiêu G2 chỉ đạt khi lượng CV dưới khoảng 10 mỗi phút; muốn hơn thì cần gói trả phí hoặc thêm provider dự phòng.
 - **Kiểm bằng chứng không chặn được prompt injection.** Câu ra lệnh nằm ngay trong CV, nên nếu LLM làm theo thì bằng chứng vẫn "có thật trong CV" và qua được bước kiểm. Lớp bảo vệ hiện tại chỉ là prompt (khối `<cv>` là dữ liệu, không phải chỉ dẫn), và mới thử với 1 ca. Hướng bổ sung: gắn cờ khi bằng chứng chứa câu có dạng ra lệnh cho AI.
 - **Khớp tiêu chí dựa vào tên kỹ năng LLM đặt.** Nếu LLM đặt tên không chứa từ khoá của tiêu chí (ví dụ "Bán hàng doanh nghiệp" thay vì "B2B"), tiêu chí sẽ không khớp dù CV có kỹ năng đó. HR giảm rủi ro này bằng cách thêm từ khoá đồng nghĩa vào tiêu chí.
+- **Ca lỗi v4 chưa nằm trong bộ dữ liệu.** JD Backend của bộ chưa có tiêu chí kiến trúc, lĩnh vực hay chứng chỉ, nên 90/90 ở v4 chỉ cho thấy không làm hỏng ca cũ. Muốn bộ đánh giá tự bắt lỗi này thì cần thêm tiêu chí REST/Microservices, Fintech, AWS vào JD Backend kèm đáp án cho cả 10 CV.
 - **Chỉ đo một model.** Chưa so sánh với Groq hay Ollama.
 
 ## 5. Truy xuất cho Hỏi kho CV – tìm kiếm lai (Mở rộng MVP 2, E1)

@@ -18,7 +18,7 @@ export const buildAiConfig = () => ({
     .filter(Boolean) as LlmProviderName[],
   timeoutMs: Number(process.env.AI_TIMEOUT_MS ?? 60000),
   firstTokenTimeoutMs: Number(process.env.AI_FIRST_TOKEN_TIMEOUT_MS ?? 15000),
-  promptVersion: process.env.AI_PROMPT_VERSION ?? 'v3',
+  promptVersion: process.env.AI_PROMPT_VERSION ?? 'v4',
   gemini: {
     baseUrl:
       process.env.GEMINI_BASE_URL ?? 'https://generativelanguage.googleapis.com/v1beta/openai',

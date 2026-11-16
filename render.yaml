@@ -72,7 +72,7 @@ services:
       - key: LLM_PROVIDERS
         value: gemini
       - key: AI_PROMPT_VERSION
-        value: v3
+        value: v4
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL
