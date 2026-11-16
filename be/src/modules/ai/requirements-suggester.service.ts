@@ -42,7 +42,10 @@ export class RequirementsSuggester {
         keywords: normalizeKeywords(r.keywords),
       }));
     } catch (error) {
-      const reason = error instanceof LlmError ? `${error.code}: ${error.message}` : String(error);
+      const reason =
+        error instanceof LlmError
+          ? `${error.provider} ${error.code}: ${error.message}`
+          : String(error);
       this.logger.warn(`suggest-requirements failed: ${reason}`);
       throw new BusinessException(
         ErrorCode.AiUnavailable,

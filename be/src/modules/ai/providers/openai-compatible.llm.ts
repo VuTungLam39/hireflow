@@ -29,6 +29,7 @@ interface CompletionResponse {
 
 const THINK = /<think>[\s\S]*?<\/think>/g;
 const FENCE = /^```(?:json)?\s*([\s\S]*?)\s*```$/;
+const MODEL_GONE = /model_not_found|model_decommissioned/;
 
 export const cleanJsonText = (text: string) => {
   const stripped = text.replace(THINK, '').trim();
@@ -175,7 +176,7 @@ export class OpenAICompatibleLlmProvider implements LlmProvider {
     if (status === 429) {
       throw new LlmError(`Rate limited: ${detail}`, this.name, 'RATE_LIMITED', true, status);
     }
-    if (status === 408 || status >= 500) {
+    if (status === 408 || status >= 500 || status === 404 || MODEL_GONE.test(detail)) {
       throw new LlmError(`Upstream ${status}: ${detail}`, this.name, 'UNAVAILABLE', true, status);
     }
     throw new LlmError(
