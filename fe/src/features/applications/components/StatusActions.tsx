@@ -142,9 +142,7 @@ export function StatusActions({ applicationId, status, className }: StatusAction
           target && APPLICATION_STATUS[target].terminal
             ? 'Đây là trạng thái kết thúc. Muốn xét lại sau này, bạn có thể mở lại hồ sơ.'
             : target
-              ? `Hồ sơ sẽ chuyển sang “${APPLICATION_STATUS[target].label}” và được ghi vào lịch sử.${
-                  noFeedback ? ' Hồ sơ chưa có phiếu đánh giá phỏng vấn nào.' : ''
-                }`
+              ? `Hồ sơ sẽ chuyển sang “${APPLICATION_STATUS[target].label}” và được ghi vào lịch sử.`
               : undefined
         }
         confirmLabel={target ? label(target) : 'Xác nhận'}
@@ -165,7 +163,13 @@ export function StatusActions({ applicationId, status, className }: StatusAction
           changeStatus.mutate({ status: target, reason, declineOffer })
           setTarget(null)
         }}
-      />
+      >
+        {noFeedback && (
+          <p role="note" className="bg-warn-soft text-warn rounded-xs px-3 py-2 text-[13px]">
+            Hồ sơ chưa có phiếu đánh giá phỏng vấn nào.
+          </p>
+        )}
+      </ConfirmDialog>
     </>
   )
 }

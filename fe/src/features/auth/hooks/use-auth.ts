@@ -39,7 +39,7 @@ export function useLogout() {
     mutationFn: authApi.logout,
     // Dù gọi API lỗi vẫn xoá phiên ở client
     onSettled: () => {
-      clear()
+      clear('signed-out')
       queryClient.clear()
       navigate(paths.login, { replace: true })
     },

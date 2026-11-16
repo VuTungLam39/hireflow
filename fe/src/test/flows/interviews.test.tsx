@@ -180,9 +180,9 @@ describe('interviews', () => {
     renderAt('hr@hireflow.dev', links.applicationDetail(app.id))
     fireEvent.click(await screen.findByRole('button', { name: /Chuyển sang Đề nghị/ }))
     const dialog = await screen.findByRole('dialog', { name: /Chuyển sang Đề nghị/ })
-    expect(
-      await within(dialog).findByText(/Hồ sơ chưa có phiếu đánh giá phỏng vấn nào/),
-    ).toBeInTheDocument()
+    expect(await within(dialog).findByRole('note')).toHaveTextContent(
+      'Hồ sơ chưa có phiếu đánh giá phỏng vấn nào.',
+    )
     expect(within(dialog).getByRole('button', { name: /Chuyển sang Đề nghị/ })).toBeEnabled()
   })
 

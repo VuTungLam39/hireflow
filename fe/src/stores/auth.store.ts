@@ -5,10 +5,11 @@ interface AuthState {
   /** Chỉ giữ trong bộ nhớ, không lưu localStorage (chống XSS đọc token) */
   accessToken: string | null
   user: User | null
+  signedOut: boolean
   setSession: (user: User, tokens: AccessToken) => void
   setAccessToken: (token: string) => void
   setUser: (user: User) => void
-  clear: () => void
+  clear: (reason?: 'signed-out') => void
 }
 
 // P3-01: chỉ đánh dấu đã từng đăng nhập, không chứa token
@@ -36,18 +37,19 @@ export const hasSessionHint = () => {
 export const useAuthStore = create<AuthState>()((set) => ({
   accessToken: null,
   user: null,
+  signedOut: false,
   setSession: (user, { accessToken }) => {
     setHint(true)
-    set({ user, accessToken })
+    set({ user, accessToken, signedOut: false })
   },
   setAccessToken: (accessToken) => {
     setHint(true)
     set({ accessToken })
   },
   setUser: (user) => set({ user }),
-  clear: () => {
+  clear: (reason) => {
     setHint(false)
-    set({ user: null, accessToken: null })
+    set({ user: null, accessToken: null, signedOut: reason === 'signed-out' })
   },
 }))
 

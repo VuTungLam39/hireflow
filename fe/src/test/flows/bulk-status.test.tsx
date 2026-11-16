@@ -132,3 +132,16 @@ describe('bulk status change', () => {
     expect(within(bar).getByText('1')).toBeInTheDocument()
   })
 })
+
+// F-APP-01
+describe('saved view tabs', () => {
+  it('keeps the saved view selected when another filter narrows it further', async () => {
+    signIn('hr@hireflow.dev')
+    open('?status=NEW&scoreMin=70&sortBy=score&order=DESC')
+    expect(await screen.findByRole('tab', { name: /Chờ xem/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(screen.getByRole('tab', { name: 'Tất cả' })).toHaveAttribute('aria-selected', 'false')
+  })
+})

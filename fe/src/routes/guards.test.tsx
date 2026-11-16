@@ -36,6 +36,7 @@ function renderAt(path: string) {
     { initialEntries: [path] },
   )
   render(<RouterProvider router={router} />)
+  return router
 }
 
 describe('route guards', () => {
@@ -62,6 +63,20 @@ describe('route guards', () => {
     useAuthStore.getState().setSession({ ...user, role: Role.Admin }, tokens)
     renderAt('/users')
     expect(screen.getByText('users page')).toBeInTheDocument()
+  })
+
+  it('keeps the page to return to when the session expires, but not after signing out', () => {
+    useAuthStore.getState().setSession({ ...user, role: Role.Admin }, tokens)
+    const expired = renderAt('/users')
+    act(() => useAuthStore.getState().clear())
+    expect(expired.state.location.pathname).toBe('/login')
+    expect(expired.state.location.state).toEqual({ from: '/users' })
+
+    useAuthStore.getState().setSession({ ...user, role: Role.Admin }, tokens)
+    const signedOut = renderAt('/users')
+    act(() => useAuthStore.getState().clear('signed-out'))
+    expect(signedOut.state.location.pathname).toBe('/login')
+    expect(signedOut.state.location.state).toBeNull()
   })
 
   // Trang đích có loader: GuestRoute không được chen ngang về trang chủ khi loader còn chạy

@@ -2,18 +2,18 @@ import { Navigate, Outlet, useLocation } from 'react-router'
 import { usePermission } from '@/hooks/use-permission'
 import type { Permission } from '@/lib/permissions'
 import ForbiddenPage from '@/pages/ForbiddenPage'
-import { useIsAuthenticated } from '@/stores/auth.store'
+import { useAuthStore, useIsAuthenticated } from '@/stores/auth.store'
 import { paths } from './paths'
 
 /** Chỉ cho vào khi đã đăng nhập; lưu lại trang đang định vào để quay lại sau khi login */
 export function ProtectedRoute() {
   const isAuthenticated = useIsAuthenticated()
+  const signedOut = useAuthStore((s) => s.signedOut)
   const location = useLocation()
 
   if (!isAuthenticated) {
-    return (
-      <Navigate to={paths.login} replace state={{ from: location.pathname + location.search }} />
-    )
+    const from = signedOut ? undefined : { from: location.pathname + location.search }
+    return <Navigate to={paths.login} replace state={from} />
   }
   return <Outlet />
 }
