@@ -150,7 +150,14 @@
   html {
     -webkit-text-size-adjust: 100%;
     accent-color: var(--color-brand);
-    scrollbar-color: var(--color-line-strong) transparent;
+  }
+
+  /* Ẩn mọi thanh cuộn (trang, vùng cuộn, textarea); vẫn cuộn được bằng chuột, cảm ứng, bàn phím */
+  * {
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
   }
 
   body {

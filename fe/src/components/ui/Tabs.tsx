@@ -84,7 +84,7 @@ export function Tabs<T extends string>({
         ref={listRef}
         role="tablist"
         aria-label={label}
-        className="border-line -mb-px flex [scrollbar-width:none] gap-5 overflow-x-auto scroll-smooth border-b"
+        className="border-line -mb-px flex gap-5 overflow-x-auto scroll-smooth border-b"
       >
         {tabs.map((tab, index) => {
           const active = tab.id === value
