@@ -1,5 +1,5 @@
 import { BullModule } from '@nestjs/bullmq';
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { aiConfig } from '../../config/ai.config.js';
@@ -40,7 +40,11 @@ import { RequirementsSuggester } from './requirements-suggester.service.js';
     {
       provide: LLM_PROVIDER,
       inject: [aiConfig.KEY],
-      useFactory: (config: ConfigType<typeof aiConfig>) => buildLlmProvider(config),
+      useFactory: (config: ConfigType<typeof aiConfig>) => {
+        const llm = buildLlmProvider(config);
+        new Logger('Llm').log(`chain: ${llm.name}`);
+        return llm;
+      },
     },
     {
       provide: EMBEDDING_PROVIDER,
