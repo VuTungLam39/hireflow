@@ -70,7 +70,7 @@ services:
 
       # AI
       - key: LLM_PROVIDERS
-        value: gemini,groq
+        value: gemini
       - key: AI_PROMPT_VERSION
         value: v3
       - key: GEMINI_API_KEY
@@ -79,10 +79,6 @@ services:
         sync: false
       - key: GEMINI_MODEL_FALLBACK
         value: gemini-3.5-flash-lite
-      - key: GROQ_API_KEY
-        sync: false
-      - key: GROQ_MODEL
-        sync: false
       - key: EMBEDDING_PROVIDER
         value: gemini
       - key: EMBEDDING_DIM
