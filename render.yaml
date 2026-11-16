@@ -77,6 +77,8 @@ services:
         sync: false
       - key: GEMINI_MODEL
         sync: false
+      - key: GEMINI_MODEL_FALLBACK
+        value: gemini-3.5-flash-lite
       - key: GROQ_API_KEY
         sync: false
       - key: GROQ_MODEL
