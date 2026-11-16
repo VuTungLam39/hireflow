@@ -11,10 +11,19 @@ import { Button, Skeleton } from '@/components/ui'
 import { formatDateTime } from '@/lib/utils'
 import { useAuditLogs } from '../hooks/use-audit-logs'
 import { AUDIT_ACTION_LABEL, AUDIT_ACTIONS, describeAudit, formatIp } from '../audit-format'
-import type { AuditLogItem, AuditLogParams } from '../types'
+import type { AuditEntity, AuditLogItem, AuditLogParams } from '../types'
 import { useDetailLink } from '@/hooks/use-detail'
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/
+
+const ENTITY_LABEL: Record<AuditEntity, string> = {
+  cv_file: 'File CV',
+  application: 'Hồ sơ',
+  candidate: 'Ứng viên',
+  user: 'Người dùng',
+  company: 'Công ty',
+  media: 'Ảnh',
+}
 
 function Target({ log }: { log: AuditLogItem }) {
   const detailLink = useDetailLink()
@@ -36,7 +45,7 @@ function Target({ log }: { log: AuditLogItem }) {
   }
   return (
     <span className="text-ink-2">
-      {log.entity === 'user' ? 'Người dùng' : 'File CV'} {short}
+      {ENTITY_LABEL[log.entity]} {short}
     </span>
   )
 }
