@@ -25,3 +25,17 @@ describe('interviewsApi.list', () => {
     expect(get.mock.calls[1][1]).toMatchObject({ params: { limit: 200, cursor: 'c1' } })
   })
 })
+
+describe('interviewsApi.suggestQuestions', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('BR-INT-04: sends no body, since Express rejects a "null" JSON body with 400', async () => {
+    const post = vi
+      .spyOn(api, 'post')
+      .mockResolvedValueOnce({ data: { data: { items: [], cached: false } } })
+
+    await interviewsApi.suggestQuestions('iv-1')
+
+    expect(post.mock.calls[0][1]).toBeUndefined()
+  })
+})

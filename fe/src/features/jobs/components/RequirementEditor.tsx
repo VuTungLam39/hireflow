@@ -54,7 +54,8 @@ export function RequirementEditor({
   const confirm = (id: string) => setConfirmed((s) => (s.has(id) ? s : new Set(s).add(id)))
 
   const suggest = async () => {
-    const suggestions = await onSuggest()
+    const suggestions = await onSuggest().catch(() => null)
+    if (!suggestions) return
     replace(suggestions.map(toRequirementRow))
     setConfirmed(new Set())
     setFromSuggest(true)
