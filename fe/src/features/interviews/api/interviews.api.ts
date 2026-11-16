@@ -16,7 +16,7 @@ export const interviewsApi = {
     (
       await api.post<ApiResponse<{ items: QuestionSuggestion[]; cached: boolean }>>(
         `/interviews/${id}/question-suggestions`,
-        null,
+        undefined,
         { timeout: SLOW_TIMEOUT_MS },
       )
     ).data.data,

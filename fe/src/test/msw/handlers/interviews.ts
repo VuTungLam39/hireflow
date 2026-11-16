@@ -232,6 +232,8 @@ export const interviewHandlers = [
   // Mở rộng MVP 2 – E5 · BR-INT-04
   http.post(api('/interviews/:id/question-suggestions'), async ({ request, params }) => {
     await delay()
+    if ((await request.clone().text()) === 'null')
+      return fail(400, 'BAD_REQUEST', 'Unexpected token n')
     const user = authorize(request, Permission.ApplicationRead)
     if (user instanceof Response) return user
     const iv = db.interviews.find((i) => i.id === params.id)
