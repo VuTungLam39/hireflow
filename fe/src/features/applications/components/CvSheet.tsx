@@ -26,12 +26,10 @@ export function CvSheet({
 
   useEffect(() => {
     if (!activeId) return
-    const box = boxRef.current
-    const mark = box?.querySelector<HTMLElement>(`[data-mark="${activeId}"]`)
-    if (!box || !mark) return
-    const top = mark.offsetTop - box.clientHeight / 3
+    const mark = boxRef.current?.querySelector<HTMLElement>(`[data-mark="${activeId}"]`)
+    if (!mark) return
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    box.scrollTo?.({ top, behavior: reduce ? 'auto' : 'smooth' })
+    mark.scrollIntoView?.({ block: 'center', behavior: reduce ? 'auto' : 'smooth' })
   }, [activeId])
 
   return (
