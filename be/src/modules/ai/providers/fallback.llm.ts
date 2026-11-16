@@ -8,6 +8,7 @@ import {
 } from '../ai.types.js';
 
 export const FALLBACK_COOLDOWN_MS = 60_000;
+export const JSON_ATTEMPT_TIMEOUT_MS = 10_000;
 
 export class FallbackLlmProvider implements LlmProvider {
   private readonly logger = new Logger('Llm:fallback');
@@ -16,6 +17,7 @@ export class FallbackLlmProvider implements LlmProvider {
   constructor(
     private readonly providers: LlmProvider[],
     private readonly cooldownMs = FALLBACK_COOLDOWN_MS,
+    private readonly attemptTimeoutMs = JSON_ATTEMPT_TIMEOUT_MS,
   ) {
     if (!providers.length) throw new Error('FallbackLlmProvider needs at least one provider');
   }
@@ -26,14 +28,30 @@ export class FallbackLlmProvider implements LlmProvider {
 
   async generateJson(request: JsonRequest): Promise<JsonResult> {
     let lastError: unknown;
-    for (const provider of this.available()) {
+    const chain = this.available();
+    for (const [index, provider] of chain.entries()) {
+      const attempt =
+        index < chain.length - 1 ? AbortSignal.timeout(this.attemptTimeoutMs) : undefined;
+      const signal =
+        attempt && request.signal
+          ? AbortSignal.any([request.signal, attempt])
+          : (attempt ?? request.signal);
       try {
-        const result = await provider.generateJson(request);
+        const result = await provider.generateJson({ ...request, signal });
         this.downUntil.delete(provider);
         return result;
       } catch (error) {
-        if (!this.canFallBack(error, provider)) throw error;
-        lastError = error;
+        const slow = attempt?.aborted && !request.signal?.aborted;
+        const reason = slow
+          ? new LlmError(
+              `No answer within ${this.attemptTimeoutMs}ms`,
+              provider.name,
+              'UNAVAILABLE',
+              true,
+            )
+          : error;
+        if (!this.canFallBack(reason, provider)) throw error;
+        lastError = reason;
       }
     }
     throw lastError;

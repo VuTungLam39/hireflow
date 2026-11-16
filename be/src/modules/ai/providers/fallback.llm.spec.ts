@@ -111,6 +111,70 @@ describe('FallbackLlmProvider', () => {
     expect(b.generateJson).toHaveBeenCalledTimes(2);
   });
 
+  it('gives up on a hanging provider after the attempt timeout and marks it down', async () => {
+    const hanging: LlmProvider = {
+      name: 'gemini',
+      generateJson: vi.fn(
+        ({ signal }: JsonRequest) =>
+          new Promise<never>((_, reject) =>
+            signal?.addEventListener('abort', () => reject(signal.reason)),
+          ),
+      ),
+      streamText: () => ({ [Symbol.asyncIterator]: () => ({ next: () => new Promise(() => {}) }) }),
+    };
+    const backup = ok('lite');
+    const chain = new FallbackLlmProvider([hanging, backup], 60_000, 30);
+
+    const result = await chain.generateJson({ ...request, signal: AbortSignal.timeout(1_000) });
+    expect(result.provider).toBe('lite');
+
+    await chain.generateJson(request);
+    expect(hanging.generateJson).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not cut the last provider short and stops when the caller aborts', async () => {
+    const slow: LlmProvider = {
+      ...ok('lite'),
+      generateJson: vi.fn(async (r: JsonRequest) => {
+        expect(r.signal).toBeUndefined();
+        await new Promise((res) => setTimeout(res, 50));
+        return {
+          data: {},
+          provider: 'lite',
+          model: 'm',
+          usage: { inputTokens: 1, outputTokens: 1 },
+        };
+      }),
+    };
+    await expect(
+      new FallbackLlmProvider(
+        [failing('gemini', rateLimited('gemini')), slow],
+        60_000,
+        10,
+      ).generateJson(request),
+    ).resolves.toMatchObject({ provider: 'lite' });
+
+    const caller = new AbortController();
+    const aborted = new Error('aborted by caller');
+    const listening: LlmProvider = {
+      ...ok('gemini'),
+      generateJson: vi.fn(
+        ({ signal }: JsonRequest) =>
+          new Promise<never>((_, reject) =>
+            signal?.addEventListener('abort', () => reject(aborted)),
+          ),
+      ),
+    };
+    const next = ok('lite');
+    const pending = new FallbackLlmProvider([listening, next], 60_000, 1_000).generateJson({
+      ...request,
+      signal: caller.signal,
+    });
+    caller.abort();
+    await expect(pending).rejects.toBe(aborted);
+    expect(next.generateJson).not.toHaveBeenCalled();
+  });
+
   it('names the chain in order', () => {
     expect(new FallbackLlmProvider([ok('gemini'), ok('groq')]).name).toBe('gemini>groq');
   });
