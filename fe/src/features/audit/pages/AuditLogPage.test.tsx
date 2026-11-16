@@ -1,6 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react'
 import { setupServer } from 'msw/node'
 import { paths } from '@/routes/paths'
+import { db } from '@/test/msw/data'
 import { auditHandlers } from '@/test/msw/handlers/notifications'
 import { renderRouteAs } from '@/test/render'
 import { describeAudit } from '../audit-format'
@@ -23,6 +24,22 @@ describe('AuditLogPage', () => {
     expect(screen.getAllByText(/→/).length).toBeGreaterThan(0)
     expect(screen.getAllByText('IP 203.0.113.10').length).toBeGreaterThan(0)
     expect(screen.getAllByRole('link', { name: /^Hồ sơ / }).length).toBeGreaterThan(0)
+  })
+
+  it('names a company image as an image, not a CV file', async () => {
+    db.auditLogs.unshift({
+      id: 'audit-media',
+      actorId: null,
+      action: 'COMPANY_MEDIA_ADDED',
+      entity: 'media',
+      entityId: 'abcdef12-0000',
+      metadata: {},
+      ip: null,
+      requestId: null,
+      createdAt: new Date().toISOString(),
+    })
+    renderPage()
+    expect(await screen.findByText('Ảnh abcdef12')).toBeInTheDocument()
   })
 
   it('filters by action from the URL and shows an empty state', async () => {
