@@ -16,6 +16,7 @@ const DEMO_ACCOUNTS = [
   { label: 'HM Phát triển phần mềm', email: 'hm.eng@hireflow.dev' },
   { label: 'HM Kinh doanh', email: 'hm.sales@hireflow.dev' },
   { label: 'HM Mobile', email: 'phuoc.le@hireflow.dev' },
+  { label: 'Interviewer', email: 'interviewer@hireflow.dev' },
 ]
 
 export default function LoginPage() {

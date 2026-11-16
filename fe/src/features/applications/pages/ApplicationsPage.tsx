@@ -95,9 +95,10 @@ export default function ApplicationsPage() {
 
   const activeView =
     APPLICATION_VIEWS.find((v) => {
-      const p = v.params as Record<string, unknown>
-      return FILTER_KEYS.filter((k) => k !== 'search' && k !== 'jobId').every(
-        (k) => (params[k] ?? undefined) === (p[k] ?? undefined),
+      const entries = Object.entries(v.params)
+      return (
+        entries.length > 0 &&
+        entries.every(([k, value]) => params[k as keyof typeof params] === value)
       )
     })?.id ?? 'all'
 

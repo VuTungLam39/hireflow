@@ -28,6 +28,15 @@ export const ChatMessageView = memo(function ChatMessageView({
   const numbering = new Map(
     message.sources.map((s, i) => [sourceKey(s.candidateId, s.chunkId), { index: i + 1, s }]),
   )
+  const segments = parseCitations(message.content)
+  const cited = new Set(
+    segments.flatMap((seg) =>
+      seg.type === 'citation' ? [sourceKey(seg.candidateId, seg.chunkId)] : [],
+    ),
+  )
+  const citedSources = message.sources
+    .map((s, i) => ({ s, index: i + 1 }))
+    .filter(({ s }) => cited.has(sourceKey(s.candidateId, s.chunkId)))
 
   return (
     <article className="space-y-3" aria-busy={message.status === 'streaming'}>
@@ -44,7 +53,7 @@ export const ChatMessageView = memo(function ChatMessageView({
               : 'Đang tìm trong kho CV…'}
           </span>
         ) : (
-          parseCitations(message.content).map((seg, i) => {
+          segments.map((seg, i) => {
             if (seg.type === 'text') return <span key={i}>{seg.text}</span>
             const source = numbering.get(sourceKey(seg.candidateId, seg.chunkId))
             if (!source) return null
@@ -69,18 +78,18 @@ export const ChatMessageView = memo(function ChatMessageView({
         )}
       </div>
 
-      {message.sources.length > 0 && message.status === 'done' && (
+      {citedSources.length > 0 && message.status === 'done' && (
         <div>
           <p className="type-overline mb-1.5">Nguồn</p>
           <ol className="divide-line-soft border-line-soft divide-y border-y">
-            {message.sources.map((s, i) => (
+            {citedSources.map(({ s, index }) => (
               <li key={sourceKey(s.candidateId, s.chunkId)}>
                 <button
                   type="button"
-                  onClick={() => onCite(s, i + 1)}
+                  onClick={() => onCite(s, index)}
                   className="hover:bg-canvas flex w-full items-baseline gap-3 px-1 py-2 text-left transition-colors"
                 >
-                  <span className="text-brand num text-xs font-semibold">[{i + 1}]</span>
+                  <span className="text-brand num text-xs font-semibold">[{index}]</span>
                   <span className="min-w-0">
                     <span className="type-body-strong">{s.candidateName}</span>
                     <span className="type-caption line-clamp-1 block">“{s.excerpt}”</span>
