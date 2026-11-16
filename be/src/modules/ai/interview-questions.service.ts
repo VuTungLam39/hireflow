@@ -119,7 +119,10 @@ export class InterviewQuestionSuggester {
       }
       return suggestions;
     } catch (error) {
-      const reason = error instanceof LlmError ? `${error.code}: ${error.message}` : String(error);
+      const reason =
+        error instanceof LlmError
+          ? `${error.provider} ${error.code}: ${error.message}`
+          : String(error);
       this.logger.warn(`interview-questions failed: ${reason}`);
       throw new BusinessException(
         ErrorCode.AiUnavailable,

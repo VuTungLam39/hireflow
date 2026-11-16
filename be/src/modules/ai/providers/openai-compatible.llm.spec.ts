@@ -134,6 +134,23 @@ describe('OpenAICompatibleLlmProvider', () => {
       expect(error).toMatchObject({ code, retryable, status, provider: 'gemini' });
     });
 
+    it.each([
+      [404, '{"error":{"code":"model_not_found"}}'],
+      [
+        400,
+        '{"error":{"message":"The model has been decommissioned","code":"model_decommissioned"}}',
+      ],
+    ])(
+      'treats a retired or unknown model (HTTP %i) as retryable so the next model answers',
+      async (status, body) => {
+        fetchMock.mockResolvedValue(new Response(body, { status }));
+        const error = await new OpenAICompatibleLlmProvider(config())
+          .generateJson(jsonRequest)
+          .catch((e: unknown) => e as LlmError);
+        expect(error).toMatchObject({ code: 'UNAVAILABLE', retryable: true, status });
+      },
+    );
+
     it('treats a network failure as retryable', async () => {
       fetchMock.mockRejectedValue(new TypeError('fetch failed'));
       const error = await new OpenAICompatibleLlmProvider(config())
