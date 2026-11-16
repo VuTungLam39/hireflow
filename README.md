@@ -232,7 +232,7 @@ docker compose exec api node dist/database/seeds/seed.js        # dữ liệu de
 
 Mở http://localhost:8080 và đăng nhập bằng [tài khoản demo](#4-đăng-nhập). Container API tự chạy migration khi khởi động.
 
-- Mặc định dùng **LLM giả** (điểm và gợi ý tiêu chí có thật nhưng do code giả lập sinh ra). Muốn dùng AI thật: tạo `be/.env` từ `be/.env.example`, điền `LLM_PROVIDERS=gemini,groq`, `GEMINI_API_KEY`, `EMBEDDING_PROVIDER=gemini` rồi `docker compose up -d api`.
+- Mặc định dùng **LLM giả** (điểm và gợi ý tiêu chí có thật nhưng do code giả lập sinh ra). Muốn dùng AI thật: tạo `be/.env` từ `be/.env.example`, điền `LLM_PROVIDERS=gemini`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_MODEL_FALLBACK`, `EMBEDDING_PROVIDER=gemini` rồi `docker compose up -d api`.
 - Đổi cổng bằng `WEB_PORT`, `API_HOST_PORT` (mặc định 8080 và 3000).
 - Giao diện trong container là bản build chạy CSR; prerender trang công khai chỉ chạy khi build có API (xem [rendering.md](fe/docs/rendering.md)).
 - Dừng: `docker compose down` (giữ dữ liệu), `docker compose down -v` (xoá cả dữ liệu).
@@ -341,7 +341,7 @@ Trình duyệt ──► Vercel (hireflow-gray-zeta.vercel.app)
                                                            ├─ Neon            PostgreSQL + pgvector
                                                            ├─ Render Key Value Redis cho BullMQ
                                                            ├─ Backblaze B2    file CV (S3)
-                                                           └─ Gemini / Groq   LLM + embedding
+                                                           └─ Gemini          LLM (chính → lite) + embedding
 ```
 
 FE và API dùng chung domain Vercel, vì cookie refresh token đặt `SameSite=Strict`. Gọi thẳng `*.onrender.com` từ trình duyệt thì sẽ không đăng nhập lại được sau khi tải lại trang.
@@ -393,8 +393,7 @@ Các file cấu hình: [`render.yaml`](render.yaml) (Blueprint của Render) và
    | --- | --- |
    | `DATABASE_URL` | Chuỗi kết nối Neon ở bước 1 |
    | `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Bước 2 |
-   | `GEMINI_API_KEY`, `GEMINI_MODEL` | Key ở https://aistudio.google.com |
-   | `GROQ_API_KEY`, `GROQ_MODEL` | Key ở https://console.groq.com (dự phòng khi Gemini lỗi). **Bắt buộc** khi `LLM_PROVIDERS` có `groq` (mặc định `gemini,groq`): thiếu thì API không khởi động. Không dùng Groq thì sửa `LLM_PROVIDERS=gemini` |
+   | `GEMINI_API_KEY`, `GEMINI_MODEL` | Key ở https://aistudio.google.com. `LLM_PROVIDERS=gemini`, model dự phòng `GEMINI_MODEL_FALLBACK` đã khai báo trong `render.yaml`. Groq không dùng trên production: đã tắt `llama-3.3-70b-versatile` (16/08/2026) và trả 403 "Access denied" khi gọi từ mạng dev ở Việt Nam (thử 16/11/2026); muốn bật lại thì thêm `groq` vào `LLM_PROVIDERS` cùng `GROQ_API_KEY`, `GROQ_MODEL` |
    | `CORS_ORIGINS` | **Bắt buộc** (thiếu thì API không khởi động): domain Vercel dự kiến, ví dụ `https://hireflow.vercel.app`; nhiều domain ngăn cách bằng dấu phẩy |
 
    Các biến còn lại đã có sẵn trong `render.yaml`. `JWT_ACCESS_SECRET` do Render tự sinh, còn `REDIS_URL` lấy từ `hireflow-redis` qua mạng nội bộ.
@@ -477,7 +476,7 @@ Neon giữ lịch sử thay đổi trong một khoảng thời gian (gói free n
 
 | Nơi đặt | Biến |
 | --- | --- |
-| Render `hireflow-api` | `NODE_ENV`, `CORS_ORIGINS`, `TRUST_PROXY`, `DEBUG_CLIENT_IP`, `DATABASE_URL`, `DB_SSL`, `REDIS_URL`, `JWT_*`, `STORAGE_DRIVER`, `S3_*`, `LLM_PROVIDERS`, `GEMINI_*`, `GROQ_*`, `EMBEDDING_*`, `CV_RETENTION_MONTHS`, `PRERENDER_DEPLOY_HOOK_URL` |
+| Render `hireflow-api` | `NODE_ENV`, `CORS_ORIGINS`, `TRUST_PROXY`, `DEBUG_CLIENT_IP`, `DATABASE_URL`, `DB_SSL`, `REDIS_URL`, `JWT_*`, `STORAGE_DRIVER`, `S3_*`, `LLM_PROVIDERS`, `GEMINI_*`, `EMBEDDING_*`, `CV_RETENTION_MONTHS`, `PRERENDER_DEPLOY_HOOK_URL` |
 | Render `hireflow-redis` | Không có. `maxmemoryPolicy: noeviction` để BullMQ không bị mất key |
 | Vercel | `PRERENDER_API_URL` (tuỳ chọn, nên đặt). URL API cho rewrite nằm trong `fe/vercel.json` |
 | Máy local khi seed | Xem bước 4 |
