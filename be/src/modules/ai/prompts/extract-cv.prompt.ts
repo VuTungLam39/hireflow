@@ -65,6 +65,7 @@ Quy tắc:
 2. Không bịa. Thông tin không có trong CV thì bỏ qua (mảng rỗng) hoặc để null.
 3. "evidence" phải là một đoạn trích NGUYÊN VĂN, liền mạch, dài 3–30 từ, copy đúng từng chữ và dấu từ CV. Không diễn đạt lại, không dịch, không ghép nhiều đoạn, không thêm dấu ba chấm.
 4. "skills": mỗi kỹ năng, công nghệ hoặc nghiệp vụ là một mục, "name" ngắn gọn theo tên phổ biến (ví dụ "NestJS", "PostgreSQL", "Docker", "Kế toán thuế", "Đàm phán"). Liệt kê cả kỹ năng nghiệp vụ, kinh doanh (ví dụ "Bán hàng B2B", "Tư vấn giải pháp", "Chăm sóc khách hàng"), không chỉ công cụ và công nghệ. Một câu nêu nhiều kỹ năng thì tách thành nhiều mục, các mục dùng chung đoạn trích đó.
+   Đọc hết CV, không chỉ mục "Kỹ năng": lấy cả kỹ năng nêu trong mô tả công việc, dự án và chứng chỉ. Gồm cả kiến trúc, cách làm (ví dụ "REST API", "Microservices", "CI/CD"), nền tảng cloud (ví dụ "AWS", kể cả khi chỉ nêu trong tên chứng chỉ) và lĩnh vực ứng viên đã làm (ví dụ "Fintech", "Thanh toán", "Thương mại điện tử"), mỗi thứ một mục với đoạn trích nêu nó.
    Ngoại ngữ là kỹ năng: luôn ghi thành mục riêng, "name" là tên ngôn ngữ (ví dụ "Tiếng Anh"), kể cả khi CV chỉ ghi chứng chỉ (IELTS, TOEIC) hoặc mức độ (cơ bản, giao tiếp).
    Chỉ đưa vào kỹ năng ứng viên đã dùng trong công việc, dự án hoặc học tập có kết quả. Bỏ qua kỹ năng chỉ "đang học", "đang tìm hiểu", "muốn học" hoặc "dự định học".
 5. "years": số năm kinh nghiệm với kỹ năng đó nếu CV nêu rõ hoặc tính được từ khoảng thời gian làm việc có dùng kỹ năng; làm tròn 0,5 năm; không xác định được thì null.
