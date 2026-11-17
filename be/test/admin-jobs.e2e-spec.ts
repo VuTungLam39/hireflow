@@ -188,7 +188,9 @@ describe('Admin AI queue (e2e)', () => {
 
   it('only Admin (ops:manage) can use the queue endpoints', async () => {
     await as('hr', request(server()).get('/api/v1/admin/jobs/failed')).expect(403);
-    await as('hr', request(server()).get('/api/v1/admin/queues')).expect(403);
+    // KH MVP 3 8.2: số đếm hàng đợi toàn hệ thống chỉ cho Quản trị sàn
+    await as('admin', request(server()).get('/api/v1/platform/queues')).expect(403);
+    await as('admin', request(server()).get('/api/v1/admin/queues')).expect(404);
     await as('hr', request(server()).post(`/api/v1/admin/jobs/${apps.failed}/retry`)).expect(403);
     await as('hr', request(server()).post('/api/v1/admin/jobs/retry-all')).expect(403);
     await request(server()).get('/api/v1/admin/jobs/failed').expect(401);
@@ -259,24 +261,5 @@ describe('Admin AI queue (e2e)', () => {
     await queue.removeJobScheduler(MAINTENANCE_TASK.anonymizeExpired);
     await app.get(MaintenanceService).heal();
     expect(await queue.getJobScheduler(MAINTENANCE_TASK.anonymizeExpired)).toBeTruthy();
-  });
-
-  it('reports job counts for every pipeline queue', async () => {
-    const res = await as('admin', request(server()).get('/api/v1/admin/queues')).expect(200);
-    expect(res.body.data.map((q: { name: string }) => q.name)).toEqual([
-      'parse-cv',
-      'extract-cv',
-      'score',
-      'embed-cv',
-    ]);
-    for (const q of res.body.data) {
-      expect(q).toEqual({
-        name: q.name,
-        waiting: expect.any(Number),
-        active: expect.any(Number),
-        delayed: expect.any(Number),
-        failed: expect.any(Number),
-      });
-    }
   });
 });

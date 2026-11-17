@@ -52,6 +52,7 @@ import { BENEFITS_TEXT, DEMO_BENEFITS, JOB_DETAILS, JOBS, type DemoJob } from '.
 import { vnToday } from '../../../common/utils/vn-date.js';
 import { at, DEPARTMENTS, SESSIONS, USERS } from './org.js';
 import { seedTenants } from './tenants.js';
+import { DEMO_PLATFORM_ADMIN_EMAIL, ensurePlatformAdmin } from '../platform-admin.js';
 import { DEFAULT_ORGANIZATION_ID } from '../../../modules/organizations/entities/organization.entity.js';
 
 const [PDF_MIME, DOCX_MIME] = CV_MIME_TYPES;
@@ -136,6 +137,7 @@ export async function seedDemo(
       }
       await seedCompany(manager, images, userIds.get('admin')!);
       await seedTenants(manager, options.password, demoId);
+      await ensurePlatformAdmin(manager, DEMO_PLATFORM_ADMIN_EMAIL, options.password);
     });
   } catch (error) {
     await Promise.allSettled(storedKeys.map((k) => storage.remove(k)));

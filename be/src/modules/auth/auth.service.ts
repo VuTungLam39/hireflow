@@ -56,6 +56,16 @@ export class AuthService {
       );
     }
 
+    // BR-ACC-09: chỉ báo sau khi mật khẩu đúng
+    if (!user.emailVerifiedAt) {
+      this.loginFailed(dto.email, 'email_not_verified', meta);
+      throw new BusinessException(
+        ErrorCode.EmailNotVerified,
+        'Email is not verified',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
     const full = await this.usersService.findById(user.id);
     // BR-ORG-04
     if (full.organization && !canSignIn(full.organization.status)) {

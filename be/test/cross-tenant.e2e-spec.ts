@@ -332,6 +332,7 @@ describe('Cross-tenant isolation (e2e)', () => {
       NotificationsController: { id: a.notification },
       UsersController: { id: a.hr },
       AdminJobsController: { applicationId: a.app },
+      PlatformController: { id: orgA },
     };
     return byController[route.controller]?.[param];
   };
