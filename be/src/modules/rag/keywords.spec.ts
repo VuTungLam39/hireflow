@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { searchKeywords } from './keywords.js';
 
 // F-SEARCH-01 · E1

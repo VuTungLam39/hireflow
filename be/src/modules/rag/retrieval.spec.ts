@@ -1,4 +1,3 @@
-import { describe, expect, it, vi } from 'vitest';
 import type { DataSource } from 'typeorm';
 import { Role } from '../../common/enums/role.enum.js';
 import { retrieveChunks, toVector } from './retrieval.js';
