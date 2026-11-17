@@ -4,7 +4,6 @@ import bcrypt from 'bcryptjs';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { DataSource, In } from 'typeorm';
-import { vi } from 'vitest';
 import { AppModule } from '../src/app.module.js';
 import { ApplicationSource } from '../src/common/enums/application-source.enum.js';
 import { ApplicationStatus } from '../src/common/enums/application-status.enum.js';

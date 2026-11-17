@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { ApplicationSource } from '../../common/enums/application-source.enum.js';
 import { ApplicationStatus } from '../../common/enums/application-status.enum.js';
 import { csvCell, csvRow, formatPhone, formatVnDateTime } from './application-export.js';

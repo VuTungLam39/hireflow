@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { buildExcerpt } from './excerpt.js';
 
 const marked = ({ text, highlights }: ReturnType<typeof buildExcerpt>) =>

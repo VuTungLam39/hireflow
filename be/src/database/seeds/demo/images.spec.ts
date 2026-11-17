@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { MediaKind } from '../../../modules/company/entities/media-file.entity.js';
 import { checkImage, GALLERY_MAX, MEDIA_MAX_BYTES } from '../../../modules/company/media.rules.js';
 import { companyImages } from './images.js';
