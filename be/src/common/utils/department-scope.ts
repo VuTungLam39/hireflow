@@ -4,6 +4,25 @@ import type { AuthUser } from '../interfaces/jwt-payload.interface.js';
 
 type ScopeUser = Pick<AuthUser, 'role' | 'departmentId'> & { id?: string };
 
+export type DataScope = 'all' | 'department' | 'assigned';
+
+// BR-ACC-07, BR-INT-02
+export function dataScope(role: Role): DataScope {
+  switch (role) {
+    case Role.Admin:
+    case Role.Hr:
+      return 'all';
+    case Role.HiringManager:
+      return 'department';
+    case Role.Interviewer:
+      return 'assigned';
+    default: {
+      const unhandled: never = role;
+      throw new Error(`Role has no data scope: ${String(unhandled)}`);
+    }
+  }
+}
+
 // BR-INT-02: cột để lọc "được giao" cho Interviewer; không truyền thì Interviewer không thấy gì
 export interface AssignedScope {
   applicationIdColumn?: string;
@@ -49,8 +68,9 @@ export function applyDepartmentScope<T extends ObjectLiteral>(
   departmentColumn: string,
   assigned?: AssignedScope,
 ): SelectQueryBuilder<T> {
-  if (user.role === Role.Interviewer) return applyInterviewerScope(qb, user, assigned);
-  if (user.role !== Role.HiringManager) return qb;
+  const scope = dataScope(user.role);
+  if (scope === 'all') return qb;
+  if (scope === 'assigned') return applyInterviewerScope(qb, user, assigned);
   if (!user.departmentId) return qb.andWhere('1 = 0');
   return qb.andWhere(`${departmentColumn} = :scopeDepartmentId`, {
     scopeDepartmentId: user.departmentId,
@@ -64,8 +84,9 @@ export function applyCandidateScope<T extends ObjectLiteral>(
   candidateIdColumn: string,
   assigned?: AssignedScope,
 ): SelectQueryBuilder<T> {
-  if (user.role === Role.Interviewer) return applyInterviewerScope(qb, user, assigned);
-  if (user.role !== Role.HiringManager) return qb;
+  const scope = dataScope(user.role);
+  if (scope === 'all') return qb;
+  if (scope === 'assigned') return applyInterviewerScope(qb, user, assigned);
   if (!user.departmentId) return qb.andWhere('1 = 0');
   return qb.andWhere(
     `EXISTS (SELECT 1 FROM "applications" "scope_app" INNER JOIN "jobs" "scope_job" ON "scope_job"."id" = "scope_app"."job_id" WHERE "scope_app"."candidate_id" = ${candidateIdColumn} AND "scope_app"."deleted_at" IS NULL AND "scope_job"."deleted_at" IS NULL AND "scope_job"."department_id" = :scopeDepartmentId)`,

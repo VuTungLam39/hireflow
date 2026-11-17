@@ -3,9 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import bcrypt from 'bcryptjs';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { PaginatedResult } from '../../common/dto/paginated-result.dto.js';
-import { Role } from '../../common/enums/role.enum.js';
+import type { Role } from '../../common/enums/role.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { FieldError } from '../../common/interfaces/api-response.interface.js';
+import { dataScope } from '../../common/utils/department-scope.js';
 import { escapeLike } from '../../common/utils/text.js';
 import { AuditService } from '../audit/audit.service.js';
 import {
@@ -187,7 +188,7 @@ export class UsersService {
     role: Role,
     departmentId: string | null | undefined,
   ): Promise<string | null> {
-    if (role !== Role.HiringManager) return null;
+    if (dataScope(role) !== 'department') return null;
     let error: FieldError | undefined;
     if (!departmentId) {
       error = { field: 'departmentId', messages: ['Hiring Manager phải thuộc một phòng ban'] };

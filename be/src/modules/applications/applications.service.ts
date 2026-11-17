@@ -14,11 +14,10 @@ import { AiStatus } from '../../common/enums/ai-status.enum.js';
 import { AppEvents } from '../../common/events/app-events.js';
 import { ApplicationSource } from '../../common/enums/application-source.enum.js';
 import { ApplicationStatus } from '../../common/enums/application-status.enum.js';
-import { Role } from '../../common/enums/role.enum.js';
 import { ScoreFlag } from '../../common/enums/score-flag.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
-import { applyDepartmentScope } from '../../common/utils/department-scope.js';
+import { applyDepartmentScope, dataScope } from '../../common/utils/department-scope.js';
 import { escapeLike } from '../../common/utils/text.js';
 import { vnToday } from '../../common/utils/vn-date.js';
 import { AuditService } from '../audit/audit.service.js';
@@ -113,7 +112,7 @@ export interface ApplicationDetailView extends Omit<ApplicationListItemView, 'ca
 }
 
 // BR-INT-02: Interviewer đánh giá độc lập, không thấy điểm và bằng chứng của AI
-const blind = (user: ScopeUser) => user.role === Role.Interviewer;
+const blind = (user: ScopeUser) => dataScope(user.role) === 'assigned';
 
 const constraintOf = (error: unknown) =>
   error instanceof QueryFailedError
@@ -157,7 +156,7 @@ export class ApplicationsService {
     user: ScopeUser,
   ): Promise<PaginatedResult<ApplicationListItemView>> {
     // BR-INT-02: Interviewer không lọc, sắp theo điểm AI
-    if (user.role === Role.Interviewer) {
+    if (dataScope(user.role) === 'assigned') {
       query = Object.assign(new QueryApplicationDto(), query, {
         sortBy: query.sortBy === 'score' ? 'createdAt' : query.sortBy,
         scoreMin: undefined,
@@ -297,7 +296,7 @@ export class ApplicationsService {
   // US-06, BR-ACC-07
   private filteredQuery(query: QueryApplicationDto, user: ScopeUser) {
     const qb = this.applicationsRepository.createQueryBuilder('app');
-    if (user.role === Role.HiringManager || user.role === Role.Interviewer) {
+    if (dataScope(user.role) !== 'all') {
       qb.innerJoin('app.job', 'job');
       applyDepartmentScope(qb, user, 'job.departmentId', { applicationIdColumn: '"app"."id"' });
     }
@@ -542,7 +541,10 @@ export class ApplicationsService {
       const app = byId.get(id);
       if (!app) {
         result.failed.push({ id, code: ErrorCode.NotFound });
-      } else if (user.role === Role.HiringManager && app.job!.departmentId !== user.departmentId) {
+      } else if (
+        dataScope(user.role) === 'department' &&
+        app.job!.departmentId !== user.departmentId
+      ) {
         result.failed.push({ id, code: ErrorCode.ScopeForbidden });
       } else if (app.status === dto.status) {
         result.unchanged.push(id);
@@ -929,7 +931,7 @@ export class ApplicationsService {
   // BR-ACC-07
   private async findWritable(id: string, user: ScopeUser): Promise<void> {
     // BR-INT-02, BR-APP-09
-    if (user.role === Role.Interviewer) return this.findReadable(id, user);
+    if (dataScope(user.role) === 'assigned') return this.findReadable(id, user);
     const app = await this.applicationsRepository
       .createQueryBuilder('app')
       .innerJoin('app.job', 'job')
@@ -937,7 +939,7 @@ export class ApplicationsService {
       .where('app.id = :id', { id })
       .getOne();
     if (!app) throw new NotFoundException('Application not found');
-    if (user.role === Role.HiringManager && app.job!.departmentId !== user.departmentId) {
+    if (dataScope(user.role) === 'department' && app.job!.departmentId !== user.departmentId) {
       throw new ForbiddenException({
         code: ErrorCode.ScopeForbidden,
         message: 'Application is outside your department',

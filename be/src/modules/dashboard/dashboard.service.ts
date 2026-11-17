@@ -3,9 +3,8 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { AiStatus } from '../../common/enums/ai-status.enum.js';
 import { ApplicationStatus } from '../../common/enums/application-status.enum.js';
-import { Role } from '../../common/enums/role.enum.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
-import { applyDepartmentScope } from '../../common/utils/department-scope.js';
+import { applyDepartmentScope, dataScope } from '../../common/utils/department-scope.js';
 import { vnToday } from '../../common/utils/vn-date.js';
 import { ApplicationStatusHistory } from '../applications/entities/application-status-history.entity.js';
 import { Application } from '../applications/entities/application.entity.js';
@@ -15,6 +14,12 @@ import type { QueryFunnelDto } from './dto/query-funnel.dto.js';
 import { buildFunnel, type FunnelView, type TransitionRow } from './funnel.js';
 
 type ScopeUser = Pick<AuthUser, 'role' | 'departmentId'>;
+
+// BR-ACC-07
+const cacheScope = (user: ScopeUser) => {
+  const scope = dataScope(user.role);
+  return scope === 'department' ? `dept:${user.departmentId}` : scope;
+};
 
 export interface DashboardSummaryView {
   totals: { applications: number; openJobs: number; processing: number; avgScore: number | null };
@@ -53,7 +58,7 @@ export class DashboardService {
 
   // FR-DASH, Kickoff 14, BR-ACC-07
   summary(user: ScopeUser): Promise<DashboardSummaryView> {
-    const scope = user.role === Role.HiringManager ? `dept:${user.departmentId}` : 'all';
+    const scope = cacheScope(user);
     return this.cache.getOrCompute(scope, () => this.compute(user));
   }
 
@@ -67,7 +72,7 @@ export class DashboardService {
     }
     if (query.jobId) await this.assertJobInScope(query.jobId, user);
 
-    const scope = user.role === Role.HiringManager ? `dept:${user.departmentId}` : 'all';
+    const scope = cacheScope(user);
     const key = `funnel:${scope}:${from}:${to}:${query.jobId ?? 'all'}`;
     return this.cache.getOrComputeFor(key, FUNNEL_CACHE_TTL_SECONDS, async () => {
       const qb = this.dataSource

@@ -8,9 +8,9 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, QueryFailedError } from 'typeorm';
-import { Role } from '../../common/enums/role.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
+import { dataScope } from '../../common/utils/department-scope.js';
 import {
   EMBEDDING_PROVIDER,
   type EmbeddingProvider,
@@ -162,7 +162,7 @@ export class RagService implements OnApplicationBootstrap {
   // F-SEARCH-01 · US-13 · BR-ACC-07: Kho ứng viên tìm theo kỹ năng trong CV, mỗi người một dòng
   async searchCv(query: string, user: ScopeUser): Promise<CvSearchResult> {
     const empty: CvSearchResult = { items: [], degraded: false };
-    if (user.role === Role.HiringManager && !user.departmentId) return empty;
+    if (dataScope(user.role) === 'department' && !user.departmentId) return empty;
     const keywords = searchKeywords(query);
     let vector: number[];
     let mode: RetrievalMode = 'hybrid';
@@ -203,7 +203,7 @@ export class RagService implements OnApplicationBootstrap {
   // US-08, BR-AI-10, BR-ACC-07
   async prepare(question: string, user: ScopeUser): Promise<ChatPlan> {
     const empty: ChatPlan = { question, sources: [], context: [] };
-    if (user.role === Role.HiringManager && !user.departmentId) return empty;
+    if (dataScope(user.role) === 'department' && !user.departmentId) return empty;
 
     let vector: number[];
     try {

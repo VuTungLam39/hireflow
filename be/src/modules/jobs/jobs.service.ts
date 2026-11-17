@@ -10,6 +10,7 @@ import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js'
 import {
   applyDepartmentScope,
   applyInterviewerScope,
+  dataScope,
 } from '../../common/utils/department-scope.js';
 import { escapeLike, normalizeKeywords } from '../../common/utils/text.js';
 import { CvPipelineService } from '../ai/pipeline/cv-pipeline.service.js';
@@ -32,7 +33,6 @@ import {
 } from './entities/job.entity.js';
 import { notExpiredSql, vnToday } from '../../common/utils/vn-date.js';
 import { PrerenderHookService } from './prerender-hook.service.js';
-import { Role } from '../../common/enums/role.enum.js';
 import { AppEvents } from '../../common/events/app-events.js';
 import { QueryPublicJobsDto } from './dto/query-public-jobs.dto.js';
 
@@ -422,7 +422,7 @@ export class JobsService {
   // US-05
   async ranking(id: string, user: ScopeUser): Promise<RankingView> {
     // BR-INT-02
-    if (user.role === Role.Interviewer) throw new NotFoundException('Job not found');
+    if (dataScope(user.role) === 'assigned') throw new NotFoundException('Job not found');
     const job = await this.findScoped(id, user);
     const [requirements, applications] = await Promise.all([
       this.currentRequirements(job),
@@ -602,7 +602,7 @@ export class JobsService {
       .where('app.jobId IN (:...jobIds)', { jobIds })
       .groupBy('app.jobId');
     // BR-INT-02
-    if (user.role === Role.Interviewer) {
+    if (dataScope(user.role) === 'assigned') {
       applyInterviewerScope(qb, user, { applicationIdColumn: '"app"."id"' });
     }
     const rows = await qb.getRawMany<JobPipeline & { jobId: string }>();
