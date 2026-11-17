@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Can } from '@/components/shared'
 import { Button, Skeleton } from '@/components/ui'
 import { Permission } from '@/lib/permissions'
+import { formatDate } from '@/lib/utils'
 import type { EvidenceMarkInput } from '../lib/evidence'
 import type { ApplicationDetail } from '../types'
 import { CvSheet } from './CvSheet'
@@ -27,7 +28,8 @@ export function ScorePanel({
   const [cvTextOpen, setCvTextOpen] = useState(false)
   const matches = Object.fromEntries(app.breakdown.map((b) => [b.requirementId, b.match]))
   const outdated = app.scoredJdVersion !== null && app.scoredJdVersion !== app.job.jdVersion
-  const busy = app.aiStatus === 'PENDING' || app.aiStatus === 'PROCESSING'
+  const waiting = app.aiStatus === 'PENDING' && !!app.aiWaitingUntil
+  const busy = !waiting && (app.aiStatus === 'PENDING' || app.aiStatus === 'PROCESSING')
 
   return (
     <div>
@@ -40,6 +42,17 @@ export function ScorePanel({
           <p className="type-body mt-3">
             <span className="text-ink font-medium">Đang đọc CV</span> · thường mất dưới 1 phút.
             Trang tự cập nhật khi xong.
+          </p>
+        </div>
+      )}
+
+      {waiting && (
+        // US-25
+        <div role="status" className="bg-warn-soft rounded-sm px-4 py-3">
+          <p className="text-ink type-subheading">Đang chờ lượt đọc CV của ngày mai</p>
+          <p className="type-body mt-0.5">
+            Công ty đã dùng hết lượt đọc CV hôm nay. Hồ sơ vẫn được nhận và sẽ được chấm sau 0 giờ
+            ngày {formatDate(app.aiWaitingUntil)}.
           </p>
         </div>
       )}

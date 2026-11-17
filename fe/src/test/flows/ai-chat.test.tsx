@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import ChatPage from '@/features/ai-chat/pages/ChatPage'
@@ -7,7 +8,7 @@ import { paths } from '@/routes/paths'
 import { useAuthStore } from '@/stores/auth.store'
 import { db } from '@/test/msw/data'
 import { allHandlers } from '@/test/msw/handlers'
-import { tokenFor, toUser } from '@/test/msw/http'
+import { api, tokenFor, toUser } from '@/test/msw/http'
 
 const server = setupServer(...allHandlers)
 beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
@@ -38,4 +39,31 @@ describe('Hỏi kho CV', () => {
     expect(screen.getAllByRole('button', { name: /^Nguồn \d+:/ }).length).toBeGreaterThan(0)
     expect(document.querySelector('[aria-live]')).toBeNull()
   }, 15000)
+
+  // BR-AI-11: lỗi JSON trước khi stream bắt đầu hiện đúng câu tiếng Việt
+  it('tells the user the company used up today’s questions (429 AI_QUOTA_EXCEEDED)', async () => {
+    server.use(
+      http.post(api('/ai/chat'), () =>
+        HttpResponse.json(
+          { success: false, statusCode: 429, code: 'AI_QUOTA_EXCEEDED', message: 'quota' },
+          { status: 429 },
+        ),
+      ),
+    )
+    const row = db.users.find((u) => u.email === 'hr@hireflow.dev')!
+    useAuthStore.getState().setSession(toUser(row), tokenFor(row))
+    const router = createMemoryRouter([{ path: paths.aiChat, element: <ChatPage /> }], {
+      initialEntries: [paths.aiChat],
+    })
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /NestJS trên 2 năm/ }))
+    expect(
+      await screen.findByText(/Công ty đã dùng hết lượt hỏi kho CV và gợi ý trong hôm nay/),
+    ).toBeInTheDocument()
+    server.resetHandlers()
+  })
 })

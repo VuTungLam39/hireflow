@@ -15,6 +15,7 @@ export type AuditAction =
   | 'ORG_REJECTED'
   | 'ORG_SUSPENDED'
   | 'ORG_REACTIVATED'
+  | 'ORG_AI_LIMITS_UPDATED'
 
 export type AuditEntity =
   'cv_file' | 'application' | 'candidate' | 'user' | 'company' | 'media' | 'organization'

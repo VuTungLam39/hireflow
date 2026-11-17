@@ -19,6 +19,7 @@ export const AUDIT_ACTION_LABEL: Record<AuditAction, string> = {
   ORG_REJECTED: 'Sàn từ chối công ty',
   ORG_SUSPENDED: 'Sàn khoá công ty',
   ORG_REACTIVATED: 'Sàn mở khoá công ty',
+  ORG_AI_LIMITS_UPDATED: 'Sàn đổi hạn mức lượt mỗi ngày',
 }
 
 export const AUDIT_ACTIONS = Object.keys(AUDIT_ACTION_LABEL) as AuditAction[]
@@ -72,6 +73,8 @@ export function describeAudit(log: AuditLogItem): string {
     }
     case 'APPLICATIONS_EXPORTED':
       return `${Number(m.rows).toLocaleString('vi-VN')} hồ sơ · Bộ lọc: ${describeFilters(m.filters)}`
+    case 'ORG_AI_LIMITS_UPDATED':
+      return `Đọc CV ${m.scoreFrom} → ${m.scoreTo} · Hỏi kho CV ${m.chatFrom} → ${m.chatTo}`
     case 'ORG_REJECTED':
     case 'ORG_SUSPENDED':
       return m.reason ? `Lý do: ${m.reason}` : ''

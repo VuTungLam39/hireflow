@@ -1,7 +1,13 @@
 import { api } from '@/lib/api-client'
 import type { ApiResponse, Paginated, PaginationParams } from '@/types/api'
 import type { OrganizationStatus } from '@/types/user'
-import type { OrgTransition, PlatformOrganization, QueueCounts } from '../types'
+import type {
+  AiLimitsInput,
+  OrgTransition,
+  PlatformOrganization,
+  PlatformOrganizationDetail,
+  QueueCounts,
+} from '../types'
 
 export interface OrganizationListParams extends PaginationParams {
   status?: OrganizationStatus
@@ -17,13 +23,23 @@ export const platformApi = {
   },
 
   get: async (id: string) =>
-    (await api.get<ApiResponse<PlatformOrganization>>(`/platform/organizations/${id}`)).data.data,
+    (await api.get<ApiResponse<PlatformOrganizationDetail>>(`/platform/organizations/${id}`)).data
+      .data,
 
   transition: async ({ id, kind, reason }: { id: string; kind: OrgTransition; reason?: string }) =>
     (
-      await api.patch<ApiResponse<PlatformOrganization>>(
+      await api.patch<ApiResponse<PlatformOrganizationDetail>>(
         `/platform/organizations/${id}/${kind}`,
         reason ? { reason } : {},
+      )
+    ).data.data,
+
+  // BR-AI-11, F-PLAT-02
+  updateAiLimits: async ({ id, ...input }: AiLimitsInput & { id: string }) =>
+    (
+      await api.patch<ApiResponse<PlatformOrganizationDetail>>(
+        `/platform/organizations/${id}/ai-limits`,
+        input,
       )
     ).data.data,
 

@@ -7,6 +7,7 @@ import { useCrumb } from '@/hooks/use-crumb'
 import { formatDate } from '@/lib/utils'
 import { paths } from '@/routes/paths'
 import type { OrganizationStatus } from '@/types/user'
+import { AiQuotaSection } from '../components/AiQuotaSection'
 import { OrgStatusBadge } from '../components/OrgStatusBadge'
 import { useOrganization, useOrgTransition } from '../hooks/use-platform'
 import type { OrgTransition } from '../types'
@@ -173,14 +174,14 @@ export default function PlatformCompanyDetailPage() {
             <Fact label="Người dùng">{count(org.userCount)}</Fact>
             <Fact label="Tin đang tuyển">{count(org.openJobs)}</Fact>
             <Fact label="Hồ sơ 30 ngày">{count(org.applications30d)}</Fact>
-            <Fact label="Lượt chấm CV mỗi ngày">{count(org.aiDailyScoreLimit)}</Fact>
-            <Fact label="Lượt hỏi kho CV mỗi ngày">{count(org.aiDailyChatLimit)}</Fact>
           </dl>
           <p className="type-caption">
             Quản trị sàn chỉ thấy số đếm, không xem tin, hồ sơ hay CV của công ty.
           </p>
         </section>
       </div>
+
+      <AiQuotaSection org={org} />
 
       <ConfirmDialog
         open={!!acting}

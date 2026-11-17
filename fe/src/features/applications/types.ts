@@ -38,6 +38,8 @@ export interface ApplicationDetail extends ApplicationListItem {
   /** Điểm được tính theo phiên bản tiêu chí nào */
   scoredJdVersion: number | null
   aiError: string | null
+  /** MVP 3 · BR-AI-11: công ty hết lượt đọc CV trong ngày, chờ tới thời điểm này */
+  aiWaitingUntil?: string | null
   /** null khi CV đã bị xoá do ẩn danh (BR-DATA-03) */
   cv: {
     fileId: string
