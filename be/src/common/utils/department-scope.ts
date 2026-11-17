@@ -1,10 +1,17 @@
+import { ForbiddenException } from '@nestjs/common';
 import type { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import { Role } from '../enums/role.enum.js';
 import type { AuthUser } from '../interfaces/jwt-payload.interface.js';
 
-type ScopeUser = Pick<AuthUser, 'role' | 'departmentId'> & { id?: string };
+type ScopeUser = Pick<AuthUser, 'role' | 'departmentId' | 'organizationId'> & { id?: string };
 
 export type DataScope = 'all' | 'department' | 'assigned';
+
+// BR-TEN-01
+export function orgIdOf(user: Pick<AuthUser, 'organizationId'>): string {
+  if (!user.organizationId) throw new ForbiddenException('No organization');
+  return user.organizationId;
+}
 
 // BR-ACC-07, BR-INT-02
 export function dataScope(role: Role): DataScope {
@@ -61,14 +68,16 @@ export function applyInterviewerScope<T extends ObjectLiteral>(
   return qb.andWhere('1 = 0');
 }
 
-// Backend Architecture 10.4, BR-ACC-07, BR-INT-02
+// Backend Architecture 10.4, BR-ACC-07, BR-INT-02, BR-TEN-02
 export function applyDepartmentScope<T extends ObjectLiteral>(
   qb: SelectQueryBuilder<T>,
   user: ScopeUser,
+  orgColumn: string,
   departmentColumn: string,
   assigned?: AssignedScope,
 ): SelectQueryBuilder<T> {
   const scope = dataScope(user.role);
+  qb.andWhere(`${orgColumn} = :scopeOrgId`, { scopeOrgId: orgIdOf(user) });
   if (scope === 'all') return qb;
   if (scope === 'assigned') return applyInterviewerScope(qb, user, assigned);
   if (!user.departmentId) return qb.andWhere('1 = 0');
@@ -77,14 +86,16 @@ export function applyDepartmentScope<T extends ObjectLiteral>(
   });
 }
 
-// BR-CAND-03, BR-INT-02
+// BR-CAND-03, BR-INT-02, BR-TEN-02
 export function applyCandidateScope<T extends ObjectLiteral>(
   qb: SelectQueryBuilder<T>,
   user: ScopeUser,
+  orgColumn: string,
   candidateIdColumn: string,
   assigned?: AssignedScope,
 ): SelectQueryBuilder<T> {
   const scope = dataScope(user.role);
+  qb.andWhere(`${orgColumn} = :scopeOrgId`, { scopeOrgId: orgIdOf(user) });
   if (scope === 'all') return qb;
   if (scope === 'assigned') return applyInterviewerScope(qb, user, assigned);
   if (!user.departmentId) return qb.andWhere('1 = 0');

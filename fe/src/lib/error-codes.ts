@@ -5,6 +5,7 @@
 export const ERROR_MESSAGES: Record<string, string> = {
   UNAUTHORIZED: 'Email hoặc mật khẩu không đúng',
   ACCOUNT_DISABLED: 'Tài khoản đã bị khoá',
+  ORG_DISABLED: 'Công ty của bạn đã bị khoá hoặc bị từ chối trên sàn',
   WRONG_PASSWORD: 'Mật khẩu hiện tại không đúng',
   REFRESH_TOKEN_REUSED: 'Phiên đăng nhập không còn hợp lệ, vui lòng đăng nhập lại',
   FORBIDDEN: 'Bạn không có quyền thực hiện thao tác này',
