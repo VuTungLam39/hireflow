@@ -12,6 +12,7 @@ import { MediaFile } from '../src/modules/company/entities/media-file.entity.js'
 import { Department } from '../src/modules/departments/entities/department.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { withOrg } from './fixtures.js';
 
 // Mở rộng MVP 2 – E3 · F-ORG-01, F-PUB-06, F-FILE-03 · BR-ORG-01, 02 · BR-MEDIA-01, 02
 describe('Company profile and public media (e2e)', () => {
@@ -68,20 +69,22 @@ describe('Company profile and public media (e2e)', () => {
 
     const dep = await ds
       .getRepository(Department)
-      .save({ name: `Company ${run}`, code: `CO_${run}`.toUpperCase() });
+      .save(withOrg({ name: `Company ${run}`, code: `CO_${run}`.toUpperCase() }));
     depId = dep.id;
     const passwordHash = await bcrypt.hash(password, 4);
-    await ds.getRepository(User).save([
-      { email: emails.hr, fullName: 'C HR', role: Role.Hr, passwordHash },
-      {
-        email: emails.hm,
-        fullName: 'C HM',
-        role: Role.HiringManager,
-        departmentId: dep.id,
-        passwordHash,
-      },
-      { email: emails.iv, fullName: 'C IV', role: Role.Interviewer, passwordHash },
-    ]);
+    await ds.getRepository(User).save(
+      withOrg([
+        { email: emails.hr, fullName: 'C HR', role: Role.Hr, passwordHash },
+        {
+          email: emails.hm,
+          fullName: 'C HM',
+          role: Role.HiringManager,
+          departmentId: dep.id,
+          passwordHash,
+        },
+        { email: emails.iv, fullName: 'C IV', role: Role.Interviewer, passwordHash },
+      ]),
+    );
     for (const who of Object.keys(emails) as Who[]) {
       const res = await request(server())
         .post('/api/v1/auth/login')
@@ -94,7 +97,7 @@ describe('Company profile and public media (e2e)', () => {
   afterAll(async () => {
     await ds.query('DELETE FROM media_files');
     await ds.query('DELETE FROM company_profile');
-    if (saved.media.length) await ds.getRepository(MediaFile).save(saved.media);
+    if (saved.media.length) await ds.getRepository(MediaFile).save(withOrg(saved.media));
     if (saved.profiles.length) await ds.getRepository(CompanyProfile).save(saved.profiles);
     await ds.getRepository(User).delete({ email: In(Object.values(emails)) });
     await ds.getRepository(Department).delete({ id: depId });

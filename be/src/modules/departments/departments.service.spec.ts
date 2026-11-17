@@ -7,6 +7,7 @@ import { Department } from './entities/department.entity.js';
 
 describe('DepartmentsService', () => {
   let service: DepartmentsService;
+  const ORG = 'org-1';
   const eng = { id: 'd-1', name: 'Kỹ thuật', code: 'ENG' } as Department;
 
   const repo = {
@@ -20,8 +21,9 @@ describe('DepartmentsService', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     repo.existsBy.mockResolvedValue(false);
-    repo.findOneBy.mockImplementation(async ({ id }: { id: string }) =>
-      id === eng.id || id === 'd-new' ? { ...eng, id } : null,
+    repo.findOneBy.mockImplementation(
+      async ({ id, organizationId }: { id: string; organizationId: string }) =>
+        organizationId === ORG && (id === eng.id || id === 'd-new') ? { ...eng, id } : null,
     );
     const moduleRef = await Test.createTestingModule({
       providers: [DepartmentsService, { provide: getRepositoryToken(Department), useValue: repo }],
@@ -34,7 +36,7 @@ describe('DepartmentsService', () => {
   it('returns userCount and jobCount with the department', async () => {
     vi.spyOn(service, 'userCounts').mockResolvedValue(new Map([[eng.id, 3]]));
     vi.spyOn(service, 'jobCounts').mockResolvedValue(new Map([[eng.id, 2]]));
-    expect(await service.findById(eng.id)).toMatchObject({
+    expect(await service.findById(eng.id, ORG)).toMatchObject({
       code: 'ENG',
       userCount: 3,
       jobCount: 2,
@@ -42,7 +44,11 @@ describe('DepartmentsService', () => {
   });
 
   it('throws NotFoundException for a missing department', async () => {
-    await expect(service.findById('nope')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.findById('nope', ORG)).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('hides a department of another organization (BR-TEN-02)', async () => {
+    await expect(service.findById(eng.id, 'org-2')).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it.each([
@@ -51,7 +57,7 @@ describe('DepartmentsService', () => {
   ])('rejects a duplicate %s with 409 CONFLICT on that field', async (field, message) => {
     repo.existsBy.mockImplementation(async (where: Record<string, unknown>) => field in where);
     const error = (await service
-      .create({ name: 'Kỹ thuật', code: 'ENG' })
+      .create({ name: 'Kỹ thuật', code: 'ENG' }, ORG)
       .catch((e: unknown) => e)) as BusinessException;
     expect(error.getStatus()).toBe(HttpStatus.CONFLICT);
     expect(error.getResponse()).toMatchObject({
@@ -61,22 +67,24 @@ describe('DepartmentsService', () => {
   });
 
   it('excludes itself when checking uniqueness on update', async () => {
-    await service.update(eng.id, { code: 'ENG' });
+    await service.update(eng.id, { code: 'ENG' }, ORG);
     expect(repo.existsBy).toHaveBeenCalledWith(
-      expect.objectContaining({ code: 'ENG', id: expect.anything() }),
+      expect.objectContaining({ code: 'ENG', organizationId: ORG, id: expect.anything() }),
     );
     expect(repo.save).toHaveBeenCalled();
   });
 
   describe('remove (BR-ACC-08)', () => {
     it('soft-deletes an empty department', async () => {
-      await service.remove(eng.id);
+      await service.remove(eng.id, ORG);
       expect(repo.softDelete).toHaveBeenCalledWith(eng.id);
     });
 
     it('refuses to delete a department that still has users', async () => {
       vi.spyOn(service, 'userCounts').mockResolvedValue(new Map([[eng.id, 1]]));
-      const error = (await service.remove(eng.id).catch((e: unknown) => e)) as BusinessException;
+      const error = (await service
+        .remove(eng.id, ORG)
+        .catch((e: unknown) => e)) as BusinessException;
       expect(error.getStatus()).toBe(HttpStatus.CONFLICT);
       expect(error.code).toBe(ErrorCode.DepartmentInUse);
       expect(repo.softDelete).not.toHaveBeenCalled();
@@ -84,7 +92,9 @@ describe('DepartmentsService', () => {
 
     it('refuses to delete a department that still has jobs', async () => {
       vi.spyOn(service, 'jobCounts').mockResolvedValue(new Map([[eng.id, 1]]));
-      const error = (await service.remove(eng.id).catch((e: unknown) => e)) as BusinessException;
+      const error = (await service
+        .remove(eng.id, ORG)
+        .catch((e: unknown) => e)) as BusinessException;
       expect(error.code).toBe(ErrorCode.DepartmentInUse);
     });
   });

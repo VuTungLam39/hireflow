@@ -12,6 +12,9 @@ import { User } from './entities/user.entity.js';
 import { UsersService } from './users.service.js';
 
 const DEPT = '7b0c9a52-3f1e-4d2a-9c11-0a1b2c3d4e5f';
+const ORG = 'org-1';
+const ADMIN = { id: 'admin-1', organizationId: ORG };
+const self = (id: string) => ({ id, organizationId: ORG });
 
 const queryBuilder = (result: () => unknown) => {
   const qb: Record<string, unknown> = {};
@@ -78,14 +81,14 @@ describe('UsersService', () => {
 
   describe('create', () => {
     it('hashes the password', async () => {
-      const user = await service.create(dto());
+      const user = await service.create(dto(), ADMIN);
       expect(user.passwordHash).not.toBe('Password123');
       expect(await bcrypt.compare('Password123', user.passwordHash)).toBe(true);
     });
 
     it('rejects a duplicate email with 409 EMAIL_EXISTS on the email field (BR-ACC-02)', async () => {
       repo.existsBy.mockResolvedValue(true);
-      const error = await errorOf(service.create(dto()));
+      const error = await errorOf(service.create(dto(), ADMIN));
       expect(error.getStatus()).toBe(HttpStatus.CONFLICT);
       expect(error.getResponse()).toMatchObject({
         code: ErrorCode.EmailExists,
@@ -94,18 +97,21 @@ describe('UsersService', () => {
     });
 
     it.each([Role.Admin, Role.Hr])('drops departmentId for %s (BR-ACC-03)', async (role) => {
-      const user = await service.create(dto({ role, departmentId: DEPT }));
+      const user = await service.create(dto({ role, departmentId: DEPT }), ADMIN);
       expect(user.departmentId).toBeNull();
       expect(departments.exists).not.toHaveBeenCalled();
     });
 
     it('keeps the department of a hiring manager', async () => {
-      const user = await service.create(dto({ role: Role.HiringManager, departmentId: DEPT }));
+      const user = await service.create(
+        dto({ role: Role.HiringManager, departmentId: DEPT }),
+        ADMIN,
+      );
       expect(user.departmentId).toBe(DEPT);
     });
 
     it('requires a department for a hiring manager (BR-ACC-03)', async () => {
-      const error = await errorOf(service.create(dto({ role: Role.HiringManager })));
+      const error = await errorOf(service.create(dto({ role: Role.HiringManager }), ADMIN));
       expect(error.getStatus()).toBe(HttpStatus.BAD_REQUEST);
       expect(error.getResponse()).toMatchObject({
         code: ErrorCode.ValidationFailed,
@@ -117,7 +123,7 @@ describe('UsersService', () => {
     it('rejects an unknown department', async () => {
       departments.exists.mockResolvedValue(false);
       const error = await errorOf(
-        service.create(dto({ role: Role.HiringManager, departmentId: DEPT })),
+        service.create(dto({ role: Role.HiringManager, departmentId: DEPT }), ADMIN),
       );
       expect(error.getResponse()).toMatchObject({
         errors: [{ field: 'departmentId', messages: ['Phòng ban không tồn tại'] }],
@@ -129,6 +135,7 @@ describe('UsersService', () => {
     beforeEach(() => {
       stored = {
         id: 'u-1',
+        organizationId: ORG,
         email: 'hm@b.com',
         role: Role.HiringManager,
         departmentId: DEPT,
@@ -137,9 +144,10 @@ describe('UsersService', () => {
     });
 
     it('clears the department when a hiring manager becomes HR', async () => {
-      const user = await service.update('u-1', { role: Role.Hr }, 'admin-1');
+      const user = await service.update('u-1', { role: Role.Hr }, ADMIN);
       expect(user).toMatchObject({ role: Role.Hr, departmentId: null });
       expect(audit.record).toHaveBeenCalledWith({
+        organizationId: ORG,
         actorId: 'admin-1',
         action: 'USER_UPDATED',
         entity: 'user',
@@ -153,42 +161,61 @@ describe('UsersService', () => {
       });
     });
 
+    it('hides a user of another organization (BR-TEN-02)', async () => {
+      await expect(
+        service.update('u-1', { fullName: 'X' }, { id: 'admin-9', organizationId: 'org-2' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
     it('keeps the current department when only the name changes', async () => {
-      const user = await service.update('u-1', { fullName: 'Tên mới' }, 'admin-1');
+      const user = await service.update('u-1', { fullName: 'Tên mới' }, ADMIN);
       expect(user).toMatchObject({ fullName: 'Tên mới', departmentId: DEPT });
       expect(audit.record).not.toHaveBeenCalled();
     });
 
     it('rejects removing the department of a hiring manager', async () => {
-      const error = await errorOf(service.update('u-1', { departmentId: null }, 'admin-1'));
+      const error = await errorOf(service.update('u-1', { departmentId: null }, ADMIN));
       expect(error.getResponse()).toMatchObject({ errors: [{ field: 'departmentId' }] });
     });
 
     it('re-hashes a new password and signs the user out everywhere (BR-ACC-06)', async () => {
-      const user = await service.update('u-1', { password: 'NewPass123' }, 'admin-1');
+      const user = await service.update('u-1', { password: 'NewPass123' }, ADMIN);
       expect(await bcrypt.compare('NewPass123', user.passwordHash)).toBe(true);
       expect(refreshTokens.revokeAllForUser).toHaveBeenCalledWith('u-1');
     });
 
     it('keeps sessions when the password is not changed', async () => {
-      await service.update('u-1', { fullName: 'Tên mới' }, 'admin-1');
+      await service.update('u-1', { fullName: 'Tên mới' }, ADMIN);
       expect(refreshTokens.revokeAllForUser).not.toHaveBeenCalled();
     });
 
     it('BR-ACC-05: does not let an admin change their own role', async () => {
-      stored = { id: 'admin-1', email: 'a@b.com', role: Role.Admin, departmentId: null };
-      const error = await errorOf(service.update('admin-1', { role: Role.Hr }, 'admin-1'));
+      stored = {
+        id: 'admin-1',
+        organizationId: ORG,
+        email: 'a@b.com',
+        role: Role.Admin,
+        departmentId: null,
+      };
+      const error = await errorOf(service.update('admin-1', { role: Role.Hr }, ADMIN));
       expect(error.getStatus()).toBe(HttpStatus.BAD_REQUEST);
       expect(error.code).toBe(ErrorCode.ValidationFailed);
       expect(repo.save).not.toHaveBeenCalled();
     });
 
     it('BR-ACC-05: lets an admin edit their own profile when the role stays the same', async () => {
-      stored = { id: 'admin-1', email: 'a@b.com', role: Role.Admin, departmentId: null };
+      stored = {
+        id: 'admin-1',
+        organizationId: ORG,
+        email: 'a@b.com',
+        role: Role.Admin,
+        departmentId: null,
+      };
       const user = await service.update(
         'admin-1',
         { role: Role.Admin, fullName: 'Tên mới' },
-        'admin-1',
+        ADMIN,
       );
       expect(user).toMatchObject({ role: Role.Admin, fullName: 'Tên mới' });
     });
@@ -196,22 +223,22 @@ describe('UsersService', () => {
 
   describe('setStatus (BR-ACC-04, BR-ACC-05)', () => {
     beforeEach(() => {
-      stored = { id: 'u-1', role: Role.Hr, isActive: true };
+      stored = { id: 'u-1', organizationId: ORG, role: Role.Hr, isActive: true };
     });
 
     it('disables the account and revokes every refresh token', async () => {
-      const user = await service.setStatus('u-1', false, 'admin-1');
+      const user = await service.setStatus('u-1', false, ADMIN);
       expect(user.isActive).toBe(false);
       expect(refreshTokens.revokeAllForUser).toHaveBeenCalledWith('u-1');
     });
 
     it('re-enables without touching sessions', async () => {
-      await service.setStatus('u-1', true, 'admin-1');
+      await service.setStatus('u-1', true, ADMIN);
       expect(refreshTokens.revokeAllForUser).not.toHaveBeenCalled();
     });
 
     it('does not let an admin disable themself', async () => {
-      const error = await errorOf(service.setStatus('u-1', false, 'u-1'));
+      const error = await errorOf(service.setStatus('u-1', false, self('u-1')));
       expect(error.getStatus()).toBe(HttpStatus.BAD_REQUEST);
       expect(error.code).toBe(ErrorCode.ValidationFailed);
       expect(repo.update).not.toHaveBeenCalled();
@@ -220,17 +247,17 @@ describe('UsersService', () => {
 
   describe('remove (BR-ACC-05)', () => {
     beforeEach(() => {
-      stored = { id: 'u-1', role: Role.Hr };
+      stored = { id: 'u-1', organizationId: ORG, role: Role.Hr };
     });
 
     it('soft-deletes and revokes sessions', async () => {
-      await service.remove('u-1', 'admin-1');
+      await service.remove('u-1', ADMIN);
       expect(repo.softDelete).toHaveBeenCalledWith('u-1');
       expect(refreshTokens.revokeAllForUser).toHaveBeenCalledWith('u-1');
     });
 
     it('does not let an admin delete themself', async () => {
-      const error = await errorOf(service.remove('u-1', 'u-1'));
+      const error = await errorOf(service.remove('u-1', self('u-1')));
       expect(error.getStatus()).toBe(HttpStatus.BAD_REQUEST);
       expect(repo.softDelete).not.toHaveBeenCalled();
     });

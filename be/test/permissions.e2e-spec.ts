@@ -17,6 +17,7 @@ import { ROLE_PERMISSIONS } from '../src/common/permissions/role-permissions.js'
 import { Department } from '../src/modules/departments/entities/department.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { ORG, withOrg } from './fixtures.js';
 
 describe('Permissions (e2e)', () => {
   let app: INestApplication;
@@ -47,13 +48,26 @@ describe('Permissions (e2e)', () => {
 
     const department = await dataSource
       .getRepository(Department)
-      .save({ name: `Phòng quyền ${run}`, code });
+      .save(withOrg({ name: `Phòng quyền ${run}`, code }));
     const passwordHash = await bcrypt.hash(password, 4);
     const users = dataSource.getRepository(User);
     const [, hr] = await users.save([
-      users.create({ email: emails.admin, fullName: 'P Admin', role: Role.Admin, passwordHash }),
-      users.create({ email: emails.hr, fullName: 'P HR', role: Role.Hr, passwordHash }),
       users.create({
+        organizationId: ORG,
+        email: emails.admin,
+        fullName: 'P Admin',
+        role: Role.Admin,
+        passwordHash,
+      }),
+      users.create({
+        organizationId: ORG,
+        email: emails.hr,
+        fullName: 'P HR',
+        role: Role.Hr,
+        passwordHash,
+      }),
+      users.create({
+        organizationId: ORG,
         email: emails.hm,
         fullName: 'P HM',
         role: Role.HiringManager,

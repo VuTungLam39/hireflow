@@ -16,6 +16,7 @@ import { Interview, InterviewStatus } from '../src/modules/interviews/entities/i
 import { Job, JobStatus } from '../src/modules/jobs/entities/job.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { withOrg } from './fixtures.js';
 
 const S = ApplicationStatus;
 
@@ -52,30 +53,34 @@ describe('Bulk status change (e2e)', () => {
 
     const dep = await ds
       .getRepository(Department)
-      .save({ name: `Hàng loạt ${run}`, code: `BK_${run}`.toUpperCase() });
+      .save(withOrg({ name: `Hàng loạt ${run}`, code: `BK_${run}`.toUpperCase() }));
     ids.dep = dep.id;
     const passwordHash = await bcrypt.hash(password, 4);
-    const [hr] = await ds.getRepository(User).save([
-      { email: emails.hr, fullName: 'B HR', role: Role.Hr, passwordHash },
-      {
-        email: emails.hmA,
-        fullName: 'B HM',
-        role: Role.HiringManager,
+    const [hr] = await ds.getRepository(User).save(
+      withOrg([
+        { email: emails.hr, fullName: 'B HR', role: Role.Hr, passwordHash },
+        {
+          email: emails.hmA,
+          fullName: 'B HM',
+          role: Role.HiringManager,
+          departmentId: dep.id,
+          passwordHash,
+        },
+        { email: emails.iv, fullName: 'B IV', role: Role.Interviewer, passwordHash },
+      ]),
+    );
+    const job = await ds.getRepository(Job).save(
+      withOrg({
+        title: `Hàng loạt ${run}`,
         departmentId: dep.id,
-        passwordHash,
-      },
-      { email: emails.iv, fullName: 'B IV', role: Role.Interviewer, passwordHash },
-    ]);
-    const job = await ds.getRepository(Job).save({
-      title: `Hàng loạt ${run}`,
-      departmentId: dep.id,
-      status: JobStatus.Open,
-      location: 'Hà Nội',
-      jdText: `JD ${run}`,
-      jdVersion: 1,
-      createdBy: hr.id,
-      publishedAt: new Date(),
-    });
+        status: JobStatus.Open,
+        location: 'Hà Nội',
+        jdText: `JD ${run}`,
+        jdVersion: 1,
+        createdBy: hr.id,
+        publishedAt: new Date(),
+      }),
+    );
     ids.job = job.id;
 
     const seed: [keyof typeof apps, ApplicationStatus][] = [
@@ -86,25 +91,29 @@ describe('Bulk status change (e2e)', () => {
       ['withInterview', S.Interview],
     ];
     for (const [key, status] of seed) {
-      const c = await ds.getRepository(Candidate).save({
-        fullName: `Ứng viên ${key} ${run}`,
-        email: `b-${key.toLowerCase()}-${run}@example.com`,
-        consentAt: new Date(),
-        consentVersion: 'v1',
-      });
+      const c = await ds.getRepository(Candidate).save(
+        withOrg({
+          fullName: `Ứng viên ${key} ${run}`,
+          email: `b-${key.toLowerCase()}-${run}@example.com`,
+          consentAt: new Date(),
+          consentVersion: 'v1',
+        }),
+      );
       candidates.push(c.id);
       const a = await ds
         .getRepository(Application)
-        .save({ jobId: job.id, candidateId: c.id, cvFileId: null, status });
+        .save(withOrg({ jobId: job.id, candidateId: c.id, cvFileId: null, status }));
       apps[key] = a.id;
     }
-    const iv = await ds.getRepository(Interview).save({
-      applicationId: apps.withInterview,
-      round: 1,
-      scheduledAt: new Date(Date.now() + 86_400_000),
-      location: 'Phòng họp 1',
-      createdBy: hr.id,
-    });
+    const iv = await ds.getRepository(Interview).save(
+      withOrg({
+        applicationId: apps.withInterview,
+        round: 1,
+        scheduledAt: new Date(Date.now() + 86_400_000),
+        location: 'Phòng họp 1',
+        createdBy: hr.id,
+      }),
+    );
     ids.interview = iv.id;
 
     for (const who of Object.keys(emails) as Who[]) {

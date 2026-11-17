@@ -34,6 +34,7 @@ import {
 import { Job, JobStatus } from '../src/modules/jobs/entities/job.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { withOrg } from './fixtures.js';
 
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
@@ -121,44 +122,50 @@ describe('Dashboard cache, realtime notifications, audit log (e2e)', () => {
     base = `http://127.0.0.1:${(server().address() as AddressInfo).port}`;
     ds = app.get(DataSource);
 
-    const [depA, depB] = await ds.getRepository(Department).save([
-      { name: `RT A ${run}`, code: `RTA_${run}`.toUpperCase() },
-      { name: `RT B ${run}`, code: `RTB_${run}`.toUpperCase() },
-    ]);
+    const [depA, depB] = await ds.getRepository(Department).save(
+      withOrg([
+        { name: `RT A ${run}`, code: `RTA_${run}`.toUpperCase() },
+        { name: `RT B ${run}`, code: `RTB_${run}`.toUpperCase() },
+      ]),
+    );
     const passwordHash = await bcrypt.hash(password, 4);
-    const users = await ds.getRepository(User).save([
-      { email: emails.admin, fullName: 'RT Admin', role: Role.Admin, passwordHash },
-      { email: emails.hr, fullName: 'RT HR', role: Role.Hr, passwordHash },
-      { email: emails.hr2, fullName: 'RT HR 2', role: Role.Hr, passwordHash },
-      {
-        email: emails.hmA,
-        fullName: 'RT HM A',
-        role: Role.HiringManager,
-        departmentId: depA.id,
-        passwordHash,
-      },
-      {
-        email: emails.hmB,
-        fullName: 'RT HM B',
-        role: Role.HiringManager,
-        departmentId: depB.id,
-        passwordHash,
-      },
-    ]);
+    const users = await ds.getRepository(User).save(
+      withOrg([
+        { email: emails.admin, fullName: 'RT Admin', role: Role.Admin, passwordHash },
+        { email: emails.hr, fullName: 'RT HR', role: Role.Hr, passwordHash },
+        { email: emails.hr2, fullName: 'RT HR 2', role: Role.Hr, passwordHash },
+        {
+          email: emails.hmA,
+          fullName: 'RT HM A',
+          role: Role.HiringManager,
+          departmentId: depA.id,
+          passwordHash,
+        },
+        {
+          email: emails.hmB,
+          fullName: 'RT HM B',
+          role: Role.HiringManager,
+          departmentId: depB.id,
+          passwordHash,
+        },
+      ]),
+    );
     for (const u of users) {
       const who = (Object.keys(emails) as Who[]).find((k) => emails[k] === u.email)!;
       userIds[who] = u.id;
     }
-    const job = await ds.getRepository(Job).save({
-      title: `Backend RT ${run}`,
-      departmentId: depA.id,
-      status: JobStatus.Open,
-      location: 'Hà Nội',
-      jdText: 'JD',
-      jdVersion: 1,
-      createdBy: userIds.hr,
-      publishedAt: new Date(),
-    });
+    const job = await ds.getRepository(Job).save(
+      withOrg({
+        title: `Backend RT ${run}`,
+        departmentId: depA.id,
+        status: JobStatus.Open,
+        location: 'Hà Nội',
+        jdText: 'JD',
+        jdVersion: 1,
+        createdBy: userIds.hr,
+        publishedAt: new Date(),
+      }),
+    );
     await ds.getRepository(JobRequirement).save({
       jobId: job.id,
       jdVersion: 1,

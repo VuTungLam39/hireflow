@@ -15,6 +15,7 @@ import { Department } from '../src/modules/departments/entities/department.entit
 import { Job, JobStatus } from '../src/modules/jobs/entities/job.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { withOrg } from './fixtures.js';
 
 const S = ApplicationStatus;
 const DAY_MS = 86_400_000;
@@ -52,24 +53,28 @@ describe('Funnel report (e2e)', () => {
     await app.init();
     ds = app.get(DataSource);
 
-    const [depA, depB] = await ds.getRepository(Department).save([
-      { name: `Phễu A ${run}`, code: `FA_${run}`.toUpperCase() },
-      { name: `Phễu B ${run}`, code: `FB_${run}`.toUpperCase() },
-    ]);
+    const [depA, depB] = await ds.getRepository(Department).save(
+      withOrg([
+        { name: `Phễu A ${run}`, code: `FA_${run}`.toUpperCase() },
+        { name: `Phễu B ${run}`, code: `FB_${run}`.toUpperCase() },
+      ]),
+    );
     ids.depA = depA.id;
     ids.depB = depB.id;
     const passwordHash = await bcrypt.hash(password, 4);
-    const [hr] = await ds.getRepository(User).save([
-      { email: emails.hr, fullName: 'F HR', role: Role.Hr, passwordHash },
-      {
-        email: emails.hmA,
-        fullName: 'F HM A',
-        role: Role.HiringManager,
-        departmentId: depA.id,
-        passwordHash,
-      },
-      { email: emails.iv, fullName: 'F IV', role: Role.Interviewer, passwordHash },
-    ]);
+    const [hr] = await ds.getRepository(User).save(
+      withOrg([
+        { email: emails.hr, fullName: 'F HR', role: Role.Hr, passwordHash },
+        {
+          email: emails.hmA,
+          fullName: 'F HM A',
+          role: Role.HiringManager,
+          departmentId: depA.id,
+          passwordHash,
+        },
+        { email: emails.iv, fullName: 'F IV', role: Role.Interviewer, passwordHash },
+      ]),
+    );
     const job = (departmentId: string) => ({
       title: `Phễu ${run}`,
       departmentId,
@@ -80,7 +85,7 @@ describe('Funnel report (e2e)', () => {
       createdBy: hr.id,
       publishedAt: new Date(),
     });
-    const [jobA, jobB] = await ds.getRepository(Job).save([job(depA.id), job(depB.id)]);
+    const [jobA, jobB] = await ds.getRepository(Job).save(withOrg([job(depA.id), job(depB.id)]));
     ids.jobA = jobA.id;
     ids.jobB = jobB.id;
 
@@ -91,22 +96,26 @@ describe('Funnel report (e2e)', () => {
       ApplicationSource.PublicForm,
       ApplicationSource.HrUpload,
     ].entries()) {
-      const c = await ds.getRepository(Candidate).save({
-        fullName: `Ứng viên phễu ${i} ${run}`,
-        email: `f-c${i}-${run}@example.com`,
-        consentAt: new Date(),
-        consentVersion: 'v1',
-      });
+      const c = await ds.getRepository(Candidate).save(
+        withOrg({
+          fullName: `Ứng viên phễu ${i} ${run}`,
+          email: `f-c${i}-${run}@example.com`,
+          consentAt: new Date(),
+          consentVersion: 'v1',
+        }),
+      );
       candidates.push(c.id);
-      const a = await ds.getRepository(Application).save({
-        jobId: jobA.id,
-        candidateId: c.id,
-        cvFileId: null,
-        source,
-        status: S.New,
-        statusChangedAt: appliedAt,
-        createdAt: appliedAt,
-      });
+      const a = await ds.getRepository(Application).save(
+        withOrg({
+          jobId: jobA.id,
+          candidateId: c.id,
+          cvFileId: null,
+          source,
+          status: S.New,
+          statusChangedAt: appliedAt,
+          createdAt: appliedAt,
+        }),
+      );
       apps.push(a.id);
       await ds.getRepository(ApplicationStatusHistory).insert({
         applicationId: a.id,

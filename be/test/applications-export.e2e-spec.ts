@@ -15,6 +15,7 @@ import { Department } from '../src/modules/departments/entities/department.entit
 import { Job, JobStatus } from '../src/modules/jobs/entities/job.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { withOrg } from './fixtures.js';
 
 // Giới hạn nhỏ để kiểm được cả nhánh vượt giới hạn và nhánh đọc nhiều lô với ít dữ liệu
 vi.mock('../src/modules/applications/application-export.js', async (importOriginal) => ({
@@ -64,22 +65,26 @@ describe('Applications CSV export (e2e)', () => {
     await app.init();
     ds = app.get(DataSource);
 
-    const [depA, depB] = await ds.getRepository(Department).save([
-      { name: `Xuất A ${run}`, code: `XA_${run}`.toUpperCase() },
-      { name: `Xuất B ${run}`, code: `XB_${run}`.toUpperCase() },
-    ]);
+    const [depA, depB] = await ds.getRepository(Department).save(
+      withOrg([
+        { name: `Xuất A ${run}`, code: `XA_${run}`.toUpperCase() },
+        { name: `Xuất B ${run}`, code: `XB_${run}`.toUpperCase() },
+      ]),
+    );
     const passwordHash = await bcrypt.hash(password, 4);
-    const [hr] = await ds.getRepository(User).save([
-      { email: emails.hr, fullName: 'X HR', role: Role.Hr, passwordHash },
-      {
-        email: emails.hmA,
-        fullName: 'Trưởng phòng A',
-        role: Role.HiringManager,
-        departmentId: depA.id,
-        passwordHash,
-      },
-      { email: emails.interviewer, fullName: 'X PV', role: Role.Interviewer, passwordHash },
-    ]);
+    const [hr] = await ds.getRepository(User).save(
+      withOrg([
+        { email: emails.hr, fullName: 'X HR', role: Role.Hr, passwordHash },
+        {
+          email: emails.hmA,
+          fullName: 'Trưởng phòng A',
+          role: Role.HiringManager,
+          departmentId: depA.id,
+          passwordHash,
+        },
+        { email: emails.interviewer, fullName: 'X PV', role: Role.Interviewer, passwordHash },
+      ]),
+    );
     const job = (departmentId: string, title: string) => ({
       title,
       departmentId,
@@ -91,52 +96,56 @@ describe('Applications CSV export (e2e)', () => {
     });
     const [jobA, jobB] = await ds
       .getRepository(Job)
-      .save([job(depA.id, `Backend ${run}`), job(depB.id, `Kế toán ${run}`)]);
+      .save(withOrg([job(depA.id, `Backend ${run}`), job(depB.id, `Kế toán ${run}`)]));
     const candidates = await ds.getRepository(Candidate).save(
-      [
-        `Phạm Văn Một ${run}`,
-        `=HYPERLINK("http://x") ${run}`,
-        `Lê Thị "Ba" ${run}`,
-        `Ngô Bốn ${run}`,
-      ].map((fullName, i) => ({
-        fullName,
-        email: `x-c${i + 1}-${run}@example.com`,
-        phone: i === 0 ? '0912345678' : null,
-        consentAt: new Date(),
-        consentVersion: 'v1',
-      })),
+      withOrg(
+        [
+          `Phạm Văn Một ${run}`,
+          `=HYPERLINK("http://x") ${run}`,
+          `Lê Thị "Ba" ${run}`,
+          `Ngô Bốn ${run}`,
+        ].map((fullName, i) => ({
+          fullName,
+          email: `x-c${i + 1}-${run}@example.com`,
+          phone: i === 0 ? '0912345678' : null,
+          consentAt: new Date(),
+          consentVersion: 'v1',
+        })),
+      ),
     );
     candidateIds.push(...candidates.map((c) => c.id));
     const at = (iso: string) => new Date(`${iso}+07:00`);
-    await ds.getRepository(Application).save([
-      {
-        jobId: jobA.id,
-        candidateId: candidates[0].id,
-        status: ApplicationStatus.Interview,
-        score: 82,
-        source: ApplicationSource.HrUpload,
-        createdAt: at('2026-11-01T09:15:00'),
-      },
-      {
-        jobId: jobA.id,
-        candidateId: candidates[1].id,
-        status: ApplicationStatus.New,
-        createdAt: at('2026-11-02T10:00:00'),
-      },
-      {
-        jobId: jobA.id,
-        candidateId: candidates[2].id,
-        status: ApplicationStatus.Screening,
-        score: 55,
-        createdAt: at('2026-11-03T11:00:00'),
-      },
-      {
-        jobId: jobB.id,
-        candidateId: candidates[3].id,
-        status: ApplicationStatus.New,
-        createdAt: at('2026-11-04T12:00:00'),
-      },
-    ]);
+    await ds.getRepository(Application).save(
+      withOrg([
+        {
+          jobId: jobA.id,
+          candidateId: candidates[0].id,
+          status: ApplicationStatus.Interview,
+          score: 82,
+          source: ApplicationSource.HrUpload,
+          createdAt: at('2026-11-01T09:15:00'),
+        },
+        {
+          jobId: jobA.id,
+          candidateId: candidates[1].id,
+          status: ApplicationStatus.New,
+          createdAt: at('2026-11-02T10:00:00'),
+        },
+        {
+          jobId: jobA.id,
+          candidateId: candidates[2].id,
+          status: ApplicationStatus.Screening,
+          score: 55,
+          createdAt: at('2026-11-03T11:00:00'),
+        },
+        {
+          jobId: jobB.id,
+          candidateId: candidates[3].id,
+          status: ApplicationStatus.New,
+          createdAt: at('2026-11-04T12:00:00'),
+        },
+      ]),
+    );
     Object.assign(ids, { depA: depA.id, depB: depB.id, jobA: jobA.id, jobB: jobB.id, hr: hr.id });
 
     for (const who of Object.keys(emails) as Who[]) {

@@ -24,6 +24,7 @@ import { Job, JobStatus } from '../src/modules/jobs/entities/job.entity.js';
 import { Notification } from '../src/modules/notifications/entities/notification.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { withOrg } from './fixtures.js';
 
 // D7 · F-INT-01 → 03 · US-11 · BR-INT-01 → 03
 describe('Interviews (e2e)', () => {
@@ -76,7 +77,7 @@ describe('Interviews (e2e)', () => {
 
     const dep = await ds
       .getRepository(Department)
-      .save({ name: `IV ${run}`, code: `IV_${run}`.toUpperCase() });
+      .save(withOrg({ name: `IV ${run}`, code: `IV_${run}`.toUpperCase() }));
     ids.dep = dep.id;
     const passwordHash = await bcrypt.hash(password, 4);
     const roles: Record<Who, Role> = {
@@ -87,13 +88,15 @@ describe('Interviews (e2e)', () => {
       ivB: Role.Interviewer,
     };
     for (const who of Object.keys(emails) as Who[]) {
-      const u = await ds.getRepository(User).save({
-        email: emails[who],
-        fullName: `IV ${who}`,
-        role: roles[who],
-        departmentId: who === 'hm' ? dep.id : null,
-        passwordHash,
-      });
+      const u = await ds.getRepository(User).save(
+        withOrg({
+          email: emails[who],
+          fullName: `IV ${who}`,
+          role: roles[who],
+          departmentId: who === 'hm' ? dep.id : null,
+          passwordHash,
+        }),
+      );
       userIds[who] = u.id;
     }
     const job = (title: string) => ({
@@ -106,7 +109,7 @@ describe('Interviews (e2e)', () => {
       createdBy: userIds.hr,
       publishedAt: new Date(),
     });
-    const [j1, j2] = await ds.getRepository(Job).save([job('Backend IV'), job('Khác IV')]);
+    const [j1, j2] = await ds.getRepository(Job).save(withOrg([job('Backend IV'), job('Khác IV')]));
     Object.assign(ids, { job: j1.id, otherJob: j2.id });
     const reqs = await ds.getRepository(JobRequirement).save(
       ['NestJS', 'PostgreSQL'].map((label, i) => ({
@@ -123,31 +126,37 @@ describe('Interviews (e2e)', () => {
     ids.reqs = reqs.map((r) => r.id);
 
     const makeApp = async (key: string, jobId: string, status: ApplicationStatus) => {
-      const c = await ds.getRepository(Candidate).save({
-        fullName: `Ứng viên ${key} ${run}`,
-        email: `iv-c-${key}-${run}@example.com`,
-        consentAt: new Date(),
-        consentVersion: 'v1',
-      });
+      const c = await ds.getRepository(Candidate).save(
+        withOrg({
+          fullName: `Ứng viên ${key} ${run}`,
+          email: `iv-c-${key}-${run}@example.com`,
+          consentAt: new Date(),
+          consentVersion: 'v1',
+        }),
+      );
       candidates.push(c.id);
-      const cv = await ds.getRepository(CvFile).save({
-        candidateId: c.id,
-        storageKey: `cv/test/${run}-${key}.pdf`,
-        originalName: `${key}.pdf`,
-        mime: 'application/pdf',
-        sizeBytes: 100,
-        sha256: randomUUID().replace(/-/g, '').padEnd(64, '0'),
-        text: 'NestJS PostgreSQL',
-      });
-      const a = await ds.getRepository(Application).save({
-        jobId,
-        candidateId: c.id,
-        cvFileId: cv.id,
-        status,
-        aiStatus: AiStatus.Done,
-        score: 80,
-        scoreBreakdown: [],
-      });
+      const cv = await ds.getRepository(CvFile).save(
+        withOrg({
+          candidateId: c.id,
+          storageKey: `cv/test/${run}-${key}.pdf`,
+          originalName: `${key}.pdf`,
+          mime: 'application/pdf',
+          sizeBytes: 100,
+          sha256: randomUUID().replace(/-/g, '').padEnd(64, '0'),
+          text: 'NestJS PostgreSQL',
+        }),
+      );
+      const a = await ds.getRepository(Application).save(
+        withOrg({
+          jobId,
+          candidateId: c.id,
+          cvFileId: cv.id,
+          status,
+          aiStatus: AiStatus.Done,
+          score: 80,
+          scoreBreakdown: [],
+        }),
+      );
       return { app: a.id, cv: cv.id };
     };
     const a = await makeApp('a', j1.id, ApplicationStatus.Interview);

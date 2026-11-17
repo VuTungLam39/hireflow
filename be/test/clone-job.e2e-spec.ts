@@ -17,6 +17,7 @@ import {
 import { Job, JobStatus, WorkMode } from '../src/modules/jobs/entities/job.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { withOrg } from './fixtures.js';
 
 // F4: nhân bản tin
 describe('Clone job (e2e)', () => {
@@ -45,36 +46,40 @@ describe('Clone job (e2e)', () => {
 
     const dep = await ds
       .getRepository(Department)
-      .save({ name: `Nhân bản ${run}`, code: `JC_${run}`.toUpperCase() });
+      .save(withOrg({ name: `Nhân bản ${run}`, code: `JC_${run}`.toUpperCase() }));
     ids.dep = dep.id;
     const passwordHash = await bcrypt.hash(password, 4);
-    const [hr] = await ds.getRepository(User).save([
-      { email: emails.hr, fullName: 'J HR', role: Role.Hr, passwordHash },
-      {
-        email: emails.hm,
-        fullName: 'J HM',
-        role: Role.HiringManager,
+    const [hr] = await ds.getRepository(User).save(
+      withOrg([
+        { email: emails.hr, fullName: 'J HR', role: Role.Hr, passwordHash },
+        {
+          email: emails.hm,
+          fullName: 'J HM',
+          role: Role.HiringManager,
+          departmentId: dep.id,
+          passwordHash,
+        },
+      ]),
+    );
+    const src = await ds.getRepository(Job).save(
+      withOrg({
+        title: `Backend ${run}`,
         departmentId: dep.id,
-        passwordHash,
-      },
-    ]);
-    const src = await ds.getRepository(Job).save({
-      title: `Backend ${run}`,
-      departmentId: dep.id,
-      status: JobStatus.Closed,
-      location: 'Đà Nẵng',
-      jdText: `JD gốc ${run}`,
-      jdVersion: 3,
-      createdBy: hr.id,
-      publishedAt: new Date(),
-      closedAt: new Date(),
-      salaryMin: 15_000_000,
-      salaryMax: 25_000_000,
-      workMode: WorkMode.Hybrid,
-      headcount: 2,
-      deadline: '2026-10-31',
-      benefits: 'Bảo hiểm sức khoẻ',
-    });
+        status: JobStatus.Closed,
+        location: 'Đà Nẵng',
+        jdText: `JD gốc ${run}`,
+        jdVersion: 3,
+        createdBy: hr.id,
+        publishedAt: new Date(),
+        closedAt: new Date(),
+        salaryMin: 15_000_000,
+        salaryMax: 25_000_000,
+        workMode: WorkMode.Hybrid,
+        headcount: 2,
+        deadline: '2026-10-31',
+        benefits: 'Bảo hiểm sức khoẻ',
+      }),
+    );
     ids.src = src.id;
     // phiên bản cũ (2) và mới nhất (3): chỉ phiên bản 3 được copy
     await ds.getRepository(JobRequirement).save([
@@ -107,16 +112,23 @@ describe('Clone job (e2e)', () => {
         keywords: ['nestjs', 'nest'],
       },
     ]);
-    const c = await ds.getRepository(Candidate).save({
-      fullName: `Ứng viên ${run}`,
-      email: `j-c-${run}@example.com`,
-      consentAt: new Date(),
-      consentVersion: 'v1',
-    });
+    const c = await ds.getRepository(Candidate).save(
+      withOrg({
+        fullName: `Ứng viên ${run}`,
+        email: `j-c-${run}@example.com`,
+        consentAt: new Date(),
+        consentVersion: 'v1',
+      }),
+    );
     ids.candidate = c.id;
-    await ds
-      .getRepository(Application)
-      .save({ jobId: src.id, candidateId: c.id, cvFileId: null, status: ApplicationStatus.New });
+    await ds.getRepository(Application).save(
+      withOrg({
+        jobId: src.id,
+        candidateId: c.id,
+        cvFileId: null,
+        status: ApplicationStatus.New,
+      }),
+    );
 
     for (const who of Object.keys(emails) as Who[]) {
       const res = await request(server())

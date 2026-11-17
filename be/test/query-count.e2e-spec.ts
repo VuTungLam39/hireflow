@@ -19,6 +19,7 @@ import {
 import { Job, JobStatus } from '../src/modules/jobs/entities/job.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { withOrg } from './fixtures.js';
 
 // Kickoff 6 "Không N+1" · Backend Architecture 16.1 · US-06
 describe('Query count (e2e)', () => {
@@ -53,29 +54,33 @@ describe('Query count (e2e)', () => {
 
     const dep = await ds
       .getRepository(Department)
-      .save({ name: `Đếm query ${run}`, code: `QC_${run}`.toUpperCase() });
+      .save(withOrg({ name: `Đếm query ${run}`, code: `QC_${run}`.toUpperCase() }));
     const passwordHash = await bcrypt.hash(password, 4);
-    const [hr] = await ds.getRepository(User).save([
-      { email: emails.hr, fullName: 'QC HR', role: Role.Hr, passwordHash },
-      {
-        email: emails.hm,
-        fullName: 'QC HM',
-        role: Role.HiringManager,
-        departmentId: dep.id,
-        passwordHash,
-      },
-    ]);
+    const [hr] = await ds.getRepository(User).save(
+      withOrg([
+        { email: emails.hr, fullName: 'QC HR', role: Role.Hr, passwordHash },
+        {
+          email: emails.hm,
+          fullName: 'QC HM',
+          role: Role.HiringManager,
+          departmentId: dep.id,
+          passwordHash,
+        },
+      ]),
+    );
     const [bigJob, smallJob] = await ds.getRepository(Job).save(
-      [`Job nhiều hồ sơ ${run}`, `Job ít hồ sơ ${run}`].map((title) => ({
-        title,
-        departmentId: dep.id,
-        status: JobStatus.Open,
-        location: 'Hà Nội',
-        jdText: 'JD',
-        jdVersion: 1,
-        createdBy: hr.id,
-        publishedAt: new Date(),
-      })),
+      withOrg(
+        [`Job nhiều hồ sơ ${run}`, `Job ít hồ sơ ${run}`].map((title) => ({
+          title,
+          departmentId: dep.id,
+          status: JobStatus.Open,
+          location: 'Hà Nội',
+          jdText: 'JD',
+          jdVersion: 1,
+          createdBy: hr.id,
+          publishedAt: new Date(),
+        })),
+      ),
     );
     await ds.getRepository(JobRequirement).save(
       [bigJob, smallJob].map((job) => ({
@@ -90,23 +95,27 @@ describe('Query count (e2e)', () => {
       })),
     );
     const candidates = await ds.getRepository(Candidate).save(
-      Array.from({ length: MANY }, (_, i) => ({
-        fullName: `Ứng viên ${i} ${run}`,
-        email: `qc-c${i}-${run}@example.com`,
-        consentAt: new Date(),
-        consentVersion: 'v1',
-      })),
+      withOrg(
+        Array.from({ length: MANY }, (_, i) => ({
+          fullName: `Ứng viên ${i} ${run}`,
+          email: `qc-c${i}-${run}@example.com`,
+          consentAt: new Date(),
+          consentVersion: 'v1',
+        })),
+      ),
     );
     const apps = await ds.getRepository(Application).save(
-      candidates.map((c, i) => ({
-        jobId: i === 0 ? smallJob.id : bigJob.id,
-        candidateId: c.id,
-        status: ApplicationStatus.Screening,
-        aiStatus: AiStatus.Done,
-        score: 50 + (i % 50),
-        scoreBreakdown: [],
-        scoredJdVersion: 1,
-      })),
+      withOrg(
+        candidates.map((c, i) => ({
+          jobId: i === 0 ? smallJob.id : bigJob.id,
+          candidateId: c.id,
+          status: ApplicationStatus.Screening,
+          aiStatus: AiStatus.Done,
+          score: 50 + (i % 50),
+          scoreBreakdown: [],
+          scoredJdVersion: 1,
+        })),
+      ),
     );
     Object.assign(ids, {
       dep: dep.id,

@@ -14,6 +14,7 @@ import { Department } from '../src/modules/departments/entities/department.entit
 import { Job } from '../src/modules/jobs/entities/job.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { withOrg } from './fixtures.js';
 
 // BE-11 · API Contract 4.4 · BR-JOB-01 → 07
 describe('Jobs (e2e)', () => {
@@ -62,32 +63,36 @@ describe('Jobs (e2e)', () => {
     await app.init();
     ds = app.get(DataSource);
 
-    const [a, b] = await ds.getRepository(Department).save([
-      { name: `Jobs A ${run}`, code: `JA_${run}`.toUpperCase() },
-      { name: `Jobs B ${run}`, code: `JB_${run}`.toUpperCase() },
-    ]);
+    const [a, b] = await ds.getRepository(Department).save(
+      withOrg([
+        { name: `Jobs A ${run}`, code: `JA_${run}`.toUpperCase() },
+        { name: `Jobs B ${run}`, code: `JB_${run}`.toUpperCase() },
+      ]),
+    );
     dep.a = a.id;
     dep.b = b.id;
 
     const passwordHash = await bcrypt.hash(password, 4);
-    await ds.getRepository(User).save([
-      { email: emails.admin, fullName: 'J Admin', role: Role.Admin, passwordHash },
-      { email: emails.hr, fullName: 'J HR', role: Role.Hr, passwordHash },
-      {
-        email: emails.hmA,
-        fullName: 'J HM A',
-        role: Role.HiringManager,
-        departmentId: a.id,
-        passwordHash,
-      },
-      {
-        email: emails.hmB,
-        fullName: 'J HM B',
-        role: Role.HiringManager,
-        departmentId: b.id,
-        passwordHash,
-      },
-    ]);
+    await ds.getRepository(User).save(
+      withOrg([
+        { email: emails.admin, fullName: 'J Admin', role: Role.Admin, passwordHash },
+        { email: emails.hr, fullName: 'J HR', role: Role.Hr, passwordHash },
+        {
+          email: emails.hmA,
+          fullName: 'J HM A',
+          role: Role.HiringManager,
+          departmentId: a.id,
+          passwordHash,
+        },
+        {
+          email: emails.hmB,
+          fullName: 'J HM B',
+          role: Role.HiringManager,
+          departmentId: b.id,
+          passwordHash,
+        },
+      ]),
+    );
     for (const who of Object.keys(emails) as Who[]) {
       const res = await request(server())
         .post('/api/v1/auth/login')
@@ -369,44 +374,48 @@ describe('Jobs (e2e)', () => {
       jobIds.push(jobB);
 
       const candidates = await ds.getRepository(Candidate).save(
-        [1, 2, 3].map((n) => ({
-          fullName: `Ứng viên ${n} ${run}`,
-          email: `j-c${n}-${run}@example.com`,
-          consentAt: new Date(),
-          consentVersion: 'v1',
-        })),
+        withOrg(
+          [1, 2, 3].map((n) => ({
+            fullName: `Ứng viên ${n} ${run}`,
+            email: `j-c${n}-${run}@example.com`,
+            consentAt: new Date(),
+            consentVersion: 'v1',
+          })),
+        ),
       );
       candidateIds.push(...candidates.map((c) => c.id));
       const [reqNest] = await ds.query(
         'SELECT id FROM job_requirements WHERE job_id = $1 AND jd_version = 3',
         [jobA],
       );
-      await ds.getRepository(Application).save([
-        {
-          jobId: jobA,
-          candidateId: candidates[0].id,
-          status: ApplicationStatus.Interview,
-          aiStatus: AiStatus.Done,
-          score: 100,
-          scoreBreakdown: [
-            {
-              requirementId: reqNest.id,
-              match: 1,
-              evidence: 'NestJS 3 năm',
-              rejectedEvidence: null,
-            },
-          ],
-        },
-        { jobId: jobA, candidateId: candidates[1].id, status: ApplicationStatus.New },
-        {
-          jobId: jobA,
-          candidateId: candidates[2].id,
-          status: ApplicationStatus.Rejected,
-          aiStatus: AiStatus.Done,
-          score: 0,
-          scoreBreakdown: [],
-        },
-      ]);
+      await ds.getRepository(Application).save(
+        withOrg([
+          {
+            jobId: jobA,
+            candidateId: candidates[0].id,
+            status: ApplicationStatus.Interview,
+            aiStatus: AiStatus.Done,
+            score: 100,
+            scoreBreakdown: [
+              {
+                requirementId: reqNest.id,
+                match: 1,
+                evidence: 'NestJS 3 năm',
+                rejectedEvidence: null,
+              },
+            ],
+          },
+          { jobId: jobA, candidateId: candidates[1].id, status: ApplicationStatus.New },
+          {
+            jobId: jobA,
+            candidateId: candidates[2].id,
+            status: ApplicationStatus.Rejected,
+            aiStatus: AiStatus.Done,
+            score: 0,
+            scoreBreakdown: [],
+          },
+        ]),
+      );
     });
 
     const titles = async (who: Who, query = '') => {

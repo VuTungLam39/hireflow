@@ -32,6 +32,7 @@ import { RagService } from '../src/modules/rag/rag.service.js';
 import { RRF_CANDIDATES, toVector } from '../src/modules/rag/retrieval.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { ORG, withOrg } from './fixtures.js';
 
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 const EMBED_DOWN = 'EMBED_DOWN_MARKER';
@@ -170,36 +171,40 @@ describe('RAG chat (e2e, LLM và embedding giả)', () => {
     ds = app.get(DataSource);
 
     const [depA, depB, depC] = await ds.getRepository(Department).save(
-      ['A', 'B', 'C'].map((k) => ({
-        name: `RAG ${k} ${run}`,
-        code: `RAG${k}_${run}`.toUpperCase(),
-      })),
+      withOrg(
+        ['A', 'B', 'C'].map((k) => ({
+          name: `RAG ${k} ${run}`,
+          code: `RAG${k}_${run}`.toUpperCase(),
+        })),
+      ),
     );
     Object.assign(ids, { depA: depA.id, depB: depB.id, depC: depC.id });
     const passwordHash = await bcrypt.hash('Password123', 4);
-    const users = await ds.getRepository(User).save([
-      {
-        email: `rag-admin-${run}@example.com`,
-        fullName: 'RAG Admin',
-        role: Role.Admin,
-        passwordHash,
-      },
-      { email: `rag-hr-${run}@example.com`, fullName: 'RAG HR', role: Role.Hr, passwordHash },
-      {
-        email: `rag-hma-${run}@example.com`,
-        fullName: 'RAG HM A',
-        role: Role.HiringManager,
-        departmentId: depA.id,
-        passwordHash,
-      },
-      {
-        email: `rag-hmc-${run}@example.com`,
-        fullName: 'RAG HM C',
-        role: Role.HiringManager,
-        departmentId: depC.id,
-        passwordHash,
-      },
-    ]);
+    const users = await ds.getRepository(User).save(
+      withOrg([
+        {
+          email: `rag-admin-${run}@example.com`,
+          fullName: 'RAG Admin',
+          role: Role.Admin,
+          passwordHash,
+        },
+        { email: `rag-hr-${run}@example.com`, fullName: 'RAG HR', role: Role.Hr, passwordHash },
+        {
+          email: `rag-hma-${run}@example.com`,
+          fullName: 'RAG HM A',
+          role: Role.HiringManager,
+          departmentId: depA.id,
+          passwordHash,
+        },
+        {
+          email: `rag-hmc-${run}@example.com`,
+          fullName: 'RAG HM C',
+          role: Role.HiringManager,
+          departmentId: depC.id,
+          passwordHash,
+        },
+      ]),
+    );
     const jobOf = (title: string, departmentId: string) => ({
       title,
       departmentId,
@@ -212,7 +217,7 @@ describe('RAG chat (e2e, LLM và embedding giả)', () => {
     });
     const [jobA, jobB] = await ds
       .getRepository(Job)
-      .save([jobOf(`RAG A ${run}`, depA.id), jobOf(`RAG B ${run}`, depB.id)]);
+      .save(withOrg([jobOf(`RAG A ${run}`, depA.id), jobOf(`RAG B ${run}`, depB.id)]));
     Object.assign(ids, { jobA: jobA.id, jobB: jobB.id });
     await ds.getRepository(JobRequirement).save(
       [jobA, jobB].map((job) => ({
@@ -393,15 +398,20 @@ describe('RAG chat (e2e, LLM và embedding giả)', () => {
       position: 100 + i,
     }));
     await ds.query(
-      `INSERT INTO cv_chunks (id, cv_file_id, section, position, content, token_count, embedding_model, embedding)
-       SELECT f.id::uuid, $1, 'experience', f.position, 'Kinh nghiệm làm việc nhóm', 4, $2, $3::vector
-       FROM jsonb_to_recordset($4::jsonb) AS f(id text, position int)`,
+      `INSERT INTO cv_chunks (id, organization_id, cv_file_id, section, position, content, token_count, embedding_model, embedding)
+       SELECT f.id::uuid, cv.organization_id, $1, 'experience', f.position, 'Kinh nghiệm làm việc nhóm', 4, $2, $3::vector
+       FROM jsonb_to_recordset($4::jsonb) AS f(id text, position int) CROSS JOIN cv_files cv WHERE cv.id = $1`,
       [cvFileId, model, toVector(query), JSON.stringify(fillers)],
     );
     try {
       const rows = await app
         .get(RagService)
-        .retrieve(query, kwA, { role: Role.Hr, departmentId: null }, { topK: 1 });
+        .retrieve(
+          query,
+          kwA,
+          { role: Role.Hr, departmentId: null, organizationId: ORG },
+          { topK: 1 },
+        );
       expect(rows.map((r) => r.chunkId)).toEqual([hit.id]);
     } finally {
       await ds.query(`DELETE FROM cv_chunks WHERE id = ANY($1::uuid[])`, [

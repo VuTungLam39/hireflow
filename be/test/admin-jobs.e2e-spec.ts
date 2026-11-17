@@ -25,6 +25,7 @@ import { jobId, QUEUE } from '../src/modules/ai/pipeline/queues.js';
 import { MaintenanceService } from '../src/modules/maintenance/maintenance.service.js';
 import { MAINTENANCE_TASK } from '../src/modules/maintenance/maintenance.tasks.js';
 import { setupApp } from '../src/setup-app.js';
+import { withOrg } from './fixtures.js';
 
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
@@ -72,27 +73,31 @@ describe('Admin AI queue (e2e)', () => {
 
     const dep = await ds
       .getRepository(Department)
-      .save({ name: `Ops ${run}`, code: `OPS_${run}`.toUpperCase() });
+      .save(withOrg({ name: `Ops ${run}`, code: `OPS_${run}`.toUpperCase() }));
     const passwordHash = await bcrypt.hash('Password123', 4);
-    const [admin, hr] = await ds.getRepository(User).save([
-      {
-        email: `ops-admin-${run}@example.com`,
-        fullName: 'Ops Admin',
-        role: Role.Admin,
-        passwordHash,
-      },
-      { email: `ops-hr-${run}@example.com`, fullName: 'Ops HR', role: Role.Hr, passwordHash },
-    ]);
-    const job = await ds.getRepository(Job).save({
-      title: `Ops Backend ${run}`,
-      departmentId: dep.id,
-      status: JobStatus.Open,
-      location: 'Hà Nội',
-      jdText: 'Tuyển Backend Developer biết NestJS và PostgreSQL.',
-      jdVersion: 1,
-      createdBy: hr.id,
-      publishedAt: new Date(),
-    });
+    const [admin, hr] = await ds.getRepository(User).save(
+      withOrg([
+        {
+          email: `ops-admin-${run}@example.com`,
+          fullName: 'Ops Admin',
+          role: Role.Admin,
+          passwordHash,
+        },
+        { email: `ops-hr-${run}@example.com`, fullName: 'Ops HR', role: Role.Hr, passwordHash },
+      ]),
+    );
+    const job = await ds.getRepository(Job).save(
+      withOrg({
+        title: `Ops Backend ${run}`,
+        departmentId: dep.id,
+        status: JobStatus.Open,
+        location: 'Hà Nội',
+        jdText: 'Tuyển Backend Developer biết NestJS và PostgreSQL.',
+        jdVersion: 1,
+        createdBy: hr.id,
+        publishedAt: new Date(),
+      }),
+    );
     await ds.getRepository(JobRequirement).save({
       jobId: job.id,
       jdVersion: 1,
@@ -106,34 +111,40 @@ describe('Admin AI queue (e2e)', () => {
     Object.assign(ids, { dep: dep.id, job: job.id });
 
     const make = async (key: keyof typeof apps, aiStatus: AiStatus, withCv = true) => {
-      const candidate = await ds.getRepository(Candidate).save({
-        fullName: `Ops ${run} ${key}`,
-        email: `ops-${key.toLowerCase()}-${run}@example.com`,
-        consentAt: new Date(),
-        consentVersion: 'v1',
-      });
+      const candidate = await ds.getRepository(Candidate).save(
+        withOrg({
+          fullName: `Ops ${run} ${key}`,
+          email: `ops-${key.toLowerCase()}-${run}@example.com`,
+          consentAt: new Date(),
+          consentVersion: 'v1',
+        }),
+      );
       const text = SAMPLE_CV.join('\n');
       const cv = withCv
-        ? await ds.getRepository(CvFile).save({
-            candidateId: candidate.id,
-            storageKey: `cv/test/${run}-${key}.docx`,
-            originalName: 'cv.docx',
-            mime: DOCX,
-            sizeBytes: text.length,
-            sha256: createHash('sha256').update(`${run}-${key}`).digest('hex'),
-            parseStatus: CvParseStatus.Parsed,
-            text,
-          })
+        ? await ds.getRepository(CvFile).save(
+            withOrg({
+              candidateId: candidate.id,
+              storageKey: `cv/test/${run}-${key}.docx`,
+              originalName: 'cv.docx',
+              mime: DOCX,
+              sizeBytes: text.length,
+              sha256: createHash('sha256').update(`${run}-${key}`).digest('hex'),
+              parseStatus: CvParseStatus.Parsed,
+              text,
+            }),
+          )
         : null;
-      const saved = await ds.getRepository(Application).save({
-        jobId: job.id,
-        candidateId: candidate.id,
-        cvFileId: cv?.id ?? null,
-        source: ApplicationSource.HrUpload,
-        aiStatus,
-        aiError: aiStatus === AiStatus.Failed ? 'Dịch vụ AI tạm thời không phản hồi.' : null,
-        score: aiStatus === AiStatus.Done ? 50 : null,
-      });
+      const saved = await ds.getRepository(Application).save(
+        withOrg({
+          jobId: job.id,
+          candidateId: candidate.id,
+          cvFileId: cv?.id ?? null,
+          source: ApplicationSource.HrUpload,
+          aiStatus,
+          aiError: aiStatus === AiStatus.Failed ? 'Dịch vụ AI tạm thời không phản hồi.' : null,
+          score: aiStatus === AiStatus.Done ? 50 : null,
+        }),
+      );
       apps[key] = saved.id;
     };
     await make('failed', AiStatus.Failed);
