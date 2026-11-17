@@ -1,4 +1,13 @@
-import { Check, Column, Entity, PrimaryColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Check,
+  Column,
+  Entity,
+  JoinColumn,
+  OneToOne,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { Organization } from '../../organizations/entities/organization.entity.js';
 
 export enum CompanySize {
   Xs = '1-50',
@@ -32,16 +41,22 @@ export interface CompanySocials {
   tiktok?: string;
 }
 
-// F-ORG-01 · BR-ORG-01: đúng một dòng (id = 1)
+// F-ORG-01 · BR-ORG-01, BR-TEN-01
 @Entity('company_profile')
-@Check('CK_company_profile_singleton', `"id" = 1`)
 @Check(
   'CK_company_profile_founded_year',
   `"founded_year" IS NULL OR "founded_year" BETWEEN 1800 AND 2100`,
 )
 export class CompanyProfile {
-  @PrimaryColumn({ type: 'smallint' })
-  id: number;
+  @PrimaryColumn({ type: 'uuid' })
+  organizationId: string;
+
+  @OneToOne(() => Organization, { onDelete: 'CASCADE' })
+  @JoinColumn({
+    name: 'organization_id',
+    foreignKeyConstraintName: 'FK_company_profile_organization_id',
+  })
+  organization?: Organization;
 
   @Column({ type: 'varchar', length: 150, default: '' })
   name: string;

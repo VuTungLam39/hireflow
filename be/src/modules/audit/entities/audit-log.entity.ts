@@ -1,4 +1,14 @@
-import { Check, Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Check,
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Organization } from '../../organizations/entities/organization.entity.js';
 
 export type AuditMetadata = Record<string, string | number | boolean | null>;
 
@@ -33,6 +43,18 @@ export enum AuditEntity {
 @Index('IDX_audit_logs_entity_entity_id', ['entity', 'entityId'])
 @Index('IDX_audit_logs_actor_id_created_at', ['actorId', 'createdAt'])
 export class AuditLog {
+  // BR-TEN-01
+  @Index('IDX_audit_logs_organization_id')
+  @Column({ type: 'uuid' })
+  organizationId: string;
+
+  @ManyToOne(() => Organization, { onDelete: 'RESTRICT' })
+  @JoinColumn({
+    name: 'organization_id',
+    foreignKeyConstraintName: 'FK_audit_logs_organization_id',
+  })
+  organization?: Organization;
+
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

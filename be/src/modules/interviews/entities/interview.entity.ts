@@ -10,6 +10,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Organization } from '../../organizations/entities/organization.entity.js';
 import { Application } from '../../applications/entities/application.entity.js';
 import { User } from '../../users/entities/user.entity.js';
 import { InterviewAssignee } from './interview-assignee.entity.js';
@@ -32,6 +33,18 @@ export enum InterviewStatus {
   `"status" <> 'CANCELLED' OR ("cancel_reason" IS NOT NULL AND btrim("cancel_reason") <> '')`,
 )
 export class Interview {
+  // BR-TEN-01
+  @Index('IDX_interviews_organization_id')
+  @Column({ type: 'uuid' })
+  organizationId: string;
+
+  @ManyToOne(() => Organization, { onDelete: 'RESTRICT' })
+  @JoinColumn({
+    name: 'organization_id',
+    foreignKeyConstraintName: 'FK_interviews_organization_id',
+  })
+  organization?: Organization;
+
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

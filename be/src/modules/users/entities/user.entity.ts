@@ -1,6 +1,7 @@
 import { ApiHideProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { Check, Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
+import { Organization } from '../../organizations/entities/organization.entity.js';
 import { AbstractEntity } from '../../../common/entities/abstract.entity.js';
 import { Role } from '../../../common/enums/role.enum.js';
 import { Department } from '../../departments/entities/department.entity.js';
@@ -12,6 +13,15 @@ import { Department } from '../../departments/entities/department.entity.js';
   `"role" <> 'hiring_manager' OR "department_id" IS NOT NULL`,
 )
 export class User extends AbstractEntity {
+  // BR-TEN-01
+  @Index('IDX_users_organization_id')
+  @Column({ type: 'uuid' })
+  organizationId: string;
+
+  @ManyToOne(() => Organization, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'organization_id', foreignKeyConstraintName: 'FK_users_organization_id' })
+  organization?: Organization;
+
   @Index('UQ_users_email', { unique: true, where: '"deleted_at" IS NULL' })
   @Column({ type: 'varchar', length: 255 })
   email: string;
@@ -41,4 +51,8 @@ export class User extends AbstractEntity {
 
   @Column({ type: 'timestamptz', nullable: true })
   lastLoginAt: Date | null;
+
+  // BR-ACC-09
+  @Column({ type: 'timestamptz', nullable: true })
+  emailVerifiedAt: Date | null;
 }

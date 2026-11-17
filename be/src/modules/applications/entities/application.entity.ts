@@ -1,4 +1,5 @@
 import { Check, Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
+import { Organization } from '../../organizations/entities/organization.entity.js';
 import { AiStatus } from '../../../common/enums/ai-status.enum.js';
 import { ApplicationSource } from '../../../common/enums/application-source.enum.js';
 import { ApplicationStatus } from '../../../common/enums/application-status.enum.js';
@@ -16,6 +17,7 @@ export interface BreakdownItem {
 }
 
 @Entity('applications')
+@Index('IDX_applications_organization_id_created_at_id', { synchronize: false })
 @Index('UQ_applications_job_id_candidate_id', ['jobId', 'candidateId'], {
   unique: true,
   where: '"deleted_at" IS NULL',
@@ -34,6 +36,17 @@ export interface BreakdownItem {
   `"ai_status" <> 'FAILED' OR ("ai_error" IS NOT NULL AND btrim("ai_error") <> '')`,
 )
 export class Application extends CursorEntity {
+  // BR-TEN-01
+  @Column({ type: 'uuid' })
+  organizationId: string;
+
+  @ManyToOne(() => Organization, { onDelete: 'RESTRICT' })
+  @JoinColumn({
+    name: 'organization_id',
+    foreignKeyConstraintName: 'FK_applications_organization_id',
+  })
+  organization?: Organization;
+
   // BR-APP-03
   @Column({ type: 'uuid' })
   jobId: string;
