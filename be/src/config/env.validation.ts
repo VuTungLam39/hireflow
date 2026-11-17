@@ -1,6 +1,7 @@
 import { plainToInstance, Transform } from 'class-transformer';
 import {
   IsBoolean,
+  IsEmail,
   IsEnum,
   IsIn,
   IsInt,
@@ -256,6 +257,36 @@ class EnvironmentVariables {
   @Min(1)
   @Max(2000)
   EMBEDDING_DIM: number = 1024;
+
+  // MVP 3 · BR-NOTI-02
+  @IsIn(['brevo', 'mailpit', 'log'])
+  EMAIL_PROVIDER: string = 'log';
+
+  @ValidateIf((env: EnvironmentVariables) => env.EMAIL_PROVIDER === 'brevo')
+  @IsString()
+  @IsNotEmpty()
+  BREVO_API_KEY?: string;
+
+  @Matches(/^https?:\/\/.+/, { message: 'MAILPIT_URL phải có dạng http://...' })
+  MAILPIT_URL: string = 'http://localhost:8025';
+
+  @ValidateIf((env: EnvironmentVariables) => env.EMAIL_PROVIDER === 'brevo')
+  @IsEmail()
+  EMAIL_FROM?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  EMAIL_FROM_NAME: string = 'HireFlow';
+
+  // Link trong email (xác minh, đăng nhập) trỏ về FE
+  @ValidateIf(
+    (env: EnvironmentVariables) =>
+      env.NODE_ENV === Environment.Production || hasValue('APP_PUBLIC_URL')(env),
+  )
+  @Matches(/^https?:\/\/[^\s]+$/, {
+    message: 'APP_PUBLIC_URL bắt buộc khi NODE_ENV=production, dạng https://hireflow.example',
+  })
+  APP_PUBLIC_URL?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {
