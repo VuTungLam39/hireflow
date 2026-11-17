@@ -11,6 +11,7 @@ import {
   applyDepartmentScope,
   applyInterviewerScope,
   dataScope,
+  orgIdOf,
 } from '../../common/utils/department-scope.js';
 import { escapeLike, normalizeKeywords } from '../../common/utils/text.js';
 import { CvPipelineService } from '../ai/pipeline/cv-pipeline.service.js';
@@ -36,7 +37,7 @@ import { PrerenderHookService } from './prerender-hook.service.js';
 import { AppEvents } from '../../common/events/app-events.js';
 import { QueryPublicJobsDto } from './dto/query-public-jobs.dto.js';
 
-type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId'>;
+type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId' | 'organizationId'>;
 
 export interface JobPipeline {
   new: number;
@@ -167,7 +168,9 @@ export class JobsService {
       .offset(query.skip)
       .limit(query.limit);
 
-    applyDepartmentScope(qb, user, 'job.departmentId', { jobIdColumn: '"job"."id"' });
+    applyDepartmentScope(qb, user, 'job.organizationId', 'job.departmentId', {
+      jobIdColumn: '"job"."id"',
+    });
     if (query.status) qb.andWhere('job.status = :status', { status: query.status });
     if (query.departmentId) {
       qb.andWhere('job.departmentId = :departmentId', { departmentId: query.departmentId });
@@ -234,9 +237,14 @@ export class JobsService {
   // BR-JOB-01
   async create(dto: CreateJobDto, user: ScopeUser): Promise<JobView> {
     this.assertDetails(dto);
-    await this.assertDepartment(dto.departmentId);
+    await this.assertDepartment(dto.departmentId, user);
     const saved = await this.jobsRepository.save(
-      this.jobsRepository.create({ ...dto, status: JobStatus.Draft, createdBy: user.id }),
+      this.jobsRepository.create({
+        ...dto,
+        organizationId: orgIdOf(user),
+        status: JobStatus.Draft,
+        createdBy: user.id,
+      }),
     );
     this.events.emit('job.changed', { jobId: saved.id });
     return this.findOne(saved.id, user);
@@ -245,12 +253,13 @@ export class JobsService {
   // F4: bản nháp mới giữ JD, trường cấu trúc và tiêu chí phiên bản mới nhất (thành phiên bản 1);
   // không copy hồ sơ, bỏ hạn nộp; không chạy match-job hay prerender vì tin còn DRAFT
   async clone(id: string, user: ScopeUser): Promise<JobView> {
-    const src = await this.getOrFail(id);
-    await this.assertDepartment(src.departmentId);
+    const src = await this.getOrFail(id, user);
+    await this.assertDepartment(src.departmentId, user);
     const suffix = ' (bản sao)';
     const newId = await this.dataSource.transaction(async (manager) => {
       const job = await manager.save(
         manager.create(Job, {
+          organizationId: src.organizationId,
           title: src.title.slice(0, 200 - suffix.length) + suffix,
           departmentId: src.departmentId,
           location: src.location,
@@ -296,12 +305,12 @@ export class JobsService {
 
   // BR-JOB-04
   async update(id: string, dto: UpdateJobDto, user: ScopeUser): Promise<JobView> {
-    const job = await this.getOrFail(id);
+    const job = await this.getOrFail(id, user);
     this.assertEditable(job);
     this.assertDetails(dto, job);
     if (dto.departmentId && dto.departmentId !== job.departmentId) {
       await this.assertDepartmentMovable(id);
-      await this.assertDepartment(dto.departmentId);
+      await this.assertDepartment(dto.departmentId, user);
     }
     await this.jobsRepository.update(id, dto);
     if (job.status === JobStatus.Open) this.prerender.schedule('job.updated');
@@ -310,8 +319,8 @@ export class JobsService {
   }
 
   // Kickoff 8.2
-  async suggestRequirements(id: string) {
-    const job = await this.getOrFail(id);
+  async suggestRequirements(id: string, user: ScopeUser) {
+    const job = await this.getOrFail(id, user);
     return this.suggester.suggest(job.title, job.jdText);
   }
 
@@ -319,10 +328,11 @@ export class JobsService {
   async saveRequirements(
     id: string,
     dto: SaveRequirementsDto,
+    user: ScopeUser,
     requestId?: string,
   ): Promise<{ jdVersion: number }> {
     const result = await this.dataSource.transaction(async (manager) => {
-      const job = await this.lockJob(manager, id);
+      const job = await this.lockJob(manager, id, user);
       this.assertEditable(job);
       const jdVersion = job.jdVersion + 1;
       await manager.update(Job, id, { jdVersion });
@@ -353,7 +363,7 @@ export class JobsService {
   // BR-JOB-02
   async publish(id: string, user: ScopeUser, requestId?: string): Promise<JobView> {
     const jdVersion = await this.dataSource.transaction(async (manager) => {
-      const job = await this.lockJob(manager, id);
+      const job = await this.lockJob(manager, id, user);
       const hasRequirements = await manager.existsBy(JobRequirement, {
         jobId: id,
         jdVersion: job.jdVersion,
@@ -387,7 +397,7 @@ export class JobsService {
   // BR-JOB-03
   async close(id: string, user: ScopeUser): Promise<JobView> {
     await this.dataSource.transaction(async (manager) => {
-      const job = await this.lockJob(manager, id);
+      const job = await this.lockJob(manager, id, user);
       if (job.status !== JobStatus.Open) {
         throw new BusinessException(
           ErrorCode.JobNotClosable,
@@ -403,8 +413,8 @@ export class JobsService {
   }
 
   // BR-JOB-04
-  async remove(id: string): Promise<void> {
-    const job = await this.getOrFail(id);
+  async remove(id: string, user: ScopeUser): Promise<void> {
+    const job = await this.getOrFail(id, user);
     const hasApplications = await this.dataSource
       .getRepository(Application)
       .existsBy({ jobId: id });
@@ -639,21 +649,24 @@ export class JobsService {
       .innerJoin('job.department', 'department')
       .addSelect(['department.id', 'department.name'])
       .where('job.id = :id', { id });
-    const job = await applyDepartmentScope(qb, user, 'job.departmentId', {
+    const job = await applyDepartmentScope(qb, user, 'job.organizationId', 'job.departmentId', {
       jobIdColumn: '"job"."id"',
     }).getOne();
     if (!job) throw new NotFoundException('Job not found');
     return job;
   }
 
-  private async getOrFail(id: string): Promise<Job> {
-    const job = await this.jobsRepository.findOneBy({ id });
+  private async getOrFail(id: string, user: ScopeUser): Promise<Job> {
+    const job = await this.jobsRepository.findOneBy({ id, organizationId: orgIdOf(user) });
     if (!job) throw new NotFoundException('Job not found');
     return job;
   }
 
-  private async lockJob(manager: EntityManager, id: string): Promise<Job> {
-    const job = await manager.findOne(Job, { where: { id }, lock: { mode: 'pessimistic_write' } });
+  private async lockJob(manager: EntityManager, id: string, user: ScopeUser): Promise<Job> {
+    const job = await manager.findOne(Job, {
+      where: { id, organizationId: orgIdOf(user) },
+      lock: { mode: 'pessimistic_write' },
+    });
     if (!job) throw new NotFoundException('Job not found');
     return job;
   }
@@ -678,8 +691,8 @@ export class JobsService {
     );
   }
 
-  private async assertDepartment(departmentId: string): Promise<void> {
-    if (await this.departmentsService.exists(departmentId)) return;
+  private async assertDepartment(departmentId: string, user: ScopeUser): Promise<void> {
+    if (await this.departmentsService.exists(departmentId, orgIdOf(user))) return;
     throw new BusinessException(
       ErrorCode.ValidationFailed,
       'Validation failed',

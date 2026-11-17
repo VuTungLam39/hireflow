@@ -36,6 +36,7 @@ import { JobsModule } from './modules/jobs/jobs.module.js';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module.js';
 import { MatchingModule } from './modules/matching/matching.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { OrganizationsModule } from './modules/organizations/organizations.module.js';
 import { PublicModule } from './modules/public/public.module.js';
 import { RagModule } from './modules/rag/rag.module.js';
 import { UsersModule } from './modules/users/users.module.js';
@@ -73,6 +74,7 @@ import { UsersModule } from './modules/users/users.module.js';
     AppEventsModule,
     AuditModule,
     HealthModule,
+    OrganizationsModule,
     DepartmentsModule,
     UsersModule,
     AuthModule,

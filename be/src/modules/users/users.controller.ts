@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator.js';
+import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Permissions } from '../../common/decorators/permissions.decorator.js';
 import { Permission } from '../../common/permissions/permission.enum.js';
@@ -32,20 +33,20 @@ export class UsersController {
   @Post()
   @ApiOperation({ summary: 'Tạo user (Admin)' })
   @ResponseMessage('User created')
-  create(@Body() dto: CreateUserDto, @CurrentUser('id') actorId: string) {
-    return this.usersService.create(dto, actorId);
+  create(@Body() dto: CreateUserDto, @CurrentUser() actor: AuthUser) {
+    return this.usersService.create(dto, actor);
   }
 
   @Get()
   @ApiOperation({ summary: 'Danh sách user có phân trang (Admin)' })
-  findAll(@Query() query: QueryUserDto) {
-    return this.usersService.findAll(query);
+  findAll(@Query() query: QueryUserDto, @CurrentUser() actor: AuthUser) {
+    return this.usersService.findAll(query, actor);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Chi tiết user (Admin)' })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.usersService.findById(id);
+  findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() actor: AuthUser) {
+    return this.usersService.findInOrg(id, actor);
   }
 
   @Patch(':id')
@@ -54,9 +55,9 @@ export class UsersController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateUserDto,
-    @CurrentUser('id') actorId: string,
+    @CurrentUser() actor: AuthUser,
   ) {
-    return this.usersService.update(id, dto, actorId);
+    return this.usersService.update(id, dto, actor);
   }
 
   @Patch(':id/status')
@@ -65,16 +66,16 @@ export class UsersController {
   setStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateUserStatusDto,
-    @CurrentUser('id') actorId: string,
+    @CurrentUser() actor: AuthUser,
   ) {
-    return this.usersService.setStatus(id, dto.isActive, actorId);
+    return this.usersService.setStatus(id, dto.isActive, actor);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Xoá mềm user (Admin)' })
   @ResponseMessage('User deleted')
-  remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser('id') actorId: string) {
-    return this.usersService.remove(id, actorId);
+  remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() actor: AuthUser) {
+    return this.usersService.remove(id, actor);
   }
 }

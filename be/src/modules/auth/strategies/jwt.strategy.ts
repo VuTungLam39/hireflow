@@ -1,9 +1,11 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { BusinessException, ErrorCode } from '../../../common/exceptions/index.js';
 import type { AuthUser, JwtPayload } from '../../../common/interfaces/jwt-payload.interface.js';
 import { jwtConfig } from '../../../config/jwt.config.js';
+import { canSignIn } from '../../organizations/entities/organization.entity.js';
 import { UsersService } from '../../users/users.service.js';
 
 /** Xác thực access token trong header Authorization: Bearer <token> */
@@ -26,6 +28,20 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (!user || !user.isActive) {
       throw new UnauthorizedException('User is inactive or does not exist');
     }
-    return { id: user.id, email: user.email, role: user.role, departmentId: user.departmentId };
+    // BR-ORG-04
+    if (user.organization && !canSignIn(user.organization.status)) {
+      throw new BusinessException(
+        ErrorCode.OrgDisabled,
+        'Organization is disabled',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      departmentId: user.departmentId,
+      organizationId: user.organizationId,
+    };
   }
 }

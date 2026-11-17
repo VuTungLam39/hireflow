@@ -18,8 +18,8 @@ export class MatchingController {
   @Get(':id/matches')
   @Permissions(Permission.ApplicationCreate)
   @ApiOperation({ summary: 'Ứng viên cũ phù hợp với job, kèm lý do (US-10)' })
-  list(@Param('id', ParseUUIDPipe) id: string) {
-    return this.matching.list(id);
+  list(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.matching.list(id, user);
   }
 
   @Post(':id/matches/:candidateId/invite')

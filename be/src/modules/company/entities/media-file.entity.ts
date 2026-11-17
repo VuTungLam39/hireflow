@@ -1,4 +1,5 @@
-import { Check, Column, Entity, Index } from 'typeorm';
+import { Check, Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
+import { Organization } from '../../organizations/entities/organization.entity.js';
 import { AbstractEntity } from '../../../common/entities/abstract.entity.js';
 
 export enum MediaKind {
@@ -13,6 +14,18 @@ export enum MediaKind {
 @Check('CK_media_files_size', `"size_bytes" > 0 AND "size_bytes" <= 3145728`)
 @Check('CK_media_files_dimensions', `"width" BETWEEN 1 AND 4096 AND "height" BETWEEN 1 AND 4096`)
 export class MediaFile extends AbstractEntity {
+  // BR-TEN-01
+  @Index('IDX_media_files_organization_id')
+  @Column({ type: 'uuid' })
+  organizationId: string;
+
+  @ManyToOne(() => Organization, { onDelete: 'RESTRICT' })
+  @JoinColumn({
+    name: 'organization_id',
+    foreignKeyConstraintName: 'FK_media_files_organization_id',
+  })
+  organization?: Organization;
+
   @Column({ type: 'enum', enum: MediaKind })
   kind: MediaKind;
 

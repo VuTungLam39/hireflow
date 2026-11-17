@@ -17,6 +17,7 @@ export enum ErrorCode {
   // Xác thực, người dùng, phòng ban
   RefreshTokenReused = 'REFRESH_TOKEN_REUSED',
   AccountDisabled = 'ACCOUNT_DISABLED',
+  OrgDisabled = 'ORG_DISABLED',
   WrongPassword = 'WRONG_PASSWORD',
   EmailExists = 'EMAIL_EXISTS',
   DepartmentInUse = 'DEPARTMENT_IN_USE',

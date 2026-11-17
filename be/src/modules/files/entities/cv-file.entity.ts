@@ -1,4 +1,5 @@
 import { Check, Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
+import { Organization } from '../../organizations/entities/organization.entity.js';
 import { AbstractEntity } from '../../../common/entities/abstract.entity.js';
 import { Candidate } from '../../candidates/entities/candidate.entity.js';
 import { User } from '../../users/entities/user.entity.js';
@@ -28,6 +29,15 @@ export const CV_MAX_BYTES = 5 * 1024 * 1024;
 )
 @Check('CK_cv_files_size_bytes', `"size_bytes" BETWEEN 1 AND ${CV_MAX_BYTES}`)
 export class CvFile extends AbstractEntity {
+  // BR-TEN-01
+  @Index('IDX_cv_files_organization_id')
+  @Column({ type: 'uuid' })
+  organizationId: string;
+
+  @ManyToOne(() => Organization, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'organization_id', foreignKeyConstraintName: 'FK_cv_files_organization_id' })
+  organization?: Organization;
+
   @Column({ type: 'uuid' })
   candidateId: string;
 

@@ -6,6 +6,7 @@ import { buildAiConfig } from '../../../config/ai.config.js';
 import { Role } from '../../../common/enums/role.enum.js';
 import dataSource from '../../../database/data-source.js';
 import { buildEmbeddingProvider } from '../../ai/ai.factory.js';
+import { DEFAULT_ORGANIZATION_ID } from '../../organizations/entities/organization.entity.js';
 import { searchKeywords } from '../keywords.js';
 import { CHAT_TOP_K, retrieveChunks, type RetrievalMode } from '../retrieval.js';
 import { RETRIEVAL_CASES, type RetrievalCase } from './retrieval-dataset.js';
@@ -14,7 +15,7 @@ import { RETRIEVAL_CASES, type RetrievalCase } from './retrieval-dataset.js';
 
 const MODES: RetrievalMode[] = ['vector', 'keyword', 'hybrid'];
 const TIMING_RUNS = 5;
-const ADMIN = { role: Role.Admin, departmentId: null };
+const ADMIN = { role: Role.Admin, departmentId: null, organizationId: DEFAULT_ORGANIZATION_ID };
 
 interface CaseResult {
   id: string;

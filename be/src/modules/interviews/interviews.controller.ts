@@ -46,8 +46,8 @@ export class InterviewsController {
   @Get('interviewers')
   @Permissions(Permission.InterviewManage)
   @ApiOperation({ summary: 'Người dùng vai trò Interviewer đang hoạt động (để phân công)' })
-  interviewers() {
-    return this.interviews.interviewers();
+  interviewers(@CurrentUser() user: AuthUser) {
+    return this.interviews.interviewers(user);
   }
 
   @Patch(':id')

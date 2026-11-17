@@ -20,6 +20,10 @@ import { CreateUserDto } from './dto/create-user.dto.js';
 import { QueryUserDto } from './dto/query-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { User } from './entities/user.entity.js';
+import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
+import { orgIdOf } from '../../common/utils/department-scope.js';
+
+type Actor = Pick<AuthUser, 'id' | 'organizationId'>;
 
 const SALT_ROUNDS = 10;
 
@@ -33,7 +37,8 @@ export class UsersService {
     private readonly audit: AuditService,
   ) {}
 
-  async create(dto: CreateUserDto, actorId: string | null = null): Promise<User> {
+  async create(dto: CreateUserDto, actor: Actor): Promise<User> {
+    const organizationId = orgIdOf(actor);
     if (await this.usersRepository.existsBy({ email: dto.email })) {
       // BR-ACC-02
       throw new BusinessException(
@@ -46,19 +51,22 @@ export class UsersService {
     const { password, ...rest } = dto;
     const user = this.usersRepository.create({
       ...rest,
-      departmentId: await this.resolveDepartment(dto.role, dto.departmentId),
+      organizationId,
+      departmentId: await this.resolveDepartment(dto.role, dto.departmentId, organizationId),
       passwordHash: await bcrypt.hash(password, SALT_ROUNDS),
+      emailVerifiedAt: new Date(),
     });
     const saved = await this.usersRepository.save(user);
-    await this.record(actorId, AuditAction.UserCreated, saved.id, {
+    await this.record(actor, AuditAction.UserCreated, saved.id, {
       role: saved.role,
       departmentId: saved.departmentId,
     });
     return this.findById(saved.id);
   }
 
-  async findAll(query: QueryUserDto): Promise<PaginatedResult<User>> {
+  async findAll(query: QueryUserDto, actor: Actor): Promise<PaginatedResult<User>> {
     const qb = this.withDepartment(this.usersRepository.createQueryBuilder('user'))
+      .where('user.organizationId = :organizationId', { organizationId: orgIdOf(actor) })
       .orderBy('user.createdAt', query.order)
       .skip(query.skip)
       .take(query.limit);
@@ -84,6 +92,13 @@ export class UsersService {
     return user;
   }
 
+  // BR-TEN-02
+  async findInOrg(id: string, actor: Actor): Promise<User> {
+    const user = await this.findById(id);
+    if (user.organizationId !== orgIdOf(actor)) throw new NotFoundException('User not found');
+    return user;
+  }
+
   findByEmailWithPassword(email: string): Promise<User | null> {
     return this.usersRepository
       .createQueryBuilder('user')
@@ -106,11 +121,11 @@ export class UsersService {
     });
   }
 
-  async update(id: string, dto: UpdateUserDto, actorId: string): Promise<User> {
-    const user = await this.findById(id);
+  async update(id: string, dto: UpdateUserDto, actor: Actor): Promise<User> {
+    const user = await this.findInOrg(id, actor);
     // BR-ACC-05
     if (dto.role !== undefined && dto.role !== user.role) {
-      this.assertNotSelf(id, actorId, 'Cannot change your own role');
+      this.assertNotSelf(id, actor.id, 'Cannot change your own role');
     }
     const { password, departmentId, ...rest } = dto;
     const before = { role: user.role, departmentId: user.departmentId };
@@ -120,9 +135,11 @@ export class UsersService {
       departmentId: await this.resolveDepartment(
         role,
         departmentId !== undefined ? departmentId : user.departmentId,
+        user.organizationId!,
       ),
     });
     delete user.department;
+    delete user.organization;
     if (password) {
       user.passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     }
@@ -137,41 +154,36 @@ export class UsersService {
       });
     }
     if (password) changes.passwordReset = true;
-    if (Object.keys(changes).length)
-      await this.record(actorId, AuditAction.UserUpdated, id, changes);
+    if (Object.keys(changes).length) await this.record(actor, AuditAction.UserUpdated, id, changes);
     // BR-ACC-06
     if (password) await this.refreshTokensService.revokeAllForUser(id);
     return this.findById(id);
   }
 
   // BR-ACC-04, BR-ACC-05
-  async setStatus(id: string, isActive: boolean, actorId: string): Promise<User> {
-    if (!isActive) this.assertNotSelf(id, actorId, 'Cannot disable your own account');
-    await this.findById(id);
+  async setStatus(id: string, isActive: boolean, actor: Actor): Promise<User> {
+    if (!isActive) this.assertNotSelf(id, actor.id, 'Cannot disable your own account');
+    await this.findInOrg(id, actor);
     await this.usersRepository.update(id, { isActive });
-    await this.record(actorId, AuditAction.UserUpdated, id, { isActive });
+    await this.record(actor, AuditAction.UserUpdated, id, { isActive });
     if (!isActive) await this.refreshTokensService.revokeAllForUser(id);
     return this.findById(id);
   }
 
   // BR-ACC-05
-  async remove(id: string, actorId: string): Promise<void> {
-    this.assertNotSelf(id, actorId, 'Cannot delete your own account');
-    await this.findById(id);
+  async remove(id: string, actor: Actor): Promise<void> {
+    this.assertNotSelf(id, actor.id, 'Cannot delete your own account');
+    await this.findInOrg(id, actor);
     await this.usersRepository.softDelete(id);
-    await this.record(actorId, AuditAction.UserDeleted, id, {});
+    await this.record(actor, AuditAction.UserDeleted, id, {});
     await this.refreshTokensService.revokeAllForUser(id);
   }
 
   // F-AUDIT-01
-  private record(
-    actorId: string | null,
-    action: AuditAction,
-    userId: string,
-    metadata: AuditMetadata,
-  ) {
+  private record(actor: Actor, action: AuditAction, userId: string, metadata: AuditMetadata) {
     return this.audit.record({
-      actorId,
+      organizationId: orgIdOf(actor),
+      actorId: actor.id,
       action,
       entity: AuditEntity.User,
       entityId: userId,
@@ -187,12 +199,13 @@ export class UsersService {
   private async resolveDepartment(
     role: Role,
     departmentId: string | null | undefined,
+    organizationId: string,
   ): Promise<string | null> {
     if (dataScope(role) !== 'department') return null;
     let error: FieldError | undefined;
     if (!departmentId) {
       error = { field: 'departmentId', messages: ['Hiring Manager phải thuộc một phòng ban'] };
-    } else if (!(await this.departmentsService.exists(departmentId))) {
+    } else if (!(await this.departmentsService.exists(departmentId, organizationId))) {
       error = { field: 'departmentId', messages: ['Phòng ban không tồn tại'] };
     }
     if (error) {
@@ -214,6 +227,13 @@ export class UsersService {
   private withDepartment(qb: SelectQueryBuilder<User>): SelectQueryBuilder<User> {
     return qb
       .leftJoin('user.department', 'department')
-      .addSelect(['department.id', 'department.name']);
+      .addSelect(['department.id', 'department.name'])
+      .leftJoin('user.organization', 'organization')
+      .addSelect([
+        'organization.id',
+        'organization.name',
+        'organization.slug',
+        'organization.status',
+      ]);
   }
 }

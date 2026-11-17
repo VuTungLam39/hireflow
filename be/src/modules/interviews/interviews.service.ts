@@ -14,7 +14,7 @@ import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { CursorResult } from '../../common/dto/cursor-result.dto.js';
 import { decodeCursor, encodeCursor } from '../../common/utils/cursor.js';
-import { applyDepartmentScope, dataScope } from '../../common/utils/department-scope.js';
+import { applyDepartmentScope, dataScope, orgIdOf } from '../../common/utils/department-scope.js';
 import {
   InterviewQuestionSuggester,
   type QuestionSuggestion,
@@ -36,7 +36,7 @@ import { InterviewAssignee } from './entities/interview-assignee.entity.js';
 import { InterviewFeedback } from './entities/interview-feedback.entity.js';
 import { Interview, InterviewStatus } from './entities/interview.entity.js';
 
-type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId'>;
+type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId' | 'organizationId'>;
 
 export const FEEDBACK_EDIT_HOURS = 24;
 const DAY_MS = 86_400_000;
@@ -102,10 +102,10 @@ export class InterviewsService implements OnModuleInit {
   }
 
   // F-INT-01
-  interviewers(): Promise<InterviewerView[]> {
+  interviewers(user: Pick<AuthUser, 'organizationId'>): Promise<InterviewerView[]> {
     return this.dataSource.getRepository(User).find({
       select: ['id', 'fullName', 'email'],
-      where: { role: Role.Interviewer, isActive: true },
+      where: { role: Role.Interviewer, isActive: true, organizationId: orgIdOf(user) },
       order: { fullName: 'ASC' },
     });
   }
@@ -149,7 +149,9 @@ export class InterviewsService implements OnModuleInit {
         { me: user.id },
       );
     }
-    applyDepartmentScope(qb, user, 'job.departmentId', { applicationIdColumn: '"app"."id"' });
+    applyDepartmentScope(qb, user, 'job.organizationId', 'job.departmentId', {
+      applicationIdColumn: '"app"."id"',
+    });
     const rows = await qb.getRawMany<{ id: string; scheduledAt: Date }>();
     const page = rows.slice(0, query.limit);
     const last = page.at(-1);
@@ -199,7 +201,7 @@ export class InterviewsService implements OnModuleInit {
     this.assertFuture(dto.scheduledAt);
     const id = await this.dataSource.transaction(async (manager) => {
       const app = await manager.findOne(Application, {
-        where: { id: applicationId },
+        where: { id: applicationId, organizationId: orgIdOf(user) },
         relations: { candidate: true },
         lock: { mode: 'pessimistic_write', tables: ['applications'] },
       });
@@ -218,7 +220,7 @@ export class InterviewsService implements OnModuleInit {
           HttpStatus.CONFLICT,
         );
       }
-      await this.assertInterviewers(manager, dto.interviewerIds);
+      await this.assertInterviewers(manager, dto.interviewerIds, app.organizationId);
       const start = new Date(dto.scheduledAt);
       await this.assertNoConflict(manager, dto.interviewerIds, start, dto.durationMinutes, null);
 
@@ -229,6 +231,7 @@ export class InterviewsService implements OnModuleInit {
         })) + 1;
       const saved = await manager.save(
         manager.create(Interview, {
+          organizationId: app.organizationId,
           applicationId,
           round: Math.min(round, 20),
           scheduledAt: start,
@@ -256,11 +259,12 @@ export class InterviewsService implements OnModuleInit {
   async update(id: string, dto: UpdateInterviewDto, user: ScopeUser): Promise<InterviewView> {
     if (dto.scheduledAt) this.assertFuture(dto.scheduledAt);
     const result = await this.dataSource.transaction(async (manager) => {
-      const iv = await this.lockEditable(manager, id);
+      const iv = await this.lockEditable(manager, id, user);
       const before = await manager.findBy(InterviewAssignee, { interviewId: id });
       const beforeIds = before.map((a) => a.userId);
       const interviewerIds = dto.interviewerIds ?? beforeIds;
-      if (dto.interviewerIds) await this.assertInterviewers(manager, dto.interviewerIds);
+      if (dto.interviewerIds)
+        await this.assertInterviewers(manager, dto.interviewerIds, orgIdOf(user));
       else await this.lockUsers(manager, interviewerIds);
 
       const start = dto.scheduledAt ? new Date(dto.scheduledAt) : iv.scheduledAt;
@@ -313,7 +317,7 @@ export class InterviewsService implements OnModuleInit {
   // F-INT-01
   async cancel(id: string, dto: CancelInterviewDto, user: ScopeUser): Promise<InterviewView> {
     const { applicationId, assignees } = await this.dataSource.transaction(async (manager) => {
-      const iv = await this.lockEditable(manager, id, true);
+      const iv = await this.lockEditable(manager, id, user, true);
       await manager.update(Interview, id, {
         status: InterviewStatus.Cancelled,
         cancelReason: dto.reason,
@@ -341,7 +345,7 @@ export class InterviewsService implements OnModuleInit {
           job: { id: true, title: true, jdVersion: true, departmentId: true },
         },
       },
-      where: { id },
+      where: { id, organizationId: orgIdOf(user) },
       relations: { application: { job: true } },
     });
     if (!iv || !(await this.canSuggest(iv, user)))
@@ -408,7 +412,7 @@ export class InterviewsService implements OnModuleInit {
     const { feedbackId, first, notifyTo, applicationId } = await this.dataSource.transaction(
       async (manager) => {
         const iv = await manager.findOne(Interview, {
-          where: { id },
+          where: { id, organizationId: orgIdOf(user) },
           relations: { application: { job: true } },
           lock: { mode: 'pessimistic_write', tables: ['interviews'] },
         });
@@ -546,10 +550,10 @@ export class InterviewsService implements OnModuleInit {
     });
   }
 
-  private async assertInterviewers(manager: EntityManager, ids: string[]) {
+  private async assertInterviewers(manager: EntityManager, ids: string[], organizationId: string) {
     const found = await manager.find(User, {
       select: ['id'],
-      where: { id: In(ids), role: Role.Interviewer, isActive: true },
+      where: { id: In(ids), role: Role.Interviewer, isActive: true, organizationId },
       order: { id: 'ASC' },
       lock: { mode: 'pessimistic_write' },
     });
@@ -611,9 +615,14 @@ export class InterviewsService implements OnModuleInit {
     }
   }
 
-  private async lockEditable(manager: EntityManager, id: string, allowWithFeedback = false) {
+  private async lockEditable(
+    manager: EntityManager,
+    id: string,
+    user: ScopeUser,
+    allowWithFeedback = false,
+  ) {
     const iv = await manager.findOne(Interview, {
-      where: { id },
+      where: { id, organizationId: orgIdOf(user) },
       lock: { mode: 'pessimistic_write' },
     });
     if (!iv) throw new NotFoundException('Interview not found');
@@ -658,7 +667,7 @@ export class InterviewsService implements OnModuleInit {
       .createQueryBuilder('app')
       .innerJoin('app.job', 'job')
       .where('app.id = :id', { id });
-    const exists = await applyDepartmentScope(qb, user, 'job.departmentId', {
+    const exists = await applyDepartmentScope(qb, user, 'job.organizationId', 'job.departmentId', {
       applicationIdColumn: '"app"."id"',
     }).getExists();
     if (!exists) throw new NotFoundException('Application not found');

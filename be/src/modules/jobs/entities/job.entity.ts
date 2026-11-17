@@ -1,4 +1,5 @@
 import { Check, Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
+import { Organization } from '../../organizations/entities/organization.entity.js';
 import { AbstractEntity } from '../../../common/entities/abstract.entity.js';
 import { Department } from '../../departments/entities/department.entity.js';
 import { User } from '../../users/entities/user.entity.js';
@@ -40,6 +41,7 @@ export enum WorkMode {
 }
 
 @Entity('jobs')
+@Index('IDX_jobs_organization_id_created_at_id', { synchronize: false })
 @Check('CK_jobs_title_length', `length("title") >= 5`)
 @Check('CK_jobs_jd_version', `"jd_version" >= 1`)
 @Check('CK_jobs_published_at', `"status" = 'DRAFT' OR "published_at" IS NOT NULL`)
@@ -54,6 +56,14 @@ export enum WorkMode {
 @Check('CK_jobs_headcount', `"headcount" BETWEEN 1 AND 999`)
 @Check('CK_jobs_benefits_length', `length("benefits") <= 5000`)
 export class Job extends AbstractEntity {
+  // BR-TEN-01
+  @Column({ type: 'uuid' })
+  organizationId: string;
+
+  @ManyToOne(() => Organization, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'organization_id', foreignKeyConstraintName: 'FK_jobs_organization_id' })
+  organization?: Organization;
+
   @Column({ type: 'varchar', length: 200 })
   title: string;
 

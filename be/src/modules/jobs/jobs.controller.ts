@@ -88,8 +88,8 @@ export class JobsController {
   @HttpCode(HttpStatus.OK)
   @Permissions(Permission.JobUpdate)
   @ApiOperation({ summary: 'AI gợi ý tiêu chí từ JD (không lưu); 503 AI_UNAVAILABLE khi LLM lỗi' })
-  suggestRequirements(@Param('id', ParseUUIDPipe) id: string) {
-    return this.jobsService.suggestRequirements(id);
+  suggestRequirements(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.jobsService.suggestRequirements(id, user);
   }
 
   @Put(':id/requirements')
@@ -100,9 +100,10 @@ export class JobsController {
   saveRequirements(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: SaveRequirementsDto,
+    @CurrentUser() user: AuthUser,
     @RequestId() requestId?: string,
   ) {
-    return this.jobsService.saveRequirements(id, dto, requestId);
+    return this.jobsService.saveRequirements(id, dto, user, requestId);
   }
 
   @Patch(':id/publish')
@@ -130,7 +131,7 @@ export class JobsController {
   @Permissions(Permission.JobUpdate)
   @ApiOperation({ summary: 'Xoá mềm job DRAFT chưa có hồ sơ' })
   @ResponseMessage('Job deleted')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.jobsService.remove(id);
+  remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.jobsService.remove(id, user);
   }
 }

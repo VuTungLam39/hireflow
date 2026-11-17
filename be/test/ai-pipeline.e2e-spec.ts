@@ -30,6 +30,7 @@ import {
 import { Job, JobStatus } from '../src/modules/jobs/entities/job.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { ORG, withOrg } from './fixtures.js';
 
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 const INVALID_MARKER = 'CV_GAY_LOI_SCHEMA';
@@ -124,13 +125,15 @@ describe('AI pipeline (e2e, LLM giả)', () => {
 
     const dep = await ds
       .getRepository(Department)
-      .save({ name: `AI ${run}`, code: `AI_${run}`.toUpperCase() });
-    const hr = await ds.getRepository(User).save({
-      email: `ai-hr-${run}@example.com`,
-      fullName: 'AI HR',
-      role: Role.Hr,
-      passwordHash: await bcrypt.hash('Password123', 4),
-    });
+      .save(withOrg({ name: `AI ${run}`, code: `AI_${run}`.toUpperCase() }));
+    const hr = await ds.getRepository(User).save(
+      withOrg({
+        email: `ai-hr-${run}@example.com`,
+        fullName: 'AI HR',
+        role: Role.Hr,
+        passwordHash: await bcrypt.hash('Password123', 4),
+      }),
+    );
     const jobOf = (title: string, jdText: string) => ({
       title,
       departmentId: dep.id,
@@ -143,10 +146,12 @@ describe('AI pipeline (e2e, LLM giả)', () => {
     });
     const [job, job2] = await ds
       .getRepository(Job)
-      .save([
-        jobOf(`Backend ${run}`, 'Yêu cầu NestJS, PostgreSQL; ưu tiên Docker và Redis.'),
-        jobOf(`Backend 2 ${run}`, 'JD'),
-      ]);
+      .save(
+        withOrg([
+          jobOf(`Backend ${run}`, 'Yêu cầu NestJS, PostgreSQL; ưu tiên Docker và Redis.'),
+          jobOf(`Backend 2 ${run}`, 'JD'),
+        ]),
+      );
     const requirement = (
       jobId: string,
       position: number,
@@ -467,9 +472,12 @@ describe('AI pipeline (e2e, LLM giả)', () => {
     await ds.getRepository(Application).update(created.id, { aiStatus: AiStatus.Processing });
 
     anonymized.push(row.candidateId);
-    await app
-      .get(CandidatesService)
-      .anonymize(row.candidateId, { id: ids.hr, role: Role.Admin, departmentId: null });
+    await app.get(CandidatesService).anonymize(row.candidateId, {
+      id: ids.hr,
+      role: Role.Admin,
+      departmentId: null,
+      organizationId: ORG,
+    });
     const pipeline = app.get(CvPipelineService) as unknown as {
       saveScore: (...args: unknown[]) => Promise<unknown>;
     };

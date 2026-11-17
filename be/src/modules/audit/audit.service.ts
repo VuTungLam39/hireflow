@@ -12,8 +12,11 @@ import {
   AuditLog,
   type AuditMetadata,
 } from './entities/audit-log.entity.js';
+import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
+import { orgIdOf } from '../../common/utils/department-scope.js';
 
 export interface AuditEntry {
+  organizationId: string;
   actorId: string | null;
   action: AuditAction;
   entity: AuditEntity;
@@ -62,10 +65,14 @@ export class AuditService {
     );
   }
 
-  async list(query: QueryAuditLogDto): Promise<CursorResult<AuditLogView>> {
+  async list(
+    query: QueryAuditLogDto,
+    user: Pick<AuthUser, 'organizationId'>,
+  ): Promise<CursorResult<AuditLogView>> {
     const qb = this.repo
       .createQueryBuilder('log')
       .leftJoin(User, 'actor', 'actor.id = log.actorId')
+      .where('log.organizationId = :organizationId', { organizationId: orgIdOf(user) })
       .select('log')
       .addSelect(['actor.id', 'actor.fullName', 'actor.email'])
       .orderBy('log.createdAt', 'DESC')

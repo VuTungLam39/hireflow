@@ -25,6 +25,7 @@ import { JobMatch } from '../src/modules/matching/entities/job-match.entity.js';
 import { RefreshToken } from '../src/modules/refresh-tokens/entities/refresh-token.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { withOrg } from './fixtures.js';
 
 // D5 · F-APP-10, F-FILE-02, F-CAND-05, F-OPS-03 · BR-APP-05, BR-FILE-04, BR-DATA-04, BR-MATCH-04
 describe('Data lifecycle (e2e)', () => {
@@ -47,38 +48,44 @@ describe('Data lifecycle (e2e)', () => {
   const as = (who: Who, req: request.Test) => req.set('Authorization', `Bearer ${tokens[who]}`);
 
   const candidate = async (name: string) => {
-    const c = await ds.getRepository(Candidate).save({
-      fullName: `${name} ${run}`,
-      email: `dl-${name.toLowerCase()}-${run}@example.com`,
-      phone: '0912345678',
-      consentAt: new Date(),
-      consentVersion: 'v1',
-    });
+    const c = await ds.getRepository(Candidate).save(
+      withOrg({
+        fullName: `${name} ${run}`,
+        email: `dl-${name.toLowerCase()}-${run}@example.com`,
+        phone: '0912345678',
+        consentAt: new Date(),
+        consentVersion: 'v1',
+      }),
+    );
     candidateIds.push(c.id);
     return c;
   };
   const cvFile = (candidateId: string, extra: Partial<CvFile> = {}) =>
-    ds.getRepository(CvFile).save({
-      candidateId,
-      storageKey: `cv/test/${run}-${randomUUID()}.pdf`,
-      originalName: 'cv.pdf',
-      mime: 'application/pdf',
-      sizeBytes: 100,
-      sha256: randomUUID().replace(/-/g, '').padEnd(64, '0'),
-      parseStatus: CvParseStatus.Parsed,
-      text: 'NestJS 3 năm',
-      ...extra,
-    });
+    ds.getRepository(CvFile).save(
+      withOrg({
+        candidateId,
+        storageKey: `cv/test/${run}-${randomUUID()}.pdf`,
+        originalName: 'cv.pdf',
+        mime: 'application/pdf',
+        sizeBytes: 100,
+        sha256: randomUUID().replace(/-/g, '').padEnd(64, '0'),
+        parseStatus: CvParseStatus.Parsed,
+        text: 'NestJS 3 năm',
+        ...extra,
+      }),
+    );
   const application = (candidateId: string, extra: Partial<Application> = {}) =>
-    ds.getRepository(Application).save({
-      jobId: ids.job,
-      candidateId,
-      status: ApplicationStatus.New,
-      aiStatus: AiStatus.Done,
-      score: 70,
-      scoreBreakdown: [],
-      ...extra,
-    });
+    ds.getRepository(Application).save(
+      withOrg({
+        jobId: ids.job,
+        candidateId,
+        status: ApplicationStatus.New,
+        aiStatus: AiStatus.Done,
+        score: 70,
+        scoreBreakdown: [],
+        ...extra,
+      }),
+    );
   const backdate = (table: 'candidates' | 'applications', id: string, monthsAgo: number) =>
     ds.query(`UPDATE ${table} SET created_at = now() - make_interval(months => $2) WHERE id = $1`, [
       id,
@@ -95,29 +102,33 @@ describe('Data lifecycle (e2e)', () => {
 
     const dep = await ds
       .getRepository(Department)
-      .save({ name: `DL ${run}`, code: `DL_${run}`.toUpperCase() });
+      .save(withOrg({ name: `DL ${run}`, code: `DL_${run}`.toUpperCase() }));
     const passwordHash = await bcrypt.hash(password, 4);
-    const [, hr] = await ds.getRepository(User).save([
-      { email: emails.admin, fullName: 'DL Admin', role: Role.Admin, passwordHash },
-      { email: emails.hr, fullName: 'DL HR', role: Role.Hr, passwordHash },
-      {
-        email: emails.hm,
-        fullName: 'DL HM',
-        role: Role.HiringManager,
+    const [, hr] = await ds.getRepository(User).save(
+      withOrg([
+        { email: emails.admin, fullName: 'DL Admin', role: Role.Admin, passwordHash },
+        { email: emails.hr, fullName: 'DL HR', role: Role.Hr, passwordHash },
+        {
+          email: emails.hm,
+          fullName: 'DL HM',
+          role: Role.HiringManager,
+          departmentId: dep.id,
+          passwordHash,
+        },
+      ]),
+    );
+    const job = await ds.getRepository(Job).save(
+      withOrg({
+        title: `Job DL ${run}`,
         departmentId: dep.id,
-        passwordHash,
-      },
-    ]);
-    const job = await ds.getRepository(Job).save({
-      title: `Job DL ${run}`,
-      departmentId: dep.id,
-      status: JobStatus.Open,
-      location: 'Hà Nội',
-      jdText: 'JD',
-      jdVersion: 1,
-      createdBy: hr.id,
-      publishedAt: new Date(),
-    });
+        status: JobStatus.Open,
+        location: 'Hà Nội',
+        jdText: 'JD',
+        jdVersion: 1,
+        createdBy: hr.id,
+        publishedAt: new Date(),
+      }),
+    );
     Object.assign(ids, { dep: dep.id, job: job.id, hr: hr.id });
 
     for (const who of Object.keys(emails) as Who[]) {
@@ -297,7 +308,7 @@ describe('Data lifecycle (e2e)', () => {
         [expiredApp.id, `${secret} đã nhận việc nơi khác`, ids.hr],
       );
       const [{ id: interviewId }] = await ds.query(
-        `INSERT INTO interviews (application_id, round, scheduled_at, location, status, cancel_reason, created_by) VALUES ($1, 1, now(), 'Phòng họp', 'CANCELLED', $2, $3) RETURNING id`,
+        `INSERT INTO interviews (organization_id, application_id, round, scheduled_at, location, status, cancel_reason, created_by) SELECT a.organization_id, a.id, 1, now(), 'Phòng họp', 'CANCELLED', $2, $3 FROM applications a WHERE a.id = $1 RETURNING id`,
         [expiredApp.id, `${secret} xin dời`, ids.hr],
       );
       await ds.query(
@@ -309,16 +320,18 @@ describe('Data lifecycle (e2e)', () => {
       const invitedOwn = await application(invited.id, { source: ApplicationSource.PublicForm });
       await backdate('applications', invitedOwn.id, months + 1);
       await backdate('candidates', invited.id, months + 1);
-      const job2 = await ds.getRepository(Job).save({
-        title: `Job DL 2 ${run}`,
-        departmentId: ids.dep,
-        status: JobStatus.Open,
-        location: 'Hà Nội',
-        jdText: 'JD',
-        jdVersion: 1,
-        createdBy: ids.hr,
-        publishedAt: new Date(),
-      });
+      const job2 = await ds.getRepository(Job).save(
+        withOrg({
+          title: `Job DL 2 ${run}`,
+          departmentId: ids.dep,
+          status: JobStatus.Open,
+          location: 'Hà Nội',
+          jdText: 'JD',
+          jdVersion: 1,
+          createdBy: ids.hr,
+          publishedAt: new Date(),
+        }),
+      );
       await application(invited.id, { jobId: job2.id, source: ApplicationSource.MatchInvite });
 
       const recent = await candidate('Recent');

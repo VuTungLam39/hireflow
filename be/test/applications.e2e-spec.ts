@@ -6,7 +6,7 @@ import { existsSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import request from 'supertest';
-import { DataSource, In } from 'typeorm';
+import { DataSource, type DeepPartial, In } from 'typeorm';
 import { AppModule } from '../src/app.module.js';
 import { AiStatus } from '../src/common/enums/ai-status.enum.js';
 import { ApplicationStatus } from '../src/common/enums/application-status.enum.js';
@@ -25,6 +25,7 @@ import {
 import { Job, JobStatus } from '../src/modules/jobs/entities/job.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { withOrg } from './fixtures.js';
 
 // BE-13 · API Contract 4.5 · US-04, 06, 07, 09, 15 · BR-STS-01 → 07, BR-APP-03, 08 → 10
 describe('Applications (e2e)', () => {
@@ -82,28 +83,32 @@ describe('Applications (e2e)', () => {
     await app.init();
     ds = app.get(DataSource);
 
-    const [depA, depB] = await ds.getRepository(Department).save([
-      { name: `App A ${run}`, code: `AA_${run}`.toUpperCase() },
-      { name: `App B ${run}`, code: `AB_${run}`.toUpperCase() },
-    ]);
+    const [depA, depB] = await ds.getRepository(Department).save(
+      withOrg([
+        { name: `App A ${run}`, code: `AA_${run}`.toUpperCase() },
+        { name: `App B ${run}`, code: `AB_${run}`.toUpperCase() },
+      ]),
+    );
     const passwordHash = await bcrypt.hash(password, 4);
-    const [hr] = await ds.getRepository(User).save([
-      { email: emails.hr, fullName: 'A HR', role: Role.Hr, passwordHash },
-      {
-        email: emails.hmA,
-        fullName: 'Trưởng phòng A',
-        role: Role.HiringManager,
-        departmentId: depA.id,
-        passwordHash,
-      },
-      {
-        email: emails.hmB,
-        fullName: 'Trưởng phòng B',
-        role: Role.HiringManager,
-        departmentId: depB.id,
-        passwordHash,
-      },
-    ]);
+    const [hr] = await ds.getRepository(User).save(
+      withOrg([
+        { email: emails.hr, fullName: 'A HR', role: Role.Hr, passwordHash },
+        {
+          email: emails.hmA,
+          fullName: 'Trưởng phòng A',
+          role: Role.HiringManager,
+          departmentId: depA.id,
+          passwordHash,
+        },
+        {
+          email: emails.hmB,
+          fullName: 'Trưởng phòng B',
+          role: Role.HiringManager,
+          departmentId: depB.id,
+          passwordHash,
+        },
+      ]),
+    );
     const job = (departmentId: string, title: string, status = JobStatus.Open) => ({
       title,
       departmentId,
@@ -117,11 +122,13 @@ describe('Applications (e2e)', () => {
     });
     const [jobA, jobB, jobClosed] = await ds
       .getRepository(Job)
-      .save([
-        job(depA.id, `Job A ${run}`),
-        job(depB.id, `Job B ${run}`),
-        job(depA.id, `Job đóng ${run}`, JobStatus.Closed),
-      ]);
+      .save(
+        withOrg([
+          job(depA.id, `Job A ${run}`),
+          job(depB.id, `Job B ${run}`),
+          job(depA.id, `Job đóng ${run}`, JobStatus.Closed),
+        ]),
+      );
     const [reqA] = await ds.getRepository(JobRequirement).save([
       {
         jobId: jobA.id,
@@ -136,53 +143,59 @@ describe('Applications (e2e)', () => {
     ]);
 
     const [c1, c2, c3] = await ds.getRepository(Candidate).save(
-      ['Phạm Văn Một', 'Lê Thị Hai', 'Ngô Ba'].map((name, i) => ({
-        fullName: `${name} ${run}`,
-        email: `a-c${i + 1}-${run}@example.com`,
-        consentAt: new Date(),
-        consentVersion: 'v1',
-      })),
+      withOrg(
+        ['Phạm Văn Một', 'Lê Thị Hai', 'Ngô Ba'].map((name, i) => ({
+          fullName: `${name} ${run}`,
+          email: `a-c${i + 1}-${run}@example.com`,
+          consentAt: new Date(),
+          consentVersion: 'v1',
+        })),
+      ),
     );
-    const cv1 = await ds.getRepository(CvFile).save({
-      candidateId: c1.id,
-      storageKey: `cv/test/${run}-c1.pdf`,
-      originalName: 'CV_Mot.pdf',
-      mime: 'application/pdf',
-      sizeBytes: 100,
-      sha256: 'b'.repeat(64),
-      text: 'Phạm Văn Một – 3 năm NestJS',
-    });
-    const [a1, a2, a3] = await ds.getRepository(Application).save([
-      {
-        jobId: jobA.id,
+    const cv1 = await ds.getRepository(CvFile).save(
+      withOrg({
         candidateId: c1.id,
-        cvFileId: cv1.id,
-        status: ApplicationStatus.New,
-        aiStatus: AiStatus.Done,
-        score: 80,
-        flags: [ScoreFlag.MissingMust],
-        scoredJdVersion: 2,
-        scoreBreakdown: [
-          { requirementId: reqA.id, match: 1, evidence: '3 năm NestJS', rejectedEvidence: null },
-        ],
-        createdAt: vn('2026-10-01T00:30:00'),
-      },
-      {
-        jobId: jobA.id,
-        candidateId: c2.id,
-        status: ApplicationStatus.Offer,
-        aiStatus: AiStatus.Done,
-        score: 40,
-        scoreBreakdown: [],
-        createdAt: vn('2026-10-05T12:00:00'),
-      },
-      {
-        jobId: jobB.id,
-        candidateId: c3.id,
-        status: ApplicationStatus.Screening,
-        createdAt: vn('2026-10-10T23:59:00'),
-      },
-    ]);
+        storageKey: `cv/test/${run}-c1.pdf`,
+        originalName: 'CV_Mot.pdf',
+        mime: 'application/pdf',
+        sizeBytes: 100,
+        sha256: 'b'.repeat(64),
+        text: 'Phạm Văn Một – 3 năm NestJS',
+      }),
+    );
+    const [a1, a2, a3] = await ds.getRepository(Application).save(
+      withOrg<DeepPartial<Application>[]>([
+        {
+          jobId: jobA.id,
+          candidateId: c1.id,
+          cvFileId: cv1.id,
+          status: ApplicationStatus.New,
+          aiStatus: AiStatus.Done,
+          score: 80,
+          flags: [ScoreFlag.MissingMust],
+          scoredJdVersion: 2,
+          scoreBreakdown: [
+            { requirementId: reqA.id, match: 1, evidence: '3 năm NestJS', rejectedEvidence: null },
+          ],
+          createdAt: vn('2026-10-01T00:30:00'),
+        },
+        {
+          jobId: jobA.id,
+          candidateId: c2.id,
+          status: ApplicationStatus.Offer,
+          aiStatus: AiStatus.Done,
+          score: 40,
+          scoreBreakdown: [],
+          createdAt: vn('2026-10-05T12:00:00'),
+        },
+        {
+          jobId: jobB.id,
+          candidateId: c3.id,
+          status: ApplicationStatus.Screening,
+          createdAt: vn('2026-10-10T23:59:00'),
+        },
+      ]),
+    );
     Object.assign(ids, {
       depA: depA.id,
       depB: depB.id,

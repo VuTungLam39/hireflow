@@ -3,6 +3,7 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
+import { orgIdOf } from '../../common/utils/department-scope.js';
 import { notExpiredSql } from '../../common/utils/vn-date.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity.js';
@@ -18,12 +19,11 @@ import {
   type CompanySize,
   type CompanySocials,
 } from './entities/company-profile.entity.js';
+import { DEFAULT_ORGANIZATION_ID } from '../organizations/entities/organization.entity.js';
 import { MediaFile, MediaKind } from './entities/media-file.entity.js';
 import { checkImage, GALLERY_MAX, MEDIA_KEY, type UploadedImage } from './media.rules.js';
 
-const PROFILE_ID = 1;
-
-type Actor = Pick<AuthUser, 'id'>;
+type Actor = Pick<AuthUser, 'id' | 'organizationId'>;
 
 export interface MediaView {
   id: string;
@@ -77,8 +77,8 @@ export class CompanyService {
   ) {}
 
   // F-ORG-01
-  async get(): Promise<CompanyView> {
-    const profile = await this.readProfile();
+  async get(user: Pick<AuthUser, 'organizationId'>): Promise<CompanyView> {
+    const profile = await this.readProfile(orgIdOf(user));
     const content = await this.content(profile);
     return { ...content, complete: isComplete(content), updatedAt: profile.updatedAt };
   }
@@ -86,14 +86,14 @@ export class CompanyService {
   async update(dto: UpdateCompanyDto, user: Actor): Promise<CompanyView> {
     const changed = Object.keys(dto).filter((k) => dto[k as keyof UpdateCompanyDto] !== undefined);
     await this.dataSource.transaction(async (manager) => {
-      const profile = await this.lockProfile(manager);
+      const profile = await this.lockProfile(manager, orgIdOf(user));
       Object.assign(profile, stripUndefined(dto), { updatedBy: user.id });
       await manager.getRepository(CompanyProfile).save(profile);
     });
     await this.changed(user, AuditAction.CompanyProfileUpdated, AuditEntity.Company, null, {
       fields: changed.join(','),
     });
-    return this.get();
+    return this.get(user);
   }
 
   // BR-MEDIA-01, BR-MEDIA-02
@@ -102,6 +102,7 @@ export class CompanyService {
     dto: UploadMediaDto,
     user: Actor,
   ): Promise<MediaView> {
+    const organizationId = orgIdOf(user);
     const image = checkImage(file, dto.kind);
     const alt = dto.alt?.trim() ?? '';
     if (dto.kind === MediaKind.Gallery) {
@@ -118,7 +119,7 @@ export class CompanyService {
           ],
         );
       }
-      if ((await this.media.countBy({ kind: MediaKind.Gallery })) >= GALLERY_MAX)
+      if ((await this.media.countBy({ organizationId, kind: MediaKind.Gallery })) >= GALLERY_MAX)
         throw galleryFull();
     }
     await this.storage.put(image.key, image.buffer, image.mime);
@@ -126,11 +127,12 @@ export class CompanyService {
     const saved = await this.dataSource
       .transaction(async (manager) => {
         // Khoá dòng hồ sơ công ty: các lần tải đồng thời xếp hàng, đếm ảnh thư viện không bị vượt
-        const profile = await this.lockProfile(manager);
+        const profile = await this.lockProfile(manager, organizationId);
         if (
           dto.kind === MediaKind.Gallery &&
-          (await manager.getRepository(MediaFile).countBy({ kind: MediaKind.Gallery })) >=
-            GALLERY_MAX
+          (await manager
+            .getRepository(MediaFile)
+            .countBy({ organizationId, kind: MediaKind.Gallery })) >= GALLERY_MAX
         ) {
           throw galleryFull();
         }
@@ -141,12 +143,14 @@ export class CompanyService {
                   .getRepository(MediaFile)
                   .createQueryBuilder('m')
                   .select('COALESCE(MAX(m.position), -1) + 1', 'next')
-                  .where('m.kind = :kind', { kind: MediaKind.Gallery })
+                  .where('m.organizationId = :organizationId', { organizationId })
+                  .andWhere('m.kind = :kind', { kind: MediaKind.Gallery })
                   .getRawOne<{ next: number }>()
               )?.next ?? 0)
             : 0;
         const row = await manager.getRepository(MediaFile).save(
           manager.getRepository(MediaFile).create({
+            organizationId,
             kind: dto.kind,
             storageKey: image.key,
             mime: image.mime,
@@ -184,8 +188,8 @@ export class CompanyService {
     return toMediaView(saved.row);
   }
 
-  async updateMedia(id: string, dto: UpdateMediaDto): Promise<MediaView> {
-    const row = await this.media.findOneBy({ id });
+  async updateMedia(id: string, dto: UpdateMediaDto, user: Actor): Promise<MediaView> {
+    const row = await this.media.findOneBy({ id, organizationId: orgIdOf(user) });
     if (!row) throw new NotFoundException('Media not found');
     if (dto.alt !== undefined) row.altText = dto.alt;
     if (dto.position !== undefined) row.position = dto.position;
@@ -195,14 +199,15 @@ export class CompanyService {
   }
 
   async removeMedia(id: string, user: Actor): Promise<void> {
-    const row = await this.media.findOneBy({ id });
+    const organizationId = orgIdOf(user);
+    const row = await this.media.findOneBy({ id, organizationId });
     if (!row) throw new NotFoundException('Media not found');
     await this.dataSource.transaction(async (manager) => {
       if (row.kind !== MediaKind.Gallery) {
         const field = row.kind === MediaKind.Logo ? 'logoMediaId' : 'coverMediaId';
         await manager
           .getRepository(CompanyProfile)
-          .update({ id: PROFILE_ID, [field]: id }, { [field]: null, updatedBy: user.id });
+          .update({ organizationId, [field]: id }, { [field]: null, updatedBy: user.id });
       }
       await manager.getRepository(MediaFile).softDelete(id);
     });
@@ -213,8 +218,8 @@ export class CompanyService {
   }
 
   // F-PUB-06 · BR-ORG-01
-  async publicView(): Promise<PublicCompanyView> {
-    const content = await this.content(await this.readProfile());
+  async publicView(organizationId = DEFAULT_ORGANIZATION_ID): Promise<PublicCompanyView> {
+    const content = await this.content(await this.readProfile(organizationId));
     if (!isComplete(content)) {
       throw new BusinessException(
         ErrorCode.CompanyProfileIncomplete,
@@ -225,7 +230,8 @@ export class CompanyService {
     const openJobs = await this.dataSource
       .getRepository(Job)
       .createQueryBuilder('job')
-      .where('job.status = :open', { open: JobStatus.Open })
+      .where('job.organizationId = :organizationId', { organizationId })
+      .andWhere('job.status = :open', { open: JobStatus.Open })
       .andWhere(notExpiredSql('job'))
       .getCount();
     return { ...content, openJobs };
@@ -241,11 +247,11 @@ export class CompanyService {
   }
 
   /** Chỉ đọc: chưa có dòng thì trả hồ sơ trống, không ghi DB (route công khai gọi hàm này) */
-  private async readProfile(): Promise<CompanyProfile> {
+  private async readProfile(organizationId: string): Promise<CompanyProfile> {
     return (
-      (await this.profiles.findOneBy({ id: PROFILE_ID })) ??
+      (await this.profiles.findOneBy({ organizationId })) ??
       this.profiles.create({
-        id: PROFILE_ID,
+        organizationId,
         name: '',
         tagline: '',
         about: '',
@@ -266,14 +272,20 @@ export class CompanyService {
   }
 
   /** Ghi: tạo dòng nếu chưa có, rồi khoá FOR UPDATE tới hết transaction */
-  private async lockProfile(manager: EntityManager): Promise<CompanyProfile> {
+  private async lockProfile(
+    manager: EntityManager,
+    organizationId: string,
+  ): Promise<CompanyProfile> {
     const repo = manager.getRepository(CompanyProfile);
-    await repo.createQueryBuilder().insert().values({ id: PROFILE_ID }).orIgnore().execute();
-    return repo.findOneOrFail({ where: { id: PROFILE_ID }, lock: { mode: 'pessimistic_write' } });
+    await repo.createQueryBuilder().insert().values({ organizationId }).orIgnore().execute();
+    return repo.findOneOrFail({ where: { organizationId }, lock: { mode: 'pessimistic_write' } });
   }
 
   private async content(profile: CompanyProfile): Promise<CompanyContentView> {
-    const rows = await this.media.find({ order: { position: 'ASC', createdAt: 'ASC' } });
+    const rows = await this.media.find({
+      where: { organizationId: profile.organizationId },
+      order: { position: 'ASC', createdAt: 'ASC' },
+    });
     const byId = new Map(rows.map((r) => [r.id, r]));
     const pick = (id: string | null) => {
       const row = id ? byId.get(id) : undefined;
@@ -314,7 +326,14 @@ export class CompanyService {
     metadata: Record<string, string>,
   ) {
     this.prerender.schedule('company.updated');
-    await this.audit.recordSafely({ actorId: user.id, action, entity, entityId, metadata });
+    await this.audit.recordSafely({
+      organizationId: orgIdOf(user),
+      actorId: user.id,
+      action,
+      entity,
+      entityId,
+      metadata,
+    });
   }
 }
 

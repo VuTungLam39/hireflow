@@ -8,6 +8,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { Organization } from '../../organizations/entities/organization.entity.js';
 import { CvFile } from '../../files/entities/cv-file.entity.js';
 import type { CvSection } from '../cv-chunks.js';
 
@@ -23,6 +24,15 @@ export const CV_CHUNK_DIMENSION = 1024;
   `"section" IN ('summary', 'experience', 'skills', 'projects', 'education', 'other')`,
 )
 export class CvChunk {
+  // BR-TEN-01
+  @Index('IDX_cv_chunks_organization_id')
+  @Column({ type: 'uuid' })
+  organizationId: string;
+
+  @ManyToOne(() => Organization, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'organization_id', foreignKeyConstraintName: 'FK_cv_chunks_organization_id' })
+  organization?: Organization;
+
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

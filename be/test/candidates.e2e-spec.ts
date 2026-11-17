@@ -19,6 +19,7 @@ import { JobMatch } from '../src/modules/matching/entities/job-match.entity.js';
 import { CV_CHUNK_DIMENSION, CvChunk } from '../src/modules/rag/entities/cv-chunk.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { ORG, withOrg } from './fixtures.js';
 
 // BE-12 · API Contract 4.11 · US-14, US-16 · BR-CAND-01 → 03, BR-DATA-03
 describe('Candidates (e2e)', () => {
@@ -47,22 +48,26 @@ describe('Candidates (e2e)', () => {
     await app.init();
     ds = app.get(DataSource);
 
-    const [depA, depB] = await ds.getRepository(Department).save([
-      { name: `Cand A ${run}`, code: `CA_${run}`.toUpperCase() },
-      { name: `Cand B ${run}`, code: `CB_${run}`.toUpperCase() },
-    ]);
+    const [depA, depB] = await ds.getRepository(Department).save(
+      withOrg([
+        { name: `Cand A ${run}`, code: `CA_${run}`.toUpperCase() },
+        { name: `Cand B ${run}`, code: `CB_${run}`.toUpperCase() },
+      ]),
+    );
     const passwordHash = await bcrypt.hash(password, 4);
-    const [, hr] = await ds.getRepository(User).save([
-      { email: emails.admin, fullName: 'C Admin', role: Role.Admin, passwordHash },
-      { email: emails.hr, fullName: 'C HR', role: Role.Hr, passwordHash },
-      {
-        email: emails.hmA,
-        fullName: 'C HM',
-        role: Role.HiringManager,
-        departmentId: depA.id,
-        passwordHash,
-      },
-    ]);
+    const [, hr] = await ds.getRepository(User).save(
+      withOrg([
+        { email: emails.admin, fullName: 'C Admin', role: Role.Admin, passwordHash },
+        { email: emails.hr, fullName: 'C HR', role: Role.Hr, passwordHash },
+        {
+          email: emails.hmA,
+          fullName: 'C HM',
+          role: Role.HiringManager,
+          departmentId: depA.id,
+          passwordHash,
+        },
+      ]),
+    );
     const job = (departmentId: string, title: string) => ({
       title,
       departmentId,
@@ -74,11 +79,12 @@ describe('Candidates (e2e)', () => {
     });
     const [jobA, jobB] = await ds
       .getRepository(Job)
-      .save([job(depA.id, `Job A ${run}`), job(depB.id, `Job B ${run}`)]);
+      .save(withOrg([job(depA.id, `Job A ${run}`), job(depB.id, `Job B ${run}`)]));
 
     const candidates = ds.getRepository(Candidate);
     const save = (fullName: string, n: number) =>
       candidates.save({
+        organizationId: ORG,
         fullName: `${fullName} ${run}`,
         email: `cand${n}-${run}@example.com`,
         phone: '0912345678',
@@ -88,36 +94,40 @@ describe('Candidates (e2e)', () => {
     const tung = await save('Nguyễn Văn Tùng', 1);
     const dao = await save('Trần Thị Đào', 2);
     const quan = await save('Lê Minh Quân', 3);
-    const cv = await ds.getRepository(CvFile).save({
-      candidateId: quan.id,
-      storageKey: `cv/test/${run}.pdf`,
-      originalName: 'cv.pdf',
-      mime: 'application/pdf',
-      sizeBytes: 1000,
-      sha256: 'a'.repeat(64),
-      text: 'Lê Minh Quân – 3 năm NestJS',
-    });
-    await ds.getRepository(Application).save([
-      { jobId: jobA.id, candidateId: tung.id, status: ApplicationStatus.New },
-      { jobId: jobB.id, candidateId: dao.id, status: ApplicationStatus.Screening },
-      {
-        jobId: jobA.id,
+    const cv = await ds.getRepository(CvFile).save(
+      withOrg({
         candidateId: quan.id,
-        cvFileId: cv.id,
-        status: ApplicationStatus.Interview,
-        aiStatus: AiStatus.Done,
-        score: 80,
-        scoreBreakdown: [
-          {
-            requirementId: randomUUID(),
-            match: 1,
-            evidence: '3 năm NestJS',
-            rejectedEvidence: null,
-          },
-        ],
-      },
-      { jobId: jobB.id, candidateId: quan.id, cvFileId: cv.id, status: ApplicationStatus.Offer },
-    ]);
+        storageKey: `cv/test/${run}.pdf`,
+        originalName: 'cv.pdf',
+        mime: 'application/pdf',
+        sizeBytes: 1000,
+        sha256: 'a'.repeat(64),
+        text: 'Lê Minh Quân – 3 năm NestJS',
+      }),
+    );
+    await ds.getRepository(Application).save(
+      withOrg([
+        { jobId: jobA.id, candidateId: tung.id, status: ApplicationStatus.New },
+        { jobId: jobB.id, candidateId: dao.id, status: ApplicationStatus.Screening },
+        {
+          jobId: jobA.id,
+          candidateId: quan.id,
+          cvFileId: cv.id,
+          status: ApplicationStatus.Interview,
+          aiStatus: AiStatus.Done,
+          score: 80,
+          scoreBreakdown: [
+            {
+              requirementId: randomUUID(),
+              match: 1,
+              evidence: '3 năm NestJS',
+              rejectedEvidence: null,
+            },
+          ],
+        },
+        { jobId: jobB.id, candidateId: quan.id, cvFileId: cv.id, status: ApplicationStatus.Offer },
+      ]),
+    );
     await ds.getRepository(CvProfile).save({
       cvFileId: cv.id,
       data: {
@@ -132,8 +142,8 @@ describe('Candidates (e2e)', () => {
       outputTokens: 0,
     });
     await ds.query(
-      `INSERT INTO cv_chunks (cv_file_id, section, position, content, token_count, embedding_model, embedding)
-       VALUES ($1, 'skills', 0, '3 năm NestJS', 4, 'fake', $2::vector)`,
+      `INSERT INTO cv_chunks (organization_id, cv_file_id, section, position, content, token_count, embedding_model, embedding)
+       SELECT f.organization_id, f.id, 'skills', 0, '3 năm NestJS', 4, 'fake', $2::vector FROM cv_files f WHERE f.id = $1`,
       [cv.id, `[${Array.from({ length: CV_CHUNK_DIMENSION }, () => 0.01).join(',')}]`],
     );
     await ds.getRepository(JobMatch).save({

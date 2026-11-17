@@ -26,6 +26,7 @@ import {
 import { Job, JobStatus } from '../src/modules/jobs/entities/job.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { withOrg } from './fixtures.js';
 
 interface MatchesView {
   computedAt: string | null;
@@ -89,18 +90,20 @@ describe('Matching old candidates (e2e)', () => {
 
     const dep = await ds
       .getRepository(Department)
-      .save({ name: `Match ${run}`, code: `M_${run}`.toUpperCase() });
+      .save(withOrg({ name: `Match ${run}`, code: `M_${run}`.toUpperCase() }));
     const passwordHash = await bcrypt.hash(password, 4);
-    const [hr] = await ds.getRepository(User).save([
-      { email: emails.hr, fullName: 'M HR', role: Role.Hr, passwordHash },
-      {
-        email: emails.hm,
-        fullName: 'M HM',
-        role: Role.HiringManager,
-        departmentId: dep.id,
-        passwordHash,
-      },
-    ]);
+    const [hr] = await ds.getRepository(User).save(
+      withOrg([
+        { email: emails.hr, fullName: 'M HR', role: Role.Hr, passwordHash },
+        {
+          email: emails.hm,
+          fullName: 'M HM',
+          role: Role.HiringManager,
+          departmentId: dep.id,
+          passwordHash,
+        },
+      ]),
+    );
     const jobOf = (title: string, status: JobStatus) => ({
       title: `${title} ${run}`,
       departmentId: dep.id,
@@ -112,11 +115,13 @@ describe('Matching old candidates (e2e)', () => {
     });
     const [oldJob, otherJob, job] = await ds
       .getRepository(Job)
-      .save([
-        jobOf('Old', JobStatus.Closed),
-        jobOf('Other', JobStatus.Open),
-        jobOf('New', JobStatus.Draft),
-      ]);
+      .save(
+        withOrg([
+          jobOf('Old', JobStatus.Closed),
+          jobOf('Other', JobStatus.Open),
+          jobOf('New', JobStatus.Draft),
+        ]),
+      );
     await ds.getRepository(JobRequirement).save(
       [
         ['NestJS', RequirementType.Must, 3, 2, [kw('NestJS')]],
@@ -203,28 +208,32 @@ describe('Matching old candidates (e2e)', () => {
       },
     ];
     for (const p of people) {
-      const c = await ds.getRepository(Candidate).save({
-        fullName: `Match ${p.key} ${run}`,
-        email: `m-${p.key.toLowerCase()}-${run}@example.com`,
-        phone: '0912345678',
-        consentAt: new Date(),
-        consentVersion: 'v1',
-        anonymizedAt: p.anonymized ? new Date() : null,
-      });
+      const c = await ds.getRepository(Candidate).save(
+        withOrg({
+          fullName: `Match ${p.key} ${run}`,
+          email: `m-${p.key.toLowerCase()}-${run}@example.com`,
+          phone: '0912345678',
+          consentAt: new Date(),
+          consentVersion: 'v1',
+          anonymizedAt: p.anonymized ? new Date() : null,
+        }),
+      );
       cand[p.key] = c.id;
       const lines = p.skills.map(
         ([name, years]) => `${years} năm làm ${tag(name)} tại công ty ${p.key}`,
       );
-      const cv = await ds.getRepository(CvFile).save({
-        candidateId: c.id,
-        storageKey: `cv/test/${run}-${p.key}.pdf`,
-        originalName: 'cv.pdf',
-        mime: 'application/pdf',
-        sizeBytes: 1000,
-        sha256: randomUUID().replace(/-/g, '').padEnd(64, '0'),
-        parseStatus: CvParseStatus.Parsed,
-        text: lines.join('\n'),
-      });
+      const cv = await ds.getRepository(CvFile).save(
+        withOrg({
+          candidateId: c.id,
+          storageKey: `cv/test/${run}-${p.key}.pdf`,
+          originalName: 'cv.pdf',
+          mime: 'application/pdf',
+          sizeBytes: 1000,
+          sha256: randomUUID().replace(/-/g, '').padEnd(64, '0'),
+          parseStatus: CvParseStatus.Parsed,
+          text: lines.join('\n'),
+        }),
+      );
       await ds.getRepository(CvProfile).save({
         cvFileId: cv.id,
         data: {
@@ -242,29 +251,33 @@ describe('Matching old candidates (e2e)', () => {
         inputTokens: 0,
         outputTokens: 0,
       });
-      const own = await ds.getRepository(Application).save({
-        jobId: oldJob.id,
-        candidateId: c.id,
-        cvFileId: cv.id,
-        source: ApplicationSource.PublicForm,
-        status: ApplicationStatus.Rejected,
-      });
+      const own = await ds.getRepository(Application).save(
+        withOrg({
+          jobId: oldJob.id,
+          candidateId: c.id,
+          cvFileId: cv.id,
+          source: ApplicationSource.PublicForm,
+          status: ApplicationStatus.Rejected,
+        }),
+      );
       await ds.query(`UPDATE applications SET created_at = $2 WHERE id = $1`, [
         own.id,
         monthsAgo(p.appliedMonthsAgo),
       ]);
       if (p.recentInvite) {
-        await ds.getRepository(Application).save({
-          jobId: otherJob.id,
-          candidateId: c.id,
-          cvFileId: cv.id,
-          source: ApplicationSource.MatchInvite,
-        });
+        await ds.getRepository(Application).save(
+          withOrg({
+            jobId: otherJob.id,
+            candidateId: c.id,
+            cvFileId: cv.id,
+            source: ApplicationSource.MatchInvite,
+          }),
+        );
       }
       if (p.appliedToNewJob) {
         await ds
           .getRepository(Application)
-          .save({ jobId: job.id, candidateId: c.id, cvFileId: cv.id });
+          .save(withOrg({ jobId: job.id, candidateId: c.id, cvFileId: cv.id }));
       }
     }
 

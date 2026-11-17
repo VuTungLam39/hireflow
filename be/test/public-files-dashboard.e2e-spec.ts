@@ -29,6 +29,7 @@ import {
 import { Job, JobStatus } from '../src/modules/jobs/entities/job.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { withOrg } from './fixtures.js';
 
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
@@ -74,28 +75,32 @@ describe('Public jobs, CV files, dashboard (e2e)', () => {
     await app.init();
     ds = app.get(DataSource);
 
-    const [depA, depB] = await ds.getRepository(Department).save([
-      { name: `Công khai A ${run}`, code: `PA_${run}`.toUpperCase() },
-      { name: `Công khai B ${run}`, code: `PB_${run}`.toUpperCase() },
-    ]);
+    const [depA, depB] = await ds.getRepository(Department).save(
+      withOrg([
+        { name: `Công khai A ${run}`, code: `PA_${run}`.toUpperCase() },
+        { name: `Công khai B ${run}`, code: `PB_${run}`.toUpperCase() },
+      ]),
+    );
     const passwordHash = await bcrypt.hash(password, 4);
-    const [hr] = await ds.getRepository(User).save([
-      { email: emails.hr, fullName: 'P HR', role: Role.Hr, passwordHash },
-      {
-        email: emails.hmA,
-        fullName: 'P HM A',
-        role: Role.HiringManager,
-        departmentId: depA.id,
-        passwordHash,
-      },
-      {
-        email: emails.hmB,
-        fullName: 'P HM B',
-        role: Role.HiringManager,
-        departmentId: depB.id,
-        passwordHash,
-      },
-    ]);
+    const [hr] = await ds.getRepository(User).save(
+      withOrg([
+        { email: emails.hr, fullName: 'P HR', role: Role.Hr, passwordHash },
+        {
+          email: emails.hmA,
+          fullName: 'P HM A',
+          role: Role.HiringManager,
+          departmentId: depA.id,
+          passwordHash,
+        },
+        {
+          email: emails.hmB,
+          fullName: 'P HM B',
+          role: Role.HiringManager,
+          departmentId: depB.id,
+          passwordHash,
+        },
+      ]),
+    );
     const job = (title: string, status: JobStatus, departmentId = depA.id) => ({
       title: `${title} ${run}`,
       departmentId,
@@ -109,12 +114,14 @@ describe('Public jobs, CV files, dashboard (e2e)', () => {
     });
     const [open, draft, closed, other] = await ds
       .getRepository(Job)
-      .save([
-        job('Tuyển công khai', JobStatus.Open),
-        job('Job nháp', JobStatus.Draft),
-        job('Job đã đóng', JobStatus.Closed),
-        job('Job phòng B', JobStatus.Open, depB.id),
-      ]);
+      .save(
+        withOrg([
+          job('Tuyển công khai', JobStatus.Open),
+          job('Job nháp', JobStatus.Draft),
+          job('Job đã đóng', JobStatus.Closed),
+          job('Job phòng B', JobStatus.Open, depB.id),
+        ]),
+      );
     await ds.getRepository(JobRequirement).save({
       jobId: open.id,
       jdVersion: 1,

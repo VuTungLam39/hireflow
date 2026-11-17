@@ -10,6 +10,7 @@ import { Candidate } from '../src/modules/candidates/entities/candidate.entity.j
 import { Department } from '../src/modules/departments/entities/department.entity.js';
 import { Job, JobStatus } from '../src/modules/jobs/entities/job.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
+import { ORG, withOrg } from './fixtures.js';
 
 // BR-ACC-07, BR-CAND-03
 describe('Department scope on real data (e2e)', () => {
@@ -19,11 +20,11 @@ describe('Department scope on real data (e2e)', () => {
   const ids = { depA: '', depB: '', jobA: '', jobB: '', c1: '', c2: '', c3: '', creator: '' };
   const appIds: string[] = [];
 
-  const hr = { role: Role.Hr, departmentId: null };
-  const admin = { role: Role.Admin, departmentId: null };
-  const hmA = () => ({ role: Role.HiringManager, departmentId: ids.depA });
-  const hmB = () => ({ role: Role.HiringManager, departmentId: ids.depB });
-  const hmNone = { role: Role.HiringManager, departmentId: null };
+  const hr = { role: Role.Hr, departmentId: null, organizationId: ORG };
+  const admin = { role: Role.Admin, departmentId: null, organizationId: ORG };
+  const hmA = () => ({ role: Role.HiringManager, departmentId: ids.depA, organizationId: ORG });
+  const hmB = () => ({ role: Role.HiringManager, departmentId: ids.depB, organizationId: ORG });
+  const hmNone = { role: Role.HiringManager, departmentId: null, organizationId: ORG };
   type ScopeUser = typeof hr | ReturnType<typeof hmA>;
 
   const jobsFor = async (user: ScopeUser) => {
@@ -31,7 +32,9 @@ describe('Department scope on real data (e2e)', () => {
       .getRepository(Job)
       .createQueryBuilder('job')
       .where('job.id IN (:...ids)', { ids: [ids.jobA, ids.jobB] });
-    return (await applyDepartmentScope(qb, user, 'job.departmentId').getMany())
+    return (
+      await applyDepartmentScope(qb, user, 'job.organizationId', 'job.departmentId').getMany()
+    )
       .map((j) => j.id)
       .sort();
   };
@@ -42,7 +45,9 @@ describe('Department scope on real data (e2e)', () => {
       .createQueryBuilder('app')
       .innerJoin('app.job', 'job')
       .where('app.id IN (:...ids)', { ids: appIds });
-    return (await applyDepartmentScope(qb, user, 'job.departmentId').getMany()).length;
+    return (
+      await applyDepartmentScope(qb, user, 'job.organizationId', 'job.departmentId').getMany()
+    ).length;
   };
 
   const candidatesFor = async (user: ScopeUser) => {
@@ -50,7 +55,14 @@ describe('Department scope on real data (e2e)', () => {
       .getRepository(Candidate)
       .createQueryBuilder('candidate')
       .where('candidate.id IN (:...ids)', { ids: [ids.c1, ids.c2, ids.c3] });
-    return (await applyCandidateScope(qb, user, '"candidate"."id"').getMany())
+    return (
+      await applyCandidateScope(
+        qb,
+        user,
+        '"candidate"."organization_id"',
+        '"candidate"."id"',
+      ).getMany()
+    )
       .map((c) => c.id)
       .sort();
   };
@@ -61,16 +73,20 @@ describe('Department scope on real data (e2e)', () => {
     await app.init();
     ds = app.get(DataSource);
 
-    const [depA, depB] = await ds.getRepository(Department).save([
-      { name: `Scope A ${run}`, code: `SA_${run}`.toUpperCase() },
-      { name: `Scope B ${run}`, code: `SB_${run}`.toUpperCase() },
-    ]);
-    const creator = await ds.getRepository(User).save({
-      email: `scope-${run}@example.com`,
-      fullName: 'Scope HR',
-      role: Role.Hr,
-      passwordHash: 'x',
-    });
+    const [depA, depB] = await ds.getRepository(Department).save(
+      withOrg([
+        { name: `Scope A ${run}`, code: `SA_${run}`.toUpperCase() },
+        { name: `Scope B ${run}`, code: `SB_${run}`.toUpperCase() },
+      ]),
+    );
+    const creator = await ds.getRepository(User).save(
+      withOrg({
+        email: `scope-${run}@example.com`,
+        fullName: 'Scope HR',
+        role: Role.Hr,
+        passwordHash: 'x',
+      }),
+    );
     const job = (departmentId: string, title: string) => ({
       title,
       departmentId,
@@ -82,7 +98,7 @@ describe('Department scope on real data (e2e)', () => {
     });
     const [jobA, jobB] = await ds
       .getRepository(Job)
-      .save([job(depA.id, `Job A ${run}`), job(depB.id, `Job B ${run}`)]);
+      .save(withOrg([job(depA.id, `Job A ${run}`), job(depB.id, `Job B ${run}`)]));
     const candidate = (n: number) => ({
       fullName: `Ứng viên ${n}`,
       email: `scope-c${n}-${run}@example.com`,
@@ -91,7 +107,7 @@ describe('Department scope on real data (e2e)', () => {
     });
     const [c1, c2, c3] = await ds
       .getRepository(Candidate)
-      .save([candidate(1), candidate(2), candidate(3)]);
+      .save(withOrg([candidate(1), candidate(2), candidate(3)]));
     Object.assign(ids, {
       depA: depA.id,
       depB: depB.id,
@@ -103,12 +119,14 @@ describe('Department scope on real data (e2e)', () => {
       creator: creator.id,
     });
 
-    const apps = await ds.getRepository(Application).save([
-      { jobId: jobA.id, candidateId: c1.id },
-      { jobId: jobB.id, candidateId: c2.id },
-      { jobId: jobA.id, candidateId: c3.id },
-      { jobId: jobB.id, candidateId: c3.id },
-    ]);
+    const apps = await ds.getRepository(Application).save(
+      withOrg([
+        { jobId: jobA.id, candidateId: c1.id },
+        { jobId: jobB.id, candidateId: c2.id },
+        { jobId: jobA.id, candidateId: c3.id },
+        { jobId: jobB.id, candidateId: c3.id },
+      ]),
+    );
     appIds.push(...apps.map((a) => a.id));
   });
 
@@ -148,7 +166,9 @@ describe('Department scope on real data (e2e)', () => {
       .getRepository(Job)
       .createQueryBuilder('job')
       .where('job.id = :id', { id: ids.jobB });
-    expect(await applyDepartmentScope(qb, hmA(), 'job.departmentId').getOne()).toBeNull();
+    expect(
+      await applyDepartmentScope(qb, hmA(), 'job.organizationId', 'job.departmentId').getOne(),
+    ).toBeNull();
   });
 
   it('soft-deleted applications do not leak a candidate into the scope', async () => {

@@ -13,7 +13,7 @@ describe('retrieveChunks scope', () => {
       vector: [0.1],
       keywords: 'nestjs',
       embeddingModel: 'm',
-      user: { role, departmentId },
+      user: { role, departmentId, organizationId: 'org-1' },
     });
     const call = query.mock.calls.at(-1) as unknown as [string, unknown[]] | undefined;
     return { calls: query.mock.calls.length, sql: call?.[0] ?? '', params: call?.[1] ?? [] };

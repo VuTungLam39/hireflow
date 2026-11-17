@@ -11,7 +11,11 @@ import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js'
 import { decodeCursor, encodeCursor } from '../../common/utils/cursor.js';
 import { appConfig } from '../../config/app.config.js';
 import { AI_ERROR } from '../ai/pipeline/errors.js';
-import { applyCandidateScope, applyDepartmentScope } from '../../common/utils/department-scope.js';
+import {
+  applyCandidateScope,
+  applyDepartmentScope,
+  orgIdOf,
+} from '../../common/utils/department-scope.js';
 import { escapeLike } from '../../common/utils/text.js';
 import { Application } from '../applications/entities/application.entity.js';
 import { AuditService } from '../audit/audit.service.js';
@@ -23,7 +27,7 @@ import { QueryCandidateDto } from './dto/query-candidate.dto.js';
 import { UpdateCandidateDto } from './dto/update-candidate.dto.js';
 import { Candidate } from './entities/candidate.entity.js';
 
-type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId'>;
+type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId' | 'organizationId'>;
 
 export const ANONYMIZED_NAME = 'Ứng viên đã ẩn danh';
 export const ERASED_TEXT = '[Đã xoá khi ẩn danh]';
@@ -87,7 +91,7 @@ export class CandidatesService {
       .orderBy('candidate.createdAt', 'DESC')
       .addOrderBy('candidate.id', 'DESC');
 
-    applyCandidateScope(qb, user, '"candidate"."id"');
+    applyCandidateScope(qb, user, '"candidate"."organization_id"', '"candidate"."id"');
     if (query.search) {
       qb.andWhere(
         `(f_unaccent(lower(candidate.fullName)) LIKE '%' || f_unaccent(lower(:search)) || '%' OR candidate.email LIKE '%' || lower(:search) || '%')`,
@@ -136,7 +140,12 @@ export class CandidatesService {
       ])
       .where('app.candidateId = :id', { id })
       .orderBy('app.createdAt', 'DESC');
-    const applications = await applyDepartmentScope(qb, user, 'job.departmentId').getMany();
+    const applications = await applyDepartmentScope(
+      qb,
+      user,
+      'job.organizationId',
+      'job.departmentId',
+    ).getMany();
 
     return {
       ...this.toListItem(candidate, {
@@ -158,7 +167,7 @@ export class CandidatesService {
 
   // BR-CAND-01
   async update(id: string, dto: UpdateCandidateDto, user: ScopeUser): Promise<CandidateDetailView> {
-    const candidate = await this.getOrFail(id);
+    const candidate = await this.getOrFail(id, user);
     this.assertNotAnonymized(candidate);
     await this.candidatesRepository.update(id, {
       ...(dto.fullName !== undefined && { fullName: dto.fullName }),
@@ -169,6 +178,7 @@ export class CandidatesService {
 
   // BR-DATA-03, Database Design 6
   async anonymize(id: string, user: ScopeUser): Promise<CandidateDetailView> {
+    await this.getOrFail(id, user);
     await this.anonymizeOne(id, user.id);
     return this.findOne(id, user);
   }
@@ -245,6 +255,7 @@ export class CandidatesService {
       });
       await this.audit.record(
         {
+          organizationId: candidate.organizationId,
           actorId,
           action: AuditAction.CandidateAnonymized,
           entity: AuditEntity.Candidate,
@@ -260,8 +271,8 @@ export class CandidatesService {
     return true;
   }
 
-  findByEmail(email: string): Promise<Candidate | null> {
-    return this.candidatesRepository.findOneBy({ email: email.toLowerCase() });
+  findByEmail(email: string, organizationId: string): Promise<Candidate | null> {
+    return this.candidatesRepository.findOneBy({ email: email.toLowerCase(), organizationId });
   }
 
   // BR-CAND-01, BR-CAND-02, BR-APP-04
@@ -269,15 +280,17 @@ export class CandidatesService {
     manager: EntityManager,
     input: { fullName: string; email: string; phone?: string | null },
     consentVersion: string,
+    organizationId: string,
   ): Promise<Candidate> {
     const email = input.email.toLowerCase();
     const existing = await manager.findOne(Candidate, {
-      where: { email },
+      where: { email, organizationId },
       lock: { mode: 'pessimistic_write' },
     });
     if (!existing) {
       return manager.save(
         manager.create(Candidate, {
+          organizationId,
           fullName: input.fullName,
           email,
           phone: input.phone ?? null,
@@ -309,9 +322,12 @@ export class CandidatesService {
       .addSelect('(array_agg(app.status ORDER BY app.createdAt DESC))[1]', 'lastStatus')
       .where('app.candidateId IN (:...candidateIds)', { candidateIds })
       .groupBy('app.candidateId');
-    const rows = await applyDepartmentScope(qb, user, 'job.departmentId').getRawMany<
-      { candidateId: string } & ApplicationStat
-    >();
+    const rows = await applyDepartmentScope(
+      qb,
+      user,
+      'job.organizationId',
+      'job.departmentId',
+    ).getRawMany<{ candidateId: string } & ApplicationStat>();
     return new Map(rows.map(({ candidateId, ...stat }) => [candidateId, stat]));
   }
 
@@ -337,13 +353,21 @@ export class CandidatesService {
     const qb = this.candidatesRepository
       .createQueryBuilder('candidate')
       .where('candidate.id = :id', { id });
-    const candidate = await applyCandidateScope(qb, user, '"candidate"."id"').getOne();
+    const candidate = await applyCandidateScope(
+      qb,
+      user,
+      '"candidate"."organization_id"',
+      '"candidate"."id"',
+    ).getOne();
     if (!candidate) throw new NotFoundException('Candidate not found');
     return candidate;
   }
 
-  private async getOrFail(id: string): Promise<Candidate> {
-    const candidate = await this.candidatesRepository.findOneBy({ id });
+  private async getOrFail(id: string, user: ScopeUser): Promise<Candidate> {
+    const candidate = await this.candidatesRepository.findOneBy({
+      id,
+      organizationId: orgIdOf(user),
+    });
     if (!candidate) throw new NotFoundException('Candidate not found');
     return candidate;
   }

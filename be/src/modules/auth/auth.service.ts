@@ -11,6 +11,7 @@ import {
   RefreshTokensService,
   type SessionMeta,
 } from '../refresh-tokens/refresh-tokens.service.js';
+import { canSignIn } from '../organizations/entities/organization.entity.js';
 import { User } from '../users/entities/user.entity.js';
 import { UsersService } from '../users/users.service.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
@@ -55,18 +56,26 @@ export class AuthService {
       );
     }
 
+    const full = await this.usersService.findById(user.id);
+    // BR-ORG-04
+    if (full.organization && !canSignIn(full.organization.status)) {
+      this.loginFailed(dto.email, 'organization_disabled', meta);
+      throw new BusinessException(
+        ErrorCode.OrgDisabled,
+        'Organization is disabled',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
     await this.usersService.updateLastLogin(user.id);
     const refreshToken = await this.refreshTokensService.issue(user.id, meta);
-    return {
-      user: await this.usersService.findById(user.id),
-      tokens: await this.withAccessToken(user, refreshToken),
-    };
+    return { user: full, tokens: await this.withAccessToken(user, refreshToken) };
   }
 
   async refresh(refreshToken: string, meta: SessionMeta): Promise<AuthTokens> {
     const rotated = await this.refreshTokensService.rotate(refreshToken, meta);
     const user = await this.usersService.findById(rotated.userId).catch(() => null);
-    if (!user?.isActive) {
+    if (!user?.isActive || (user.organization && !canSignIn(user.organization.status))) {
       await this.refreshTokensService.revokeAllForUser(rotated.userId);
       throw new UnauthorizedException('Invalid refresh token');
     }

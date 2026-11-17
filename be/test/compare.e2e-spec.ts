@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
-import { DataSource, In } from 'typeorm';
+import { DataSource, type DeepPartial, In } from 'typeorm';
 import { AppModule } from '../src/app.module.js';
 import { AiStatus } from '../src/common/enums/ai-status.enum.js';
 import { ApplicationStatus } from '../src/common/enums/application-status.enum.js';
@@ -20,6 +20,7 @@ import {
 import { Job, JobStatus } from '../src/modules/jobs/entities/job.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { withOrg } from './fixtures.js';
 
 // F3 · BR-APP-13: so sánh ứng viên
 describe('Compare applications (e2e)', () => {
@@ -51,24 +52,28 @@ describe('Compare applications (e2e)', () => {
     await app.init();
     ds = app.get(DataSource);
 
-    const [depA, depB] = await ds.getRepository(Department).save([
-      { name: `So sánh A ${run}`, code: `CA_${run}`.toUpperCase() },
-      { name: `So sánh B ${run}`, code: `CB_${run}`.toUpperCase() },
-    ]);
+    const [depA, depB] = await ds.getRepository(Department).save(
+      withOrg([
+        { name: `So sánh A ${run}`, code: `CA_${run}`.toUpperCase() },
+        { name: `So sánh B ${run}`, code: `CB_${run}`.toUpperCase() },
+      ]),
+    );
     ids.depA = depA.id;
     ids.depB = depB.id;
     const passwordHash = await bcrypt.hash(password, 4);
-    const [hr, , iv] = await ds.getRepository(User).save([
-      { email: emails.hr, fullName: 'C HR', role: Role.Hr, passwordHash },
-      {
-        email: emails.hmB,
-        fullName: 'C HM B',
-        role: Role.HiringManager,
-        departmentId: depB.id,
-        passwordHash,
-      },
-      { email: emails.iv, fullName: 'C IV', role: Role.Interviewer, passwordHash },
-    ]);
+    const [hr, , iv] = await ds.getRepository(User).save(
+      withOrg([
+        { email: emails.hr, fullName: 'C HR', role: Role.Hr, passwordHash },
+        {
+          email: emails.hmB,
+          fullName: 'C HM B',
+          role: Role.HiringManager,
+          departmentId: depB.id,
+          passwordHash,
+        },
+        { email: emails.iv, fullName: 'C IV', role: Role.Interviewer, passwordHash },
+      ]),
+    );
     const job = (departmentId: string) => ({
       title: `So sánh ${run}`,
       departmentId,
@@ -79,7 +84,7 @@ describe('Compare applications (e2e)', () => {
       createdBy: hr.id,
       publishedAt: new Date(),
     });
-    const [main, other] = await ds.getRepository(Job).save([job(depA.id), job(depB.id)]);
+    const [main, other] = await ds.getRepository(Job).save(withOrg([job(depA.id), job(depB.id)]));
     ids.job = main.id;
     ids.otherJob = other.id;
     const [r1, r2] = await ds.getRepository(JobRequirement).save(
@@ -97,25 +102,29 @@ describe('Compare applications (e2e)', () => {
     ids.r2 = r2.id;
 
     const make = async (key: keyof typeof apps, jobId: string, scoredJdVersion: number | null) => {
-      const c = await ds.getRepository(Candidate).save({
-        fullName: `Ứng viên ${key} ${run}`,
-        email: `c-${key}-${run}@example.com`,
-        consentAt: new Date(),
-        consentVersion: 'v1',
-      });
+      const c = await ds.getRepository(Candidate).save(
+        withOrg({
+          fullName: `Ứng viên ${key} ${run}`,
+          email: `c-${key}-${run}@example.com`,
+          consentAt: new Date(),
+          consentVersion: 'v1',
+        }),
+      );
       candidates.push(c.id);
-      const a = await ds.getRepository(Application).save({
-        jobId,
-        candidateId: c.id,
-        cvFileId: null,
-        status: ApplicationStatus.Interview,
-        aiStatus: scoredJdVersion ? AiStatus.Done : AiStatus.Pending,
-        score: scoredJdVersion ? 80 : null,
-        scoreBreakdown: scoredJdVersion
-          ? [{ requirementId: r1.id, match: 1, evidence: '3 năm NestJS', rejectedEvidence: null }]
-          : null,
-        scoredJdVersion,
-      });
+      const a = await ds.getRepository(Application).save(
+        withOrg<DeepPartial<Application>>({
+          jobId,
+          candidateId: c.id,
+          cvFileId: null,
+          status: ApplicationStatus.Interview,
+          aiStatus: scoredJdVersion ? AiStatus.Done : AiStatus.Pending,
+          score: scoredJdVersion ? 80 : null,
+          scoreBreakdown: scoredJdVersion
+            ? [{ requirementId: r1.id, match: 1, evidence: '3 năm NestJS', rejectedEvidence: null }]
+            : null,
+          scoredJdVersion,
+        }),
+      );
       apps[key] = a.id;
     };
     await make('scored', main.id, 2);
@@ -123,13 +132,15 @@ describe('Compare applications (e2e)', () => {
     await make('unscored', main.id, null);
     await make('other', other.id, null);
 
-    const interview = await ds.getRepository(Interview).save({
-      applicationId: apps.scored,
-      round: 1,
-      scheduledAt: new Date(Date.now() - 3_600_000),
-      location: 'Phòng họp',
-      createdBy: hr.id,
-    });
+    const interview = await ds.getRepository(Interview).save(
+      withOrg({
+        applicationId: apps.scored,
+        round: 1,
+        scheduledAt: new Date(Date.now() - 3_600_000),
+        location: 'Phòng họp',
+        createdBy: hr.id,
+      }),
+    );
     await ds.getRepository(InterviewFeedback).save({
       interviewId: interview.id,
       authorId: iv.id,

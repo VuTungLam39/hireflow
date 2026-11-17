@@ -114,8 +114,8 @@ async function seedPerf() {
 
   // MVP 2: phỏng vấn, thông báo, nhật ký kiểm toán theo dữ liệu hồ sơ đã có
   await dataSource.query(
-    `INSERT INTO interviews (application_id, round, scheduled_at, duration_minutes, location, status, created_by)
-     SELECT a.id, 1, a.created_at + interval '7 days', 60, 'Phòng họp tầng 3',
+    `INSERT INTO interviews (organization_id, application_id, round, scheduled_at, duration_minutes, location, status, created_by)
+     SELECT a.organization_id, a.id, 1, a.created_at + interval '7 days', 60, 'Phòng họp tầng 3',
             (CASE WHEN a.status = 'INTERVIEW' THEN 'SCHEDULED' ELSE 'COMPLETED' END)::interview_status_enum, $1
      FROM applications a WHERE a.status IN ('INTERVIEW', 'OFFER', 'HIRED')`,
     [admin.id],
@@ -132,10 +132,11 @@ async function seedPerf() {
      FROM applications a JOIN jobs j ON j.id = a.job_id`,
   );
   await dataSource.query(
-    `INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata, created_at)
-     SELECT h.changed_by, 'APPLICATION_STATUS_CHANGED', 'application', h.application_id,
+    `INSERT INTO audit_logs (organization_id, actor_id, action, entity, entity_id, metadata, created_at)
+     SELECT a.organization_id, h.changed_by, 'APPLICATION_STATUS_CHANGED', 'application', h.application_id,
             jsonb_build_object('from', h.from_status, 'to', h.to_status), h.changed_at
-     FROM application_status_history h WHERE h.from_status IS NOT NULL`,
+     FROM application_status_history h JOIN applications a ON a.id = h.application_id
+     WHERE h.from_status IS NOT NULL`,
   );
   console.log(`interviews, notifications, audit logs (${elapsed()})`);
 

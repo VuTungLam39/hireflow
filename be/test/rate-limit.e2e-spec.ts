@@ -9,6 +9,7 @@ import { Role } from '../src/common/enums/role.enum.js';
 import { Department } from '../src/modules/departments/entities/department.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { withOrg } from './fixtures.js';
 
 // Kickoff 16 · BR-AI-10
 describe('Rate limit (e2e)', () => {
@@ -46,16 +47,18 @@ describe('Rate limit (e2e)', () => {
 
     const dep = await ds
       .getRepository(Department)
-      .save({ name: `Rate limit ${run}`, code: departmentCode });
+      .save(withOrg({ name: `Rate limit ${run}`, code: departmentCode }));
     const passwordHash = await bcrypt.hash(password, 4);
     await ds.getRepository(User).save(
-      Object.values(emails).map((email) => ({
-        email,
-        fullName: 'Rate Limit HM',
-        role: Role.HiringManager,
-        departmentId: dep.id,
-        passwordHash,
-      })),
+      withOrg(
+        Object.values(emails).map((email) => ({
+          email,
+          fullName: 'Rate Limit HM',
+          role: Role.HiringManager,
+          departmentId: dep.id,
+          passwordHash,
+        })),
+      ),
     );
     for (const who of ['a', 'b'] as const) {
       const res = await login(emails[who], password, nextIp()).expect(200);

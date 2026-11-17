@@ -15,6 +15,7 @@ import {
 } from '../src/modules/refresh-tokens/refresh-tokens.service.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
+import { ORG } from './fixtures.js';
 
 function refreshCookieOf(res: request.Response): string {
   const raw = res.headers['set-cookie'] as unknown as string[] | string | undefined;
@@ -61,9 +62,27 @@ describe('App (e2e)', () => {
     const passwordHash = await bcrypt.hash(password, 10);
     const users = dataSource.getRepository(User);
     await users.save([
-      users.create({ email: adminEmail, fullName: 'E2E Admin', role: Role.Admin, passwordHash }),
-      users.create({ email: hrEmail, fullName: 'E2E HR', role: Role.Hr, passwordHash }),
-      users.create({ email: lockEmail, fullName: 'E2E Lock', role: Role.Hr, passwordHash }),
+      users.create({
+        organizationId: ORG,
+        email: adminEmail,
+        fullName: 'E2E Admin',
+        role: Role.Admin,
+        passwordHash,
+      }),
+      users.create({
+        organizationId: ORG,
+        email: hrEmail,
+        fullName: 'E2E HR',
+        role: Role.Hr,
+        passwordHash,
+      }),
+      users.create({
+        organizationId: ORG,
+        email: lockEmail,
+        fullName: 'E2E Lock',
+        role: Role.Hr,
+        passwordHash,
+      }),
     ]);
 
     const admin = await request(server())

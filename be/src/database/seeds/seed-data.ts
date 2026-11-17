@@ -23,6 +23,7 @@ import {
   type SeedRequirement,
   TRACKS,
 } from './factories.js';
+import { DEFAULT_ORGANIZATION_ID } from '../../modules/organizations/entities/organization.entity.js';
 
 const DAY = 86_400_000;
 
@@ -51,14 +52,19 @@ export async function insertBatches<T extends ObjectLiteral>(
   entity: EntityTarget<T>,
   rows: Partial<T>[],
 ): Promise<void> {
-  const columns = dataSource.getMetadata(entity).columns.length;
+  const metadata = dataSource.getMetadata(entity);
+  const columns = metadata.columns.length;
   const size = Math.min(BATCH, Math.floor(MAX_PARAMS / columns));
-  for (let i = 0; i < rows.length; i += size) {
+  // BR-TEN-01
+  const values = metadata.findColumnWithPropertyName('organizationId')
+    ? rows.map((r) => ({ organizationId: DEFAULT_ORGANIZATION_ID, ...r }))
+    : rows;
+  for (let i = 0; i < values.length; i += size) {
     await dataSource
       .createQueryBuilder()
       .insert()
       .into(entity)
-      .values(rows.slice(i, i + size) as T[])
+      .values(values.slice(i, i + size) as T[])
       .updateEntity(false)
       .execute();
   }
