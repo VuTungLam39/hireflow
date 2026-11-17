@@ -167,8 +167,9 @@ export class PipelineOpsService {
       new Brackets((qb) =>
         qb
           .where('app.aiStatus = :failed', { failed: AiStatus.Failed })
+          // BR-AI-11: đang chờ lượt đọc CV của ngày mai thì không phải kẹt
           .orWhere(
-            `app.aiStatus = :pending AND app.createdAt < now() - make_interval(mins => :minutes)`,
+            `app.aiStatus = :pending AND app.createdAt < now() - make_interval(mins => :minutes) AND (app.aiWaitingUntil IS NULL OR app.aiWaitingUntil < now())`,
             { pending: AiStatus.Pending, minutes: STUCK_PENDING_MINUTES },
           )
           .orWhere(

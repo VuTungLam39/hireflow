@@ -1,7 +1,8 @@
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
-import { type Job, UnrecoverableError } from 'bullmq';
+import { DelayedError, type Job, UnrecoverableError } from 'bullmq';
 import { CvPipelineService } from './cv-pipeline.service.js';
+import { QuotaDeferred } from './errors.js';
 import { type CvJobData, QUEUE, type RescoreJobData, type ScoreJobData } from './queues.js';
 
 const isFinal = (job: Job, error: Error) =>
@@ -44,8 +45,15 @@ export class ParseCvProcessor extends PipelineWorker<CvJobData> {
 
 @Processor(QUEUE.extract, { concurrency: 2 })
 export class ExtractCvProcessor extends PipelineWorker<CvJobData> {
-  async process(job: Job<CvJobData>): Promise<void> {
-    await this.pipeline.extract(job.data);
+  async process(job: Job<CvJobData>, token?: string): Promise<void> {
+    try {
+      await this.pipeline.extract(job.data);
+    } catch (error) {
+      // BR-AI-11: hoãn tới 00:00 giờ VN, không tính là một lần thử
+      if (!(error instanceof QuotaDeferred)) throw error;
+      await job.moveToDelayed(error.until.getTime(), token);
+      throw new DelayedError();
+    }
   }
 
   protected onFinalFailure(data: CvJobData, error: Error) {

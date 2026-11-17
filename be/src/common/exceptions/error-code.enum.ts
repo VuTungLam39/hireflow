@@ -63,4 +63,5 @@ export enum ErrorCode {
 
   // AI
   AiUnavailable = 'AI_UNAVAILABLE',
+  AiQuotaExceeded = 'AI_QUOTA_EXCEEDED',
 }

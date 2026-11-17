@@ -20,7 +20,9 @@ import { extractProfile } from '../cv-extract.js';
 import { CvProfile } from '../entities/cv-profile.entity.js';
 import { scoreApplication } from '../scoring.js';
 import { type CvJobData, jobId, QUEUE, type RescoreJobData, type ScoreJobData } from './queues.js';
-import { AI_ERROR, PipelineFailure } from './errors.js';
+import { AI_ERROR, PipelineFailure, QuotaDeferred } from './errors.js';
+import { AiQuotaService, nextVnMidnight } from '../ai-quota.service.js';
+import { AiUsageKind } from '../entities/ai-usage.entity.js';
 
 export { AI_ERROR, PipelineFailure } from './errors.js';
 
@@ -55,6 +57,7 @@ export class CvPipelineService implements OnModuleInit {
     @InjectQueue(QUEUE.score) private readonly scoreQueue: Queue<ScoreJobData | RescoreJobData>,
     @InjectQueue(QUEUE.embed) private readonly embedQueue: Queue<CvJobData>,
     private readonly events: AppEvents,
+    private readonly quota: AiQuotaService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -242,6 +245,25 @@ export class CvPipelineService implements OnModuleInit {
     if (!cv?.text) return;
 
     if (!(await this.findProfile(cvFileId))) {
+      // BR-AI-11: công ty lấy từ DB, không tin payload (BR-TEN-03)
+      if (!(await this.quota.consume(cv.organizationId, AiUsageKind.Cv))) {
+        const until = nextVnMidnight();
+        const waiting = await this.applications()
+          .createQueryBuilder()
+          .update()
+          .set({ aiStatus: AiStatus.Pending, aiWaitingUntil: until })
+          .where({ cvFileId, aiStatus: ACTIVE })
+          .returning(['id'])
+          .execute();
+        for (const { id } of waiting.raw as { id: string }[]) {
+          this.events.emit('application.changed', { applicationId: id });
+        }
+        throw new QuotaDeferred(until);
+      }
+      await this.applications().update(
+        { cvFileId, aiWaitingUntil: Not(IsNull()) },
+        { aiWaitingUntil: null },
+      );
       const { data, model, inputTokens, outputTokens } = await this.callExtract(
         cv.text,
         cv.candidate?.fullName,
@@ -398,7 +420,7 @@ export class CvPipelineService implements OnModuleInit {
     const result = await this.applications()
       .createQueryBuilder()
       .update()
-      .set({ aiStatus: AiStatus.Failed, aiError: this.reasonOf(error) })
+      .set({ aiStatus: AiStatus.Failed, aiError: this.reasonOf(error), aiWaitingUntil: null })
       .where({ id: In(applicationIds), aiStatus: ACTIVE })
       .returning(['id'])
       .execute();

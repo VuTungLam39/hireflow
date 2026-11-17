@@ -12,6 +12,13 @@ export const AI_ERROR = {
   unavailable: 'Dịch vụ AI tạm thời không phản hồi. Bấm Chấm lại để thử lại.',
 } as const;
 
+// BR-AI-11: hết lượt đọc CV trong ngày, worker hoãn job tới thời điểm này
+export class QuotaDeferred extends Error {
+  constructor(readonly until: Date) {
+    super(`AI quota used up until ${until.toISOString()}`);
+  }
+}
+
 export class PipelineFailure extends UnrecoverableError {
   constructor(readonly reason: string) {
     super(reason);

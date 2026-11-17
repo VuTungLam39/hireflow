@@ -8,6 +8,8 @@ import { FilesModule } from '../files/files.module.js';
 import { AdminJobsController } from './admin-jobs.controller.js';
 import { buildEmbeddingProvider, buildLlmProvider } from './ai.factory.js';
 import { EMBEDDING_PROVIDER, LLM_PROVIDER } from './ai.types.js';
+import { AiQuotaService } from './ai-quota.service.js';
+import { AiUsage } from './entities/ai-usage.entity.js';
 import { CvProfile } from './entities/cv-profile.entity.js';
 import { CvPipelineService } from './pipeline/cv-pipeline.service.js';
 import { PipelineOpsService } from './pipeline/pipeline-ops.service.js';
@@ -32,11 +34,12 @@ import { RequirementsSuggester } from './requirements-suggester.service.js';
       { name: QUEUE.score },
       { name: QUEUE.embed },
     ),
-    TypeOrmModule.forFeature([CvProfile]),
+    TypeOrmModule.forFeature([CvProfile, AiUsage]),
     FilesModule,
   ],
   controllers: [AdminJobsController],
   providers: [
+    AiQuotaService,
     {
       provide: LLM_PROVIDER,
       inject: [aiConfig.KEY],
@@ -60,6 +63,7 @@ import { RequirementsSuggester } from './requirements-suggester.service.js';
     ScoreProcessor,
   ],
   exports: [
+    AiQuotaService,
     LLM_PROVIDER,
     EMBEDDING_PROVIDER,
     CvPipelineService,
