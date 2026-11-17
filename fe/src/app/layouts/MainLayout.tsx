@@ -3,6 +3,7 @@ import { useMe } from '@/features/auth'
 import { useFocusMainOnNavigate } from '@/hooks/use-focus-main'
 import { useRealtimeConnection } from '@/features/notifications'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth.store'
 import { DetailHost } from './DetailHost'
 import { QuickSearch } from './QuickSearch'
 import { Sidebar } from './Sidebar'
@@ -18,6 +19,7 @@ export function MainLayout() {
   useFocusMainOnNavigate()
   const matches = useMatches()
   const fullWidth = matches.some((m) => (m.handle as RouteHandle | undefined)?.fullWidth)
+  const pending = useAuthStore((s) => s.user?.organization?.status === 'PENDING')
 
   return (
     <div className="bg-canvas min-h-dvh md:flex">
@@ -39,6 +41,17 @@ export function MainLayout() {
               fullWidth ? 'max-w-none' : 'max-w-[1264px]',
             )}
           >
+            {pending && (
+              // BR-ORG-04, KH MVP 3 mục 8.3
+              <p
+                role="note"
+                className="border-warn/30 bg-warn-soft text-ink-2 mb-6 rounded-md border px-4 py-3 text-sm"
+              >
+                <span className="text-ink font-medium">Công ty đang chờ Quản trị sàn duyệt.</span>{' '}
+                Bạn vẫn chuẩn bị phòng ban, người dùng và tin tuyển dụng được; tin chỉ hiện công
+                khai sau khi được duyệt.
+              </p>
+            )}
             <Outlet />
           </main>
         </div>

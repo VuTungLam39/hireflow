@@ -136,6 +136,14 @@ export function Sidebar() {
         </nav>
 
         <div className="border-rail-line border-t p-2.5">
+          {user?.organization && (
+            <p
+              className="text-rail-text truncate px-2.5 pb-2 text-[13px] font-medium md:max-lg:sr-only"
+              title={user.organization.name}
+            >
+              {user.organization.name}
+            </p>
+          )}
           <Link
             to={paths.publicJobs}
             target="_blank"

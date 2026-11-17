@@ -42,7 +42,15 @@ async function applicationsLoader({ request }: LoaderFunctionArgs) {
   return null
 }
 
-const GUEST_PAGES = [paths.login, paths.publicJobs, paths.careers, paths.privacy]
+const GUEST_PAGES = [
+  paths.login,
+  paths.publicJobs,
+  paths.careers,
+  paths.privacy,
+  paths.employerRegister,
+  paths.employerCheckEmail,
+  paths.verifyEmail,
+]
 
 async function sessionLoader({ request }: LoaderFunctionArgs) {
   const path = new URL(request.url).pathname
@@ -89,6 +97,18 @@ export const routes: RouteObject[] = [
             path: paths.privacy,
             lazy: page(() => import('@/features/public-jobs/pages/PrivacyPolicyPage')),
           },
+          {
+            path: paths.employerRegister,
+            lazy: page(() => import('@/features/employers/pages/EmployerRegisterPage')),
+          },
+          {
+            path: paths.employerCheckEmail,
+            lazy: page(() => import('@/features/employers/pages/CheckEmailPage')),
+          },
+          {
+            path: paths.verifyEmail,
+            lazy: page(() => import('@/features/employers/pages/VerifyEmailPage')),
+          },
         ],
       },
       {
@@ -120,12 +140,17 @@ export const routes: RouteObject[] = [
                 ],
                 paths.interviews,
               ),
-              requires(Permission.ApplicationRead, [
-                {
-                  path: paths.interviews,
-                  lazy: page(() => import('@/features/interviews/pages/InterviewsPage')),
-                },
-              ]),
+              // Quản trị sàn không có quyền tuyển dụng: trang chủ → lịch phỏng vấn → công ty trên sàn
+              requires(
+                Permission.ApplicationRead,
+                [
+                  {
+                    path: paths.interviews,
+                    lazy: page(() => import('@/features/interviews/pages/InterviewsPage')),
+                  },
+                ],
+                paths.platformCompanies,
+              ),
               requires(Permission.JobRead, [
                 { path: paths.jobs, lazy: page(() => import('@/features/jobs/pages/JobsPage')) },
                 {
@@ -202,6 +227,20 @@ export const routes: RouteObject[] = [
                 {
                   path: paths.departments,
                   lazy: page(() => import('@/features/departments/pages/DepartmentsPage')),
+                },
+              ]),
+              requires(Permission.PlatformManage, [
+                {
+                  path: paths.platformCompanies,
+                  lazy: page(() => import('@/features/platform/pages/PlatformCompaniesPage')),
+                },
+                {
+                  path: paths.platformCompany,
+                  lazy: page(() => import('@/features/platform/pages/PlatformCompanyDetailPage')),
+                },
+                {
+                  path: paths.platformQueues,
+                  lazy: page(() => import('@/features/platform/pages/PlatformQueuesPage')),
                 },
               ]),
               { path: '*', element: <NotFoundPage /> },

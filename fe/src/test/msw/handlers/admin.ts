@@ -67,7 +67,12 @@ export const adminHandlers = [
     const role = params.get('role')
     const search = params.get('search')
     const rows = db.users
-      .filter((u) => (!role || u.role === role) && includesText(`${u.email} ${u.fullName}`, search))
+      .filter(
+        (u) =>
+          u.role !== Role.PlatformAdmin &&
+          (!role || u.role === role) &&
+          includesText(`${u.email} ${u.fullName}`, search),
+      )
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     const { items, meta } = paginate(rows, params)
     return ok(items.map(toUser), { meta })

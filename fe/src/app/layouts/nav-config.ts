@@ -6,6 +6,7 @@ import {
   Contact,
   FileStack,
   FileText,
+  ListOrdered,
   MessageSquareText,
   ScrollText,
   Sun,
@@ -90,6 +91,24 @@ export const navGroups: NavGroup[] = [
         label: 'Nhật ký kiểm toán',
         icon: ScrollText,
         permission: Permission.AuditRead,
+      },
+    ],
+  },
+  // MVP 3 · BR-TEN-04: chỉ Quản trị sàn có platform:manage
+  {
+    title: 'Quản trị sàn',
+    items: [
+      {
+        to: paths.platformCompanies,
+        label: 'Công ty',
+        icon: Building2,
+        permission: Permission.PlatformManage,
+      },
+      {
+        to: paths.platformQueues,
+        label: 'Hàng đợi hệ thống',
+        icon: ListOrdered,
+        permission: Permission.PlatformManage,
       },
     ],
   },

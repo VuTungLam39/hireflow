@@ -32,21 +32,6 @@ export const operationHandlers = [
     return ok(items, { meta })
   }),
 
-  http.get(api('/admin/queues'), ({ request }) => {
-    const user = authorize(request, Permission.OpsManage)
-    if (user instanceof Response) return user
-    const failed = db.applications.filter((a) => a.aiStatus === 'FAILED').length
-    return ok(
-      ['parse-cv', 'extract-cv', 'score', 'embed-cv'].map((name, i) => ({
-        name,
-        waiting: 0,
-        active: 0,
-        delayed: 0,
-        failed: i === 1 ? failed : 0,
-      })),
-    )
-  }),
-
   http.post(api('/admin/jobs/retry-all'), ({ request }) => {
     const user = authorize(request, Permission.OpsManage)
     if (user instanceof Response) return user

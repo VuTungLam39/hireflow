@@ -5,7 +5,7 @@ import type { Job, JobSummary } from '@/features/jobs'
 import { hasPermission, ROLE_PERMISSIONS, type Permission } from '@/lib/permissions'
 import type { CursorMeta, PaginationMeta } from '@/types/api'
 import { Role, type User } from '@/types/user'
-import { db, type ApplicationRow, type JobRow, type UserRow } from './data'
+import { db, MOCK_ORG_ID, type ApplicationRow, type JobRow, type UserRow } from './data'
 
 /** Đường dẫn đầy đủ của API, ví dụ api('/jobs') → '/api/v1/jobs' */
 export const api = (path: string) => `${env.apiUrl}${path}`
@@ -196,7 +196,15 @@ export function toUser(row: UserRow): User {
   return {
     ...rest,
     department: deptRef(row.departmentId),
+    organization: orgRef(row),
   }
+}
+
+// KH MVP 3 mục 8.3: mọi staff thuộc công ty demo, Quản trị sàn không thuộc công ty nào
+const orgRef = (row: UserRow): User['organization'] => {
+  if (row.role === Role.PlatformAdmin) return null
+  const o = db.organizations.find((x) => x.id === MOCK_ORG_ID)!
+  return { id: o.id, name: o.name, slug: o.slug, status: o.status }
 }
 
 // GET /auth/me

@@ -1,7 +1,7 @@
 import { useFormContext, useWatch } from 'react-hook-form'
 import { FormField, Select } from '@/components/ui'
 import { useDepartmentOptions } from '@/features/departments'
-import { Role, ROLE_LABELS } from '@/types/user'
+import { Role, ROLE_LABELS, STAFF_ROLES } from '@/types/user'
 
 /** Hai ô có ở mọi form dùng component này */
 interface RoleDepartmentValues {
@@ -48,7 +48,7 @@ export function RoleDepartmentFields({ idPrefix, roleLocked }: Props) {
             },
           })}
         >
-          {Object.values(Role).map((r) => (
+          {STAFF_ROLES.map((r) => (
             <option key={r} value={r}>
               {ROLE_LABELS[r]}
             </option>
