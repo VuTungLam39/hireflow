@@ -14,7 +14,7 @@ import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { CursorResult } from '../../common/dto/cursor-result.dto.js';
 import { decodeCursor, encodeCursor } from '../../common/utils/cursor.js';
-import { applyDepartmentScope } from '../../common/utils/department-scope.js';
+import { applyDepartmentScope, dataScope } from '../../common/utils/department-scope.js';
 import {
   InterviewQuestionSuggester,
   type QuestionSuggestion,
@@ -143,7 +143,7 @@ export class InterviewsService implements OnModuleInit {
           interview: ApplicationStatus.Interview,
         });
     }
-    if (query.mine || user.role === Role.Interviewer) {
+    if (query.mine || dataScope(user.role) === 'assigned') {
       qb.andWhere(
         'EXISTS (SELECT 1 FROM interview_assignees ia WHERE ia.interview_id = iv.id AND ia.user_id = :me)',
         { me: user.id },
@@ -175,7 +175,7 @@ export class InterviewsService implements OnModuleInit {
       order: { scheduledAt: 'ASC' },
     });
     const ids = rows.map((r) => r.id);
-    if (user.role === Role.Interviewer) {
+    if (dataScope(user.role) === 'assigned') {
       const mine = await this.dataSource.getRepository(InterviewAssignee).findBy({
         interviewId: In(ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
         userId: user.id,
@@ -394,8 +394,8 @@ export class InterviewsService implements OnModuleInit {
 
   // Danh mục Feature 9.2: Admin, HR mọi buổi; HM buổi của phòng mình; Interviewer buổi được giao
   private async canSuggest(iv: Interview, user: ScopeUser): Promise<boolean> {
-    if (user.role === Role.Admin || user.role === Role.Hr) return true;
-    if (user.role === Role.HiringManager) {
+    if (dataScope(user.role) === 'all') return true;
+    if (dataScope(user.role) === 'department') {
       return !!user.departmentId && iv.application!.job!.departmentId === user.departmentId;
     }
     return this.dataSource
@@ -702,7 +702,7 @@ export class InterviewsService implements OnModuleInit {
       .orderBy('iv.scheduledAt', 'ASC')
       .addOrderBy('au.fullName', 'ASC')
       .getMany();
-    const ownOnly = user.role === Role.Interviewer;
+    const ownOnly = dataScope(user.role) === 'assigned';
     return rows.map((iv) => {
       const feedbacks = (iv.feedbacks ?? []).filter((f) => !ownOnly || f.authorId === user.id);
       const submitted = new Set((iv.feedbacks ?? []).map((f) => f.authorId));

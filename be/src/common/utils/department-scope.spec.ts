@@ -4,6 +4,7 @@ import {
   applyCandidateScope,
   applyDepartmentScope,
   applyInterviewerScope,
+  dataScope,
 } from './department-scope.js';
 
 const fakeQb = () => {
@@ -71,5 +72,25 @@ describe('interviewer scope (BR-INT-02)', () => {
       },
     );
     expect(qb.andWhere).toHaveBeenCalledWith('1 = 0');
+  });
+});
+
+describe('dataScope (BR-ACC-07, BR-INT-02)', () => {
+  it.each([
+    [Role.Admin, 'all'],
+    [Role.Hr, 'all'],
+    [Role.HiringManager, 'department'],
+    [Role.Interviewer, 'assigned'],
+  ] as const)('classifies %s as %s', (role, scope) => {
+    expect(dataScope(role)).toBe(scope);
+  });
+
+  it('refuses a role without a scope instead of opening the query', () => {
+    const qb = fakeQb();
+    const user = { role: 'viewer' as Role, departmentId: null };
+    expect(() => dataScope(user.role)).toThrow('Role has no data scope');
+    expect(() => applyDepartmentScope(qb, user, 'job.departmentId')).toThrow();
+    expect(() => applyCandidateScope(qb, user, 'candidate.id')).toThrow();
+    expect(qb.andWhere).not.toHaveBeenCalled();
   });
 });

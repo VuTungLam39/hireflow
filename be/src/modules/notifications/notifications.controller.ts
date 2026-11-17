@@ -15,8 +15,8 @@ import type { Request, Response } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Authenticated } from '../../common/decorators/permissions.decorator.js';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator.js';
-import { Role } from '../../common/enums/role.enum.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
+import { dataScope } from '../../common/utils/department-scope.js';
 import { QueryNotificationDto } from './dto/query-notification.dto.js';
 import { NotificationsService } from './notifications.service.js';
 import { type RealtimeEvent, RealtimeHub } from './realtime-hub.service.js';
@@ -125,6 +125,7 @@ export function visibleTo(
   user: Pick<AuthUser, 'id' | 'role' | 'departmentId'>,
 ) {
   if (event.kind === 'notification') return event.userId === user.id;
-  if (user.role === Role.Interviewer) return false;
-  return user.role !== Role.HiringManager || event.departmentId === user.departmentId;
+  const scope = dataScope(user.role);
+  if (scope === 'all') return true;
+  return scope === 'department' && event.departmentId === user.departmentId;
 }

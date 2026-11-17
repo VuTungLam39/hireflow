@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
-import { Role } from '../../common/enums/role.enum.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
+import { dataScope } from '../../common/utils/department-scope.js';
 import type { CvSection } from './cv-chunks.js';
 
 type ScopeUser = Pick<AuthUser, 'role' | 'departmentId'>;
@@ -49,8 +49,9 @@ export function retrieveChunks(
     RRF_K,
   ];
   let scope = '';
-  if (user.role !== Role.Admin && user.role !== Role.Hr) {
-    if (user.role !== Role.HiringManager || !user.departmentId) return Promise.resolve([]);
+  const access = dataScope(user.role);
+  if (access !== 'all') {
+    if (access !== 'department' || !user.departmentId) return Promise.resolve([]);
     params.push(user.departmentId);
     scope = `AND j.department_id = $${params.length}`;
   }
