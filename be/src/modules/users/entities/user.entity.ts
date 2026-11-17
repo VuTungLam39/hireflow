@@ -12,11 +12,16 @@ import { Department } from '../../departments/entities/department.entity.js';
   'CK_users_hiring_manager_department',
   `"role" <> 'hiring_manager' OR "department_id" IS NOT NULL`,
 )
+// BR-TEN-04: chỉ Quản trị sàn không thuộc công ty nào
+@Check(
+  'CK_users_platform_admin_organization',
+  `("role" = 'platform_admin') = ("organization_id" IS NULL)`,
+)
 export class User extends AbstractEntity {
   // BR-TEN-01
   @Index('IDX_users_organization_id')
-  @Column({ type: 'uuid' })
-  organizationId: string;
+  @Column({ type: 'uuid', nullable: true })
+  organizationId: string | null;
 
   @ManyToOne(() => Organization, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'organization_id', foreignKeyConstraintName: 'FK_users_organization_id' })
@@ -53,6 +58,6 @@ export class User extends AbstractEntity {
   lastLoginAt: Date | null;
 
   // BR-ACC-09
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true, default: () => 'now()' })
   emailVerifiedAt: Date | null;
 }
