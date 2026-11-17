@@ -4,7 +4,7 @@ import { DataSource } from 'typeorm';
 import { AiStatus } from '../../common/enums/ai-status.enum.js';
 import { ApplicationStatus } from '../../common/enums/application-status.enum.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
-import { applyDepartmentScope, dataScope } from '../../common/utils/department-scope.js';
+import { applyDepartmentScope, dataScope, orgIdOf } from '../../common/utils/department-scope.js';
 import { vnToday } from '../../common/utils/vn-date.js';
 import { ApplicationStatusHistory } from '../applications/entities/application-status-history.entity.js';
 import { Application } from '../applications/entities/application.entity.js';
@@ -15,10 +15,10 @@ import { buildFunnel, type FunnelView, type TransitionRow } from './funnel.js';
 
 type ScopeUser = Pick<AuthUser, 'role' | 'departmentId' | 'organizationId'>;
 
-// BR-ACC-07
+// BR-ACC-07, BR-TEN-03
 const cacheScope = (user: ScopeUser) => {
   const scope = dataScope(user.role);
-  return scope === 'department' ? `dept:${user.departmentId}` : scope;
+  return `org:${orgIdOf(user)}:${scope === 'department' ? `dept:${user.departmentId}` : scope}`;
 };
 
 export interface DashboardSummaryView {

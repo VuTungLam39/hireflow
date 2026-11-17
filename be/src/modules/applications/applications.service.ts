@@ -299,9 +299,12 @@ export class ApplicationsService {
     const qb = this.applicationsRepository.createQueryBuilder('app');
     if (dataScope(user.role) !== 'all') {
       qb.innerJoin('app.job', 'job');
-      applyDepartmentScope(qb, user, 'job.organizationId', 'job.departmentId', {
+      applyDepartmentScope(qb, user, 'app.organizationId', 'job.departmentId', {
         applicationIdColumn: '"app"."id"',
       });
+    } else {
+      // BR-TEN-02
+      qb.andWhere('app.organizationId = :scopeOrgId', { scopeOrgId: orgIdOf(user) });
     }
     if (query.jobId) qb.andWhere('app.jobId = :jobId', { jobId: query.jobId });
     if (query.status) qb.andWhere('app.status = :status', { status: query.status });

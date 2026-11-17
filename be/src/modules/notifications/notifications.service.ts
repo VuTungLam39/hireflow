@@ -126,6 +126,7 @@ export class NotificationsService implements OnModuleInit {
     const app = await this.dataSource.getRepository(Application).findOne({
       select: {
         id: true,
+        organizationId: true,
         jobId: true,
         status: true,
         aiStatus: true,
@@ -137,6 +138,7 @@ export class NotificationsService implements OnModuleInit {
     if (!app?.job) return;
     await this.hub.publish({
       kind: 'application',
+      organizationId: app.organizationId,
       departmentId: app.job.departmentId,
       applicationId: app.id,
       jobId: app.jobId,

@@ -15,6 +15,8 @@ import { ResponseMessage } from '../../common/decorators/response-message.decora
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto.js';
 import { Permission } from '../../common/permissions/permission.enum.js';
 import { PipelineOpsService } from './pipeline/pipeline-ops.service.js';
+import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 
 // API Contract 4.10, F-OPS-01
 @ApiTags('Admin')
@@ -26,8 +28,8 @@ export class AdminJobsController {
   @Get('jobs/failed')
   @Permissions(Permission.OpsManage)
   @ApiOperation({ summary: 'Hồ sơ chấm AI lỗi (FAILED) hoặc kẹt ở PENDING quá 5 phút' })
-  findIssues(@Query() query: PaginationQueryDto) {
-    return this.ops.findIssues(query);
+  findIssues(@Query() query: PaginationQueryDto, @CurrentUser() user: AuthUser) {
+    return this.ops.findIssues(query, user);
   }
 
   @Post('jobs/retry-all')
@@ -35,8 +37,8 @@ export class AdminJobsController {
   @Permissions(Permission.OpsManage)
   @ApiOperation({ summary: 'Chạy lại toàn bộ hồ sơ lỗi/kẹt (tối đa 500 mỗi lần)' })
   @ResponseMessage('Retry scheduled')
-  retryAll(@RequestId() requestId?: string) {
-    return this.ops.retryAll(requestId);
+  retryAll(@CurrentUser() user: AuthUser, @RequestId() requestId?: string) {
+    return this.ops.retryAll(user, requestId);
   }
 
   @Post('jobs/:applicationId/retry')
@@ -46,9 +48,10 @@ export class AdminJobsController {
   @ResponseMessage('Retry scheduled')
   retry(
     @Param('applicationId', ParseUUIDPipe) applicationId: string,
+    @CurrentUser() user: AuthUser,
     @RequestId() requestId?: string,
   ) {
-    return this.ops.retry(applicationId, requestId);
+    return this.ops.retry(applicationId, user, requestId);
   }
 
   @Get('queues')
