@@ -9,7 +9,8 @@ import { useListParams } from '@/hooks/use-list-params'
 import { formatDate, formatDaysAgo } from '@/lib/utils'
 import { SITE_NAME } from '@/prerender/shared'
 import { links } from '@/routes/paths'
-import { usePublicDepartments, usePublicJobs } from '../hooks/use-public-jobs'
+import { CompanyLogo } from '../components/CompanyLogo'
+import { usePublicCompanies, usePublicDepartments, usePublicJobs } from '../hooks/use-public-jobs'
 import { publicJobsListSchema } from '../schemas'
 import type { PublicJobSummary } from '../types'
 
@@ -40,7 +41,13 @@ export default function PublicJobsPage() {
   const hydrated = useHydrated()
   useDocumentTitle(`Việc làm đang tuyển – ${SITE_NAME}`)
 
-  const facets = usePublicDepartments(params.search)
+  // US-22: chip công ty lấy từ danh bạ; phòng ban chỉ có nghĩa trong một công ty
+  const companies = usePublicCompanies({ page: 1, limit: 48 })
+  const companyOptions = (companies.data?.items ?? [])
+    .filter((c) => c.openJobs > 0)
+    .map((c) => ({ value: c.slug, label: c.name, count: c.openJobs }))
+  const company = companies.data?.items.find((c) => c.slug === params.company)
+  const facets = usePublicDepartments(params.search, params.company)
   const departments = (facets.data ?? []).map((d) => ({
     value: d.id,
     label: d.name,
@@ -52,19 +59,40 @@ export default function PublicJobsPage() {
   return (
     <div className="space-y-10">
       <header className="max-w-2xl space-y-5">
-        <h1 className="type-display">Cơ hội nghề nghiệp tại HireFlow</h1>
+        <h1 className="type-display">Việc làm trên HireFlow</h1>
         <p className="type-read-lg">
-          Chọn vị trí phù hợp và gửi hồ sơ. Nộp CV chỉ mất khoảng một phút.
+          Vị trí đang tuyển của các công ty trên sàn. Nộp CV chỉ mất khoảng một phút.
         </p>
-        <SearchInput
-          size="lg"
-          value={params.search}
-          onChange={(value) => setParams({ search: value })}
-          placeholder="Tìm vị trí, ví dụ: Backend"
-          label="Tìm vị trí"
-          className="max-w-md"
-        />
-        {departments.length > 1 && (
+        <div className="flex max-w-2xl flex-col gap-2 sm:flex-row">
+          <SearchInput
+            size="lg"
+            value={params.search}
+            onChange={(value) => setParams({ search: value })}
+            placeholder="Vị trí, kỹ năng, ví dụ: Backend"
+            label="Tìm vị trí"
+            className="sm:flex-[3]"
+          />
+          <SearchInput
+            size="lg"
+            value={params.location}
+            onChange={(value) => setParams({ location: value })}
+            placeholder="Địa điểm"
+            label="Địa điểm"
+            className="sm:flex-[2]"
+          />
+        </div>
+        {companyOptions.length > 1 && (
+          <ChipGroup
+            label="Lọc theo công ty"
+            allLabel="Mọi công ty"
+            options={companyOptions}
+            limit={5}
+            moreLabel={(n) => `+${n} công ty khác`}
+            value={params.company}
+            onChange={(slug) => setParams({ company: slug ?? null, departmentId: null })}
+          />
+        )}
+        {params.company && departments.length > 1 && (
           <ChipGroup
             label="Lọc theo phòng ban"
             allLabel="Mọi phòng ban"
@@ -122,7 +150,8 @@ export default function PublicJobsPage() {
         <>
           <p className="type-caption">
             {data.meta.totalItems.toLocaleString('vi-VN')} vị trí đang tuyển
-            {dept && ` ở ${dept.name}`}
+            {company && ` tại ${company.name}`}
+            {dept && ` · ${dept.name}`}
           </p>
           <ul className="border-line divide-line-soft -mt-6 divide-y border-y">
             {items.map((job) => (
@@ -131,12 +160,14 @@ export default function PublicJobsPage() {
                   to={links.publicJobDetail(job.id)}
                   className="group hover:bg-canvas -mx-4 flex items-center gap-4 px-4 py-5 transition-colors"
                 >
+                  <CompanyLogo name={job.company.name} logoUrl={job.company.logoUrl} />
                   <span className="min-w-0 flex-1">
                     <span className="text-ink group-hover:text-brand block text-lg leading-7 font-semibold transition-colors">
                       {job.title}
                     </span>
                     <span className="type-body text-ink-muted block">
-                      {job.department.name} · {job.location} ·{' '}
+                      <span className="text-ink-2 font-medium">{job.company.name}</span> ·{' '}
+                      {job.location} ·{' '}
                       {hydrated
                         ? `đăng ${formatDaysAgo(job.publishedAt, undefined, { hoursToday: true })}`
                         : formatDate(job.publishedAt)}

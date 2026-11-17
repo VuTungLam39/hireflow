@@ -868,7 +868,7 @@ const org = (
 ): OrganizationRow => ({
   id,
   name,
-  slug: slug(name),
+  slug: slug(name).replace(/\./g, '-'),
   taxCode: `0${between(100000000, 999999999)}`,
   website: `https://${slug(name)}.example.com`,
   status,

@@ -7,21 +7,11 @@ import type { CompanyInput, MediaKind } from '../types'
 export const companyKeys = {
   all: ['company'] as const,
   detail: () => [...companyKeys.all, 'detail'] as const,
-  public: () => [...companyKeys.all, 'public'] as const,
 }
 
 // F-ORG-01
 export function useCompany() {
   return useQuery({ queryKey: companyKeys.detail(), queryFn: companyApi.get })
-}
-
-export function usePublicCompany() {
-  return useQuery({
-    queryKey: companyKeys.public(),
-    queryFn: companyApi.publicGet,
-    staleTime: 5 * 60_000,
-    retry: false,
-  })
 }
 
 export function useSaveCompany() {
@@ -30,7 +20,6 @@ export function useSaveCompany() {
     mutationFn: (input: CompanyInput) => companyApi.update(input),
     onSuccess: (company) => {
       queryClient.setQueryData(companyKeys.detail(), company)
-      void queryClient.invalidateQueries({ queryKey: companyKeys.public() })
       toast.success('Đã lưu. Trang tuyển dụng công khai sẽ cập nhật trong khoảng một phút.')
     },
   })

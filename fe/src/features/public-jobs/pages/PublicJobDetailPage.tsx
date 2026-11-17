@@ -7,11 +7,12 @@ import { useDocumentTitle } from '@/hooks/use-document-title'
 import { getErrorCode } from '@/lib/errors'
 import { cn, formatDate, formatDaysAgo } from '@/lib/utils'
 import { jobTitle } from '@/prerender/shared'
-import { paths } from '@/routes/paths'
+import { links, paths } from '@/routes/paths'
 import { JobFacts } from '@/features/jobs'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { ApplyForm } from '../components/ApplyForm'
 import { CompanyAbout } from '../components/CompanyAbout'
+import { JobRows } from '../components/JobRows'
 import { usePublicJob } from '../hooks/use-public-jobs'
 
 // F-PUB-02, F-PUB-03 · BR-APP-07 · Design Spec 6.11
@@ -36,7 +37,7 @@ export default function PublicJobDetailPage() {
     return (
       <EmptyState
         title="Vị trí này đã đóng hoặc không còn"
-        description="Đường dẫn có thể đã cũ. Bạn xem các vị trí HireFlow đang tuyển nhé."
+        description="Đường dẫn có thể đã cũ. Bạn xem các vị trí đang tuyển trên HireFlow nhé."
         action={
           <Link to={paths.publicJobs} className={buttonVariants({ variant: 'secondary' })}>
             Xem vị trí đang tuyển
@@ -65,7 +66,13 @@ export default function PublicJobDetailPage() {
           <header className="space-y-3">
             <h1 className="type-display">{job.title}</h1>
             <p className="text-ink-2 text-[15px] leading-6">
-              {job.department.name} · {job.location}{' '}
+              <Link
+                to={links.publicCompany(job.company.slug)}
+                className="text-ink font-medium hover:underline"
+              >
+                {job.company.name}
+              </Link>{' '}
+              · {job.department.name} · {job.location}{' '}
               <span className="text-ink-muted whitespace-nowrap">
                 · đăng{' '}
                 <time dateTime={job.publishedAt ?? undefined} title={formatDate(job.publishedAt)}>
@@ -112,7 +119,17 @@ export default function PublicJobDetailPage() {
             </section>
           )}
 
-          <CompanyAbout />
+          <CompanyAbout company={job.company} />
+
+          {job.otherJobs.length > 0 && (
+            // US-24
+            <section aria-labelledby="tin-khac" className="space-y-3">
+              <h2 id="tin-khac" className="type-heading">
+                Tin khác của {job.company.name}
+              </h2>
+              <JobRows jobs={job.otherJobs} />
+            </section>
+          )}
         </article>
 
         <aside

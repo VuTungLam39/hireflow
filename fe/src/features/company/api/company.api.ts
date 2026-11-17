@@ -1,7 +1,7 @@
 import { env } from '@/config/env'
 import { api, SLOW_TIMEOUT_MS } from '@/lib/api-client'
 import type { ApiResponse } from '@/types/api'
-import type { Company, CompanyInput, CompanyMedia, MediaKind, PublicCompany } from '../types'
+import type { Company, CompanyInput, CompanyMedia, MediaKind } from '../types'
 
 /** Ảnh công khai đi qua API (BR-MEDIA-02); url từ BE là đường dẫn sau apiUrl */
 export const mediaSrc = (media: Pick<CompanyMedia, 'url'>) => `${env.apiUrl}${media.url}`
@@ -32,6 +32,4 @@ export const companyApi = {
   removeMedia: async (id: string) => {
     await api.delete(`/company/media/${id}`)
   },
-
-  publicGet: async () => (await api.get<ApiResponse<PublicCompany>>('/public/company')).data.data,
 }

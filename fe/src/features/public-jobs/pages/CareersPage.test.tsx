@@ -40,12 +40,15 @@ const publish = () => {
   ]
 }
 
+const DEMO = links.publicCompany('hireflow-demo')
+
 const open = (path: string) => {
   const router = createMemoryRouter(
     [
-      { path: paths.careers, element: <CareersPage /> },
+      { path: paths.publicCompany, element: <CareersPage /> },
       { path: paths.publicJobDetail, element: <PublicJobDetailPage /> },
       { path: paths.publicJobs, element: <p>Danh sách việc làm</p> },
+      { path: paths.publicCompanies, element: <p>Danh bạ công ty</p> },
     ],
     { initialEntries: [path] },
   )
@@ -61,7 +64,7 @@ const open = (path: string) => {
 // F-PUB-06 · BR-ORG-01 · Mở rộng MVP 2 – E3
 describe('CareersPage', () => {
   it('BR-ORG-01: an unpublished profile shows a calm notice that points to open jobs', async () => {
-    open(paths.careers)
+    open(DEMO)
     await screen.findByText('Trang giới thiệu công ty đang được cập nhật')
     expect(screen.getByRole('link', { name: 'Xem vị trí đang tuyển' })).toHaveAttribute(
       'href',
@@ -73,11 +76,14 @@ describe('CareersPage', () => {
   it('shows the profile: facts, benefits, history, offices and the latest open jobs', async () => {
     publish()
     const openJobs = db.jobs.filter((j) => j.status === 'OPEN').length
-    open(paths.careers)
+    open(DEMO)
 
     await screen.findByRole('heading', { level: 1, name: companyState.profile.name })
     expect(screen.getByRole('img', { name: `Logo ${companyState.profile.name}` })).toBeVisible()
-    expect(screen.getByText(`${openJobs} vị trí`)).toHaveAttribute('href', paths.publicJobs)
+    expect(screen.getByText(`${openJobs} vị trí`)).toHaveAttribute(
+      'href',
+      `${paths.publicJobs}?company=hireflow-demo`,
+    )
     expect(screen.getByText('Bảo hiểm sức khoẻ')).toBeVisible()
     expect(screen.getByRole('heading', { name: 'Chặng đường phát triển' })).toBeVisible()
 
@@ -88,14 +94,23 @@ describe('CareersPage', () => {
     const jobs = within(
       screen.getByRole('heading', { name: 'Vị trí đang tuyển' }).closest('section')!,
     )
-    await jobs.findAllByRole('link', { name: /·/ })
-    expect(jobs.getAllByRole('link', { name: /·/ }).length).toBeLessThanOrEqual(5)
-    expect(jobs.getByRole('link', { name: `Xem tất cả ${openJobs} vị trí` })).toBeVisible()
+    // US-23: toàn bộ tin đang tuyển của công ty
+    expect(jobs.getAllByRole('link', { name: /·/ })).toHaveLength(openJobs)
+    expect(jobs.queryByRole('link', { name: /Xem tất cả/ })).toBeNull()
+  })
+
+  it('US-23: an unknown company explains it and links to the directory', async () => {
+    open(links.publicCompany('khong-ton-tai'))
+    await screen.findByText('Không tìm thấy công ty này')
+    expect(screen.getByRole('link', { name: 'Xem các công ty' })).toHaveAttribute(
+      'href',
+      paths.publicCompanies,
+    )
   })
 
   it('opens the gallery in a lightbox that the arrow keys move through', async () => {
     publish()
-    open(paths.careers)
+    open(DEMO)
 
     fireEvent.click(await screen.findByRole('button', { name: 'Xem ảnh lớn: Phòng họp nhóm' }))
     const dialog = screen.getByRole('dialog', { name: 'Thư viện ảnh' })
@@ -120,19 +135,26 @@ describe('CareersPage', () => {
 describe('PublicJobDetailPage – about the company', () => {
   const job = () => db.jobs.find((j) => j.status === 'OPEN')!
 
-  it('links to /careers once the profile is published', async () => {
+  // US-24
+  it('links the company block and the company name to the company page', async () => {
     publish()
     open(links.publicJobDetail(job().id))
     const about = await screen.findByRole('heading', { name: `Về ${companyState.profile.name}` })
-    expect(within(about.closest('section')!).getByRole('link')).toHaveAttribute(
+    expect(within(about.closest('section')!).getByRole('link')).toHaveAttribute('href', DEMO)
+    expect(screen.getByRole('link', { name: companyState.profile.name })).toHaveAttribute(
       'href',
-      paths.careers,
+      DEMO,
     )
   })
 
-  it('is hidden while the profile is not published', async () => {
+  it('lists up to 4 other open jobs of the company, not the one being read', async () => {
     open(links.publicJobDetail(job().id))
-    await screen.findByRole('heading', { level: 1, name: job().title })
-    expect(screen.queryByRole('link', { name: /Tìm hiểu về công ty/ })).not.toBeInTheDocument()
+    const heading = await screen.findByRole('heading', {
+      name: `Tin khác của ${companyState.profile.name}`,
+    })
+    const links_ = within(heading.closest('section')!).getAllByRole('link')
+    expect(links_.length).toBeGreaterThan(0)
+    expect(links_.length).toBeLessThanOrEqual(4)
+    expect(links_.map((l) => l.getAttribute('href'))).not.toContain(links.publicJobDetail(job().id))
   })
 })

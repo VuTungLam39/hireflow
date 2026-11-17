@@ -1,26 +1,19 @@
-import { ArrowRight, ArrowUpRight, MapPin } from 'lucide-react'
+import { ArrowUpRight, MapPin } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
-import { Link } from 'react-router'
+import { Link, useParams } from 'react-router'
 import { EmptyState, ErrorState, Timeline } from '@/components/shared'
 import { Skeleton, buttonVariants } from '@/components/ui'
-import {
-  COMPANY_SIZE,
-  mediaSrc,
-  usePublicCompany,
-  type CompanyMedia,
-  type PublicCompany,
-} from '@/features/company'
+import { COMPANY_SIZE, mediaSrc, type CompanyMedia } from '@/features/company'
 import { useDocumentTitle } from '@/hooks/use-document-title'
-import { parseListParams } from '@/hooks/use-list-params'
 import { getErrorCode } from '@/lib/errors'
 import { cn } from '@/lib/utils'
 import { SITE_NAME } from '@/prerender/shared'
 import { links, paths } from '@/routes/paths'
 import { GalleryLightbox } from '../components/GalleryLightbox'
-import { usePublicJobs } from '../hooks/use-public-jobs'
-import { publicJobsListSchema } from '../schemas'
+import { JobRows } from '../components/JobRows'
+import { usePublicCompany } from '../hooks/use-public-jobs'
+import type { PublicCompanyPage } from '../types'
 
-const JOBS_SHOWN = 5
 const SOCIAL_LABEL = {
   linkedin: 'LinkedIn',
   facebook: 'Facebook',
@@ -28,9 +21,10 @@ const SOCIAL_LABEL = {
   tiktok: 'TikTok',
 } as const
 
-// F-PUB-06 · BR-ORG-01 · Mở rộng MVP 2 – E3
+// F-PUB-06, F-PUB-10 · BR-ORG-01 · MVP 3 · US-23: trang công ty theo slug
 export default function CareersPage() {
-  const { data: company, isPending, isError, error, refetch } = usePublicCompany()
+  const { slug = '' } = useParams()
+  const { data: company, isPending, isError, error, refetch } = usePublicCompany(slug)
   useDocumentTitle(company ? `${company.name} – ${SITE_NAME}` : undefined)
 
   if (isPending)
@@ -42,7 +36,20 @@ export default function CareersPage() {
       </div>
     )
   if (isError && !company) {
-    return getErrorCode(error) === 'COMPANY_PROFILE_INCOMPLETE' ? (
+    const code = getErrorCode(error)
+    if (code === 'NOT_FOUND')
+      return (
+        <EmptyState
+          title="Không tìm thấy công ty này"
+          description="Đường dẫn có thể đã cũ, hoặc công ty chưa mở trang trên HireFlow."
+          action={
+            <Link to={paths.publicCompanies} className={buttonVariants({ variant: 'secondary' })}>
+              Xem các công ty
+            </Link>
+          }
+        />
+      )
+    return code === 'COMPANY_PROFILE_INCOMPLETE' ? (
       <EmptyState
         title="Trang giới thiệu công ty đang được cập nhật"
         description="Bạn vẫn có thể xem và ứng tuyển các vị trí đang mở."
@@ -135,7 +142,7 @@ export default function CareersPage() {
           </ul>
         </Section>
       )}
-      <OpenJobs total={company.openJobs} />
+      <OpenJobs company={company} />
     </div>
   )
 }
@@ -151,7 +158,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
   )
 }
 
-function Hero({ company }: { company: PublicCompany }) {
+function Hero({ company }: { company: PublicCompanyPage }) {
   const facts = [
     company.sizeRange && { label: 'Quy mô', value: COMPANY_SIZE[company.sizeRange] },
     company.foundedYear && { label: 'Thành lập', value: String(company.foundedYear) },
@@ -199,7 +206,10 @@ function Hero({ company }: { company: PublicCompany }) {
               <dt className="type-caption">{f.label}</dt>
               <dd className="text-ink mt-0.5 text-sm font-medium">
                 {f.label === 'Đang tuyển' ? (
-                  <Link to={paths.publicJobs} className="text-brand hover:underline">
+                  <Link
+                    to={links.publicJobs({ company: company.slug })}
+                    className="text-brand hover:underline"
+                  >
                     {f.value}
                   </Link>
                 ) : (
@@ -286,11 +296,8 @@ function Gallery({ images }: { images: CompanyMedia[] }) {
   )
 }
 
-function OpenJobs({ total }: { total: number }) {
-  const params = parseListParams(publicJobsListSchema, new URLSearchParams())
-  const { data } = usePublicJobs(params)
-  const jobs = data?.items.slice(0, JOBS_SHOWN) ?? []
-
+function OpenJobs({ company }: { company: PublicCompanyPage }) {
+  const total = company.openJobs
   return (
     <Section id="dang-tuyen" title="Vị trí đang tuyển">
       {total === 0 ? (
@@ -301,29 +308,15 @@ function OpenJobs({ total }: { total: number }) {
         />
       ) : (
         <>
-          <ul className="border-line divide-line-soft divide-y border-y">
-            {jobs.map((job) => (
-              <li key={job.id}>
-                <Link
-                  to={links.publicJobDetail(job.id)}
-                  className="group hover:bg-canvas -mx-4 flex items-center gap-4 px-4 py-4 transition-colors"
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="text-ink group-hover:text-brand block font-semibold transition-colors">
-                      {job.title}
-                    </span>
-                    <span className="type-body text-ink-muted block">
-                      {job.department.name} · {job.location}
-                    </span>
-                  </span>
-                  <ArrowRight className="text-ink-muted group-hover:text-brand size-5 shrink-0 transition-colors" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <Link to={paths.publicJobs} className={buttonVariants({ variant: 'secondary' })}>
-            Xem tất cả {total.toLocaleString('vi-VN')} vị trí
-          </Link>
+          <JobRows jobs={company.jobs} />
+          {total > company.jobs.length && (
+            <Link
+              to={links.publicJobs({ company: company.slug })}
+              className={buttonVariants({ variant: 'secondary' })}
+            >
+              Xem tất cả {total.toLocaleString('vi-VN')} vị trí
+            </Link>
+          )}
         </>
       )}
     </Section>

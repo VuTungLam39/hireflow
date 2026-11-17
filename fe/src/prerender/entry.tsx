@@ -3,11 +3,13 @@ import { StrictMode } from 'react'
 import { renderToString } from 'react-dom/server'
 import { createStaticHandler, createStaticRouter, StaticRouterProvider } from 'react-router'
 import { AppProviders } from '@/app/providers'
-import { companyKeys, mediaSrc, type PublicCompany } from '@/features/company'
+import { mediaSrc } from '@/features/company'
 import {
+  companiesListSchema,
   publicJobKeys,
   publicJobsListSchema,
-  type PublicDepartmentCount,
+  type PublicCompanyCard,
+  type PublicCompanyPage,
   type PublicJob,
   type PublicJobSummary,
 } from '@/features/public-jobs'
@@ -37,6 +39,9 @@ export interface PrerenderedPage {
 
 const LIST_DESCRIPTION = 'Các vị trí đang tuyển. Nộp CV chỉ trong một phút, mọi hồ sơ đều được đọc.'
 const API_PAGE_LIMIT = 50
+const COMPANY_PAGE_LIMIT = 48
+const COMPANIES_DESCRIPTION =
+  'Các công ty đang tuyển trên HireFlow: giới thiệu, phúc lợi và vị trí đang mở.'
 
 const serverRoutes = routes.map((route) => ({ ...route, loader: () => null }))
 
@@ -46,12 +51,17 @@ async function getJson<T>(url: string, timeoutMs: number): Promise<ApiResponse<T
   return (await res.json()) as ApiResponse<T>
 }
 
-/** BR-ORG-01: hồ sơ chưa công khai trả 404 → không dựng /careers, các trang khác vẫn dựng */
-async function fetchCompany(apiUrl: string, timeoutMs: number): Promise<PublicCompany | null> {
-  const res = await fetch(`${apiUrl}/public/company`, { signal: AbortSignal.timeout(timeoutMs) })
-  if (res.status === 404) return null
-  if (!res.ok) throw new Error(`GET ${apiUrl}/public/company → ${res.status}`)
-  return ((await res.json()) as ApiResponse<PublicCompany>).data
+// MVP 3 · KH 9.6: mọi công ty ACTIVE có trang công ty
+async function fetchAllCompanies(apiUrl: string, timeoutMs: number) {
+  const items: PublicCompanyCard[] = []
+  for (let page = 1; ; page++) {
+    const res = await getJson<PublicCompanyCard[]>(
+      `${apiUrl}/public/companies?page=${page}&limit=${COMPANY_PAGE_LIMIT}`,
+      timeoutMs,
+    )
+    items.push(...res.data)
+    if (!res.meta?.hasNextPage) return items
+  }
 }
 
 async function fetchAllSummaries(apiUrl: string, timeoutMs: number) {
@@ -132,7 +142,15 @@ export async function prerenderPublicPages(options: PrerenderOptions): Promise<P
   const timeoutMs = options.fetchTimeoutMs ?? 90_000
   const pages: PrerenderedPage[] = []
 
-  const company = await fetchCompany(apiUrl, timeoutMs)
+  const cards = await fetchAllCompanies(apiUrl, timeoutMs)
+  const companies = new Map<string, PublicCompanyPage>()
+  for (const card of cards) {
+    const page = await getJson<PublicCompanyPage>(
+      `${apiUrl}/public/companies/${card.slug}`,
+      timeoutMs,
+    )
+    companies.set(card.slug, page.data)
+  }
   const listParams = parseListParams(publicJobsListSchema, new URLSearchParams())
   const firstPage = await getJson<PublicJobSummary[]>(
     `${apiUrl}/public/jobs?page=${listParams.page}&limit=${listParams.limit}`,
@@ -142,21 +160,27 @@ export async function prerenderPublicPages(options: PrerenderOptions): Promise<P
     items: firstPage.data,
     meta: firstPage.meta!,
   }
-  /** Mỗi trang bắt đầu từ cache trống, chỉ có hồ sơ công ty (header, khối "Về công ty") */
-  const resetCache = () => {
-    queryClient.clear()
-    if (company) queryClient.setQueryData(companyKeys.public(), company)
-  }
+  const page = <T,>(items: T[], limit: number): Paginated<T> => ({
+    items: items.slice(0, limit),
+    meta: {
+      page: 1,
+      limit,
+      totalItems: items.length,
+      totalPages: Math.max(1, Math.ceil(items.length / limit)),
+      hasNextPage: items.length > limit,
+      hasPreviousPage: false,
+    },
+  })
+  const resetCache = () => queryClient.clear()
+  const coverOf = (c: PublicCompanyPage | undefined) => c?.cover ?? c?.logo ?? null
 
-  // Hàng chip phòng ban có sẵn trong HTML, không đẩy danh sách xuống sau khi hydrate (CLS)
-  const departments = await getJson<PublicDepartmentCount[]>(
-    `${apiUrl}/public/jobs/departments`,
-    timeoutMs,
-  )
-
+  // Hàng chip công ty có sẵn trong HTML, không đẩy danh sách xuống sau khi hydrate (CLS)
   resetCache()
   queryClient.setQueryData(publicJobKeys.list(listParams), firstPageData)
-  queryClient.setQueryData(publicJobKeys.departments(listParams.search), departments.data)
+  queryClient.setQueryData(
+    publicJobKeys.companies({ page: 1, limit: COMPANY_PAGE_LIMIT }),
+    page(cards, COMPANY_PAGE_LIMIT),
+  )
   pages.push({
     path: paths.publicJobs,
     file: 'jobs.html',
@@ -172,6 +196,8 @@ export async function prerenderPublicPages(options: PrerenderOptions): Promise<P
   for (const summary of await fetchAllSummaries(apiUrl, timeoutMs)) {
     const job = (await getJson<PublicJob>(`${apiUrl}/public/jobs/${summary.id}`, timeoutMs)).data
     const path = links.publicJobDetail(job.id)
+    // US-24: og:image lấy ảnh bìa hoặc logo của công ty đăng tin
+    const image = coverOf(companies.get(job.company.slug))
     resetCache()
     queryClient.setQueryData(publicJobKeys.detail(job.id), job)
     pages.push({
@@ -180,34 +206,56 @@ export async function prerenderPublicPages(options: PrerenderOptions): Promise<P
       head: buildHead({
         title: jobTitle(job.title),
         description: summarize(
-          `${job.title} · ${job.department.name} · ${job.location}. ${job.jdText}`,
+          `${job.title} · ${job.company.name} · ${job.location}. ${job.jdText}`,
         ),
         path,
         siteUrl: options.siteUrl,
-        jsonLd: jobPostingJsonLd(job, company, options.siteUrl),
+        jsonLd: jobPostingJsonLd(job, options.siteUrl),
+        ogImage: image ? absoluteUrl(mediaSrc(image), options.siteUrl) : undefined,
       }),
       ...(await renderUrl(path)),
     })
   }
 
-  if (company) {
+  const directoryParams = parseListParams(companiesListSchema, new URLSearchParams())
+  resetCache()
+  queryClient.setQueryData(
+    publicJobKeys.companies(directoryParams),
+    page(cards, directoryParams.limit),
+  )
+  pages.push({
+    path: paths.publicCompanies,
+    file: 'companies.html',
+    head: buildHead({
+      title: `Công ty đang tuyển – ${SITE_NAME}`,
+      description: COMPANIES_DESCRIPTION,
+      path: paths.publicCompanies,
+      siteUrl: options.siteUrl,
+    }),
+    ...(await renderUrl(paths.publicCompanies)),
+  })
+
+  for (const company of companies.values()) {
+    const path = links.publicCompany(company.slug)
     resetCache()
-    queryClient.setQueryData(publicJobKeys.list(listParams), firstPageData)
+    queryClient.setQueryData(publicJobKeys.company(company.slug), company)
     pages.push({
-      path: paths.careers,
-      file: 'careers.html',
+      path,
+      file: `companies/${company.slug}.html`,
       head: buildHead({
         title: `${company.name} – ${SITE_NAME}`,
         description: summarize(
           company.tagline ? `${company.tagline}. ${company.about}` : company.about,
         ),
-        path: paths.careers,
+        path,
         siteUrl: options.siteUrl,
         jsonLd: organizationJsonLd(company, options.siteUrl),
         preloadImage: company.cover ? mediaSrc(company.cover) : undefined,
-        ogImage: company.cover ? absoluteUrl(mediaSrc(company.cover), options.siteUrl) : undefined,
+        ogImage: coverOf(company)
+          ? absoluteUrl(mediaSrc(coverOf(company)!), options.siteUrl)
+          : undefined,
       }),
-      ...(await renderUrl(paths.careers)),
+      ...(await renderUrl(path)),
     })
   }
 
@@ -228,7 +276,7 @@ export async function prerenderPublicPages(options: PrerenderOptions): Promise<P
   return pages
 }
 
-/** E4: sitemap gồm đúng các trang đã dựng sẵn (tin OPEN chưa hết hạn, /jobs, /careers) */
+/** E4: sitemap gồm đúng các trang đã dựng sẵn (tin OPEN chưa hết hạn, /jobs, /companies, mọi trang công ty) */
 export function buildSitemap(pages: Pick<PrerenderedPage, 'path'>[], siteUrl: string) {
   const base = siteUrl.replace(/\/$/, '')
   return [
