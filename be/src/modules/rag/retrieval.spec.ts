@@ -19,6 +19,12 @@ describe('retrieveChunks scope', () => {
     return { calls: query.mock.calls.length, sql: call?.[0] ?? '', params: call?.[1] ?? [] };
   };
 
+  it('limits every branch to the caller organization (BR-TEN-02)', async () => {
+    const { sql, params } = await run(Role.Admin, null);
+    expect(sql.match(/ch\.organization_id = \$7/g)).toHaveLength(3);
+    expect(params[6]).toBe('org-1');
+  });
+
   it.each([Role.Admin, Role.Hr])('%s searches every CV', async (role) => {
     const { sql } = await run(role, null);
     expect(sql).not.toContain('department_id =');
