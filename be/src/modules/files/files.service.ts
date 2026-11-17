@@ -4,14 +4,14 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { DataSource, type EntityManager } from 'typeorm';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
-import { applyCandidateScope } from '../../common/utils/department-scope.js';
+import { applyCandidateScope, orgIdOf } from '../../common/utils/department-scope.js';
 import type { CheckedCv } from './cv-file.rules.js';
 import { CvFile, CvParseStatus } from './entities/cv-file.entity.js';
 import { contentDisposition, StorageService } from './storage/storage.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity.js';
 
-type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId'>;
+type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId' | 'organizationId'>;
 
 // BR-FILE-03
 export const FILE_LINK_TTL_SECONDS = 300;
@@ -76,9 +76,11 @@ export class FilesService {
     candidateId: string,
     cv: CheckedCv,
     storageKey: string,
+    organizationId: string,
   ): Promise<CvFile> {
     return manager.save(
       manager.create(CvFile, {
+        organizationId,
         candidateId,
         storageKey,
         originalName: cv.originalName,
@@ -97,9 +99,15 @@ export class FilesService {
       .createQueryBuilder('cv')
       .select(['cv.id', 'cv.storageKey', 'cv.originalName', 'cv.mime'])
       .where('cv.id = :fileId', { fileId });
-    const file = await applyCandidateScope(qb, user, '"cv"."candidate_id"', {
-      cvFileIdColumn: '"cv"."id"',
-    }).getOne();
+    const file = await applyCandidateScope(
+      qb,
+      user,
+      '"cv"."organization_id"',
+      '"cv"."candidate_id"',
+      {
+        cvFileIdColumn: '"cv"."id"',
+      },
+    ).getOne();
     if (!file) throw new NotFoundException('File not found');
 
     const expires = Math.floor(Date.now() / 1000) + FILE_LINK_TTL_SECONDS;
@@ -112,6 +120,7 @@ export class FilesService {
       signed ??
       `/${this.apiPrefix}/v1/files/${file.id}/content?expires=${expires}&signature=${this.sign(file.id, expires)}`;
     await this.audit.recordSafely({
+      organizationId: orgIdOf(user),
       actorId: user.id,
       action: AuditAction.CvViewed,
       entity: AuditEntity.CvFile,

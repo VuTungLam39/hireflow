@@ -51,6 +51,7 @@ import { companyImages } from './images.js';
 import { BENEFITS_TEXT, DEMO_BENEFITS, JOB_DETAILS, JOBS, type DemoJob } from './jobs.js';
 import { vnToday } from '../../../common/utils/vn-date.js';
 import { at, DEPARTMENTS, SESSIONS, USERS } from './org.js';
+import { DEFAULT_ORGANIZATION_ID } from '../../../modules/organizations/entities/organization.entity.js';
 
 const [PDF_MIME, DOCX_MIME] = CV_MIME_TYPES;
 const MINUTE = 60_000;
@@ -247,7 +248,13 @@ async function seedDepartments(manager: EntityManager): Promise<Map<string, stri
     }
     const id = demoId(`department:${d.code}`);
     const createdAt = new Date(at('2026-06-01 08:00').getTime() + index * MINUTE);
-    await manager.insert(Department, { id, ...d, createdAt, updatedAt: createdAt });
+    await manager.insert(Department, {
+      organizationId: DEFAULT_ORGANIZATION_ID,
+      id,
+      ...d,
+      createdAt,
+      updatedAt: createdAt,
+    });
     ids.set(d.code, id);
   }
   return ids;
@@ -278,6 +285,7 @@ async function seedUsers(
     }
     const id = demoId(`user:${u.key}`);
     await manager.insert(User, {
+      organizationId: DEFAULT_ORGANIZATION_ID,
       id,
       email: u.email,
       passwordHash,
@@ -354,6 +362,7 @@ async function seedJobs(
     const details = JOB_DETAILS[def.key];
     const hasBenefits = def.jd.includes(DEMO_BENEFITS);
     await manager.insert(Job, {
+      organizationId: DEFAULT_ORGANIZATION_ID,
       id,
       title: def.title,
       departmentId,
@@ -423,6 +432,7 @@ async function seedCandidates(
     const joinedAt = at(apps[0].appliedAt);
     const anonymized = c.key === ANONYMIZED.candidate;
     await manager.insert(Candidate, {
+      organizationId: DEFAULT_ORGANIZATION_ID,
       id,
       fullName: anonymized ? ANONYMIZED_NAME : c.fullName,
       email: anonymized ? `anon+${id}@invalid.local` : c.email,
@@ -444,6 +454,7 @@ async function seedCvFiles(manager: EntityManager, cvs: Map<string, BuiltCv>): P
   for (const cv of cvs.values()) {
     if (cv.def.key.startsWith(`${ANONYMIZED.candidate}-`)) continue;
     await manager.insert(CvFile, {
+      organizationId: DEFAULT_ORGANIZATION_ID,
       id: cv.id,
       candidateId: cv.candidateId,
       storageKey: cv.storageKey,
@@ -574,6 +585,7 @@ async function seedApplications(
     const scoredAt = new Date(appliedAt.getTime() + 45_000);
 
     await manager.insert(Application, {
+      organizationId: DEFAULT_ORGANIZATION_ID,
       id,
       jobId: job.id,
       candidateId: ctx.candidateIds.get(def.candidate)!,
@@ -662,6 +674,7 @@ async function seedInterviews(manager: EntityManager, userIds: Map<string, strin
     });
     const id = demoId(`interview:${app.id}`);
     await manager.insert(Interview, {
+      organizationId: DEFAULT_ORGANIZATION_ID,
       id,
       applicationId: app.id,
       round: 1,
@@ -739,12 +752,14 @@ function buildCompanyImages(): BuiltImage[] {
 }
 
 async function seedCompany(manager: EntityManager, images: BuiltImage[], adminId: string) {
-  if (await manager.exists(CompanyProfile, { where: { id: 1 } })) return;
+  if (await manager.exists(CompanyProfile, { where: { organizationId: DEFAULT_ORGANIZATION_ID } }))
+    return;
   const ids = new Map<MediaKind, string>();
   for (const image of images) {
     const id = demoId(`media:${image.kind}:${image.position}`);
     await manager.insert(MediaFile, {
       id,
+      organizationId: DEFAULT_ORGANIZATION_ID,
       kind: image.kind,
       storageKey: image.checked.key,
       mime: image.checked.mime,
@@ -759,7 +774,7 @@ async function seedCompany(manager: EntityManager, images: BuiltImage[], adminId
     if (image.kind !== MediaKind.Gallery) ids.set(image.kind, id);
   }
   await manager.insert(CompanyProfile, {
-    id: 1,
+    organizationId: DEFAULT_ORGANIZATION_ID,
     ...COMPANY,
     logoMediaId: ids.get(MediaKind.Logo)!,
     coverMediaId: ids.get(MediaKind.Cover)!,

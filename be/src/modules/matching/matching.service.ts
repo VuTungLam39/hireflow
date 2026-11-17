@@ -30,8 +30,9 @@ import {
   type MatchRequirement,
   rankMatches,
 } from './match-ranking.js';
+import { orgIdOf } from '../../common/utils/department-scope.js';
 
-type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId'>;
+type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId' | 'organizationId'>;
 
 // API Contract 4.4
 export interface JobMatchItemView {
@@ -192,8 +193,10 @@ export class MatchingService {
   }
 
   // F-MATCH-01
-  async list(jobId: string): Promise<JobMatchesView> {
-    const job = await this.dataSource.getRepository(Job).findOneBy({ id: jobId });
+  async list(jobId: string, user: ScopeUser): Promise<JobMatchesView> {
+    const job = await this.dataSource
+      .getRepository(Job)
+      .findOneBy({ id: jobId, organizationId: orgIdOf(user) });
     if (!job) throw new NotFoundException('Job not found');
     const matches = await this.dataSource
       .getRepository(JobMatch)
@@ -237,7 +240,7 @@ export class MatchingService {
   ): Promise<ApplicationDetailView> {
     const applicationId = await this.dataSource.transaction(async (manager) => {
       const job = await manager.findOne(Job, {
-        where: { id: jobId },
+        where: { id: jobId, organizationId: orgIdOf(user) },
         lock: { mode: 'pessimistic_write' },
       });
       if (!job) throw new NotFoundException('Job not found');
@@ -256,7 +259,10 @@ export class MatchingService {
           HttpStatus.CONFLICT,
         );
       }
-      const candidate = await manager.findOneBy(Candidate, { id: candidateId });
+      const candidate = await manager.findOneBy(Candidate, {
+        id: candidateId,
+        organizationId: job.organizationId,
+      });
       if (!candidate || candidate.anonymizedAt || !match.cvFileId) {
         throw new BusinessException(
           ErrorCode.CandidateAnonymized,
@@ -265,6 +271,7 @@ export class MatchingService {
         );
       }
       const id = await this.applications.createInvited(manager, {
+        organizationId: job.organizationId,
         jobId,
         candidateId,
         cvFileId: match.cvFileId,

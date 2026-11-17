@@ -7,6 +7,7 @@ import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import { jwtConfig } from '../../config/jwt.config.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity.js';
+import { User } from '../users/entities/user.entity.js';
 import { RefreshToken } from './entities/refresh-token.entity.js';
 
 export interface SessionMeta {
@@ -95,8 +96,14 @@ export class RefreshTokensService {
   }
 
   // BR-AUDIT-01, OWASP A09: refresh token đã thu hồi bị dùng lại
-  private recordReuse(token: RefreshToken, meta: SessionMeta) {
-    return this.audit.recordSafely({
+  private async recordReuse(token: RefreshToken, meta: SessionMeta) {
+    const owner = await this.tokensRepository.manager.findOne(User, {
+      select: { id: true, organizationId: true },
+      where: { id: token.userId },
+    });
+    if (!owner?.organizationId) return;
+    await this.audit.recordSafely({
+      organizationId: owner.organizationId,
       actorId: null,
       action: AuditAction.TokenReuseDetected,
       entity: AuditEntity.User,

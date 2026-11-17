@@ -23,9 +23,13 @@ export class DepartmentsService {
     private readonly departmentsRepository: Repository<Department>,
   ) {}
 
-  async findAll(query: QueryDepartmentDto): Promise<PaginatedResult<DepartmentView>> {
+  async findAll(
+    query: QueryDepartmentDto,
+    organizationId: string,
+  ): Promise<PaginatedResult<DepartmentView>> {
     const qb = this.departmentsRepository
       .createQueryBuilder('department')
+      .where('department.organizationId = :organizationId', { organizationId })
       .orderBy('department.name', query.order)
       .skip(query.skip)
       .take(query.limit);
@@ -40,32 +44,38 @@ export class DepartmentsService {
     return new PaginatedResult(await this.withCounts(items), total, query.page, query.limit);
   }
 
-  async findById(id: string): Promise<DepartmentView> {
-    const [view] = await this.withCounts([await this.getOrFail(id)]);
+  async findById(id: string, organizationId: string): Promise<DepartmentView> {
+    const [view] = await this.withCounts([await this.getOrFail(id, organizationId)]);
     return view;
   }
 
-  exists(id: string): Promise<boolean> {
-    return this.departmentsRepository.existsBy({ id });
+  exists(id: string, organizationId: string): Promise<boolean> {
+    return this.departmentsRepository.existsBy({ id, organizationId });
   }
 
-  async create(dto: CreateDepartmentDto): Promise<DepartmentView> {
-    await this.assertUnique(dto);
-    const saved = await this.departmentsRepository.save(this.departmentsRepository.create(dto));
-    return this.findById(saved.id);
+  async create(dto: CreateDepartmentDto, organizationId: string): Promise<DepartmentView> {
+    await this.assertUnique(dto, organizationId);
+    const saved = await this.departmentsRepository.save(
+      this.departmentsRepository.create({ ...dto, organizationId }),
+    );
+    return this.findById(saved.id, organizationId);
   }
 
-  async update(id: string, dto: UpdateDepartmentDto): Promise<DepartmentView> {
-    const department = await this.getOrFail(id);
-    await this.assertUnique(dto, id);
+  async update(
+    id: string,
+    dto: UpdateDepartmentDto,
+    organizationId: string,
+  ): Promise<DepartmentView> {
+    const department = await this.getOrFail(id, organizationId);
+    await this.assertUnique(dto, organizationId, id);
     Object.assign(department, dto);
     await this.departmentsRepository.save(department);
-    return this.findById(id);
+    return this.findById(id, organizationId);
   }
 
   // BR-ACC-08
-  async remove(id: string): Promise<void> {
-    const { userCount, jobCount } = await this.findById(id);
+  async remove(id: string, organizationId: string): Promise<void> {
+    const { userCount, jobCount } = await this.findById(id, organizationId);
     if (userCount > 0 || jobCount > 0) {
       throw new BusinessException(
         ErrorCode.DepartmentInUse,
@@ -107,13 +117,17 @@ export class DepartmentsService {
     );
   }
 
-  private async getOrFail(id: string): Promise<Department> {
-    const department = await this.departmentsRepository.findOneBy({ id });
+  private async getOrFail(id: string, organizationId: string): Promise<Department> {
+    const department = await this.departmentsRepository.findOneBy({ id, organizationId });
     if (!department) throw new NotFoundException('Department not found');
     return department;
   }
 
-  private async assertUnique(dto: UpdateDepartmentDto, excludeId?: string): Promise<void> {
+  private async assertUnique(
+    dto: UpdateDepartmentDto,
+    organizationId: string,
+    excludeId?: string,
+  ): Promise<void> {
     const notSelf = excludeId ? { id: Not(excludeId) } : {};
     const checks = [
       { field: 'code' as const, message: 'Mã phòng ban đã tồn tại' },
@@ -121,7 +135,10 @@ export class DepartmentsService {
     ];
     for (const { field, message } of checks) {
       const value = dto[field];
-      if (value && (await this.departmentsRepository.existsBy({ [field]: value, ...notSelf }))) {
+      if (
+        value &&
+        (await this.departmentsRepository.existsBy({ [field]: value, organizationId, ...notSelf }))
+      ) {
         throw new BusinessException(
           ErrorCode.Conflict,
           `Department ${field} already exists`,

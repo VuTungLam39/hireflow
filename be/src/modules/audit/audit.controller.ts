@@ -1,6 +1,8 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Permissions } from '../../common/decorators/permissions.decorator.js';
+import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { Permission } from '../../common/permissions/permission.enum.js';
 import { AuditService } from './audit.service.js';
 import { QueryAuditLogDto } from './dto/query-audit-log.dto.js';
@@ -15,7 +17,7 @@ export class AuditController {
   @Get()
   @Permissions(Permission.AuditRead)
   @ApiOperation({ summary: 'Nhật ký hành động nhạy cảm, mới nhất trước (cursor), chỉ Admin' })
-  list(@Query() query: QueryAuditLogDto) {
-    return this.audit.list(query);
+  list(@Query() query: QueryAuditLogDto, @CurrentUser() user: AuthUser) {
+    return this.audit.list(query, user);
   }
 }

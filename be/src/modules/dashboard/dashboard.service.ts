@@ -13,7 +13,7 @@ import { DashboardCache } from './dashboard-cache.service.js';
 import type { QueryFunnelDto } from './dto/query-funnel.dto.js';
 import { buildFunnel, type FunnelView, type TransitionRow } from './funnel.js';
 
-type ScopeUser = Pick<AuthUser, 'role' | 'departmentId'>;
+type ScopeUser = Pick<AuthUser, 'role' | 'departmentId' | 'organizationId'>;
 
 // BR-ACC-07
 const cacheScope = (user: ScopeUser) => {
@@ -96,6 +96,7 @@ export class DashboardService {
       const rows = await applyDepartmentScope(
         qb,
         user,
+        'job.organizationId',
         'job.departmentId',
       ).getRawMany<TransitionRow>();
       return buildFunnel(rows, { from, to });
@@ -107,7 +108,9 @@ export class DashboardService {
       .getRepository(Job)
       .createQueryBuilder('job')
       .where('job.id = :jobId', { jobId });
-    if (!(await applyDepartmentScope(qb, user, 'job.departmentId').getExists())) {
+    if (
+      !(await applyDepartmentScope(qb, user, 'job.organizationId', 'job.departmentId').getExists())
+    ) {
       throw new NotFoundException('Job not found');
     }
   }
@@ -132,7 +135,12 @@ export class DashboardService {
       .addSelect('COUNT(app.score)::int', 'scored')
       .addSelect(`json_build_object(${statusCounts})`, 'byStatus')
       .groupBy('job.id');
-    const rows = await applyDepartmentScope(qb, user, 'job.departmentId').getRawMany<JobRow>();
+    const rows = await applyDepartmentScope(
+      qb,
+      user,
+      'job.organizationId',
+      'job.departmentId',
+    ).getRawMany<JobRow>();
 
     const byStatus = Object.fromEntries(STATUSES.map((s) => [s, 0])) as Record<
       ApplicationStatus,

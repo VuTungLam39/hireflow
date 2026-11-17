@@ -17,7 +17,7 @@ import { ApplicationStatus } from '../../common/enums/application-status.enum.js
 import { ScoreFlag } from '../../common/enums/score-flag.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
-import { applyDepartmentScope, dataScope } from '../../common/utils/department-scope.js';
+import { applyDepartmentScope, dataScope, orgIdOf } from '../../common/utils/department-scope.js';
 import { escapeLike } from '../../common/utils/text.js';
 import { vnToday } from '../../common/utils/vn-date.js';
 import { AuditService } from '../audit/audit.service.js';
@@ -59,7 +59,7 @@ import { ApplicationNote } from './entities/application-note.entity.js';
 import { ApplicationStatusHistory } from './entities/application-status-history.entity.js';
 import { Application, type BreakdownItem } from './entities/application.entity.js';
 
-type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId'>;
+type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId' | 'organizationId'>;
 
 // F2 · BR-APP-12: OFFER/HIRED cần HM duyệt từng người, WITHDRAWN là ứng viên tự rút
 const BULK_ALLOWED: readonly ApplicationStatus[] = [
@@ -220,6 +220,7 @@ export class ApplicationsService {
       );
     }
     await this.audit.record({
+      organizationId: orgIdOf(user),
       actorId: user.id,
       action: AuditAction.ApplicationsExported,
       entity: AuditEntity.Application,
@@ -298,7 +299,9 @@ export class ApplicationsService {
     const qb = this.applicationsRepository.createQueryBuilder('app');
     if (dataScope(user.role) !== 'all') {
       qb.innerJoin('app.job', 'job');
-      applyDepartmentScope(qb, user, 'job.departmentId', { applicationIdColumn: '"app"."id"' });
+      applyDepartmentScope(qb, user, 'job.organizationId', 'job.departmentId', {
+        applicationIdColumn: '"app"."id"',
+      });
     }
     if (query.jobId) qb.andWhere('app.jobId = :jobId', { jobId: query.jobId });
     if (query.status) qb.andWhere('app.status = :status', { status: query.status });
@@ -407,7 +410,12 @@ export class ApplicationsService {
       .createQueryBuilder('job')
       .select(['job.id', 'job.title', 'job.jdVersion'])
       .where('job.id = :jobId', { jobId });
-    const job = await applyDepartmentScope(jobQb, user, 'job.departmentId').getOne();
+    const job = await applyDepartmentScope(
+      jobQb,
+      user,
+      'job.organizationId',
+      'job.departmentId',
+    ).getOne();
     if (!job) throw new NotFoundException('Job not found');
 
     const apps = await this.listQuery(user)
@@ -624,6 +632,7 @@ export class ApplicationsService {
       });
       await this.audit.record(
         {
+          organizationId: orgIdOf(user),
           actorId: user.id,
           action: AuditAction.ApplicationStatusChanged,
           entity: AuditEntity.Application,
@@ -673,6 +682,7 @@ export class ApplicationsService {
       });
       await this.audit.record(
         {
+          organizationId: orgIdOf(user),
           actorId: user.id,
           action: AuditAction.CvTextEntered,
           entity: AuditEntity.Application,
@@ -701,13 +711,15 @@ export class ApplicationsService {
     user: ScopeUser,
     requestId?: string,
   ): Promise<ApplicationDetailView> {
-    const job = await this.dataSource.getRepository(Job).findOneBy({ id: jobId });
+    const job = await this.dataSource
+      .getRepository(Job)
+      .findOneBy({ id: jobId, organizationId: orgIdOf(user) });
     if (!job) throw new NotFoundException('Job not found');
     if (job.status !== JobStatus.Open) {
       throw new BusinessException(ErrorCode.JobNotOpen, 'Job is not open', HttpStatus.CONFLICT);
     }
     const applicationId = await this.submit(
-      jobId,
+      job,
       { fullName: dto.fullName, email: dto.email, phone: dto.phone },
       file,
       { source: ApplicationSource.HrUpload, consentVersion: HR_CONSENT_VERSION, by: user.id },
@@ -725,9 +737,10 @@ export class ApplicationsService {
     file: UploadedCv | undefined,
     requestId?: string,
   ): Promise<null> {
-    const job = await this.dataSource
-      .getRepository(Job)
-      .findOne({ select: ['id', 'deadline'], where: { id: jobId, status: JobStatus.Open } });
+    const job = await this.dataSource.getRepository(Job).findOne({
+      select: ['id', 'deadline', 'organizationId'],
+      where: { id: jobId, status: JobStatus.Open },
+    });
     if (!job) throw new NotFoundException('Job not found');
     // BR-JOB-10
     if (job.deadline && job.deadline < vnToday()) {
@@ -740,7 +753,7 @@ export class ApplicationsService {
     // BR-APP-06
     if (dto.website) return null;
     const applicationId = await this.submit(
-      jobId,
+      job,
       { fullName: dto.fullName, email: dto.email, phone: dto.phone },
       file,
       { source: ApplicationSource.PublicForm, consentVersion: PUBLIC_CONSENT_VERSION, by: null },
@@ -753,13 +766,14 @@ export class ApplicationsService {
 
   // BR-CAND-01, 02, BR-APP-03, BR-FILE-01, 02, Kickoff 13
   private async submit(
-    jobId: string,
+    job: Pick<Job, 'id' | 'organizationId'>,
     contact: { fullName: string; email: string; phone?: string },
     file: UploadedCv | undefined,
     opts: { source: ApplicationSource; consentVersion: string; by: string | null },
   ): Promise<string> {
     const cv = checkCv(file);
-    const known = await this.candidatesService.findByEmail(contact.email);
+    const { id: jobId, organizationId } = job;
+    const known = await this.candidatesService.findByEmail(contact.email, organizationId);
     const reusable = await this.filesService.findReusable(
       this.dataSource.manager,
       known?.id,
@@ -774,12 +788,21 @@ export class ApplicationsService {
           manager,
           contact,
           opts.consentVersion,
+          organizationId,
         );
         await this.assertNotApplied(manager, jobId, candidate.id);
         const reused = await this.filesService.findReusable(manager, candidate.id, cv.sha256);
         const cvFile =
-          reused ?? (await this.filesService.createRecord(manager, candidate.id, cv, storageKey!));
+          reused ??
+          (await this.filesService.createRecord(
+            manager,
+            candidate.id,
+            cv,
+            storageKey!,
+            organizationId,
+          ));
         const id = await this.createApplication(manager, {
+          organizationId,
           jobId,
           candidateId: candidate.id,
           cvFileId: cvFile.id,
@@ -807,10 +830,17 @@ export class ApplicationsService {
   // F-MATCH-02, BR-MATCH-03
   async createInvited(
     manager: EntityManager,
-    input: { jobId: string; candidateId: string; cvFileId: string; by: string },
+    input: {
+      organizationId: string;
+      jobId: string;
+      candidateId: string;
+      cvFileId: string;
+      by: string;
+    },
   ): Promise<string> {
     await this.assertNotApplied(manager, input.jobId, input.candidateId);
     return this.createApplication(manager, {
+      organizationId: input.organizationId,
       jobId: input.jobId,
       candidateId: input.candidateId,
       cvFileId: input.cvFileId,
@@ -823,6 +853,7 @@ export class ApplicationsService {
   private async createApplication(
     manager: EntityManager,
     input: {
+      organizationId: string;
       jobId: string;
       candidateId: string;
       cvFileId: string;
@@ -832,6 +863,7 @@ export class ApplicationsService {
   ): Promise<string> {
     const app = await manager.save(
       manager.create(Application, {
+        organizationId: input.organizationId,
         jobId: input.jobId,
         candidateId: input.candidateId,
         cvFileId: input.cvFileId,
@@ -886,6 +918,7 @@ export class ApplicationsService {
       });
       await this.audit.record(
         {
+          organizationId: orgIdOf(user),
           actorId: user.id,
           action: AuditAction.ApplicationStatusChanged,
           entity: AuditEntity.Application,
@@ -917,7 +950,7 @@ export class ApplicationsService {
         'candidate.fullName',
         'candidate.email',
       ]);
-    return applyDepartmentScope(qb, user, 'job.departmentId', {
+    return applyDepartmentScope(qb, user, 'job.organizationId', 'job.departmentId', {
       applicationIdColumn: '"app"."id"',
     });
   }
@@ -935,10 +968,17 @@ export class ApplicationsService {
     const app = await this.applicationsRepository
       .createQueryBuilder('app')
       .innerJoin('app.job', 'job')
-      .select(['app.id', 'job.id', 'job.departmentId'])
+      .select(['app.id', 'app.organizationId', 'job.id', 'job.departmentId'])
       .where('app.id = :id', { id })
       .getOne();
     if (!app) throw new NotFoundException('Application not found');
+    // BR-TEN-02
+    if (app.organizationId !== orgIdOf(user)) {
+      throw new ForbiddenException({
+        code: ErrorCode.ScopeForbidden,
+        message: 'Application is outside your organization',
+      });
+    }
     if (dataScope(user.role) === 'department' && app.job!.departmentId !== user.departmentId) {
       throw new ForbiddenException({
         code: ErrorCode.ScopeForbidden,

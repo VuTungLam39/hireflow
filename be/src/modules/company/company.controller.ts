@@ -43,8 +43,8 @@ export class CompanyController {
 
   @Get()
   @ApiOperation({ summary: 'Hồ sơ công ty (nội bộ)' })
-  get() {
-    return this.company.get();
+  get(@CurrentUser() user: AuthUser) {
+    return this.company.get(user);
   }
 
   @Put()
@@ -67,8 +67,12 @@ export class CompanyController {
 
   @Patch('media/:id')
   @ApiOperation({ summary: 'Đổi mô tả ảnh (alt) hoặc vị trí trong thư viện' })
-  updateMedia(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateMediaDto) {
-    return this.company.updateMedia(id, dto);
+  updateMedia(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateMediaDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.company.updateMedia(id, dto, user);
   }
 
   @Delete('media/:id')

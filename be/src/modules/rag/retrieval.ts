@@ -3,7 +3,7 @@ import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js'
 import { dataScope } from '../../common/utils/department-scope.js';
 import type { CvSection } from './cv-chunks.js';
 
-type ScopeUser = Pick<AuthUser, 'role' | 'departmentId'>;
+type ScopeUser = Pick<AuthUser, 'role' | 'departmentId' | 'organizationId'>;
 
 export interface RetrievedRow {
   chunkId: string;

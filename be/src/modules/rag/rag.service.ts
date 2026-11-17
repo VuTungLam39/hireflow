@@ -27,7 +27,7 @@ import { searchKeywords } from './keywords.js';
 import { retrieveChunks, toVector, type RetrievalMode, type RetrievedRow } from './retrieval.js';
 import { CHAT_SYSTEM, chatPrompt, NOT_ENOUGH_INFO } from './prompts/chat.prompt.js';
 
-type ScopeUser = Pick<AuthUser, 'role' | 'departmentId'>;
+type ScopeUser = Pick<AuthUser, 'role' | 'departmentId' | 'organizationId'>;
 
 // F-SEARCH-01: lấy 30 đoạn rồi gộp theo ứng viên, tối đa 10 người
 const CV_SEARCH_CHUNKS = 30;
@@ -110,7 +110,12 @@ export class RagService implements OnApplicationBootstrap {
       );
     }
     const cv = await this.dataSource.getRepository(CvFile).findOne({
-      select: { id: true, text: true, candidate: { id: true, fullName: true } },
+      select: {
+        id: true,
+        organizationId: true,
+        text: true,
+        candidate: { id: true, fullName: true },
+      },
       relations: { candidate: true },
       where: { id: cvFileId },
     });
@@ -128,6 +133,7 @@ export class RagService implements OnApplicationBootstrap {
     const params: unknown[] = [];
     const values = chunks.map((c, i) => {
       params.push(
+        cv.organizationId,
         cvFileId,
         c.section,
         c.position,
@@ -137,13 +143,13 @@ export class RagService implements OnApplicationBootstrap {
         toVector(vectors[i]),
       );
       const n = params.length;
-      return `($${n - 6}, $${n - 5}, $${n - 4}, $${n - 3}, $${n - 2}, $${n - 1}, $${n}::vector)`;
+      return `($${n - 7}, $${n - 6}, $${n - 5}, $${n - 4}, $${n - 3}, $${n - 2}, $${n - 1}, $${n}::vector)`;
     });
     try {
       await this.dataSource.transaction(async (manager) => {
         await manager.delete(CvChunk, { cvFileId });
         await manager.query(
-          `INSERT INTO cv_chunks (cv_file_id, section, position, content, token_count, embedding_model, embedding) VALUES ${values.join(', ')}`,
+          `INSERT INTO cv_chunks (organization_id, cv_file_id, section, position, content, token_count, embedding_model, embedding) VALUES ${values.join(', ')}`,
           params,
         );
       });
