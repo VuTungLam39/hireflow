@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   Res,
   UploadedFile,
   UseInterceptors,
@@ -23,6 +24,7 @@ import { Permissions } from '../../common/decorators/permissions.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { Permission } from '../../common/permissions/permission.enum.js';
+import { PaginationQueryDto } from '../../common/dto/pagination-query.dto.js';
 import { CompanyService } from './company.service.js';
 import { UpdateCompanyDto, UpdateMediaDto, UploadMediaDto } from './dto/company.dto.js';
 import { MEDIA_MAX_BYTES, type UploadedImage } from './media.rules.js';
@@ -91,10 +93,19 @@ export class CompanyController {
 export class PublicCompanyController {
   constructor(private readonly company: CompanyService) {}
 
-  @Get('company')
-  @ApiOperation({ summary: 'Hồ sơ công ty công khai; 404 khi chưa đủ tên, logo, giới thiệu' })
-  get() {
-    return this.company.publicView();
+  // MVP 3 · KH 8.1: thay cho GET /public/company
+  @Get('companies')
+  @ApiOperation({ summary: 'Danh bạ công ty ACTIVE có trang công ty, kèm số tin đang tuyển' })
+  list(@Query() query: PaginationQueryDto) {
+    return this.company.publicList(query);
+  }
+
+  @Get('companies/:slug')
+  @ApiOperation({
+    summary: 'Trang công ty kèm tin đang tuyển; 404 khi chưa ACTIVE hoặc chưa đủ hồ sơ',
+  })
+  get(@Param('slug') slug: string) {
+    return this.company.publicBySlug(slug);
   }
 
   @Get('media/:file')

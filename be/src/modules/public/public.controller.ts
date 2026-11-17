@@ -15,7 +15,6 @@ import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { RequestId } from '../../common/decorators/request-id.decorator.js';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator.js';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto.js';
 import { ApplicationsService } from '../applications/applications.service.js';
 import { PublicApplyDto } from '../applications/dto/public-apply.dto.js';
 import type { UploadedCv } from '../files/cv-file.rules.js';
@@ -43,8 +42,8 @@ export class PublicJobsController {
 
   @Get('departments')
   @ApiOperation({ summary: 'Số job đang tuyển theo phòng ban, theo cùng từ khoá tìm' })
-  departments(@Query() query: PaginationQueryDto) {
-    return this.jobsService.publicDepartments(query.search);
+  departments(@Query() query: QueryPublicJobsDto) {
+    return this.jobsService.publicDepartments(query.search, query.company);
   }
 
   @Get(':id')
