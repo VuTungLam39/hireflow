@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /jobs
-Allow: /careers
+Allow: /companies
 Allow: /api/v1/public/media/
 Disallow: /
