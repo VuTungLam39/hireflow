@@ -161,6 +161,8 @@ describe('F-PUB-04: prerender trang công khai', () => {
     expect(privacy.html).toContain('Chính sách dữ liệu ứng viên')
     expect(privacy.html).toContain('wdonglin39@gmail.com')
     expect(privacy.html).toContain('Bản demo thực tập')
+    expect(privacy.html).toContain('gói miễn phí của Google Gemini')
+    expect(privacy.html).toContain('Nhà tuyển dụng và điều khoản sử dụng sàn')
     expect(list.html).toContain('Backend Developer (NestJS)')
     expect(list.html).toContain('Công ty Cổ phần HireFlow')
     expect(list.head).toContain('<title>Việc làm đang tuyển – HireFlow Careers</title>')
