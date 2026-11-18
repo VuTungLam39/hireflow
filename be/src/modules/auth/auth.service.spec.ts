@@ -27,7 +27,13 @@ describe('AuthService', () => {
     revokeFamilyOf: vi.fn(),
     revokeAllForUser: vi.fn(),
   };
-  const hr = { id: 'u-1', email: 'hr@x.dev', role: Role.Hr, isActive: true };
+  const hr = {
+    id: 'u-1',
+    email: 'hr@x.dev',
+    role: Role.Hr,
+    isActive: true,
+    emailVerifiedAt: new Date(),
+  };
 
   beforeAll(async () => {
     passwordHash = await bcrypt.hash('Password123', 4);
@@ -60,6 +66,17 @@ describe('AuthService', () => {
     );
     expect(tokens.issue).toHaveBeenCalledWith('u-1', { userAgent: 'vitest', ip: '127.0.0.1' });
     expect(result.tokens).toMatchObject({ accessToken: 'access-1', refreshToken: 'refresh-1' });
+  });
+
+  it('BR-ACC-09: an unverified email is refused only after the password matched', async () => {
+    users.findByEmailWithPassword.mockResolvedValue({ ...hr, passwordHash, emailVerifiedAt: null });
+    await expect(
+      service.login({ email: hr.email, password: 'wrong-Password1' }, {}),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(
+      service.login({ email: hr.email, password: 'Password123' }, {}),
+    ).rejects.toMatchObject({ code: 'EMAIL_NOT_VERIFIED' });
+    expect(tokens.issue).not.toHaveBeenCalled();
   });
 
   it('OWASP A07: an unknown email still runs bcrypt, so timing does not reveal accounts', async () => {

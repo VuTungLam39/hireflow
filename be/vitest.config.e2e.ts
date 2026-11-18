@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     globals: true,
     setupFiles: ['./test/setup-e2e.ts'],
+    globalSetup: ['./test/global-setup-e2e.ts'],
     root: './',
     include: ['test/**/*.e2e-spec.ts'],
     // Kickoff 8.7: e2e dùng LLM giả, giống CI

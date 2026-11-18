@@ -9,6 +9,7 @@ import { Queue } from 'bullmq';
 import { PipelineOpsService } from '../ai/pipeline/pipeline-ops.service.js';
 import { QUEUE } from '../ai/pipeline/queues.js';
 import { CandidatesService } from '../candidates/candidates.service.js';
+import { EmailService } from '../email/email.service.js';
 import { RefreshTokensService } from '../refresh-tokens/refresh-tokens.service.js';
 import {
   MAINTENANCE_SCHEDULE,
@@ -31,6 +32,7 @@ export class MaintenanceService implements OnApplicationBootstrap, OnModuleDestr
     private readonly candidates: CandidatesService,
     private readonly tokens: RefreshTokensService,
     private readonly ops: PipelineOpsService,
+    private readonly email: EmailService,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -49,6 +51,10 @@ export class MaintenanceService implements OnApplicationBootstrap, OnModuleDestr
 
   async heal(): Promise<number> {
     await this.ensureSchedules();
+    // BR-NOTI-02
+    await this.email
+      .requeueStale()
+      .catch((error: Error) => this.logger.error(`Cannot requeue emails: ${error.message}`));
     try {
       return await this.ops.requeueLost();
     } catch (error) {

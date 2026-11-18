@@ -6,6 +6,10 @@ export const ERROR_MESSAGES: Record<string, string> = {
   UNAUTHORIZED: 'Email hoặc mật khẩu không đúng',
   ACCOUNT_DISABLED: 'Tài khoản đã bị khoá',
   ORG_DISABLED: 'Công ty của bạn đã bị khoá hoặc bị từ chối trên sàn',
+  EMAIL_NOT_VERIFIED: 'Email chưa được xác minh. Mở link trong email chúng tôi đã gửi',
+  ORGANIZATION_EXISTS: 'Mã số thuế này đã được đăng ký trên sàn',
+  INVALID_ORG_TRANSITION: 'Trạng thái công ty vừa thay đổi, dữ liệu đã được tải lại',
+  TOKEN_INVALID: 'Link không còn hiệu lực. Hãy yêu cầu gửi lại email',
   WRONG_PASSWORD: 'Mật khẩu hiện tại không đúng',
   REFRESH_TOKEN_REUSED: 'Phiên đăng nhập không còn hợp lệ, vui lòng đăng nhập lại',
   FORBIDDEN: 'Bạn không có quyền thực hiện thao tác này',
@@ -43,5 +47,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   FILE_TOO_LARGE: 'File lớn hơn 5MB',
   TOO_MANY_REQUESTS: 'Bạn thao tác quá nhanh, thử lại sau ít phút',
   AI_UNAVAILABLE: 'Hệ thống đọc CV đang bận. Thử lại sau ít phút.',
+  AI_QUOTA_EXCEEDED:
+    'Công ty đã dùng hết lượt hỏi kho CV và gợi ý trong hôm nay. Lượt mới có từ 0 giờ đêm nay.',
   INTERNAL_ERROR: 'Máy chủ gặp lỗi, vui lòng thử lại sau',
 }

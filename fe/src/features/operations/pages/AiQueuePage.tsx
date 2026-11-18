@@ -3,40 +3,27 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { z } from 'zod'
 import { ConfirmDialog, DataTable, PageHeader, Summary, type Column } from '@/components/shared'
-import { Button, Skeleton } from '@/components/ui'
+import { Button } from '@/components/ui'
 import { AiStatusBadge } from '@/features/applications'
 import { pageFields, useListParams } from '@/hooks/use-list-params'
-import { cn, formatDateTime } from '@/lib/utils'
+import { formatDateTime } from '@/lib/utils'
 import type { AiIssue } from '../types'
-import { useAiIssues, useQueueCounts, useRetryAll, useRetryIssue } from '../hooks/use-operations'
+import { useAiIssues, useRetryAll, useRetryIssue } from '../hooks/use-operations'
 import { useDetailLink, useOpenDetail } from '@/hooks/use-detail'
 
 const listSchema = z.object({ ...pageFields })
-
-// Kickoff 8.1
-const QUEUE_LABEL: Record<string, string> = {
-  'parse-cv': 'Đọc CV',
-  'extract-cv': 'Trích xuất',
-  score: 'Chấm điểm',
-  'embed-cv': 'Lập chỉ mục tìm kiếm',
-}
 
 // F-OPS-01 · Design Spec 6.13
 export default function AiQueuePage() {
   const [params, setParams] = useListParams(listSchema)
   const [confirmAll, setConfirmAll] = useState(false)
   const issues = useAiIssues(params)
-  const queues = useQueueCounts()
   const retry = useRetryIssue()
   const detailLink = useDetailLink()
   const openDetail = useOpenDetail()
   const retryAll = useRetryAll()
   const total = issues.data?.meta.totalItems ?? 0
   const pendingIssues = issues.data ? total > 0 : false
-  const failedRuns = queues.data?.reduce((s, q) => s + q.failed, 0)
-
-  const sum = (pick: (q: NonNullable<typeof queues.data>[number]) => number) =>
-    queues.data?.reduce((s, q) => s + pick(q), 0)
 
   const columns: Column<AiIssue>[] = [
     {
@@ -144,82 +131,6 @@ export default function AiQueuePage() {
             </Button>
           )}
         />
-      </section>
-
-      <section aria-label="Số việc trong hàng đợi">
-        <h2 className="type-heading mb-3">Hàng đợi theo bước</h2>
-        <div className="border-line bg-surface overflow-x-auto rounded-md border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-line border-b">
-                {['Bước', 'Chờ', 'Đang chạy', 'Lỗi đã lưu'].map((h, i) => (
-                  <th
-                    key={h}
-                    scope="col"
-                    className={cn('type-overline h-10 px-4', i === 0 ? 'text-left' : 'text-right')}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {queues.data
-                ? queues.data.map((q) => (
-                    <tr key={q.name} className="border-line-soft border-b last:border-b-0">
-                      <th scope="row" className="text-ink h-10 px-4 text-left font-medium">
-                        {QUEUE_LABEL[q.name] ?? q.name}
-                      </th>
-                      <td className="num px-4 text-right">{q.waiting + q.delayed}</td>
-                      <td className="num px-4 text-right">{q.active}</td>
-                      <td
-                        className={cn(
-                          'num px-4 text-right',
-                          q.failed > 0 && (pendingIssues ? 'text-bad font-semibold' : 'text-ink-2'),
-                        )}
-                      >
-                        {q.failed}
-                      </td>
-                    </tr>
-                  ))
-                : Array.from({ length: 4 }, (_, i) => (
-                    <tr key={i}>
-                      <td colSpan={4} className="px-4 py-3">
-                        <Skeleton className="h-4 w-full" />
-                      </td>
-                    </tr>
-                  ))}
-            </tbody>
-            {queues.data && (
-              <tfoot>
-                <tr className="border-line border-t">
-                  <th scope="row" className="text-ink-2 h-10 px-4 text-left font-medium">
-                    Tổng
-                  </th>
-                  <td className="num text-ink px-4 text-right font-semibold">
-                    {sum((q) => q.waiting + q.delayed)}
-                  </td>
-                  <td className="num text-ink px-4 text-right font-semibold">
-                    {sum((q) => q.active)}
-                  </td>
-                  <td
-                    className={cn(
-                      'num px-4 text-right font-semibold',
-                      pendingIssues && failedRuns ? 'text-bad' : 'text-ink',
-                    )}
-                  >
-                    {failedRuns}
-                  </td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
-        {!!failedRuns && !pendingIssues && (
-          <p className="type-caption mt-2">
-            Lỗi đã lưu là các lần chạy lỗi trước đây – hồ sơ liên quan đã chấm lại xong.
-          </p>
-        )}
       </section>
 
       <ConfirmDialog

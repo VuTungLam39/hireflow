@@ -1,5 +1,22 @@
+import { hasPermission } from '@/lib/permissions'
 import { paths } from '@/routes/paths'
-import { findNavItem } from './nav-config'
+import { Role } from '@/types/user'
+import { findNavItem, navGroups } from './nav-config'
+
+const visibleGroups = (role: Role) =>
+  navGroups
+    .filter((g) => g.items.some((item) => hasPermission({ role }, item.permission)))
+    .map((g) => g.title)
+
+// BR-TEN-04
+describe('navGroups by role', () => {
+  it('shows the platform group only to the platform admin, and nothing else to them', () => {
+    expect(visibleGroups(Role.PlatformAdmin)).toEqual(['Quản trị sàn'])
+    for (const role of [Role.Admin, Role.Hr, Role.HiringManager, Role.Interviewer]) {
+      expect(visibleGroups(role)).not.toContain('Quản trị sàn')
+    }
+  })
+})
 
 describe('findNavItem (breadcrumb topbar)', () => {
   it.each([
@@ -8,6 +25,7 @@ describe('findNavItem (breadcrumb topbar)', () => {
     ['/applications/abc', 'Công việc', 'Hồ sơ ứng tuyển'],
     ['/manage/jobs/abc/edit', 'Công việc', 'Tin tuyển dụng'],
     [paths.auditLogs, 'Quản trị', 'Nhật ký kiểm toán'],
+    ['/platform/companies/abc', 'Quản trị sàn', 'Công ty'],
   ])('%s → %s › %s', (pathname, group, label) => {
     expect(findNavItem(pathname)).toMatchObject({ group, item: { label } })
   })

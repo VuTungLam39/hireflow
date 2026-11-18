@@ -21,4 +21,6 @@ export enum Permission {
   InterviewManage = 'interview:manage',
   InterviewFeedback = 'interview:feedback',
   CompanyManage = 'company:manage',
+  // MVP 3 · F-PLAT-01
+  PlatformManage = 'platform:manage',
 }

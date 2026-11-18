@@ -12,14 +12,6 @@ export interface AiIssue {
   job: { id: string; title: string }
 }
 
-export interface QueueCounts {
-  name: string
-  waiting: number
-  active: number
-  delayed: number
-  failed: number
-}
-
 export interface RetryAllResult {
   queued: number
   failed: number

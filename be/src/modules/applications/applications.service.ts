@@ -1,4 +1,5 @@
 import { ForbiddenException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { OrganizationStatus } from '../organizations/entities/organization.entity.js';
 import { randomUUID } from 'node:crypto';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import {
@@ -102,6 +103,8 @@ export interface ApplicationDetailView extends Omit<ApplicationListItemView, 'ca
   breakdown: BreakdownItem[];
   scoredJdVersion: number | null;
   aiError: string | null;
+  // BR-AI-11
+  aiWaitingUntil: Date | null;
   cv: {
     fileId: string;
     fileName: string;
@@ -347,6 +350,7 @@ export class ApplicationsService {
       .addSelect([
         'app.source',
         'app.aiError',
+        'app.aiWaitingUntil',
         'app.scoreBreakdown',
         'app.scoredJdVersion',
         'job.jdVersion',
@@ -388,6 +392,7 @@ export class ApplicationsService {
       breakdown: blind(user) ? [] : (app.scoreBreakdown ?? []),
       scoredJdVersion: blind(user) ? null : app.scoredJdVersion,
       aiError: app.aiError,
+      aiWaitingUntil: app.aiWaitingUntil,
       cv: app.cvFile
         ? {
             fileId: app.cvFile.id,
@@ -741,8 +746,14 @@ export class ApplicationsService {
     requestId?: string,
   ): Promise<null> {
     const job = await this.dataSource.getRepository(Job).findOne({
-      select: ['id', 'deadline', 'organizationId'],
-      where: { id: jobId, status: JobStatus.Open },
+      select: { id: true, deadline: true, organizationId: true },
+      // BR-ORG-04: chỉ công ty ACTIVE nhận hồ sơ công khai
+      where: {
+        id: jobId,
+        status: JobStatus.Open,
+        organization: { status: OrganizationStatus.Active },
+      },
+      relations: { organization: true },
     });
     if (!job) throw new NotFoundException('Job not found');
     // BR-JOB-10

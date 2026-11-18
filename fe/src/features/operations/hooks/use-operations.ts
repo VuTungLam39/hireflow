@@ -7,7 +7,6 @@ import { operationsApi } from '../api/operations.api'
 export const operationKeys = {
   all: ['operations'] as const,
   issues: (params: PaginationParams) => [...operationKeys.all, 'issues', params] as const,
-  queues: () => [...operationKeys.all, 'queues'] as const,
 }
 
 export function useAiIssues(params: PaginationParams) {
@@ -27,14 +26,6 @@ export function useAiIssueCount(enabled: boolean) {
     enabled,
     staleTime: 60_000,
   }).data
-}
-
-export function useQueueCounts() {
-  return useQuery({
-    queryKey: operationKeys.queues(),
-    queryFn: operationsApi.queues,
-    refetchInterval: 5_000,
-  })
 }
 
 export function useRetryIssue() {

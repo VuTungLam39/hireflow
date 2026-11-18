@@ -1,7 +1,7 @@
 import { delay, http } from 'msw'
 import type { Company, CompanyInput, CompanyMedia, MediaKind } from '@/features/company'
 import { Permission } from '@/lib/permissions'
-import { db, uid } from '../data'
+import { uid } from '../data'
 import { api, authorize, fail, notFound, ok } from '../http'
 
 const GALLERY_MAX = 8
@@ -132,15 +132,5 @@ export const companyHandlers = [
     if (user instanceof Response) return user
     companyState.media = companyState.media.filter((m) => m.id !== params.id)
     return ok(null)
-  }),
-
-  http.get(api('/public/company'), async () => {
-    await delay()
-    const company = toCompany()
-    if (!company.complete) {
-      return fail(404, 'COMPANY_PROFILE_INCOMPLETE', 'Company profile is not published yet')
-    }
-    const { complete: _c, updatedAt: _u, ...rest } = company
-    return ok({ ...rest, openJobs: db.jobs.filter((j) => j.status === 'OPEN').length })
   }),
 ]

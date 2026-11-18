@@ -1,5 +1,4 @@
 import { Link, NavLink, Outlet } from 'react-router'
-import { usePublicCompany } from '@/features/company'
 import { useFocusMainOnNavigate } from '@/hooks/use-focus-main'
 import { cn } from '@/lib/utils'
 import { paths } from '@/routes/paths'
@@ -13,7 +12,6 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
   )
 
 export function PublicLayout() {
-  const { data: company } = usePublicCompany()
   useFocusMainOnNavigate()
   return (
     <div className="bg-surface text-ink-2 flex min-h-dvh flex-col">
@@ -35,20 +33,24 @@ export function PublicLayout() {
               <NavLink to={paths.publicJobs} className={navClass}>
                 Việc làm
               </NavLink>
-              {company && (
-                <NavLink to={paths.careers} className={navClass}>
-                  Về công ty
-                </NavLink>
-              )}
+              {/* MVP 3 · US-23 */}
+              <NavLink to={paths.publicCompanies} className={navClass}>
+                Công ty
+              </NavLink>
             </nav>
           </div>
-          <Link
-            to={paths.login}
-            className="text-ink-muted hover:text-ink shrink-0 rounded-sm px-2 py-1.5 text-[13px] whitespace-nowrap transition-colors"
-          >
-            <span className="sm:hidden">Đăng nhập</span>
-            <span className="hidden sm:inline">Đăng nhập nội bộ</span>
-          </Link>
+          <div className="flex shrink-0 items-center">
+            {/* MVP 3 · US-19 */}
+            <NavLink to={paths.employerRegister} className={navClass}>
+              Nhà tuyển dụng
+            </NavLink>
+            <Link
+              to={paths.login}
+              className="text-ink-muted hover:text-ink rounded-sm px-2 py-1.5 text-[13px] whitespace-nowrap transition-colors"
+            >
+              Đăng nhập
+            </Link>
+          </div>
         </div>
       </header>
       <main

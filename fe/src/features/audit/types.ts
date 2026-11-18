@@ -11,8 +11,14 @@ export type AuditAction =
   | 'COMPANY_MEDIA_ADDED'
   | 'COMPANY_MEDIA_REMOVED'
   | 'APPLICATIONS_EXPORTED'
+  | 'ORG_APPROVED'
+  | 'ORG_REJECTED'
+  | 'ORG_SUSPENDED'
+  | 'ORG_REACTIVATED'
+  | 'ORG_AI_LIMITS_UPDATED'
 
-export type AuditEntity = 'cv_file' | 'application' | 'candidate' | 'user' | 'company' | 'media'
+export type AuditEntity =
+  'cv_file' | 'application' | 'candidate' | 'user' | 'company' | 'media' | 'organization'
 
 export interface AuditLogItem {
   id: string

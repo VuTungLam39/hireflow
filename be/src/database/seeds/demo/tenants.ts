@@ -184,6 +184,9 @@ export async function seedTenants(
         website: t.website,
         status: OrganizationStatus.Active,
         approvedAt: new Date(),
+        // KH MVP 3 · Q5
+        aiDailyScoreLimit: 1000,
+        aiDailyChatLimit: 300,
       })
       .orIgnore()
       .execute();

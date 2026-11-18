@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsEmail,
-  IsEnum,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -11,7 +11,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { Role } from '../../../common/enums/role.enum.js';
+import { Role, STAFF_ROLES } from '../../../common/enums/role.enum.js';
 
 export const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 export const PASSWORD_MESSAGE = 'password phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số';
@@ -37,8 +37,9 @@ export class CreateUserDto {
   @MaxLength(100)
   fullName: string;
 
-  @ApiProperty({ enum: Role })
-  @IsEnum(Role)
+  // BR-ACC-01
+  @ApiProperty({ enum: STAFF_ROLES })
+  @IsIn(STAFF_ROLES)
   role: Role;
 
   @ApiPropertyOptional({

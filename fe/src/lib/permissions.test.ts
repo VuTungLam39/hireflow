@@ -2,9 +2,15 @@ import { Role } from '@/types/user'
 import { hasPermission, Permission } from './permissions'
 
 describe('permissions', () => {
-  it('admin has every permission', () => {
+  it('admin has every permission except platform:manage (KH MVP 3 mục 4)', () => {
     for (const p of Object.values(Permission)) {
-      expect(hasPermission({ role: Role.Admin }, p)).toBe(true)
+      expect(hasPermission({ role: Role.Admin }, p)).toBe(p !== Permission.PlatformManage)
+    }
+  })
+
+  it('BR-TEN-04: the platform admin only manages the platform', () => {
+    for (const p of Object.values(Permission)) {
+      expect(hasPermission({ role: Role.PlatformAdmin }, p)).toBe(p === Permission.PlatformManage)
     }
   })
 

@@ -16,6 +16,7 @@ import {
 import { escapeLike, normalizeKeywords } from '../../common/utils/text.js';
 import { CvPipelineService } from '../ai/pipeline/cv-pipeline.service.js';
 import { RequirementsSuggester } from '../ai/requirements-suggester.service.js';
+import { AiQuotaService } from '../ai/ai-quota.service.js';
 import { Application } from '../applications/entities/application.entity.js';
 import { DepartmentsService } from '../departments/departments.service.js';
 import { MatchingService } from '../matching/matching.service.js';
@@ -36,6 +37,8 @@ import { notExpiredSql, vnToday } from '../../common/utils/vn-date.js';
 import { PrerenderHookService } from './prerender-hook.service.js';
 import { AppEvents } from '../../common/events/app-events.js';
 import { QueryPublicJobsDto } from './dto/query-public-jobs.dto.js';
+import { OrganizationStatus } from '../organizations/entities/organization.entity.js';
+import { publicCompanyRefs, type PublicCompanyRef } from '../organizations/public-company.js';
 
 type ScopeUser = Pick<AuthUser, 'id' | 'role' | 'departmentId' | 'organizationId'>;
 
@@ -116,7 +119,11 @@ export interface PublicJobSummaryView {
   workMode: WorkMode;
   headcount: number;
   deadline: string | null;
+  // MVP 3 · KH 8.1
+  company: PublicCompanyRef;
 }
+
+export const OTHER_JOBS_LIMIT = 4;
 
 export interface PublicJobView extends PublicJobSummaryView {
   /** BR-JOB-10: quá hạn nộp thì vẫn xem được tin nhưng không nhận hồ sơ */
@@ -124,6 +131,8 @@ export interface PublicJobView extends PublicJobSummaryView {
   benefits: string;
   jdText: string;
   requirements: { label: string; type: JobRequirement['type'] }[];
+  // US-24: tối đa 4 tin đang mở khác của cùng công ty
+  otherJobs: PublicJobSummaryView[];
 }
 
 const EMPTY_PIPELINE: JobPipeline = { new: 0, inProgress: 0, hired: 0, closed: 0 };
@@ -148,6 +157,7 @@ export class JobsService {
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly departmentsService: DepartmentsService,
     private readonly suggester: RequirementsSuggester,
+    private readonly quota: AiQuotaService,
     private readonly pipeline: CvPipelineService,
     private readonly prerender: PrerenderHookService,
     private readonly matching: MatchingService,
@@ -321,6 +331,8 @@ export class JobsService {
   // Kickoff 8.2
   async suggestRequirements(id: string, user: ScopeUser) {
     const job = await this.getOrFail(id, user);
+    // BR-AI-11
+    await this.quota.consumeChat(job.organizationId);
     return this.suggester.suggest(job.title, job.jdText);
   }
 
@@ -482,6 +494,13 @@ export class JobsService {
       .limit(query.limit);
     this.applyPublicSearch(qb, query.search);
     qb.andWhere(notExpiredSql('job'));
+    if (query.company) qb.andWhere('org.slug = :company', { company: query.company });
+    if (query.location) {
+      qb.andWhere(
+        `f_unaccent(lower(job.location)) LIKE '%' || f_unaccent(lower(:location)) || '%'`,
+        { location: escapeLike(query.location) },
+      );
+    }
     if (query.departmentId) {
       qb.andWhere('job.departmentId = :departmentId', { departmentId: query.departmentId });
     }
@@ -493,19 +512,22 @@ export class JobsService {
     }
     if (query.workMode) qb.andWhere('job.workMode = :workMode', { workMode: query.workMode });
     const [jobs, total] = await qb.getManyAndCount();
-    return new PaginatedResult(
-      jobs.map((j) => this.toPublicSummary(j)),
-      total,
-      query.page,
-      query.limit,
-    );
+    return new PaginatedResult(await this.toPublicSummaries(jobs), total, query.page, query.limit);
   }
 
-  // US-03
-  async publicDepartments(search?: string): Promise<{ id: string; name: string; count: number }[]> {
+  // US-03 · KH MVP 3 8.1: phòng ban thuộc từng công ty nên bắt buộc chọn công ty
+  async publicDepartments(
+    search?: string,
+    company?: string,
+  ): Promise<{ id: string; name: string; count: number }[]> {
+    if (!company) return [];
     const qb = this.jobsRepository
       .createQueryBuilder('job')
       .innerJoin('job.department', 'department')
+      .innerJoin('job.organization', 'org', 'org.status = :active AND org.slug = :company', {
+        active: OrganizationStatus.Active,
+        company,
+      })
       .select('department.id', 'id')
       .addSelect('department.name', 'name')
       .addSelect('COUNT(*)::int', 'count')
@@ -519,9 +541,12 @@ export class JobsService {
     return qb.getRawMany<{ id: string; name: string; count: number }>();
   }
 
+  // US-22: tiêu đề, JD hoặc địa điểm, không phân biệt dấu
   private applyPublicSearch(qb: SelectQueryBuilder<Job>, search?: string) {
     if (!search) return;
-    qb.andWhere(`f_unaccent(lower(job.title)) LIKE '%' || f_unaccent(lower(:search)) || '%'`, {
+    const like = (column: string) =>
+      `f_unaccent(lower(${column})) LIKE '%' || f_unaccent(lower(:search)) || '%'`;
+    qb.andWhere(`(${like('job.title')} OR ${like('job.jdText')} OR ${like('job.location')})`, {
       search: escapeLike(search),
     });
   }
@@ -537,13 +562,25 @@ export class JobsService {
         entities[0] ? Object.assign(entities[0], { expired: !!raw[0]?.expired }) : null,
       );
     if (!job) throw new NotFoundException('Job not found');
-    const requirements = await this.requirementsRepository.find({
-      select: ['label', 'type'],
-      where: { jobId: job.id, jdVersion: job.jdVersion },
-      order: { position: 'ASC' },
-    });
+    const [requirements, others] = await Promise.all([
+      this.requirementsRepository.find({
+        select: ['label', 'type'],
+        where: { jobId: job.id, jdVersion: job.jdVersion },
+        order: { position: 'ASC' },
+      }),
+      this.publicQuery()
+        .andWhere('job.organizationId = :organizationId', { organizationId: job.organizationId })
+        .andWhere('job.id <> :id', { id: job.id })
+        .andWhere(notExpiredSql('job'))
+        .orderBy('job.publishedAt', 'DESC')
+        .addOrderBy('job.id', 'DESC')
+        .limit(OTHER_JOBS_LIMIT)
+        .getMany(),
+    ]);
+    const [summary, ...otherJobs] = await this.toPublicSummaries([job, ...others]);
     return {
-      ...this.toPublicSummary(job),
+      ...summary,
+      otherJobs,
       expired: job.expired,
       benefits: job.benefits,
       jdText: job.jdText,
@@ -551,12 +588,17 @@ export class JobsService {
     };
   }
 
+  // BR-ORG-04: chỉ tin của công ty ACTIVE hiện công khai
   private publicQuery() {
     return this.jobsRepository
       .createQueryBuilder('job')
       .innerJoin('job.department', 'department')
+      .innerJoin('job.organization', 'org', 'org.status = :active', {
+        active: OrganizationStatus.Active,
+      })
       .select([
         'job.id',
+        'job.organizationId',
         'job.title',
         'job.location',
         'job.publishedAt',
@@ -575,7 +617,15 @@ export class JobsService {
       .where('job.status = :open', { open: JobStatus.Open });
   }
 
-  private toPublicSummary(job: Job): PublicJobSummaryView {
+  private async toPublicSummaries(jobs: Job[]): Promise<PublicJobSummaryView[]> {
+    const refs = await publicCompanyRefs(
+      this.dataSource,
+      jobs.map((j) => j.organizationId),
+    );
+    return jobs.map((j) => ({ ...this.toPublicSummary(j), company: refs.get(j.organizationId)! }));
+  }
+
+  private toPublicSummary(job: Job): Omit<PublicJobSummaryView, 'company'> {
     return {
       id: job.id,
       title: job.title,

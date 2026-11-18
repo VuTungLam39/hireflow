@@ -1,8 +1,15 @@
 import type { AxiosProgressEvent } from 'axios'
 import { api, SLOW_TIMEOUT_MS } from '@/lib/api-client'
 import type { ApiResponse, Paginated } from '@/types/api'
+import type { PaginationParams } from '@/types/api'
 import type { PublicJobsListParams } from '../schemas'
-import type { PublicDepartmentCount, PublicJob, PublicJobSummary } from '../types'
+import type {
+  PublicCompanyCard,
+  PublicCompanyPage,
+  PublicDepartmentCount,
+  PublicJob,
+  PublicJobSummary,
+} from '../types'
 
 export interface ApplyInput {
   fullName: string
@@ -20,12 +27,22 @@ export const publicJobsApi = {
     return { items: res.data.data, meta: res.data.meta! }
   },
 
-  departments: async (search?: string) =>
+  // KH MVP 3 8.1: phòng ban thuộc từng công ty
+  departments: async (search?: string, company?: string) =>
     (
       await api.get<ApiResponse<PublicDepartmentCount[]>>('/public/jobs/departments', {
-        params: { search },
+        params: { search, company },
       })
     ).data.data,
+
+  // US-23
+  companies: async (params: PaginationParams): Promise<Paginated<PublicCompanyCard>> => {
+    const res = await api.get<ApiResponse<PublicCompanyCard[]>>('/public/companies', { params })
+    return { items: res.data.data, meta: res.data.meta! }
+  },
+
+  company: async (slug: string) =>
+    (await api.get<ApiResponse<PublicCompanyPage>>(`/public/companies/${slug}`)).data.data,
 
   get: async (id: string) =>
     (await api.get<ApiResponse<PublicJob>>(`/public/jobs/${id}`)).data.data,

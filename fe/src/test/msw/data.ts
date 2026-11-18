@@ -21,7 +21,7 @@ import type {
 } from '@/features/jobs'
 import { shiftIsoDay, todayIsoDay } from '@/lib/vn-day'
 import { computeScore } from '@/features/ranking'
-import { Role } from '@/types/user'
+import { Role, type OrganizationStatus } from '@/types/user'
 
 // ---------- ngẫu nhiên có seed ----------
 function mulberry32(seed: number) {
@@ -835,7 +835,66 @@ const interviews: InterviewRow[] = applications
     feedbacks: [],
   }))
 
+// ---------- công ty trên sàn (MVP 3) ----------
+// Thêm sau cùng để không đổi chuỗi số ngẫu nhiên của dữ liệu phía trên
+// BR-TEN-04: Quản trị sàn không thuộc công ty nào
+users.push(user('u-platform', 'platform@hireflow.dev', 'Quản trị sàn', Role.PlatformAdmin, null))
+
+export interface OrganizationRow {
+  id: string
+  name: string
+  slug: string
+  taxCode: string | null
+  website: string | null
+  status: OrganizationStatus
+  statusReason: string | null
+  approvedAt: string | null
+  createdAt: string
+  aiDailyScoreLimit: number
+  aiDailyChatLimit: number
+  adminEmail: string | null
+  userCount: number
+  openJobs: number
+  applications30d: number
+}
+
+export const MOCK_ORG_ID = 'org-hireflow'
+
+const org = (
+  id: string,
+  name: string,
+  status: OrganizationStatus,
+  extra: Partial<OrganizationRow> = {},
+): OrganizationRow => ({
+  id,
+  name,
+  slug: slug(name).replace(/\./g, '-'),
+  taxCode: `0${between(100000000, 999999999)}`,
+  website: `https://${slug(name)}.example.com`,
+  status,
+  statusReason: null,
+  approvedAt: status === 'PENDING' ? null : daysAgo(between(20, 60)),
+  createdAt: daysAgo(between(1, 90)),
+  aiDailyScoreLimit: 300,
+  aiDailyChatLimit: 100,
+  adminEmail: `admin@${slug(name)}.example.com`,
+  userCount: between(1, 12),
+  openJobs: status === 'ACTIVE' ? between(1, 8) : 0,
+  applications30d: status === 'ACTIVE' ? between(5, 80) : 0,
+  ...extra,
+})
+
+const organizations: OrganizationRow[] = [
+  org(MOCK_ORG_ID, 'HireFlow Demo', 'ACTIVE', { taxCode: null, adminEmail: 'admin@hireflow.dev' }),
+  org('org-vimay', 'Ví Mây', 'ACTIVE'),
+  org('org-cholanh', 'Chợ Lành', 'SUSPENDED', { statusReason: 'Vi phạm điều khoản sàn' }),
+  org('org-sao-viet', 'Công ty Sao Việt', 'PENDING'),
+  org('org-dai-loc', 'Đại Lộc Logistics', 'PENDING'),
+  org('org-fake', 'Công ty Ảo', 'REJECTED', { statusReason: 'Mã số thuế không tồn tại' }),
+]
+
 export const db = {
+  organizations,
   departments,
   users,
   jobs,

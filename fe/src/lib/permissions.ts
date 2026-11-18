@@ -27,6 +27,7 @@ export const Permission = {
   InterviewManage: 'interview:manage',
   InterviewFeedback: 'interview:feedback',
   CompanyManage: 'company:manage',
+  PlatformManage: 'platform:manage',
 } as const
 export type Permission = (typeof Permission)[keyof typeof Permission]
 
@@ -34,7 +35,7 @@ const P = Permission
 
 /** Bảng dự phòng khi BE chưa trả `permissions` trong /auth/me */
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
-  [Role.Admin]: Object.values(Permission),
+  [Role.Admin]: Object.values(Permission).filter((p) => p !== P.PlatformManage),
   [Role.Hr]: [
     P.JobRead,
     P.JobCreate,
@@ -62,6 +63,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     P.DashboardRead,
   ],
   [Role.Interviewer]: [P.JobRead, P.ApplicationRead, P.CvRead, P.InterviewFeedback],
+  [Role.PlatformAdmin]: [P.PlatformManage],
 }
 
 export function getPermissions(

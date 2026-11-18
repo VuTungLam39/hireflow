@@ -60,6 +60,15 @@ services:
       retries: 10
       start_period: 20s
 
+  # MVP 3 · BR-NOTI-02: hộp thư giả cho local, xem email ở http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.21.8
+    container_name: hireflow-mailpit
+    restart: unless-stopped
+    ports:
+      - '${MAILPIT_SMTP_PORT:-1025}:1025'
+      - '${MAILPIT_UI_PORT:-8025}:8025'
+
   api:
     build: .
     container_name: hireflow-api

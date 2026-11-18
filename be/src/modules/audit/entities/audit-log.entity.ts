@@ -25,6 +25,13 @@ export enum AuditAction {
   CompanyMediaAdded = 'COMPANY_MEDIA_ADDED',
   CompanyMediaRemoved = 'COMPANY_MEDIA_REMOVED',
   ApplicationsExported = 'APPLICATIONS_EXPORTED',
+  // MVP 3 · F-PLAT-01
+  OrgApproved = 'ORG_APPROVED',
+  OrgRejected = 'ORG_REJECTED',
+  OrgSuspended = 'ORG_SUSPENDED',
+  OrgReactivated = 'ORG_REACTIVATED',
+  // BR-AI-11
+  OrgAiLimitsUpdated = 'ORG_AI_LIMITS_UPDATED',
 }
 
 export enum AuditEntity {
@@ -34,6 +41,7 @@ export enum AuditEntity {
   User = 'user',
   Company = 'company',
   Media = 'media',
+  Organization = 'organization',
 }
 
 // F-AUDIT-01 · Database Design 9: chỉ thêm, không sửa (trigger chặn UPDATE)

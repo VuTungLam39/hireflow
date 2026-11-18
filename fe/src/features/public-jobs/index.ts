@@ -1,6 +1,13 @@
 // Public API của feature public-jobs
 export { CV_ACCEPT, CV_MAX_SIZE } from './constants'
-export type { PublicDepartmentCount, PublicJob, PublicJobSummary } from './types'
+export type {
+  PublicCompanyCard,
+  PublicCompanyPage,
+  PublicCompanyRef,
+  PublicDepartmentCount,
+  PublicJob,
+  PublicJobSummary,
+} from './types'
 export { publicJobKeys } from './hooks/use-public-jobs'
-export { publicJobsListSchema } from './schemas'
+export { companiesListSchema, publicJobsListSchema } from './schemas'
 export { DemoNotice } from './components/DemoNotice'
