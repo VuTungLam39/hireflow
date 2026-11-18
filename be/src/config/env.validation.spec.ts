@@ -41,21 +41,22 @@ describe('validateEnv', () => {
   });
 
   // MVP 3 · BR-NOTI-02
-  it('needs the public URL in production and a key plus sender for Brevo', () => {
+  it('needs the public URL in production and both keys plus a sender for Mailjet', () => {
     const prod = { ...base, NODE_ENV: 'production', CORS_ORIGINS: 'https://hireflow.vercel.app' };
     expect(() => validateEnv(prod)).toThrow(/APP_PUBLIC_URL/);
     expect(validateEnv({ ...base }).EMAIL_PROVIDER).toBe('log');
-    expect(() => validateEnv({ ...base, EMAIL_PROVIDER: 'brevo' })).toThrow(
-      /BREVO_API_KEY[\s\S]*EMAIL_FROM/,
+    expect(() => validateEnv({ ...base, EMAIL_PROVIDER: 'mailjet' })).toThrow(
+      /MAILJET_API_KEY[\s\S]*MAILJET_SECRET_KEY[\s\S]*EMAIL_FROM/,
     );
     expect(
       validateEnv({
         ...base,
-        EMAIL_PROVIDER: 'brevo',
-        BREVO_API_KEY: 'xkeysib-1',
+        EMAIL_PROVIDER: 'mailjet',
+        MAILJET_API_KEY: 'k',
+        MAILJET_SECRET_KEY: 's',
         EMAIL_FROM: 'noreply@hireflow.dev',
       }).EMAIL_PROVIDER,
-    ).toBe('brevo');
+    ).toBe('mailjet');
     expect(() => validateEnv({ ...base, EMAIL_PROVIDER: 'smtp' })).toThrow(/EMAIL_PROVIDER/);
   });
 

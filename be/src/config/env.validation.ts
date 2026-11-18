@@ -259,18 +259,24 @@ class EnvironmentVariables {
   EMBEDDING_DIM: number = 1024;
 
   // MVP 3 · BR-NOTI-02
-  @IsIn(['brevo', 'mailpit', 'log'])
+  // Mailjet thay Brevo (18/11/2026): gói free 200 email/ngày, gửi qua HTTPS vì Render free chặn SMTP
+  @IsIn(['mailjet', 'mailpit', 'log'])
   EMAIL_PROVIDER: string = 'log';
 
-  @ValidateIf((env: EnvironmentVariables) => env.EMAIL_PROVIDER === 'brevo')
+  @ValidateIf((env: EnvironmentVariables) => env.EMAIL_PROVIDER === 'mailjet')
   @IsString()
   @IsNotEmpty()
-  BREVO_API_KEY?: string;
+  MAILJET_API_KEY?: string;
+
+  @ValidateIf((env: EnvironmentVariables) => env.EMAIL_PROVIDER === 'mailjet')
+  @IsString()
+  @IsNotEmpty()
+  MAILJET_SECRET_KEY?: string;
 
   @Matches(/^https?:\/\/.+/, { message: 'MAILPIT_URL phải có dạng http://...' })
   MAILPIT_URL: string = 'http://localhost:8025';
 
-  @ValidateIf((env: EnvironmentVariables) => env.EMAIL_PROVIDER === 'brevo')
+  @ValidateIf((env: EnvironmentVariables) => env.EMAIL_PROVIDER === 'mailjet')
   @IsEmail()
   EMAIL_FROM?: string;
 
