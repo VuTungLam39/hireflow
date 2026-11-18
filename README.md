@@ -133,9 +133,9 @@ Cập nhật 18/11/2026. Chi tiết từng feature: tài liệu "Danh mục Feat
 | Health check không gọi B2 cho Render (`/api/health/live`) | Xong | E2E `be/test/app.e2e-spec.ts` |
 | Thử khôi phục backup Neon (point-in-time) | Đã thử 12/11 | Tạo branch từ thời điểm cũ: đủ 10 bảng, cùng migration mới nhất, số dòng khớp production. Cách làm ở [Deploy, bước 8](#8-thử-khôi-phục-backup-neon) |
 | MVP 3 · P1: cách ly dữ liệu giữa các công ty | Xong (#90, #91) | E2E `be/test/cross-tenant.e2e-spec.ts` phủ mọi route có `:id`, danh sách, số đếm, xuất CSV |
-| MVP 3 · P2: email outbox, công ty tự đăng ký + xác minh email, Quản trị sàn | Xong (#92), chưa phát hành | E2E `employer-registration`, `platform`; smoke tay đăng ký → Mailpit → duyệt |
-| MVP 3 · P4: hạn mức AI theo công ty | Xong (#93), chưa phát hành | E2E `ai-quota.e2e-spec.ts` (hồ sơ vượt lượt bị hoãn tới 0 giờ, chat thứ 2 bị 429) |
-| MVP 3 · P3: trang công khai của sàn | Xong (#94), chưa phát hành | E2E `public-marketplace.e2e-spec.ts`; k6 API công khai và Lighthouse ở mục [Load test k6](#load-test-k6) |
+| MVP 3 · P2: email outbox, công ty tự đăng ký + xác minh email, Quản trị sàn | Đã phát hành 18/11 (#92, #95) | E2E `employer-registration`, `platform`; smoke tay đăng ký → Mailpit → duyệt |
+| MVP 3 · P4: hạn mức AI theo công ty | Đã phát hành 18/11 (#93, #95) | E2E `ai-quota.e2e-spec.ts` (hồ sơ vượt lượt bị hoãn tới 0 giờ, chat thứ 2 bị 429) |
+| MVP 3 · P3: trang công khai của sàn | Đã phát hành 18/11 (#94, #95); smoke prod 5/5 | E2E `public-marketplace.e2e-spec.ts`; k6 API công khai và Lighthouse ở mục [Load test k6](#load-test-k6) |
 | Load test k6 (DB 200k hồ sơ, 50 người dùng ảo) | Đã chạy 12/11: 0 lỗi, ~105 request/s; p95 tổng 363 ms, vượt mục tiêu 300 ms ở 3 API do payload của API xếp hạng; bỏ xếp hạng thì p95 82 ms | Mục [Load test k6](#load-test-k6); script `be/scripts/load.k6.js` |
 
 ---
@@ -582,7 +582,7 @@ BASE_URL=http://localhost:3001 k6 run scripts/public.k6.js
 
 Bốn lượt, mọi lượt **0 lỗi** (~80–110 request/s). p95 tổng: 129 ms, 388 ms, 222 ms, 122 ms; 3/4 lượt đạt p95 < 300 ms ở cả 5 API. Lượt chậm thì chậm đều ở mọi API, kể cả danh bạ (truy vấn rẻ nhất), nên nguyên nhân là laptop đang bận (API, PostgreSQL, k6 chạy chung máy) chứ không riêng truy vấn nào. API nặng nhất là chi tiết tin (p95 139–461 ms) vì thêm 2 truy vấn (khối công ty, tin khác). Tìm trong JD dùng `LIKE` không có index, ở 180 tin vẫn dưới 400 ms; khi số tin lên hàng chục nghìn thì cần index trigram.
 
-**Lighthouse trang công khai (MVP 3, đo 18/11/2026, mobile).** SEO **100** ở `/jobs`, `/jobs/:id`, `/companies`, `/companies/:slug` (trước đó `robots.txt` chặn `/companies`, đã sửa). Performance trên laptop hôm nay chỉ 65–75, nhưng đối chứng cùng lúc bản `v2-demo` (trước MVP 3) ở trang tĩnh `/chinh-sach-du-lieu` cũng chỉ 64–81 điểm (TBT 77–460 ms), trong khi `/jobs` và `/jobs/:id` từng đạt 93–94 trên cùng máy ngày 12/11 ([rendering.md](fe/docs/rendering.md) mục 4). Kết luận: số đo Performance hôm nay bị máy đo làm nhiễu, chưa so được với mốc cũ; bản hiện tại chậm hơn `v2-demo` một chút (TBT +60–230 ms, nhỏ hơn mức dao động giữa các lượt). Cần đo lại Performance trên preview Vercel bằng PageSpeed Insights sau khi phát hành.
+**Lighthouse trang công khai (MVP 3, PageSpeed Insights mobile trên prod 18/11/2026).** Performance / Hỗ trợ tiếp cận / Phương pháp hay / SEO: `/jobs` 100/100/100/100, `/jobs/:id` 98/100/96/100, `/companies` 100/100/100/100, `/companies/hireflow-demo` 84/100/100/100, `/chinh-sach-du-lieu` 97/100/100/66. Số đo trên laptop cùng ngày (65–75) bị máy làm nhiễu nên bỏ. Hai chỗ chưa đạt đã sửa ở #98: (1) LCP trang công ty 4,5 s vì `fe/vercel.json` tắt cache CDN cho mọi `/api/*`, kể cả ảnh công khai, nên ảnh luôn đi vòng Render free (0,6–2,3 s); nay bật cache riêng cho `/api/v1/public/media/*` (khoá sha256, BE đã trả `immutable`), thử trên preview: lần đầu MISS 1,2–1,6 s, lần sau HIT ~70 ms, API khác vẫn không cache; (2) SEO 66 ở trang chính sách vì `robots.txt` chặn trang dù có trong sitemap, nay thêm `Allow: /chinh-sach-du-lieu`.
 
 Payload đầy đủ của xếp hạng là có chủ đích, để FE tự tính lại điểm khi kéo trọng số mà không gọi lại API (US-05). Hướng xử lý nếu cần chịu tải cao: cache kết quả xếp hạng theo tin và phiên bản tiêu chí, hoặc rút gọn `score_breakdown` chỉ còn các trường FE dùng. Production hiện chỉ có 31 hồ sơ nên chưa chạm giới hạn này.
 
