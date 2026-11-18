@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import {
+  Navigate,
   createBrowserRouter,
   type DOMRouterOpts,
   type LoaderFunctionArgs,
@@ -17,7 +18,7 @@ import { queryClient } from '@/lib/query-client'
 import ErrorPage from '@/pages/ErrorPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import { GuestRoute, PermissionRoute, ProtectedRoute } from './guards'
-import { paths } from './paths'
+import { DEMO_COMPANY_SLUG, links, paths } from './paths'
 
 // Lazy load: mỗi trang được tách thành 1 file JS riêng, chỉ tải khi vào trang đó.
 // Ngoại lệ luật tầng: router được import thẳng trang của feature (FE Architecture mục 3.1).
@@ -46,6 +47,7 @@ const GUEST_PAGES = [
   paths.login,
   paths.publicJobs,
   paths.careers,
+  paths.publicCompanies,
   paths.privacy,
   paths.employerRegister,
   paths.employerCheckEmail,
@@ -90,8 +92,17 @@ export const routes: RouteObject[] = [
             lazy: page(() => import('@/features/public-jobs/pages/PublicJobDetailPage')),
           },
           {
-            path: paths.careers,
+            path: paths.publicCompanies,
+            lazy: page(() => import('@/features/public-jobs/pages/CompaniesPage')),
+          },
+          {
+            path: paths.publicCompany,
             lazy: page(() => import('@/features/public-jobs/pages/CareersPage')),
+          },
+          // KH MVP 3 mục 9.6: Vercel trả 301; đây là dự phòng khi chạy SPA
+          {
+            path: paths.careers,
+            element: <Navigate to={links.publicCompany(DEMO_COMPANY_SLUG)} replace />,
           },
           {
             path: paths.privacy,

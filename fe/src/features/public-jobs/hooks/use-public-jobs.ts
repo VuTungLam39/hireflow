@@ -1,13 +1,17 @@
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import type { PaginationParams } from '@/types/api'
 import type { PublicJobsListParams } from '../schemas'
 import { publicJobsApi, type ApplyInput } from '../api/public-jobs.api'
 
 export const publicJobKeys = {
   all: ['public-jobs'] as const,
   list: (params: PublicJobsListParams) => [...publicJobKeys.all, 'list', params] as const,
-  departments: (search?: string) => [...publicJobKeys.all, 'departments', search ?? ''] as const,
+  departments: (search?: string, company?: string) =>
+    [...publicJobKeys.all, 'departments', company ?? '', search ?? ''] as const,
   detail: (id: string) => [...publicJobKeys.all, 'detail', id] as const,
+  companies: (params: PaginationParams) => [...publicJobKeys.all, 'companies', params] as const,
+  company: (slug: string) => [...publicJobKeys.all, 'company', slug] as const,
 }
 
 const MINUTE = 60_000
@@ -21,12 +25,32 @@ export function usePublicJobs(params: PublicJobsListParams) {
   })
 }
 
-export function usePublicDepartments(search?: string) {
+export function usePublicDepartments(search?: string, company?: string) {
   return useQuery({
-    queryKey: publicJobKeys.departments(search),
-    queryFn: () => publicJobsApi.departments(search),
+    queryKey: publicJobKeys.departments(search, company),
+    queryFn: () => publicJobsApi.departments(search, company),
+    enabled: !!company,
     placeholderData: keepPreviousData,
     staleTime: MINUTE,
+  })
+}
+
+export function usePublicCompanies(params: PaginationParams) {
+  return useQuery({
+    queryKey: publicJobKeys.companies(params),
+    queryFn: () => publicJobsApi.companies(params),
+    placeholderData: keepPreviousData,
+    staleTime: 5 * MINUTE,
+  })
+}
+
+export function usePublicCompany(slug: string) {
+  return useQuery({
+    queryKey: publicJobKeys.company(slug),
+    queryFn: () => publicJobsApi.company(slug),
+    enabled: !!slug,
+    staleTime: 5 * MINUTE,
+    retry: false,
   })
 }
 

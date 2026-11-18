@@ -1,5 +1,4 @@
 import { Link, NavLink, Outlet } from 'react-router'
-import { usePublicCompany } from '@/features/company'
 import { useFocusMainOnNavigate } from '@/hooks/use-focus-main'
 import { cn } from '@/lib/utils'
 import { paths } from '@/routes/paths'
@@ -13,7 +12,6 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
   )
 
 export function PublicLayout() {
-  const { data: company } = usePublicCompany()
   useFocusMainOnNavigate()
   return (
     <div className="bg-surface text-ink-2 flex min-h-dvh flex-col">
@@ -35,11 +33,10 @@ export function PublicLayout() {
               <NavLink to={paths.publicJobs} className={navClass}>
                 Việc làm
               </NavLink>
-              {company && (
-                <NavLink to={paths.careers} className={navClass}>
-                  Về công ty
-                </NavLink>
-              )}
+              {/* MVP 3 · US-23 */}
+              <NavLink to={paths.publicCompanies} className={navClass}>
+                Công ty
+              </NavLink>
             </nav>
           </div>
           <div className="flex shrink-0 items-center">

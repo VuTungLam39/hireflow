@@ -32,7 +32,9 @@ Tài liệu minh chứng cho yêu cầu "phân biệt các cách render" và "t�
 | Trang | Cách render | Lý do |
 | --- | --- | --- |
 | `/jobs` – danh sách job đang tuyển | SSG + hydrate, build lại khi job đổi | Cần SEO và mở nhanh trên điện thoại; dữ liệu chỉ đổi khi HR đăng hoặc đóng job |
-| `/jobs/:id` – chi tiết job + form nộp CV | SSG + hydrate; form là phần tương tác sau hydrate | Nội dung JD cần SEO (có JSON-LD `JobPosting`); form cần JS |
+| `/jobs/:id` – chi tiết job + form nộp CV | SSG + hydrate; form là phần tương tác sau hydrate | Nội dung JD cần SEO (có JSON-LD `JobPosting` với `hiringOrganization` là công ty đăng tin, `og:image` là ảnh bìa hoặc logo công ty); form cần JS |
+| `/companies` – danh bạ công ty (MVP 3) | SSG + hydrate | Cần SEO; chỉ đổi khi công ty được duyệt, khoá hoặc sửa hồ sơ |
+| `/companies/:slug` – trang công ty (MVP 3) | SSG + hydrate, mỗi công ty ACTIVE một file | JSON-LD `Organization`; `/careers` chuyển hướng 301 sang `/companies/hireflow-demo` (`vercel.json`) |
 | Dashboard, bảng hồ sơ, xếp hạng, kho ứng viên, chat AI | CSR | Sau đăng nhập, dữ liệu theo quyền từng người, không cần SEO |
 | Chat AI | CSR + stream (SSE qua `fetch`) | Câu trả lời đến dần từng phần |
 
@@ -45,10 +47,12 @@ npm run build
   ├─ tsc -b && vite build                → dist/ (SPA như cũ)
   └─ node scripts/prerender.mjs          (bỏ qua nếu PRERENDER_API_URL trống)
        ├─ vite build --ssr src/prerender/entry.tsx
-       ├─ gọi API: GET /public/jobs (trang 1, 12 job) và GET /public/jobs/:id cho mọi job đang mở
+       ├─ gọi API: GET /public/companies và GET /public/companies/:slug cho mọi công ty ACTIVE,
+       │  GET /public/jobs (trang 1, 12 job) và GET /public/jobs/:id cho mọi job đang mở
        ├─ render bằng createStaticHandler + StaticRouterProvider + renderToString,
        │  dùng đúng cây route và component của ứng dụng
-       └─ ghi dist/jobs.html, dist/jobs/<id>.html (+ sitemap.xml, robots.txt)
+       └─ ghi dist/jobs.html, dist/jobs/<id>.html, dist/companies.html,
+          dist/companies/<slug>.html (+ sitemap.xml, robots.txt)
             mỗi file có: nội dung thật, <title>, meta description, Open Graph,
             canonical, JSON-LD JobPosting, và cache TanStack Query nhúng sẵn
 
@@ -58,9 +62,13 @@ Trình duyệt mở /jobs/<id>
   │  tạo router với hydrationData → hydrateRoot (không vẽ lại)
   └─ dữ liệu build-time đã "cũ" → TanStack Query tải lại ngầm, cập nhật nếu job đã đổi
 
-HR đăng / đóng / sửa job đang mở
+HR đăng / đóng / sửa job đang mở, công ty sửa hồ sơ hoặc ảnh,
+Quản trị sàn duyệt / khoá / mở khoá công ty
   └─ BE gọi Vercel Deploy Hook (gộp trong 30 s) → Vercel build lại → HTML mới
+     (API công khai phản ánh ngay; HTML dựng sẵn cập nhật sau lần build kế tiếp)
 ```
+
+**Giới hạn quy mô (MVP 3, chốt 17/11/2026):** mỗi lần build dựng lại toàn bộ trang. Với 3 công ty và khoảng 100 tin, build mất vài giây. Khi lên khoảng 1.000 trang, mỗi thay đổi nhỏ cũng build lại hết nên chậm và tốn phút build; lúc đó chuyển trang công khai sang SSR có cache (backlog sau MVP 3).
 
 Những chỗ phải xử lý để hydrate không lệch (đều có test, mục 3):
 

@@ -1,7 +1,8 @@
-import type { CompanySize, PublicCompany } from '@/features/company'
+import type { CompanySize } from '@/features/company'
 import { mediaSrc } from '@/features/company'
 import type { EmploymentType } from '@/features/jobs'
-import type { PublicJob } from '@/features/public-jobs'
+import type { PublicCompanyPage, PublicCompanyRef, PublicJob } from '@/features/public-jobs'
+import { links } from '@/routes/paths'
 import { SITE_NAME } from './shared'
 
 // Mở rộng MVP 2 – E4 · F-PUB-04: dữ liệu có cấu trúc schema.org cho trang dựng sẵn
@@ -28,13 +29,18 @@ export const absoluteUrl = (url: string, siteUrl?: string) =>
 /** Hạn nộp là ngày giờ Việt Nam (BR-JOB-10): hết hạn sau 23:59:59 ngày đó */
 const endOfVnDay = (day: string) => `${day}T23:59:59+07:00`
 
-function organization(company: PublicCompany | null, siteUrl?: string) {
-  if (!company) return { '@type': 'Organization', name: SITE_NAME }
-  const logo = company.logo ? absoluteUrl(mediaSrc(company.logo), siteUrl) : undefined
+// MVP 3 · US-24: mỗi tin mang đúng công ty đăng tin
+function organization(
+  company: Pick<PublicCompanyRef, 'name' | 'slug' | 'logoUrl'>,
+  siteUrl?: string,
+) {
+  const logo = company.logoUrl
+    ? absoluteUrl(mediaSrc({ url: company.logoUrl }), siteUrl)
+    : undefined
   return {
     '@type': 'Organization',
-    name: company.name,
-    ...(company.website && { sameAs: company.website }),
+    name: company.name || SITE_NAME,
+    ...(siteUrl && { url: `${siteUrl.replace(/\/$/, '')}${links.publicCompany(company.slug)}` }),
     ...(logo && { logo }),
   }
 }
@@ -65,7 +71,7 @@ function description(job: PublicJob) {
     .join('\n\n')
 }
 
-export function jobPostingJsonLd(job: PublicJob, company: PublicCompany | null, siteUrl?: string) {
+export function jobPostingJsonLd(job: PublicJob, siteUrl?: string) {
   const salary = baseSalary(job.salary)
   const place = {
     '@type': 'Place',
@@ -79,7 +85,7 @@ export function jobPostingJsonLd(job: PublicJob, company: PublicCompany | null, 
     datePosted: job.publishedAt,
     ...(job.deadline && { validThrough: endOfVnDay(job.deadline) }),
     ...(job.employmentType && { employmentType: EMPLOYMENT[job.employmentType] }),
-    hiringOrganization: organization(company, siteUrl),
+    hiringOrganization: organization(job.company, siteUrl),
     ...(job.workMode === 'REMOTE'
       ? {
           jobLocationType: 'TELECOMMUTE',
@@ -92,14 +98,16 @@ export function jobPostingJsonLd(job: PublicJob, company: PublicCompany | null, 
   }
 }
 
-export function organizationJsonLd(company: PublicCompany, siteUrl?: string) {
+export function organizationJsonLd(company: PublicCompanyPage, siteUrl?: string) {
   const sameAs = [company.website, ...Object.values(company.socials)].filter(
     (url): url is string => !!url,
   )
   return {
     '@context': 'https://schema.org',
-    ...organization(company, siteUrl),
-    ...(siteUrl && { url: `${siteUrl.replace(/\/$/, '')}/careers` }),
+    ...organization(
+      { name: company.name, slug: company.slug, logoUrl: company.logo?.url ?? null },
+      siteUrl,
+    ),
     description: company.about,
     ...(company.foundedYear && { foundingDate: String(company.foundedYear) }),
     ...(company.sizeRange && {

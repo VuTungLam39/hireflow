@@ -187,6 +187,8 @@ describe('Public jobs, CV files, dashboard (e2e)', () => {
         workMode: 'ONSITE',
         headcount: 1,
         deadline: null,
+        // MVP 3 · KH 8.1
+        company: expect.objectContaining({ slug: 'hireflow-demo' }),
       });
     });
 
@@ -207,7 +209,7 @@ describe('Public jobs, CV files, dashboard (e2e)', () => {
       expect(byDept.body.meta.totalItems).toBe(1);
 
       const facets = await request(server())
-        .get(`/api/v1/public/jobs/departments?search=${run}`)
+        .get(`/api/v1/public/jobs/departments?company=hireflow-demo&search=${run}`)
         .expect(200);
       expect(facets.body.data).toEqual(
         expect.arrayContaining([

@@ -1,19 +1,47 @@
 import { delay, http } from 'msw'
-import type { PublicJob, PublicJobSummary } from '@/features/public-jobs'
+import type {
+  PublicCompanyCard,
+  PublicCompanyRef,
+  PublicJob,
+  PublicJobSummary,
+} from '@/features/public-jobs'
 import { salaryOf } from '@/features/jobs'
 import { todayIsoDay } from '@/lib/vn-day'
-import { addApplication, createCandidate, db, uid, type JobRow } from '../data'
+import { addApplication, createCandidate, db, MOCK_ORG_ID, uid, type JobRow } from '../data'
+import { toCompany } from './company'
 import {
   api,
   latency,
   fail,
-  includesText,
+  includesFolded,
   checkCvFile,
   notFound,
   ok,
   paginate,
   searchParams,
 } from '../http'
+
+// MVP 3: mọi tin mẫu thuộc công ty demo
+const demoOrg = () => db.organizations.find((o) => o.id === MOCK_ORG_ID)!
+const companyRef = (): PublicCompanyRef => {
+  const profile = toCompany()
+  return {
+    name: profile.name || demoOrg().name,
+    slug: demoOrg().slug,
+    logoUrl: profile.logo?.url ?? null,
+    tagline: profile.tagline,
+  }
+}
+
+// Công ty mẫu thứ hai trong danh bạ (chưa có tin đang tuyển)
+const OTHER_CARD: PublicCompanyCard = {
+  slug: 'vi-may',
+  name: 'Ví Mây',
+  logoUrl: null,
+  tagline: 'Ví điện tử cho người Việt',
+  industries: ['Fintech'],
+  openJobs: 0,
+}
 
 const toPublicSummary = (job: JobRow): PublicJobSummary => ({
   id: job.id,
@@ -27,20 +55,31 @@ const toPublicSummary = (job: JobRow): PublicJobSummary => ({
   workMode: job.workMode,
   headcount: job.headcount,
   deadline: job.deadline,
+  company: companyRef(),
 })
 
 /** BR-JOB-10: quá ngày hạn nộp theo giờ Việt Nam */
 const isExpired = (job: JobRow) => !!job.deadline && job.deadline < todayIsoDay()
 
 /** Trang công khai: chỉ job OPEN chưa quá hạn, không có trọng số/từ khoá nội bộ */
+// US-22: tìm theo tiêu đề, JD, địa điểm, không phân biệt dấu
 const openJobs = (search: string | null) =>
-  db.jobs.filter((j) => j.status === 'OPEN' && !isExpired(j) && includesText(j.title, search))
+  db.jobs.filter(
+    (j) =>
+      j.status === 'OPEN' &&
+      !isExpired(j) &&
+      includesFolded(`${j.title} ${j.jdText} ${j.location}`, search),
+  )
+
+const byCompany = (slug: string | null) => !slug || slug === demoOrg().slug
 
 export const publicHandlers = [
   http.get(api('/public/jobs'), async ({ request }) => {
     await delay()
     const params = searchParams(request)
     const rows = openJobs(params.get('search'))
+      .filter(() => byCompany(params.get('company')))
+      .filter((j) => includesFolded(j.location, params.get('location')))
       .filter((j) => !params.get('departmentId') || j.departmentId === params.get('departmentId'))
       .filter((j) => !params.get('level') || j.level === params.get('level'))
       .filter(
@@ -54,8 +93,11 @@ export const publicHandlers = [
 
   http.get(api('/public/jobs/departments'), async ({ request }) => {
     await delay()
+    const params = searchParams(request)
+    // KH MVP 3 8.1: phòng ban chỉ liệt kê trong một công ty
+    if (!params.get('company') || !byCompany(params.get('company'))) return ok([])
     const counts = new Map<string, number>()
-    for (const j of openJobs(searchParams(request).get('search'))) {
+    for (const j of openJobs(params.get('search'))) {
       counts.set(j.departmentId, (counts.get(j.departmentId) ?? 0) + 1)
     }
     const data = [...counts.entries()]
@@ -74,8 +116,48 @@ export const publicHandlers = [
       benefits: job.benefits,
       jdText: job.jdText,
       requirements: job.requirements.map((r) => ({ label: r.label, type: r.type })),
+      otherJobs: openJobs(null)
+        .filter((j) => j.id !== job.id)
+        .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''))
+        .slice(0, 4)
+        .map(toPublicSummary),
     }
     return ok(data)
+  }),
+
+  // MVP 3 · US-23
+  http.get(api('/public/companies'), async ({ request }) => {
+    await delay()
+    const params = searchParams(request)
+    const profile = toCompany()
+    const demo: PublicCompanyCard[] = profile.complete
+      ? [
+          {
+            slug: demoOrg().slug,
+            name: profile.name,
+            logoUrl: profile.logo?.url ?? null,
+            tagline: profile.tagline,
+            industries: profile.industries,
+            openJobs: openJobs(null).length,
+          },
+        ]
+      : []
+    const rows = [...demo, OTHER_CARD].filter((c) => includesFolded(c.name, params.get('search')))
+    const { items, meta } = paginate(rows, params)
+    return ok(items, { meta })
+  }),
+
+  http.get(api('/public/companies/:slug'), async ({ params }) => {
+    await delay()
+    if (params.slug !== demoOrg().slug) return notFound('Company')
+    const { complete, updatedAt: _u, ...profile } = toCompany()
+    if (!complete) {
+      return fail(404, 'COMPANY_PROFILE_INCOMPLETE', 'Company profile is not published yet')
+    }
+    const jobs = openJobs(null)
+      .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''))
+      .map(toPublicSummary)
+    return ok({ ...profile, slug: demoOrg().slug, openJobs: jobs.length, jobs })
   }),
 
   http.post(api('/public/jobs/:id/apply'), async ({ request, params }) => {

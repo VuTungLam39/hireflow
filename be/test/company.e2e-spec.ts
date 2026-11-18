@@ -12,7 +12,7 @@ import { MediaFile } from '../src/modules/company/entities/media-file.entity.js'
 import { Department } from '../src/modules/departments/entities/department.entity.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
-import { withOrg } from './fixtures.js';
+import { ORG, withOrg } from './fixtures.js';
 
 // Mở rộng MVP 2 – E3 · F-ORG-01, F-PUB-06, F-FILE-03 · BR-ORG-01, 02 · BR-MEDIA-01, 02
 describe('Company profile and public media (e2e)', () => {
@@ -109,15 +109,15 @@ describe('Company profile and public media (e2e)', () => {
       await as(who, request(server()).get('/api/v1/company')).expect(403);
       await put({ name: 'X' }, who).expect(403);
     }
-    const res = await request(server()).get('/api/v1/public/company').expect(404);
+    const res = await request(server()).get('/api/v1/public/companies/hireflow-demo').expect(404);
     expect(res.body.code).toBe('COMPANY_PROFILE_INCOMPLETE');
   });
 
   it('reading the profile, publicly or internally, never writes to the database', async () => {
-    await request(server()).get('/api/v1/public/company').expect(404);
+    await request(server()).get('/api/v1/public/companies/hireflow-demo').expect(404);
     const internal = await as('hr', request(server()).get('/api/v1/company')).expect(200);
     expect(internal.body.data).toMatchObject({ name: '', logo: null, complete: false });
-    expect(await ds.getRepository(CompanyProfile).count()).toBe(0);
+    expect(await ds.getRepository(CompanyProfile).countBy({ organizationId: ORG })).toBe(0);
   });
 
   it('HR saves the profile block by block; untouched fields stay, milestones come back in year order', async () => {
@@ -188,7 +188,9 @@ describe('Company profile and public media (e2e)', () => {
     expect(logo.body.data).toMatchObject({ kind: 'LOGO', width: 256, height: 256 });
     expect(logo.body.data.url).toMatch(/^\/public\/media\/[0-9a-f]{64}\.png$/);
 
-    const company = await request(server()).get('/api/v1/public/company').expect(200);
+    const company = await request(server())
+      .get('/api/v1/public/companies/hireflow-demo')
+      .expect(200);
     expect(company.body.data).toMatchObject({
       name: `Công ty ${run}`,
       logo: { url: logo.body.data.url },
@@ -225,7 +227,7 @@ describe('Company profile and public media (e2e)', () => {
     await as('hr', request(server()).delete(`/api/v1/company/media/${second.body.data.id}`)).expect(
       200,
     );
-    const res = await request(server()).get('/api/v1/public/company').expect(404);
+    const res = await request(server()).get('/api/v1/public/companies/hireflow-demo').expect(404);
     expect(res.body.code).toBe('COMPANY_PROFILE_INCOMPLETE');
   });
 
@@ -248,7 +250,9 @@ describe('Company profile and public media (e2e)', () => {
       ),
     );
     expect(race.map((r) => r.status).sort()).toEqual([201, 409, 409, 409]);
-    expect(await ds.getRepository(MediaFile).countBy({ kind: 'GALLERY' as never })).toBe(8);
+    expect(
+      await ds.getRepository(MediaFile).countBy({ organizationId: ORG, kind: 'GALLERY' as never }),
+    ).toBe(8);
     const full = await upload('GALLERY', png(800, 600, 99), 'anh.png', 'Một ảnh nữa').expect(409);
     expect(full.body.code).toBe('GALLERY_FULL');
 
