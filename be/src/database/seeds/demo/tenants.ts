@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import type { EntityManager } from 'typeorm';
+import { IsNull, type EntityManager } from 'typeorm';
 import { AiStatus } from '../../../common/enums/ai-status.enum.js';
 import { ApplicationSource } from '../../../common/enums/application-source.enum.js';
 import { ApplicationStatus } from '../../../common/enums/application-status.enum.js';
@@ -8,6 +8,8 @@ import { Application } from '../../../modules/applications/entities/application.
 import { ApplicationStatusHistory } from '../../../modules/applications/entities/application-status-history.entity.js';
 import { Candidate } from '../../../modules/candidates/entities/candidate.entity.js';
 import { CompanyProfile } from '../../../modules/company/entities/company-profile.entity.js';
+import { MediaFile, MediaKind } from '../../../modules/company/entities/media-file.entity.js';
+import type { CheckedImage } from '../../../modules/company/media.rules.js';
 import { Department } from '../../../modules/departments/entities/department.entity.js';
 import {
   JobRequirement,
@@ -43,12 +45,14 @@ interface Tenant {
   about: string;
   departments: { code: string; name: string }[];
   jobs: TenantJob[];
+  logoColor: string;
 }
 
 // MVP 3 · P1b-B5, BR-TEN-01
 export const TENANTS: Tenant[] = [
   {
     key: 'vi-may',
+    logoColor: '#2f5e8f',
     name: 'Công ty Cổ phần Ví Mây',
     slug: 'vi-may',
     taxCode: '0109000001',
@@ -102,6 +106,7 @@ export const TENANTS: Tenant[] = [
   },
   {
     key: 'cho-lanh',
+    logoColor: '#7a3e22',
     name: 'Công ty TNHH Chợ Lành',
     slug: 'cho-lanh',
     taxCode: '0318000002',
@@ -168,6 +173,7 @@ export async function seedTenants(
   manager: EntityManager,
   password: string,
   id: (name: string) => string,
+  logos: Map<string, CheckedImage>,
 ): Promise<void> {
   const passwordHash = await bcrypt.hash(password, 10);
   for (const t of TENANTS) {
@@ -226,6 +232,32 @@ export async function seedTenants(
       .values({ organizationId, name: t.name, tagline: t.tagline, about: t.about })
       .orIgnore()
       .execute();
+    const logo = logos.get(t.key)!;
+    const logoId = id(`media:${t.key}:logo`);
+    await manager
+      .createQueryBuilder()
+      .insert()
+      .into(MediaFile)
+      .values({
+        id: logoId,
+        organizationId,
+        kind: MediaKind.Logo,
+        storageKey: logo.key,
+        mime: logo.mime,
+        sizeBytes: logo.size,
+        width: logo.width,
+        height: logo.height,
+        sha256: logo.sha256,
+        altText: `Logo ${t.name}`,
+        createdBy: userIds.get('admin')!,
+      })
+      .orIgnore()
+      .execute();
+    await manager.update(
+      CompanyProfile,
+      { organizationId, logoMediaId: IsNull() },
+      { logoMediaId: logoId },
+    );
 
     for (const j of t.jobs) {
       const jobId = id(`job:${t.key}:${j.key}`);

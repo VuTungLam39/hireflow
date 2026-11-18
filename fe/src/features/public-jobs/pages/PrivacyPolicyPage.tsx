@@ -33,7 +33,7 @@ export default function PrivacyPolicyPage() {
     <article className="max-w-2xl space-y-8">
       <header className="space-y-3">
         <h1 className="type-display">Chính sách dữ liệu ứng viên</h1>
-        <p className="type-caption">Cập nhật 15/11/2026 · Áp dụng cho bản demo HireFlow</p>
+        <p className="type-caption">Cập nhật 18/11/2026 · Áp dụng cho bản demo HireFlow</p>
         <DemoNotice />
         <p className="type-body">
           Nếu bạn đã lỡ gửi CV hoặc thông tin thật, hãy liên hệ theo mục 8 để chúng tôi xoá.
@@ -77,7 +77,10 @@ export default function PrivacyPolicyPage() {
       <Section title="3. Mục đích">
         <ul className="list-disc space-y-1 pl-5">
           <li>Xét hồ sơ cho vị trí bạn ứng tuyển.</li>
-          <li>Gợi ý hồ sơ của bạn cho vị trí khác phù hợp trong thời gian lưu trữ (mục 6).</li>
+          <li>
+            Gợi ý hồ sơ của bạn cho vị trí khác phù hợp của cùng công ty, trong thời gian lưu trữ
+            (mục 6).
+          </li>
         </ul>
       </Section>
 
@@ -105,10 +108,16 @@ export default function PrivacyPolicyPage() {
         <p>
           Dữ liệu được lưu và xử lý trên dịch vụ thuê ở nước ngoài: Render, Neon (máy chủ ứng dụng
           và cơ sở dữ liệu), Backblaze B2 (file CV), Vercel (giao diện web), Google và Groq (trí tuệ
-          nhân tạo).
+          nhân tạo), Brevo (gửi email tài khoản cho nhà tuyển dụng; bản demo hiện không gửi email
+          cho ứng viên).
         </p>
         <p>
-          Trong hệ thống, chỉ tài khoản tuyển dụng, quản lý phòng ban có vị trí tuyển, người được
+          HireFlow là sàn của nhiều công ty. Hồ sơ chỉ hiển thị cho công ty đăng vị trí bạn nộp. Nếu
+          bạn nộp vào hai công ty, mỗi công ty giữ một bản riêng và không thấy hồ sơ của nhau. Quản
+          trị sàn chỉ xem thông tin công ty và số liệu tổng, không xem hồ sơ ứng viên.
+        </p>
+        <p>
+          Trong công ty đó, chỉ tài khoản tuyển dụng, quản lý phòng ban có vị trí tuyển, người được
           phân công phỏng vấn và quản trị viên xem được hồ sơ, theo phân quyền. Mỗi lần mở file CV
           gốc và mỗi lần xuất danh sách hồ sơ đều được ghi nhật ký.
         </p>

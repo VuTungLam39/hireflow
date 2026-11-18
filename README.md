@@ -4,7 +4,7 @@
 
 HR đăng tin tuyển dụng, ứng viên nộp CV, hệ thống tự đọc CV và xếp hạng ứng viên theo mô tả công việc (JD). Mỗi điểm số đi kèm **trích dẫn nguyên văn từ CV** làm bằng chứng, và code kiểm tra trích dẫn đó có thật trong CV. HR chỉnh trọng số tiêu chí thì bảng xếp hạng đổi ngay, không tốn thêm lần gọi LLM nào.
 
-> Dự án thực tập tại NCC (10–11/2026). **MVP 1** (53/53 feature, 26/10) và **MVP 2** (demo 01/11) đã xong, kèm hai đợt mở rộng E1–E7 (04–05/11) và F1–F4 (11/11). **Đang chạy production:** https://hireflow-gray-zeta.vercel.app. Xem [Trạng thái](#trạng-thái) và [Kịch bản demo](#kịch-bản-demo-15-phút).
+> Dự án thực tập tại NCC (10–11/2026). **MVP 1** (53/53 feature, 26/10) và **MVP 2** (demo 01/11) đã xong, kèm hai đợt mở rộng E1–E7 (04–05/11) và F1–F4 (11/11). **MVP 3 – sàn tuyển dụng nhiều công ty** (17–18/11) đã xong code, chờ phát hành lên production. **Đang chạy production (bản v2-demo, một công ty):** https://hireflow-gray-zeta.vercel.app. Xem [Trạng thái](#trạng-thái) và [Kịch bản demo](#kịch-bản-demo-15-phút).
 
 ---
 
@@ -90,6 +90,16 @@ HireFlow xử lý ba vấn đề của cách "gửi CV cho LLM rồi nhận đi�
 - **F3 So sánh 2–3 ứng viên** cùng tin theo từng tiêu chí: mức khớp, trích dẫn, điểm phiếu phỏng vấn; cảnh báo hồ sơ chấm theo tiêu chí cũ.
 - **F4 Nhân bản tin** thành bản nháp, chỉ copy tiêu chí của phiên bản mới nhất.
 
+### MVP 3 – Sàn tuyển dụng nhiều công ty (17–18/11/2026)
+
+HireFlow chuyển từ ATS của một công ty thành sàn cho nhiều công ty. Kế hoạch: `docs/HireFlow — Kế hoạch MVP 3 Sàn tuyển dụng nhiều công ty.md`.
+
+- **Cách ly dữ liệu giữa các công ty:** mọi bảng gốc có `organization_id`; mọi truy vấn, cache dashboard, sự kiện realtime, Hỏi kho CV, gợi ý ứng viên và hàng đợi AI đều lọc theo công ty. Bộ test chéo công ty tự lấy mọi route có `:id` và kiểm công ty B không đọc hay sửa được dữ liệu công ty A.
+- **Công ty tự đăng ký:** `/employers/register` → email xác minh (Brevo ở production, Mailpit ở local) → đăng nhập ngay với vai Admin công ty, chuẩn bị tin trong lúc chờ duyệt.
+- **Quản trị sàn** (vai `platform_admin`, không thuộc công ty nào, không xem hồ sơ ứng viên): duyệt, từ chối, khoá, mở khoá công ty (mỗi thao tác gửi email và ghi nhật ký); xem và sửa hạn mức AI; xem hàng đợi toàn hệ thống.
+- **Hạn mức AI mỗi ngày theo công ty** (giờ Việt Nam): hết lượt đọc CV thì hồ sơ chờ tới 0 giờ, hết lượt hỏi thì Hỏi kho CV và các gợi ý báo 429.
+- **Trang công khai của sàn:** `/jobs` lọc theo công ty và địa điểm, tìm cả trong JD; danh bạ `/companies`; trang công ty `/companies/:slug` (`/careers` chuyển hướng 301); chi tiết tin có khối công ty và "Tin khác của công ty"; chỉ công ty đã duyệt mới hiện công khai và nhận CV.
+
 ### Không nằm trong phạm vi
 
 Tự động loại ứng viên · lương, ký offer điện tử · SSO, mobile app · tích hợp job board (LinkedIn, TopCV) · OCR CV dạng ảnh scan.
@@ -98,7 +108,7 @@ Tự động loại ứng viên · lương, ký offer điện tử · SSO, mobil
 
 ## Trạng thái
 
-Cập nhật 12/11/2026. Chi tiết từng feature: tài liệu "Danh mục Feature theo Actor" (thư mục `docs/`, không đưa lên git).
+Cập nhật 18/11/2026. Chi tiết từng feature: tài liệu "Danh mục Feature theo Actor" (thư mục `docs/`, không đưa lên git).
 
 | Phần | Trạng thái | Minh chứng |
 | --- | --- | --- |
@@ -122,6 +132,10 @@ Cập nhật 12/11/2026. Chi tiết từng feature: tài liệu "Danh mục Feat
 | Mở rộng sau deploy F1–F4: phễu, đổi trạng thái hàng loạt, so sánh ứng viên, nhân bản tin | Xong, đã kiểm trên production | E2E `funnel`, `bulk-status`, `compare`, `clone-job` (`be/test/`); số đo phễu trên 200k hồ sơ ~275 ms |
 | Health check không gọi B2 cho Render (`/api/health/live`) | Xong | E2E `be/test/app.e2e-spec.ts` |
 | Thử khôi phục backup Neon (point-in-time) | Đã thử 12/11 | Tạo branch từ thời điểm cũ: đủ 10 bảng, cùng migration mới nhất, số dòng khớp production. Cách làm ở [Deploy, bước 8](#8-thử-khôi-phục-backup-neon) |
+| MVP 3 · P1: cách ly dữ liệu giữa các công ty | Xong (#90, #91) | E2E `be/test/cross-tenant.e2e-spec.ts` phủ mọi route có `:id`, danh sách, số đếm, xuất CSV |
+| MVP 3 · P2: email outbox, công ty tự đăng ký + xác minh email, Quản trị sàn | Xong (#92), chưa phát hành | E2E `employer-registration`, `platform`; smoke tay đăng ký → Mailpit → duyệt |
+| MVP 3 · P4: hạn mức AI theo công ty | Xong (#93), chưa phát hành | E2E `ai-quota.e2e-spec.ts` (hồ sơ vượt lượt bị hoãn tới 0 giờ, chat thứ 2 bị 429) |
+| MVP 3 · P3: trang công khai của sàn | Xong (#94), chưa phát hành | E2E `public-marketplace.e2e-spec.ts`; k6 API công khai và Lighthouse ở mục [Load test k6](#load-test-k6) |
 | Load test k6 (DB 200k hồ sơ, 50 người dùng ảo) | Đã chạy 12/11: 0 lỗi, ~105 request/s; p95 tổng 363 ms, vượt mục tiêu 300 ms ở 3 API do payload của API xếp hạng; bỏ xếp hạng thì p95 82 ms | Mục [Load test k6](#load-test-k6); script `be/scripts/load.k6.js` |
 
 ---
@@ -293,6 +307,10 @@ Mở http://localhost:5173 (cách 2) hoặc http://localhost:8080 (cách 1). M�
 | HR | `hr@hireflow.dev` | Mọi job, hồ sơ, ứng viên; đổi trạng thái, chấm lại |
 | Hiring Manager | `hm.eng@hireflow.dev` | Chỉ phòng "Phát triển phần mềm"; duyệt hoặc từ chối ở bước OFFER |
 | Người phỏng vấn | `interviewer@hireflow.dev` | Chỉ hồ sơ có buổi phỏng vấn được giao; không thấy điểm AI; gửi phiếu đánh giá |
+| Quản trị sàn (MVP 3) | `platform@example.com` | Chỉ màn Công ty trên sàn và Hàng đợi hệ thống; không thấy dữ liệu tuyển dụng của công ty nào |
+| Admin công ty demo khác | `admin@vi-may.example`, `admin@cho-lanh.example` | Dữ liệu của Ví Mây / Chợ Lành (dữ liệu giả); dùng để thử cách ly giữa các công ty. Mỗi công ty có thêm `hr@`, `hm@`, `interviewer@` cùng tên miền |
+
+Email (xác minh khi đăng ký công ty, báo duyệt hoặc khoá) đi vào Mailpit: xem ở http://localhost:8025 (`npm run infra:up` đã bật Mailpit, đặt `EMAIL_PROVIDER=mailpit` trong `be/.env`).
 
 **Không dùng các tài khoản này ở môi trường thật.**
 
@@ -305,6 +323,7 @@ Mở http://localhost:5173 (cách 2) hoặc http://localhost:8080 (cách 1). M�
 | http://localhost:3000/api/v1 | REST API |
 | http://localhost:3000/api/docs | Swagger (tắt ở production) |
 | http://localhost:3000/api/health | Health check: DB, Redis, kho file |
+| http://localhost:8025 | Mailpit: hộp thư giả xem email hệ thống gửi (MVP 3) |
 
 ---
 
@@ -421,6 +440,13 @@ $env:SEED_ADMIN_PASSWORD = "<mật khẩu mạnh>"
 npm run seed
 ```
 
+**Quản trị sàn (MVP 3):** chỉ tạo bằng script, không có màn tạo. Chạy cùng cửa sổ trên (dùng lại `SEED_ADMIN_PASSWORD`; tài khoản đã có thì giữ nguyên mật khẩu):
+
+```powershell
+$env:PLATFORM_ADMIN_EMAIL = "<email quản trị sàn>"
+npm run seed:platform-admin
+```
+
 Không dùng `--reset` trên database thật. Seed tự chặn khi DB đích không phải local: bắt buộc `SEED_ADMIN_PASSWORD` mạnh (từ 12 ký tự, có chữ và số, khác `Admin@123`), và `--reset` phải kèm `--allow-remote-reset`. URL deploy là công khai, nên mật khẩu mặc định ở README không được dùng trên đó.
 
 ### 5. Vercel (frontend)
@@ -476,7 +502,7 @@ Neon giữ lịch sử thay đổi trong một khoảng thời gian (gói free n
 
 | Nơi đặt | Biến |
 | --- | --- |
-| Render `hireflow-api` | `NODE_ENV`, `CORS_ORIGINS`, `TRUST_PROXY`, `DEBUG_CLIENT_IP`, `DATABASE_URL`, `DB_SSL`, `REDIS_URL`, `JWT_*`, `STORAGE_DRIVER`, `S3_*`, `LLM_PROVIDERS`, `GEMINI_*`, `EMBEDDING_*`, `CV_RETENTION_MONTHS`, `PRERENDER_DEPLOY_HOOK_URL` |
+| Render `hireflow-api` | `NODE_ENV`, `CORS_ORIGINS`, `TRUST_PROXY`, `DEBUG_CLIENT_IP`, `DATABASE_URL`, `DB_SSL`, `REDIS_URL`, `JWT_*`, `STORAGE_DRIVER`, `S3_*`, `LLM_PROVIDERS`, `GEMINI_*`, `EMBEDDING_*`, `CV_RETENTION_MONTHS`, `PRERENDER_DEPLOY_HOOK_URL`; MVP 3: `EMAIL_PROVIDER=brevo`, `BREVO_API_KEY`, `EMAIL_FROM` (địa chỉ gửi đã xác minh trên Brevo), `EMAIL_FROM_NAME`, `APP_PUBLIC_URL` (bắt buộc ở production, dùng dựng link trong email) |
 | Render `hireflow-redis` | Không có. `maxmemoryPolicy: noeviction` để BullMQ không bị mất key |
 | Vercel | `PRERENDER_API_URL` (tuỳ chọn, nên đặt). URL API cho rewrite nằm trong `fe/vercel.json` |
 | Máy local khi seed | Xem bước 4 |
@@ -538,6 +564,17 @@ Kết quả 12/11/2026 (k6, API và PostgreSQL chạy chung một laptop; 2 lư�
 | Kho ứng viên (đếm hồ sơ mỗi ứng viên) | 444 ms | ✘ |
 
 **Nguyên nhân: API xếp hạng.** Đo từng request một (perf-report) cả ba đều đạt: kho ứng viên 15 ms, xếp hạng 158 ms (phần lớn là dựng JSON `score_breakdown` của ~1.050 hồ sơ, query chỉ 8 ms). Dưới tải, xếp hạng trả payload lớn (cả lượt nhận ~758 MB) và việc dựng JSON chạy trên luồng chính của Node, nên mọi request khác phải chờ. Chạy lại bỏ xếp hạng (`SKIP=ranking`) xác nhận điều này: 15.842 request, 0 lỗi, ~131 request/s, **p95 tổng 82 ms**, mọi API dưới 100 ms (danh sách hồ sơ 430 → 91 ms, kho ứng viên 444 → 97 ms).
+
+**API công khai của sàn (MVP 3, đo 18/11/2026).** `be/scripts/public.k6.js` mô phỏng khách xem việc làm, cùng tải 0 → 20 → 50 người dùng ảo trong 2 phút, trên DB perf (180 tin đang mở): danh sách tin, tìm trong JD (`postgresql`, 15 kết quả), lọc công ty + địa điểm, chi tiết tin (kèm khối công ty và "tin khác"), danh bạ công ty.
+
+```bash
+PORT=3001 DB_DATABASE=ncc_intern_perf THROTTLE_LIMIT=1000000 LLM_PROVIDERS=fake node dist/main.js
+BASE_URL=http://localhost:3001 k6 run scripts/public.k6.js
+```
+
+Bốn lượt, mọi lượt **0 lỗi** (~80–110 request/s). p95 tổng: 129 ms, 388 ms, 222 ms, 122 ms; 3/4 lượt đạt p95 < 300 ms ở cả 5 API. Lượt chậm thì chậm đều ở mọi API, kể cả danh bạ (truy vấn rẻ nhất), nên nguyên nhân là laptop đang bận (API, PostgreSQL, k6 chạy chung máy) chứ không riêng truy vấn nào. API nặng nhất là chi tiết tin (p95 139–461 ms) vì thêm 2 truy vấn (khối công ty, tin khác). Tìm trong JD dùng `LIKE` không có index, ở 180 tin vẫn dưới 400 ms; khi số tin lên hàng chục nghìn thì cần index trigram.
+
+**Lighthouse trang công khai (MVP 3, đo 18/11/2026, mobile).** SEO **100** ở `/jobs`, `/jobs/:id`, `/companies`, `/companies/:slug` (trước đó `robots.txt` chặn `/companies`, đã sửa). Performance trên laptop hôm nay chỉ 65–75, nhưng đối chứng cùng lúc bản `v2-demo` (trước MVP 3) ở trang tĩnh `/chinh-sach-du-lieu` cũng chỉ 64–81 điểm (TBT 77–460 ms), trong khi `/jobs` và `/jobs/:id` từng đạt 93–94 trên cùng máy ngày 12/11 ([rendering.md](fe/docs/rendering.md) mục 4). Kết luận: số đo Performance hôm nay bị máy đo làm nhiễu, chưa so được với mốc cũ; bản hiện tại chậm hơn `v2-demo` một chút (TBT +60–230 ms, nhỏ hơn mức dao động giữa các lượt). Cần đo lại Performance trên preview Vercel bằng PageSpeed Insights sau khi phát hành.
 
 Payload đầy đủ của xếp hạng là có chủ đích, để FE tự tính lại điểm khi kéo trọng số mà không gọi lại API (US-05). Hướng xử lý nếu cần chịu tải cao: cache kết quả xếp hạng theo tin và phiên bản tiêu chí, hoặc rút gọn `score_breakdown` chỉ còn các trường FE dùng. Production hiện chỉ có 31 hồ sơ nên chưa chạm giới hạn này.
 

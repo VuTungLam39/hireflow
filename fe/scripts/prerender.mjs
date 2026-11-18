@@ -67,7 +67,7 @@ try {
 
   const seconds = ((performance.now() - started) / 1000).toFixed(1)
   console.log(
-    `[prerender] ${pages.length} trang công khai trong ${seconds}s → dist/jobs.html, dist/jobs/*.html, dist/careers.html`,
+    `[prerender] ${pages.length} trang công khai trong ${seconds}s → dist/jobs.html, dist/jobs/*.html, dist/companies.html, dist/companies/*.html`,
   )
 } catch (error) {
   console.error(`[prerender] lỗi: ${error instanceof Error ? error.message : error}`)

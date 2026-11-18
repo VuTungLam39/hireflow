@@ -251,6 +251,16 @@ function gallery(scene: number): Buffer {
   return c.png();
 }
 
+// MVP 3: logo đơn giản cho công ty demo, để trang công ty đủ điều kiện vào danh bạ (BR-ORG-01)
+export function tenantLogo(color: string): Buffer {
+  const s = 256;
+  const c = new Canvas(s, s, PALETTE.white);
+  c.rect(0, 0, s, s, 56, hex(color));
+  c.circle(128, 128, 64, PALETTE.white);
+  c.circle(128, 128, 30, hex(color));
+  return c.png();
+}
+
 export function companyImages() {
   return {
     logo: { key: 'logo', buffer: logo(), alt: 'Logo HireFlow' },
