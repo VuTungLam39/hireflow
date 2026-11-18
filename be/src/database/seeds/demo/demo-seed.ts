@@ -47,11 +47,11 @@ import { User } from '../../../modules/users/entities/user.entity.js';
 import { ANONYMIZED, APPLICATIONS, type DemoApplication } from './applications.js';
 import { CANDIDATES, type DemoCandidate, type DemoCv } from './candidates.js';
 import { COMPANY } from './company.js';
-import { companyImages } from './images.js';
+import { companyImages, tenantLogo } from './images.js';
 import { BENEFITS_TEXT, DEMO_BENEFITS, JOB_DETAILS, JOBS, type DemoJob } from './jobs.js';
 import { vnToday } from '../../../common/utils/vn-date.js';
 import { at, DEPARTMENTS, SESSIONS, USERS } from './org.js';
-import { seedTenants } from './tenants.js';
+import { seedTenants, TENANTS } from './tenants.js';
 import { DEMO_PLATFORM_ADMIN_EMAIL, ensurePlatformAdmin } from '../platform-admin.js';
 import { DEFAULT_ORGANIZATION_ID } from '../../../modules/organizations/entities/organization.entity.js';
 
@@ -110,6 +110,9 @@ export async function seedDemo(
 
   const cvs = await buildCvs();
   const images = buildCompanyImages();
+  const tenantLogos = new Map(
+    TENANTS.map((t) => [t.key, checkSeedImage(tenantLogo(t.logoColor), MediaKind.Logo)]),
+  );
   const storedKeys: string[] = [];
   try {
     await dataSource.transaction(async (manager) => {
@@ -136,7 +139,11 @@ export async function seedDemo(
         storedKeys.push(image.checked.key);
       }
       await seedCompany(manager, images, userIds.get('admin')!);
-      await seedTenants(manager, options.password, demoId);
+      for (const logo of tenantLogos.values()) {
+        await storage.put(logo.key, logo.buffer, logo.mime);
+        storedKeys.push(logo.key);
+      }
+      await seedTenants(manager, options.password, demoId, tenantLogos);
       await ensurePlatformAdmin(manager, DEMO_PLATFORM_ADMIN_EMAIL, options.password);
     });
   } catch (error) {
@@ -726,13 +733,15 @@ interface BuiltImage {
   checked: CheckedImage;
 }
 
+const checkSeedImage = (buffer: Buffer, kind: MediaKind) =>
+  checkImage(
+    { originalname: 'seed.png', mimetype: 'image/png', size: buffer.length, buffer },
+    kind,
+  );
+
 function buildCompanyImages(): BuiltImage[] {
   const { logo, cover, gallery } = companyImages();
-  const check = (buffer: Buffer, kind: MediaKind) =>
-    checkImage(
-      { originalname: 'seed.png', mimetype: 'image/png', size: buffer.length, buffer },
-      kind,
-    );
+  const check = checkSeedImage;
   return [
     {
       kind: MediaKind.Logo,
