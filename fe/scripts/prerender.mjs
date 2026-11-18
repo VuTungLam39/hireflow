@@ -9,6 +9,8 @@ const distDir = join(root, 'dist')
 const ssrDir = join(root, 'dist-ssr')
 const apiUrl = process.env.PRERENDER_API_URL?.trim()
 const strict = process.env.PRERENDER_STRICT === 'true'
+// Khớp MEDIA_KEY ở be/src/modules/company/media.rules.ts
+const MEDIA_PATH = /\/api\/v1\/public\/media\/([0-9a-f]{64}\.(?:jpg|png|webp))/g
 const siteUrl = (
   process.env.PRERENDER_SITE_URL ||
   (process.env.VERCEL_PROJECT_PRODUCTION_URL
@@ -44,6 +46,7 @@ try {
     throw new Error('dist/index.html không có <div id="root"></div> hoặc <title>HireFlow</title>')
   }
 
+  const mediaFiles = new Set()
   for (const page of pages) {
     const html = template
       .replace('<title>HireFlow</title>', page.head)
@@ -51,10 +54,29 @@ try {
         '<div id="root"></div>',
         `<div id="root">${page.html}</div>\n    <script>${page.payload}</script>`,
       )
+      // P3-F6: HTML đã đủ nội dung, nhường băng thông cho CSS và ảnh; hydrate tải JS sau một vòng mạng
+      .replace(/\s*<link rel="modulepreload"[^>]*>/g, '')
+    for (const [, file] of html.matchAll(MEDIA_PATH)) mediaFiles.add(file)
     const target = join(distDir, page.file)
     await mkdir(dirname(target), { recursive: true })
     await writeFile(target, html)
   }
+
+  // P3-F6: ảnh của trang công khai thành file tĩnh cùng đường dẫn, Vercel phục vụ trước rewrite nên mọi vùng CDN có sẵn
+  // shortcut: chép mọi ảnh trang công khai vào bản build, đủ ở quy mô demo; khi build quá nặng thì chuyển ảnh sang CDN riêng
+  const mediaDir = join(distDir, 'api', 'v1', 'public', 'media')
+  await mkdir(mediaDir, { recursive: true })
+  let copied = 0
+  for (const file of mediaFiles) {
+    const res = await fetch(`${apiUrl}/public/media/${file}`).catch(() => null)
+    if (!res?.ok) {
+      console.warn(`[prerender] không tải được ảnh ${file}, giữ qua rewrite`)
+      continue
+    }
+    await writeFile(join(mediaDir, file), Buffer.from(await res.arrayBuffer()))
+    copied++
+  }
+  console.log(`[prerender] ${copied}/${mediaFiles.size} ảnh công khai thành file tĩnh`)
 
   if (siteUrl) {
     await writeFile(join(distDir, 'sitemap.xml'), buildSitemap(pages, siteUrl))
