@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /jobs
 Allow: /companies
+Allow: /chinh-sach-du-lieu
 Allow: /api/v1/public/media/
 Disallow: /

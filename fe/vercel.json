@@ -19,8 +19,12 @@
   ],
   "headers": [
     {
-      "source": "/api/:path*",
+      "source": "/api/((?!v1/public/media/).*)",
       "headers": [{ "key": "x-vercel-enable-rewrite-caching", "value": "0" }]
+    },
+    {
+      "source": "/api/v1/public/media/:file",
+      "headers": [{ "key": "x-vercel-enable-rewrite-caching", "value": "1" }]
     },
     {
       "source": "/assets/(.*)",
