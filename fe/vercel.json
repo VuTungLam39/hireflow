@@ -24,7 +24,10 @@
     },
     {
       "source": "/api/v1/public/media/:file",
-      "headers": [{ "key": "x-vercel-enable-rewrite-caching", "value": "1" }]
+      "headers": [
+        { "key": "x-vercel-enable-rewrite-caching", "value": "1" },
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
     },
     {
       "source": "/assets/(.*)",
