@@ -77,7 +77,7 @@ export interface BulkStatusResult {
 
 export const HR_CONSENT_VERSION = 'HR_CONFIRMED';
 // BR-APP-04
-export const PUBLIC_CONSENT_VERSION = 'v2';
+export const PUBLIC_CONSENT_VERSION = 'v3';
 const VN_OFFSET = '+07:00';
 const DAY_MS = 86_400_000;
 

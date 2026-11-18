@@ -4,6 +4,7 @@ import { SITE_NAME } from '@/prerender/shared'
 import { DemoNotice } from '../components/DemoNotice'
 
 export const PRIVACY_CONTACT = 'wdonglin39@gmail.com'
+const GEMINI_TERMS = 'https://aistudio.google.com/docs/terms'
 
 const RIGHTS = [
   'được biết',
@@ -33,7 +34,7 @@ export default function PrivacyPolicyPage() {
     <article className="max-w-2xl space-y-8">
       <header className="space-y-3">
         <h1 className="type-display">Chính sách dữ liệu ứng viên</h1>
-        <p className="type-caption">Cập nhật 18/11/2026 · Áp dụng cho bản demo HireFlow</p>
+        <p className="type-caption">Cập nhật 19/11/2026 · Áp dụng cho bản demo HireFlow</p>
         <DemoNotice />
         <p className="type-body">
           Nếu bạn đã lỡ gửi CV hoặc thông tin thật, hãy liên hệ theo mục 8 để chúng tôi xoá.
@@ -50,14 +51,25 @@ export default function PrivacyPolicyPage() {
           .
         </p>
         <p>
-          Nhóm vận hành tiếp nhận các yêu cầu liên quan đến dữ liệu cá nhân và phối hợp xử lý theo
-          phạm vi trách nhiệm thực tế.
+          HireFlow là sàn của nhiều công ty, nhưng đây là bản demo: các công ty trên sàn là công ty
+          mẫu hoặc công ty tự đăng ký để thử nghiệm, đã cam kết không dùng sàn cho tuyển dụng thật
+          (mục 9). Vì vậy nhóm vận hành chịu trách nhiệm cho toàn bộ dữ liệu trên bản demo, kể cả dữ
+          liệu nằm trong không gian riêng của từng công ty.
+        </p>
+        <p>
+          Mọi yêu cầu về dữ liệu cá nhân, dù bạn nộp hồ sơ vào công ty nào, đều gửi về một đầu mối ở
+          trên. Bạn không cần liên hệ riêng từng công ty.
         </p>
       </Section>
 
       <Section title="2. Dữ liệu được xử lý">
         <ul className="list-disc space-y-1 pl-5">
           <li>Bạn cung cấp: họ tên, email, số điện thoại, file CV, thời điểm đồng ý.</li>
+          <li>
+            Công ty tải lên thay bạn: người tuyển dụng có thể tải CV bạn gửi cho họ qua kênh khác
+            (email, hội chợ việc làm). Khi đó họ phải xác nhận đã thông báo cho bạn và được bạn đồng
+            ý với chính sách này; hồ sơ được ghi rõ nguồn là &quot;công ty tải lên&quot;.
+          </li>
           <li>
             Hệ thống tạo ra từ CV: nội dung chữ, kỹ năng và kinh nghiệm do trí tuệ nhân tạo trích
             xuất kèm đoạn trích dẫn, điểm và thứ hạng mức phù hợp với từng vị trí, các đoạn CV và
@@ -99,8 +111,18 @@ export default function PrivacyPolicyPage() {
           giúp nhận ra bạn.
         </p>
         <p>
-          Bản demo hiện chưa có lựa chọn từ chối xử lý bằng trí tuệ nhân tạo. Đây là một lý do bạn
-          không nên gửi CV thật.
+          Bản demo dùng gói miễn phí của Google Gemini. Theo{' '}
+          <a className="text-brand underline" href={GEMINI_TERMS} target="_blank" rel="noreferrer">
+            điều khoản của Google
+          </a>{' '}
+          cho gói này, nội dung gửi lên và kết quả trả về có thể được Google dùng để cải thiện sản
+          phẩm, và có thể được người kiểm duyệt của Google đọc. Google cũng khuyến cáo không gửi
+          thông tin cá nhân vào gói miễn phí. Groq (dự phòng) theo tài liệu của họ mặc định không
+          lưu nội dung yêu cầu.
+        </p>
+        <p>
+          Bản demo hiện chưa có lựa chọn từ chối xử lý bằng trí tuệ nhân tạo. Cùng với điều khoản
+          trên, đây là lý do bạn không nên gửi CV thật.
         </p>
       </Section>
 
@@ -130,6 +152,11 @@ export default function PrivacyPolicyPage() {
           vấn; thay họ tên, email, số điện thoại. Bản sao lưu cơ sở dữ liệu tự hết hạn theo chu kỳ
           của nhà cung cấp.
         </p>
+        <p>
+          Nếu công ty bạn nộp hồ sơ bị Quản trị sàn khoá hoặc từ chối, tin tuyển dụng của công ty
+          không còn hiển thị công khai và tài khoản của công ty không đăng nhập được. Hồ sơ của bạn
+          vẫn được lưu theo đúng thời hạn trên, và bạn vẫn yêu cầu xoá được bất cứ lúc nào.
+        </p>
       </Section>
 
       <Section title="7. Quyền của bạn">
@@ -150,6 +177,44 @@ export default function PrivacyPolicyPage() {
           , ghi họ tên và email đã dùng khi nộp. Chúng tôi xác minh và phản hồi theo thời hạn pháp
           luật quy định cho từng loại yêu cầu.
         </p>
+      </Section>
+
+      <Section title="9. Nhà tuyển dụng và điều khoản sử dụng sàn (bản demo)">
+        <p>Khi đăng ký công ty, chúng tôi xử lý:</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            Thông tin công ty: tên, mã số thuế, website. Quản trị sàn dùng để duyệt, khoá hoặc mở
+            khoá công ty.
+          </li>
+          <li>
+            Tài khoản người đăng ký: họ tên, email công việc, mật khẩu (chỉ lưu dạng băm). Email
+            dùng để xác minh tài khoản và báo kết quả duyệt; email được gửi qua Mailjet.
+          </li>
+          <li>
+            Địa chỉ IP: dùng để giới hạn số lần đăng ký, đăng nhập; đồng thời được ghi kèm vào nhật
+            ký thao tác.
+          </li>
+          <li>
+            Nhật ký thao tác trong công ty và các quyết định duyệt, khoá của Quản trị sàn, ghi theo
+            nguyên tắc chỉ ghi thêm (không sửa được) để truy vết.
+          </li>
+        </ul>
+        <p>
+          Dữ liệu tài khoản được giữ đến khi tài khoản bị xoá hoặc bản demo được dọn dữ liệu; nhật
+          ký thao tác được giữ cùng dữ liệu của công ty. Yêu cầu về dữ liệu này gửi về đầu mối ở mục
+          8.
+        </p>
+        <p>Khi đăng ký, công ty đồng ý với các điều khoản sau:</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>Chỉ dùng sàn để thử nghiệm, không dùng cho tuyển dụng thật.</li>
+          <li>
+            Không tải CV của người khác lên nếu chưa thông báo và được họ đồng ý với chính sách này.
+          </li>
+          <li>
+            Quản trị sàn có quyền từ chối hoặc khoá công ty vi phạm các điều trên, và có thể xoá dữ
+            liệu demo bất cứ lúc nào.
+          </li>
+        </ul>
       </Section>
 
       <p className="type-caption">
