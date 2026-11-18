@@ -108,7 +108,7 @@ export default function PrivacyPolicyPage() {
         <p>
           Dữ liệu được lưu và xử lý trên dịch vụ thuê ở nước ngoài: Render, Neon (máy chủ ứng dụng
           và cơ sở dữ liệu), Backblaze B2 (file CV), Vercel (giao diện web), Google và Groq (trí tuệ
-          nhân tạo), Brevo (gửi email tài khoản cho nhà tuyển dụng; bản demo hiện không gửi email
+          nhân tạo), Mailjet (gửi email tài khoản cho nhà tuyển dụng; bản demo hiện không gửi email
           cho ứng viên).
         </p>
         <p>
