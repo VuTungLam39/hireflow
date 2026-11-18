@@ -15,6 +15,7 @@ export type RealtimeEvent =
   | { kind: 'notification'; userId: string; notification: NotificationView; unreadCount: number }
   | {
       kind: 'application';
+      organizationId: string;
       departmentId: string;
       applicationId: string;
       jobId: string;

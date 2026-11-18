@@ -6,6 +6,7 @@ import type { RealtimeEvent } from './realtime-hub.service.js';
 
 const appEvent: RealtimeEvent = {
   kind: 'application',
+  organizationId: 'org-1',
   departmentId: 'd-1',
   applicationId: 'a-1',
   jobId: 'j-1',
@@ -17,6 +18,7 @@ const user = (role: Role, departmentId: string | null = null) => ({
   id: 'u-1',
   role,
   departmentId,
+  organizationId: 'org-1',
 });
 
 // BR-ACC-07, BR-INT-02
@@ -28,6 +30,10 @@ describe('visibleTo', () => {
   it('shows a hiring manager only their department', () => {
     expect(visibleTo(appEvent, user(Role.HiringManager, 'd-1'))).toBe(true);
     expect(visibleTo(appEvent, user(Role.HiringManager, 'd-2'))).toBe(false);
+  });
+
+  it.each([Role.Admin, Role.Hr])('hides another organization events from %s', (role) => {
+    expect(visibleTo(appEvent, { ...user(role), organizationId: 'org-2' })).toBe(false);
   });
 
   it('hides application events from interviewers', () => {

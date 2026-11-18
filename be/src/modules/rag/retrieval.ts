@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
-import { dataScope } from '../../common/utils/department-scope.js';
+import { dataScope, orgIdOf } from '../../common/utils/department-scope.js';
 import type { CvSection } from './cv-chunks.js';
 
 type ScopeUser = Pick<AuthUser, 'role' | 'departmentId' | 'organizationId'>;
@@ -47,6 +47,7 @@ export function retrieveChunks(
     mode === 'vector' ? '' : keywords,
     RRF_CANDIDATES,
     RRF_K,
+    orgIdOf(user),
   ];
   let scope = '';
   const access = dataScope(user.role);
@@ -71,7 +72,7 @@ export function retrieveChunks(
       : `SELECT id, row_number() OVER (ORDER BY distance) AS rank FROM (
            SELECT ch.id, ch.embedding <=> $1::vector AS distance
            FROM cv_chunks ch ${readable('ch')}
-           WHERE ch.embedding_model = $2
+           WHERE ch.embedding_model = $2 AND ch.organization_id = $7
            ORDER BY distance
            LIMIT $5
          ) v`;
@@ -85,7 +86,8 @@ export function retrieveChunks(
        ),
        weights AS (
          SELECT t.query, power(ln((n.total + 1) / (1 + (
-           SELECT count(*) FROM cv_chunks ch WHERE ch.embedding_model = $2 AND ch.search_vector @@ t.query
+           SELECT count(*) FROM cv_chunks ch
+           WHERE ch.embedding_model = $2 AND ch.organization_id = $7 AND ch.search_vector @@ t.query
          ))), 2) AS w
          FROM terms t,
            (SELECT greatest(reltuples, 1000)::float AS total FROM pg_class WHERE oid = 'cv_chunks'::regclass) n
@@ -96,7 +98,7 @@ export function retrieveChunks(
            SELECT ch.id, sum(w.w) AS score
            FROM weights w
            JOIN cv_chunks ch ON ch.search_vector @@ w.query ${readable('ch')}
-           WHERE ch.embedding_model = $2
+           WHERE ch.embedding_model = $2 AND ch.organization_id = $7
            GROUP BY ch.id
            ORDER BY score DESC, ch.id
            LIMIT $5

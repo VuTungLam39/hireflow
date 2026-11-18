@@ -164,6 +164,7 @@ export class MatchingService {
              AND a.source <> $3::application_source_enum
          ) own ON own.last_applied_at >= now() - make_interval(months => $4)
          WHERE cf.deleted_at IS NULL AND cf.text IS NOT NULL AND cf.parse_status = $5
+           AND cf.organization_id = (SELECT j.organization_id FROM jobs j WHERE j.id = $1)
            AND NOT EXISTS (
              SELECT 1 FROM applications x
              WHERE x.job_id = $1 AND x.candidate_id = cf.candidate_id AND x.deleted_at IS NULL

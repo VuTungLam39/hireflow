@@ -8,6 +8,8 @@ import { AiStatus } from '../../../common/enums/ai-status.enum.js';
 import { Application } from '../../applications/entities/application.entity.js';
 import { CvPipelineService } from './cv-pipeline.service.js';
 import { QUEUE } from './queues.js';
+import type { AuthUser } from '../../../common/interfaces/jwt-payload.interface.js';
+import { orgIdOf } from '../../../common/utils/department-scope.js';
 
 // Backend Architecture 13
 export const STUCK_PENDING_MINUTES = 5;
@@ -49,8 +51,11 @@ export class PipelineOpsService {
   }
 
   // F-OPS-01, API Contract 4.10
-  async findIssues(query: PaginationQueryDto): Promise<PaginatedResult<AiIssueView>> {
-    const [rows, total] = await this.issuesQuery()
+  async findIssues(
+    query: PaginationQueryDto,
+    user: Pick<AuthUser, 'organizationId'>,
+  ): Promise<PaginatedResult<AiIssueView>> {
+    const [rows, total] = await this.issuesQuery(orgIdOf(user))
       .leftJoin('app.candidate', 'candidate')
       .leftJoin('app.job', 'job')
       .addSelect(['candidate.id', 'candidate.fullName', 'job.id', 'job.title'])
@@ -77,8 +82,12 @@ export class PipelineOpsService {
   }
 
   // BR-AI-08
-  async retry(applicationId: string, requestId?: string): Promise<null> {
-    const exists = await this.issuesQuery()
+  async retry(
+    applicationId: string,
+    user: Pick<AuthUser, 'organizationId'>,
+    requestId?: string,
+  ): Promise<null> {
+    const exists = await this.issuesQuery(orgIdOf(user))
       .andWhere('app.id = :applicationId', { applicationId })
       .getExists();
     if (!exists) throw new NotFoundException('No failed or stuck AI job for this application');
@@ -86,8 +95,11 @@ export class PipelineOpsService {
     return null;
   }
 
-  async retryAll(requestId?: string): Promise<{ queued: number; failed: number }> {
-    const rows = await this.issuesQuery()
+  async retryAll(
+    user: Pick<AuthUser, 'organizationId'>,
+    requestId?: string,
+  ): Promise<{ queued: number; failed: number }> {
+    const rows = await this.issuesQuery(orgIdOf(user))
       .select('app.id', 'id')
       .orderBy('app.updatedAt', 'ASC')
       .limit(RETRY_ALL_LIMIT)
@@ -144,24 +156,26 @@ export class PipelineOpsService {
     );
   }
 
-  private issuesQuery(): SelectQueryBuilder<Application> {
-    return this.dataSource
+  private issuesQuery(organizationId?: string): SelectQueryBuilder<Application> {
+    const qb = this.dataSource
       .getRepository(Application)
       .createQueryBuilder('app')
-      .where('app.cvFileId IS NOT NULL')
-      .andWhere(
-        new Brackets((qb) =>
-          qb
-            .where('app.aiStatus = :failed', { failed: AiStatus.Failed })
-            .orWhere(
-              `app.aiStatus = :pending AND app.createdAt < now() - make_interval(mins => :minutes)`,
-              { pending: AiStatus.Pending, minutes: STUCK_PENDING_MINUTES },
-            )
-            .orWhere(
-              `app.aiStatus = :processing AND app.updatedAt < now() - make_interval(mins => :minutes)`,
-              { processing: AiStatus.Processing, minutes: STUCK_PENDING_MINUTES },
-            ),
-        ),
-      );
+      .where('app.cvFileId IS NOT NULL');
+    // BR-TEN-02
+    if (organizationId) qb.andWhere('app.organizationId = :organizationId', { organizationId });
+    return qb.andWhere(
+      new Brackets((qb) =>
+        qb
+          .where('app.aiStatus = :failed', { failed: AiStatus.Failed })
+          .orWhere(
+            `app.aiStatus = :pending AND app.createdAt < now() - make_interval(mins => :minutes)`,
+            { pending: AiStatus.Pending, minutes: STUCK_PENDING_MINUTES },
+          )
+          .orWhere(
+            `app.aiStatus = :processing AND app.updatedAt < now() - make_interval(mins => :minutes)`,
+            { processing: AiStatus.Processing, minutes: STUCK_PENDING_MINUTES },
+          ),
+      ),
+    );
   }
 }

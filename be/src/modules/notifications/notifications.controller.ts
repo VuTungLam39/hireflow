@@ -119,12 +119,14 @@ export class NotificationsController {
   }
 }
 
-// BR-ACC-07
+// BR-ACC-07, BR-TEN-03
 export function visibleTo(
   event: RealtimeEvent,
-  user: Pick<AuthUser, 'id' | 'role' | 'departmentId'>,
+  user: Pick<AuthUser, 'id' | 'role' | 'departmentId' | 'organizationId'>,
 ) {
   if (event.kind === 'notification') return event.userId === user.id;
+  // BR-TEN-03
+  if (event.organizationId !== user.organizationId) return false;
   const scope = dataScope(user.role);
   if (scope === 'all') return true;
   return scope === 'department' && event.departmentId === user.departmentId;

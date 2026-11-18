@@ -320,9 +320,11 @@ describe('AI pipeline (e2e, LLM giả)', () => {
     const created = await upload(ids.job, `stuck-${run}@example.com`, await makeDocx(SAMPLE_CV));
     await waitFor(created.id, settled);
     const mine = async () =>
-      (await ops.findIssues({ page: 1, limit: 100, skip: 0 } as PaginationQueryDto)).items.filter(
-        (i) => i.id === created.id,
-      );
+      (
+        await ops.findIssues({ page: 1, limit: 100, skip: 0 } as PaginationQueryDto, {
+          organizationId: ORG,
+        })
+      ).items.filter((i) => i.id === created.id);
 
     await ds.query(`UPDATE applications SET ai_status = 'PROCESSING' WHERE id = $1`, [created.id]);
     expect(await mine()).toEqual([]);
@@ -335,7 +337,7 @@ describe('AI pipeline (e2e, LLM giả)', () => {
       expect.objectContaining({ aiStatus: AiStatus.Processing, stuck: true }),
     ]);
 
-    await ops.retry(created.id);
+    await ops.retry(created.id, { organizationId: ORG });
     expect(await waitFor(created.id, settled)).toMatchObject({ aiStatus: AiStatus.Done });
     expect(await mine()).toEqual([]);
   });

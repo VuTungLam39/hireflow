@@ -51,6 +51,7 @@ import { companyImages } from './images.js';
 import { BENEFITS_TEXT, DEMO_BENEFITS, JOB_DETAILS, JOBS, type DemoJob } from './jobs.js';
 import { vnToday } from '../../../common/utils/vn-date.js';
 import { at, DEPARTMENTS, SESSIONS, USERS } from './org.js';
+import { seedTenants } from './tenants.js';
 import { DEFAULT_ORGANIZATION_ID } from '../../../modules/organizations/entities/organization.entity.js';
 
 const [PDF_MIME, DOCX_MIME] = CV_MIME_TYPES;
@@ -134,6 +135,7 @@ export async function seedDemo(
         storedKeys.push(image.checked.key);
       }
       await seedCompany(manager, images, userIds.get('admin')!);
+      await seedTenants(manager, options.password, demoId);
     });
   } catch (error) {
     await Promise.allSettled(storedKeys.map((k) => storage.remove(k)));
