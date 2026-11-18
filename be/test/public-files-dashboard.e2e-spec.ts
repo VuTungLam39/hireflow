@@ -15,6 +15,7 @@ import { fakeExtract, FakeLlmProvider } from '../src/modules/ai/providers/fake.l
 import { makeDocx } from '../src/modules/ai/testing/cv-fixtures.js';
 import { ApplicationStatusHistory } from '../src/modules/applications/entities/application-status-history.entity.js';
 import { Application } from '../src/modules/applications/entities/application.entity.js';
+import { PUBLIC_CONSENT_VERSION } from '../src/modules/applications/applications.service.js';
 import { Candidate } from '../src/modules/candidates/entities/candidate.entity.js';
 import { Department } from '../src/modules/departments/entities/department.entity.js';
 import { CvFile } from '../src/modules/files/entities/cv-file.entity.js';
@@ -239,7 +240,7 @@ describe('Public jobs, CV files, dashboard (e2e)', () => {
       const candidate = await ds
         .getRepository(Candidate)
         .findOneByOrFail({ email: `p-c1-${run}@gmail.com` });
-      expect(candidate.consentVersion).toBe('v2');
+      expect(candidate.consentVersion).toBe(PUBLIC_CONSENT_VERSION);
       const created = await ds
         .getRepository(Application)
         .findOneByOrFail({ candidateId: candidate.id });
