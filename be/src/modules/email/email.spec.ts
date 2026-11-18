@@ -7,11 +7,19 @@ import { EmailStatus } from './entities/email-outbox.entity.js';
 
 const config: EmailConfig = {
   provider: 'log',
-  brevoApiKey: undefined,
+  mailjetApiKey: undefined,
+  mailjetSecretKey: undefined,
   mailpitUrl: 'http://localhost:8025',
   from: 'no-reply@hireflow.local',
   fromName: 'HireFlow',
   appPublicUrl: 'https://hireflow.test',
+};
+
+const mailjet: EmailConfig = {
+  ...config,
+  provider: 'mailjet',
+  mailjetApiKey: 'key',
+  mailjetSecretKey: 'secret',
 };
 
 // MVP 3 · BR-NOTI-02
@@ -52,13 +60,55 @@ describe('renderEmail', () => {
 });
 
 describe('buildEmailProvider', () => {
-  it('needs an API key for Brevo and picks the configured provider', () => {
-    expect(() => buildEmailProvider({ ...config, provider: 'brevo' })).toThrow(/BREVO_API_KEY/);
-    expect(buildEmailProvider({ ...config, provider: 'brevo', brevoApiKey: 'k' }).name).toBe(
-      'brevo',
-    );
+  it('needs both Mailjet keys and picks the configured provider', () => {
+    expect(() =>
+      buildEmailProvider({ ...config, provider: 'mailjet', mailjetApiKey: 'k' }),
+    ).toThrow(/MAILJET_SECRET_KEY/);
+    expect(buildEmailProvider({ ...mailjet }).name).toBe('mailjet');
     expect(buildEmailProvider({ ...config, provider: 'mailpit' }).name).toBe('mailpit');
     expect(buildEmailProvider(config).name).toBe('log');
+  });
+});
+
+describe('MailjetEmailProvider', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('sends one message through the v3.1 API with basic auth from the verified sender', async () => {
+    const fetchMock = vi.fn(async () => new Response('{"Messages":[{"Status":"success"}]}'));
+    vi.stubGlobal('fetch', fetchMock);
+    await buildEmailProvider(mailjet).send({
+      to: 'a@x.dev',
+      subject: 'S',
+      html: '<p>H</p>',
+      text: 'T',
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://api.mailjet.com/v3.1/send');
+    expect((init.headers as Record<string, string>).authorization).toBe(
+      `Basic ${Buffer.from('key:secret').toString('base64')}`,
+    );
+    expect(JSON.parse(init.body as string)).toEqual({
+      Messages: [
+        {
+          From: { Email: 'no-reply@hireflow.local', Name: 'HireFlow' },
+          To: [{ Email: 'a@x.dev' }],
+          Subject: 'S',
+          TextPart: 'T',
+          HTMLPart: '<p>H</p>',
+        },
+      ],
+    });
+  });
+
+  it('fails so the queue retries when Mailjet refuses the message', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('sender not validated', { status: 401 })),
+    );
+    await expect(
+      buildEmailProvider(mailjet).send({ to: 'a@x.dev', subject: 'S', html: 'H', text: 'T' }),
+    ).rejects.toThrow(/HTTP 401/);
   });
 });
 

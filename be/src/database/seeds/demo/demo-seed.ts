@@ -733,7 +733,7 @@ interface BuiltImage {
   checked: CheckedImage;
 }
 
-const checkSeedImage = (buffer: Buffer, kind: MediaKind) =>
+export const checkSeedImage = (buffer: Buffer, kind: MediaKind) =>
   checkImage(
     { originalname: 'seed.png', mimetype: 'image/png', size: buffer.length, buffer },
     kind,

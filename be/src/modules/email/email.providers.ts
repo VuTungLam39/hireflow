@@ -15,21 +15,32 @@ async function post(url: string, headers: Record<string, string>, body: unknown)
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
 }
 
-// https://developers.brevo.com/reference/sendtransacemail
-export class BrevoEmailProvider implements EmailProvider {
-  readonly name = 'brevo';
-  constructor(private readonly config: EmailConfig & { brevoApiKey: string }) {}
+// https://dev.mailjet.com/email/guides/send-api-v31/ · EMAIL_FROM phải là địa chỉ đã xác minh trên Mailjet
+export class MailjetEmailProvider implements EmailProvider {
+  readonly name = 'mailjet';
+  private readonly auth: string;
+  constructor(
+    private readonly config: EmailConfig,
+    apiKey: string,
+    secretKey: string,
+  ) {
+    this.auth = `Basic ${Buffer.from(`${apiKey}:${secretKey}`).toString('base64')}`;
+  }
 
   send(m: EmailMessage): Promise<void> {
     return post(
-      'https://api.brevo.com/v3/smtp/email',
-      { 'api-key': this.config.brevoApiKey },
+      'https://api.mailjet.com/v3.1/send',
+      { authorization: this.auth },
       {
-        sender: { email: this.config.from, name: this.config.fromName },
-        to: [{ email: m.to }],
-        subject: m.subject,
-        htmlContent: m.html,
-        textContent: m.text,
+        Messages: [
+          {
+            From: { Email: this.config.from, Name: this.config.fromName },
+            To: [{ Email: m.to }],
+            Subject: m.subject,
+            TextPart: m.text,
+            HTMLPart: m.html,
+          },
+        ],
       },
     );
   }
@@ -69,10 +80,13 @@ export class LogEmailProvider implements EmailProvider {
 
 export function buildEmailProvider(config: EmailConfig): EmailProvider {
   switch (config.provider) {
-    case 'brevo':
-      if (!config.brevoApiKey)
-        throw new Error('BREVO_API_KEY is required when EMAIL_PROVIDER=brevo');
-      return new BrevoEmailProvider({ ...config, brevoApiKey: config.brevoApiKey });
+    case 'mailjet':
+      if (!config.mailjetApiKey || !config.mailjetSecretKey) {
+        throw new Error(
+          'MAILJET_API_KEY and MAILJET_SECRET_KEY are required when EMAIL_PROVIDER=mailjet',
+        );
+      }
+      return new MailjetEmailProvider(config, config.mailjetApiKey, config.mailjetSecretKey);
     case 'mailpit':
       return new MailpitEmailProvider(config);
     case 'log':

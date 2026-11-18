@@ -95,7 +95,7 @@ HireFlow xử lý ba vấn đề của cách "gửi CV cho LLM rồi nhận đi�
 HireFlow chuyển từ ATS của một công ty thành sàn cho nhiều công ty. Kế hoạch: `docs/HireFlow — Kế hoạch MVP 3 Sàn tuyển dụng nhiều công ty.md`.
 
 - **Cách ly dữ liệu giữa các công ty:** mọi bảng gốc có `organization_id`; mọi truy vấn, cache dashboard, sự kiện realtime, Hỏi kho CV, gợi ý ứng viên và hàng đợi AI đều lọc theo công ty. Bộ test chéo công ty tự lấy mọi route có `:id` và kiểm công ty B không đọc hay sửa được dữ liệu công ty A.
-- **Công ty tự đăng ký:** `/employers/register` → email xác minh (Brevo ở production, Mailpit ở local) → đăng nhập ngay với vai Admin công ty, chuẩn bị tin trong lúc chờ duyệt.
+- **Công ty tự đăng ký:** `/employers/register` → email xác minh (Mailjet ở production, Mailpit ở local) → đăng nhập ngay với vai Admin công ty, chuẩn bị tin trong lúc chờ duyệt.
 - **Quản trị sàn** (vai `platform_admin`, không thuộc công ty nào, không xem hồ sơ ứng viên): duyệt, từ chối, khoá, mở khoá công ty (mỗi thao tác gửi email và ghi nhật ký); xem và sửa hạn mức AI; xem hàng đợi toàn hệ thống.
 - **Hạn mức AI mỗi ngày theo công ty** (giờ Việt Nam): hết lượt đọc CV thì hồ sơ chờ tới 0 giờ, hết lượt hỏi thì Hỏi kho CV và các gợi ý báo 429.
 - **Trang công khai của sàn:** `/jobs` lọc theo công ty và địa điểm, tìm cả trong JD; danh bạ `/companies`; trang công ty `/companies/:slug` (`/careers` chuyển hướng 301); chi tiết tin có khối công ty và "Tin khác của công ty"; chỉ công ty đã duyệt mới hiện công khai và nhận CV.
@@ -447,6 +447,14 @@ $env:PLATFORM_ADMIN_EMAIL = "<email quản trị sàn>"
 npm run seed:platform-admin
 ```
 
+**Hai công ty demo (MVP 3):** `npm run seed` không chạy được trên DB đã có dữ liệu (bắt buộc `--reset`), nên dùng script chỉ thêm: tạo Ví Mây và Chợ Lành (dữ liệu giả, mỗi công ty có logo, 2 tin, tài khoản `admin@`, `hr@`, `hm@`, `interviewer@` theo tên miền `.example`, mật khẩu `SEED_ADMIN_PASSWORD`). Đã có thì bỏ qua, không xoá gì. Cùng cửa sổ trên (cần biến `S3_*` để đưa logo lên B2):
+
+```powershell
+npm run seed:tenants
+```
+
+**Email (MVP 3):** Render free chặn cổng SMTP (25/465/587) từ 26/09/2025, nên email gửi qua API HTTPS của Mailjet (gói free 200 email/ngày, 6.000/tháng). Tạo tài khoản Mailjet → *Senders & Domains* → thêm địa chỉ gửi và bấm link xác minh → *API keys* lấy key và secret → điền `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`, `EMAIL_FROM` trên Render. Gửi từ địa chỉ Gmail qua dịch vụ trung gian dễ vào Spam; khi có tên miền riêng thì xác minh tên miền trên Mailjet.
+
 Không dùng `--reset` trên database thật. Seed tự chặn khi DB đích không phải local: bắt buộc `SEED_ADMIN_PASSWORD` mạnh (từ 12 ký tự, có chữ và số, khác `Admin@123`), và `--reset` phải kèm `--allow-remote-reset`. URL deploy là công khai, nên mật khẩu mặc định ở README không được dùng trên đó.
 
 ### 5. Vercel (frontend)
@@ -502,7 +510,7 @@ Neon giữ lịch sử thay đổi trong một khoảng thời gian (gói free n
 
 | Nơi đặt | Biến |
 | --- | --- |
-| Render `hireflow-api` | `NODE_ENV`, `CORS_ORIGINS`, `TRUST_PROXY`, `DEBUG_CLIENT_IP`, `DATABASE_URL`, `DB_SSL`, `REDIS_URL`, `JWT_*`, `STORAGE_DRIVER`, `S3_*`, `LLM_PROVIDERS`, `GEMINI_*`, `EMBEDDING_*`, `CV_RETENTION_MONTHS`, `PRERENDER_DEPLOY_HOOK_URL`; MVP 3: `EMAIL_PROVIDER=brevo`, `BREVO_API_KEY`, `EMAIL_FROM` (địa chỉ gửi đã xác minh trên Brevo), `EMAIL_FROM_NAME`, `APP_PUBLIC_URL` (bắt buộc ở production, dùng dựng link trong email) |
+| Render `hireflow-api` | `NODE_ENV`, `CORS_ORIGINS`, `TRUST_PROXY`, `DEBUG_CLIENT_IP`, `DATABASE_URL`, `DB_SSL`, `REDIS_URL`, `JWT_*`, `STORAGE_DRIVER`, `S3_*`, `LLM_PROVIDERS`, `GEMINI_*`, `EMBEDDING_*`, `CV_RETENTION_MONTHS`, `PRERENDER_DEPLOY_HOOK_URL`; MVP 3: `EMAIL_PROVIDER=mailjet`, `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`, `EMAIL_FROM` (địa chỉ gửi đã xác minh trên Mailjet), `EMAIL_FROM_NAME`, `APP_PUBLIC_URL` (bắt buộc ở production, dùng dựng link trong email) |
 | Render `hireflow-redis` | Không có. `maxmemoryPolicy: noeviction` để BullMQ không bị mất key |
 | Vercel | `PRERENDER_API_URL` (tuỳ chọn, nên đặt). URL API cho rewrite nằm trong `fe/vercel.json` |
 | Máy local khi seed | Xem bước 4 |

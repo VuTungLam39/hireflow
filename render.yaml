@@ -68,6 +68,21 @@ services:
       - key: CV_RETENTION_MONTHS
         value: '12'
 
+      # Email (MVP 3 · BR-NOTI-02): Mailjet qua HTTPS, vì Render free chặn cổng SMTP
+      - key: EMAIL_PROVIDER
+        value: mailjet
+      - key: MAILJET_API_KEY
+        sync: false
+      - key: MAILJET_SECRET_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_FROM_NAME
+        value: HireFlow
+      # Bắt buộc ở production: link trong email trỏ về FE
+      - key: APP_PUBLIC_URL
+        sync: false
+
       # AI
       - key: LLM_PROVIDERS
         value: gemini

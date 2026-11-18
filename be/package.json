@@ -32,6 +32,7 @@
     "seed": "npm run build && node dist/database/seeds/seed.js",
     "seed:perf": "npm run build && node dist/database/seeds/seed-perf.js",
     "seed:platform-admin": "npm run build && node dist/database/seeds/seed-platform-admin.js",
+    "seed:tenants": "npm run build && node dist/database/seeds/seed-tenants.js",
     "perf": "npm run build && node dist/database/perf/perf-run.js",
     "perf:cache": "npm run build && node dist/database/perf/dashboard-cache.js",
     "smoke": "node scripts/smoke.mjs",
