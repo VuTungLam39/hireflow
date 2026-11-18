@@ -35,8 +35,28 @@ describe('validateEnv', () => {
       ...base,
       NODE_ENV: 'production',
       CORS_ORIGINS: 'https://hireflow.vercel.app, https://hireflow-git-main.vercel.app',
+      APP_PUBLIC_URL: 'https://hireflow.vercel.app',
     });
     expect(env.CORS_ORIGINS).toContain('hireflow.vercel.app');
+  });
+
+  // MVP 3 · BR-NOTI-02
+  it('needs the public URL in production and a key plus sender for Brevo', () => {
+    const prod = { ...base, NODE_ENV: 'production', CORS_ORIGINS: 'https://hireflow.vercel.app' };
+    expect(() => validateEnv(prod)).toThrow(/APP_PUBLIC_URL/);
+    expect(validateEnv({ ...base }).EMAIL_PROVIDER).toBe('log');
+    expect(() => validateEnv({ ...base, EMAIL_PROVIDER: 'brevo' })).toThrow(
+      /BREVO_API_KEY[\s\S]*EMAIL_FROM/,
+    );
+    expect(
+      validateEnv({
+        ...base,
+        EMAIL_PROVIDER: 'brevo',
+        BREVO_API_KEY: 'xkeysib-1',
+        EMAIL_FROM: 'noreply@hireflow.dev',
+      }).EMAIL_PROVIDER,
+    ).toBe('brevo');
+    expect(() => validateEnv({ ...base, EMAIL_PROVIDER: 'smtp' })).toThrow(/EMAIL_PROVIDER/);
   });
 
   it('allows an empty CORS whitelist outside production', () => {

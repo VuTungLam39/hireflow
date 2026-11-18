@@ -23,6 +23,7 @@ const ENTITY_LABEL: Record<AuditEntity, string> = {
   user: 'Người dùng',
   company: 'Công ty',
   media: 'Ảnh',
+  organization: 'Công ty trên sàn',
 }
 
 function Target({ log }: { log: AuditLogItem }) {

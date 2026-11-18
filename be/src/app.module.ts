@@ -14,6 +14,7 @@ import {
   aiConfig,
   appConfig,
   databaseConfig,
+  emailConfig,
   jwtConfig,
   queueConfig,
   storageConfig,
@@ -28,6 +29,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { CandidatesModule } from './modules/candidates/candidates.module.js';
 import { DashboardModule } from './modules/dashboard/dashboard.module.js';
 import { DepartmentsModule } from './modules/departments/departments.module.js';
+import { EmailModule } from './modules/email/email.module.js';
 import { FilesModule } from './modules/files/files.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { InterviewsModule } from './modules/interviews/interviews.module.js';
@@ -47,7 +49,15 @@ import { UsersModule } from './modules/users/users.module.js';
       isGlobal: true,
       cache: true,
       envFilePath: ['.env.local', '.env'],
-      load: [appConfig, databaseConfig, jwtConfig, aiConfig, storageConfig, queueConfig],
+      load: [
+        appConfig,
+        databaseConfig,
+        jwtConfig,
+        aiConfig,
+        storageConfig,
+        queueConfig,
+        emailConfig,
+      ],
       validate: validateEnv,
     }),
     TypeOrmModule.forRootAsync({
@@ -74,6 +84,7 @@ import { UsersModule } from './modules/users/users.module.js';
     AppEventsModule,
     AuditModule,
     HealthModule,
+    EmailModule,
     OrganizationsModule,
     DepartmentsModule,
     UsersModule,

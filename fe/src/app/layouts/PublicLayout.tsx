@@ -42,13 +42,18 @@ export function PublicLayout() {
               )}
             </nav>
           </div>
-          <Link
-            to={paths.login}
-            className="text-ink-muted hover:text-ink shrink-0 rounded-sm px-2 py-1.5 text-[13px] whitespace-nowrap transition-colors"
-          >
-            <span className="sm:hidden">Đăng nhập</span>
-            <span className="hidden sm:inline">Đăng nhập nội bộ</span>
-          </Link>
+          <div className="flex shrink-0 items-center">
+            {/* MVP 3 · US-19 */}
+            <NavLink to={paths.employerRegister} className={navClass}>
+              Nhà tuyển dụng
+            </NavLink>
+            <Link
+              to={paths.login}
+              className="text-ink-muted hover:text-ink rounded-sm px-2 py-1.5 text-[13px] whitespace-nowrap transition-colors"
+            >
+              Đăng nhập
+            </Link>
+          </div>
         </div>
       </header>
       <main

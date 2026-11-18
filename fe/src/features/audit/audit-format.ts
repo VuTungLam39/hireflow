@@ -15,6 +15,10 @@ export const AUDIT_ACTION_LABEL: Record<AuditAction, string> = {
   COMPANY_MEDIA_ADDED: 'Thêm ảnh công ty',
   COMPANY_MEDIA_REMOVED: 'Xoá ảnh công ty',
   APPLICATIONS_EXPORTED: 'Xuất CSV hồ sơ',
+  ORG_APPROVED: 'Sàn duyệt công ty',
+  ORG_REJECTED: 'Sàn từ chối công ty',
+  ORG_SUSPENDED: 'Sàn khoá công ty',
+  ORG_REACTIVATED: 'Sàn mở khoá công ty',
 }
 
 export const AUDIT_ACTIONS = Object.keys(AUDIT_ACTION_LABEL) as AuditAction[]
@@ -68,6 +72,9 @@ export function describeAudit(log: AuditLogItem): string {
     }
     case 'APPLICATIONS_EXPORTED':
       return `${Number(m.rows).toLocaleString('vi-VN')} hồ sơ · Bộ lọc: ${describeFilters(m.filters)}`
+    case 'ORG_REJECTED':
+    case 'ORG_SUSPENDED':
+      return m.reason ? `Lý do: ${m.reason}` : ''
     case 'TOKEN_REUSE_DETECTED':
       return 'Phiên đăng nhập đã thu hồi bị dùng lại; mọi phiên liên quan đã bị đăng xuất'
     default:

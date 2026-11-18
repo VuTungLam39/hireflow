@@ -53,11 +53,4 @@ export class AdminJobsController {
   ) {
     return this.ops.retry(applicationId, user, requestId);
   }
-
-  @Get('queues')
-  @Permissions(Permission.OpsManage)
-  @ApiOperation({ summary: 'Số việc trong từng queue của pipeline AI' })
-  queues() {
-    return this.ops.queueCounts();
-  }
 }

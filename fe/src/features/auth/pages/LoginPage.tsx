@@ -2,9 +2,11 @@ import { Eye, EyeOff, FlaskConical } from 'lucide-react'
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
+import { Link } from 'react-router'
 import { Button, FormField, Input } from '@/components/ui'
 import { env } from '@/config/env'
-import { applyServerErrors, getErrorMessage } from '@/lib/errors'
+import { applyServerErrors, getErrorCode, getErrorMessage } from '@/lib/errors'
+import { paths } from '@/routes/paths'
 import { useLogin } from '../hooks/use-auth'
 import { loginSchema, type LoginInput } from '../schemas/auth.schema'
 
@@ -22,6 +24,7 @@ const DEMO_ACCOUNTS = [
 export default function LoginPage() {
   const login = useLogin()
   const [showPassword, setShowPassword] = useState(false)
+  const [unverified, setUnverified] = useState<string | null>(null)
   const {
     register,
     handleSubmit,
@@ -36,6 +39,8 @@ export default function LoginPage() {
   const onSubmit = (values: LoginInput) =>
     login.mutate(values, {
       onError: (error) => {
+        // BR-ACC-09
+        setUnverified(getErrorCode(error) === 'EMAIL_NOT_VERIFIED' ? values.email : null)
         if (!applyServerErrors(error, setError)) {
           setError('root', { message: getErrorMessage(error) })
         }
@@ -88,6 +93,18 @@ export default function LoginPage() {
         {errors.root && (
           <p role="alert" className="text-bad type-label">
             {errors.root.message}
+            {unverified && (
+              <>
+                {' '}
+                <Link
+                  to={paths.employerCheckEmail}
+                  state={{ email: unverified }}
+                  className="text-ink underline"
+                >
+                  Gửi lại email xác minh
+                </Link>
+              </>
+            )}
           </p>
         )}
       </form>
@@ -116,7 +133,12 @@ export default function LoginPage() {
         </div>
       )}
 
-      <p className="type-caption mt-8">Chưa có tài khoản? Liên hệ quản trị viên.</p>
+      <p className="type-caption mt-8">
+        Nhân viên công ty: tài khoản do Admin công ty tạo. Công ty mới?{' '}
+        <Link to={paths.employerRegister} className="text-ink underline">
+          Đăng ký nhà tuyển dụng
+        </Link>
+      </p>
     </>
   )
 }

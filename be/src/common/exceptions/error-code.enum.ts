@@ -22,6 +22,12 @@ export enum ErrorCode {
   EmailExists = 'EMAIL_EXISTS',
   DepartmentInUse = 'DEPARTMENT_IN_USE',
 
+  // Công ty trên sàn, đăng ký, xác minh email (MVP 3)
+  EmailNotVerified = 'EMAIL_NOT_VERIFIED',
+  OrganizationExists = 'ORGANIZATION_EXISTS',
+  InvalidOrgTransition = 'INVALID_ORG_TRANSITION',
+  TokenInvalid = 'TOKEN_INVALID',
+
   // Tin tuyển dụng
   JobNotPublishable = 'JOB_NOT_PUBLISHABLE',
   JobNotClosable = 'JOB_NOT_CLOSABLE',

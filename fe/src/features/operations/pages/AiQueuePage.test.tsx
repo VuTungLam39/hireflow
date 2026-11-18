@@ -22,7 +22,7 @@ function renderAsAdmin() {
 
 // F-OPS-01
 describe('AiQueuePage', () => {
-  it('lists failed applications with their reason and every pipeline queue', async () => {
+  it('lists failed applications with their reason, without the system-wide queue counts', async () => {
     const failed = db.applications.filter((a) => a.aiStatus === 'FAILED')
     renderAsAdmin()
 
@@ -31,10 +31,8 @@ describe('AiQueuePage', () => {
     expect(
       screen.getAllByText('Không đọc được nội dung PDF (có thể là file scan)').length,
     ).toBeGreaterThan(0)
-    const queues = screen.getByRole('region', { name: 'Số việc trong hàng đợi' })
-    for (const label of ['Đọc CV', 'Trích xuất', 'Chấm điểm', 'Lập chỉ mục tìm kiếm', 'Tổng']) {
-      expect(within(queues).getByText(label)).toBeInTheDocument()
-    }
+    // KH MVP 3 mục 8.2: số đếm hàng đợi chuyển sang Quản trị sàn
+    expect(screen.queryByRole('region', { name: 'Số việc trong hàng đợi' })).not.toBeInTheDocument()
   })
 
   it('retries every failed application after confirmation', async () => {

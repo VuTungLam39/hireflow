@@ -18,6 +18,10 @@ export const paths = {
   auditLogs: '/admin/audit-logs',
   company: '/admin/company',
   interviews: '/interviews',
+  // Quản trị sàn (MVP 3)
+  platformCompanies: '/platform/companies',
+  platformCompany: '/platform/companies/:id',
+  platformQueues: '/platform/queues',
 
   // Khách
   login: '/login',
@@ -27,6 +31,10 @@ export const paths = {
   publicJobDetail: '/jobs/:id',
   careers: '/careers',
   privacy: '/chinh-sach-du-lieu',
+  // Nhà tuyển dụng tự đăng ký (MVP 3 · US-19)
+  employerRegister: '/employers/register',
+  employerCheckEmail: '/employers/check-email',
+  verifyEmail: '/verify-email',
 } as const
 
 const withQuery = (path: string, query?: Record<string, string | undefined>) => {
@@ -46,4 +54,5 @@ export const links = {
   applications: (query?: { jobId?: string; status?: string; createdFrom?: string }) =>
     withQuery(paths.applications, query),
   publicJobDetail: (id: string) => `/jobs/${id}`,
+  platformCompany: (id: string) => `/platform/companies/${id}`,
 }

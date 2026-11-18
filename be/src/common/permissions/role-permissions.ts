@@ -5,7 +5,8 @@ const P = Permission;
 
 // Kickoff 11.1
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
-  [Role.Admin]: Object.values(Permission),
+  // MVP 3: platform:manage chỉ thuộc Quản trị sàn
+  [Role.Admin]: Object.values(Permission).filter((p) => p !== P.PlatformManage),
   [Role.Hr]: [
     P.JobRead,
     P.JobCreate,
@@ -35,6 +36,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   ],
   // BR-INT-02: phạm vi "được giao" áp ở tầng query
   [Role.Interviewer]: [P.JobRead, P.ApplicationRead, P.CvRead, P.InterviewFeedback],
+  // BR-TEN-04
+  [Role.PlatformAdmin]: [P.PlatformManage],
 };
 
 export const hasPermission = (role: Role, permission: Permission) =>

@@ -5,7 +5,7 @@ import type { AuthUser } from '../interfaces/jwt-payload.interface.js';
 
 type ScopeUser = Pick<AuthUser, 'role' | 'departmentId' | 'organizationId'> & { id?: string };
 
-export type DataScope = 'all' | 'department' | 'assigned';
+export type DataScope = 'all' | 'department' | 'assigned' | 'none';
 
 // BR-TEN-01
 export function orgIdOf(user: Pick<AuthUser, 'organizationId'>): string {
@@ -23,6 +23,9 @@ export function dataScope(role: Role): DataScope {
       return 'department';
     case Role.Interviewer:
       return 'assigned';
+    // BR-TEN-04
+    case Role.PlatformAdmin:
+      return 'none';
     default: {
       const unhandled: never = role;
       throw new Error(`Role has no data scope: ${String(unhandled)}`);

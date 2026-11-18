@@ -3,7 +3,7 @@ import { Info } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { Button, Dialog, FormField, Input } from '@/components/ui'
 import { applyServerErrors, getErrorMessage } from '@/lib/errors'
-import { Role, type User } from '@/types/user'
+import { Role, STAFF_ROLES, type User } from '@/types/user'
 import type { UpdateUserInput } from '../api/users.api'
 import { useUpdateUser } from '../hooks/use-users'
 import { departmentFor, editUserSchema, type EditUserForm } from '../schemas/user.schema'
@@ -27,7 +27,8 @@ export function EditUserDialog({ user, isSelf, onClose }: Props) {
     resolver: zodResolver(editUserSchema),
     defaultValues: {
       fullName: user.fullName,
-      role: user.role,
+      // Màn Người dùng chỉ liệt kê staff của công ty
+      role: user.role as (typeof STAFF_ROLES)[number],
       // BR-ACC-03: chỉ Hiring Manager có phòng ban (dữ liệu cũ của HR bị bỏ qua)
       departmentId: user.role === Role.HiringManager ? (user.department?.id ?? '') : '',
       password: '',

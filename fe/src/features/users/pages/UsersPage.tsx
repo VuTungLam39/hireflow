@@ -16,7 +16,7 @@ import { Avatar, Button } from '@/components/ui'
 import { pageFields, useListParams } from '@/hooks/use-list-params'
 import { cn, formatDateTime, formatDaysAgo } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
-import { Role, ROLE_LABELS, type User } from '@/types/user'
+import { Role, ROLE_LABELS, STAFF_ROLES, type User } from '@/types/user'
 import { CreateUserDialog } from '../components/CreateUserDialog'
 import { EditUserDialog } from '../components/EditUserDialog'
 import { useDeleteUser, useSetUserStatus, useUsers } from '../hooks/use-users'
@@ -134,7 +134,7 @@ export default function UsersPage() {
         <FilterMenu
           label="Vai trò"
           value={params.role}
-          options={Object.values(Role).map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
+          options={STAFF_ROLES.map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
           onChange={(role) => setParams({ role: role ?? null })}
         />
       </FilterBar>
