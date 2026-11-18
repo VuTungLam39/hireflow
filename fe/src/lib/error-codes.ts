@@ -47,5 +47,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   FILE_TOO_LARGE: 'File lớn hơn 5MB',
   TOO_MANY_REQUESTS: 'Bạn thao tác quá nhanh, thử lại sau ít phút',
   AI_UNAVAILABLE: 'Hệ thống đọc CV đang bận. Thử lại sau ít phút.',
+  AI_QUOTA_EXCEEDED:
+    'Công ty đã dùng hết lượt hỏi kho CV và gợi ý trong hôm nay. Lượt mới có từ 0 giờ đêm nay.',
   INTERNAL_ERROR: 'Máy chủ gặp lỗi, vui lòng thử lại sau',
 }

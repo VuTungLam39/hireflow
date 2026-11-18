@@ -10,7 +10,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, QueryFailedError } from 'typeorm';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
-import { dataScope } from '../../common/utils/department-scope.js';
+import { dataScope, orgIdOf } from '../../common/utils/department-scope.js';
 import {
   EMBEDDING_PROVIDER,
   type EmbeddingProvider,
@@ -18,6 +18,7 @@ import {
   type LlmProvider,
 } from '../ai/ai.types.js';
 import { CvPipelineService } from '../ai/pipeline/cv-pipeline.service.js';
+import { AiQuotaService } from '../ai/ai-quota.service.js';
 import { CvFile, CvParseStatus } from '../files/entities/cv-file.entity.js';
 import { CitationRewriter, labelOf } from './citations.js';
 import { chunkCv, type CvSection } from './cv-chunks.js';
@@ -78,6 +79,7 @@ export class RagService implements OnApplicationBootstrap {
     @Inject(LLM_PROVIDER) private readonly llm: LlmProvider,
     private readonly pipeline: CvPipelineService,
     private readonly config: ConfigService,
+    private readonly quota: AiQuotaService,
   ) {}
 
   get embeddingModel(): string {
@@ -210,6 +212,8 @@ export class RagService implements OnApplicationBootstrap {
   async prepare(question: string, user: ScopeUser): Promise<ChatPlan> {
     const empty: ChatPlan = { question, sources: [], context: [] };
     if (dataScope(user.role) === 'department' && !user.departmentId) return empty;
+    // BR-AI-11: embedding không tính, lượt dành cho câu trả lời của LLM
+    await this.quota.consumeChat(orgIdOf(user));
 
     let vector: number[];
     try {

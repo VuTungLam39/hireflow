@@ -16,6 +16,7 @@ import {
 import { escapeLike, normalizeKeywords } from '../../common/utils/text.js';
 import { CvPipelineService } from '../ai/pipeline/cv-pipeline.service.js';
 import { RequirementsSuggester } from '../ai/requirements-suggester.service.js';
+import { AiQuotaService } from '../ai/ai-quota.service.js';
 import { Application } from '../applications/entities/application.entity.js';
 import { DepartmentsService } from '../departments/departments.service.js';
 import { MatchingService } from '../matching/matching.service.js';
@@ -148,6 +149,7 @@ export class JobsService {
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly departmentsService: DepartmentsService,
     private readonly suggester: RequirementsSuggester,
+    private readonly quota: AiQuotaService,
     private readonly pipeline: CvPipelineService,
     private readonly prerender: PrerenderHookService,
     private readonly matching: MatchingService,
@@ -321,6 +323,8 @@ export class JobsService {
   // Kickoff 8.2
   async suggestRequirements(id: string, user: ScopeUser) {
     const job = await this.getOrFail(id, user);
+    // BR-AI-11
+    await this.quota.consumeChat(job.organizationId);
     return this.suggester.suggest(job.title, job.jdText);
   }
 

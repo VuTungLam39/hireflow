@@ -96,6 +96,10 @@ export class Application extends CursorEntity {
   @Column({ type: 'text', nullable: true })
   aiError: string | null;
 
+  // MVP 3 · BR-AI-11: hết lượt đọc CV của công ty, chờ tới 00:00 giờ VN
+  @Column({ type: 'timestamptz', nullable: true })
+  aiWaitingUntil: Date | null;
+
   // Database Design D6
   @Column({ type: 'smallint', nullable: true })
   score: number | null;

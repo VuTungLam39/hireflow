@@ -19,6 +19,23 @@ export interface PlatformOrganization {
   applications30d: number
 }
 
+/** BR-AI-11: lượt đã dùng trong một ngày (giờ VN) */
+export interface AiUsageDay {
+  day: string
+  cv: number
+  chat: number
+}
+
+export interface PlatformOrganizationDetail extends PlatformOrganization {
+  /** Hôm nay trước, rồi 6 ngày trước đó */
+  aiUsage: AiUsageDay[]
+}
+
+export interface AiLimitsInput {
+  aiDailyScoreLimit: number
+  aiDailyChatLimit: number
+}
+
 export type OrgTransition = 'approve' | 'reject' | 'suspend' | 'reactivate'
 
 /** Số việc trong một hàng đợi BullMQ của toàn hệ thống */

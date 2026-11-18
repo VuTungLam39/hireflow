@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { env } from '@/config/env'
 import { refreshAccessToken } from '@/lib/api-client'
+import { ERROR_MESSAGES } from '@/lib/error-codes'
 import { parseSseBlock, type SseEvent } from '@/lib/sse'
 import { useAuthStore } from '@/stores/auth.store'
 
@@ -51,7 +52,12 @@ export function useStream() {
         await refreshAccessToken()
         res = await send(path, body, controller.signal)
       }
-      if (!res.ok || !res.body) throw new Error(`Stream thất bại (HTTP ${res.status})`)
+      if (!res.ok || !res.body) {
+        // Lỗi trước khi stream bắt đầu là JSON thường (AI_QUOTA_EXCEEDED, AI_UNAVAILABLE…)
+        const failure = (await res.json().catch(() => null)) as { code?: string } | null
+        const code = failure?.code ?? (res.status === 429 ? 'TOO_MANY_REQUESTS' : undefined)
+        throw new Error((code && ERROR_MESSAGES[code]) || `Stream thất bại (HTTP ${res.status})`)
+      }
 
       const reader = res.body.pipeThrough(new TextDecoderStream()).getReader()
       let buffer = ''

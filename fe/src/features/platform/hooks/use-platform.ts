@@ -48,6 +48,18 @@ export function useOrgTransition() {
   })
 }
 
+export function useUpdateAiLimits() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: platformApi.updateAiLimits,
+    onSuccess: (org) => {
+      toast.success(`Đã lưu hạn mức của ${org.name}`)
+      queryClient.setQueryData(platformKeys.detail(org.id), org)
+      return queryClient.invalidateQueries({ queryKey: platformKeys.lists() })
+    },
+  })
+}
+
 export function usePlatformQueues() {
   return useQuery({
     queryKey: platformKeys.queues(),

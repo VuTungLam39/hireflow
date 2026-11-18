@@ -12,7 +12,8 @@ import { EmailService } from '../email/email.service.js';
 import { EmailTemplate } from '../email/email.types.js';
 import { PrerenderHookService } from '../jobs/prerender-hook.service.js';
 import { User } from '../users/entities/user.entity.js';
-import { QueryOrganizationsDto } from './dto/platform.dto.js';
+import { AiQuotaService, type AiUsageDay } from '../ai/ai-quota.service.js';
+import { AiLimitsDto, QueryOrganizationsDto } from './dto/platform.dto.js';
 import { Organization, OrganizationStatus } from './entities/organization.entity.js';
 
 export interface PlatformOrganizationView {
@@ -99,6 +100,7 @@ export class PlatformOrganizationsService {
     private readonly audit: AuditService,
     private readonly email: EmailService,
     private readonly prerender: PrerenderHookService,
+    private readonly quota: AiQuotaService,
   ) {}
 
   async findAll(query: QueryOrganizationsDto): Promise<PaginatedResult<PlatformOrganizationView>> {
@@ -128,13 +130,44 @@ export class PlatformOrganizationsService {
     return new PaginatedResult(rows, total, query.page, query.limit);
   }
 
-  async findOne(id: string): Promise<PlatformOrganizationView> {
+  // US-25: kèm mức dùng hôm nay và 6 ngày trước (giờ VN)
+  async findOne(id: string): Promise<PlatformOrganizationView & { aiUsage: AiUsageDay[] }> {
     const [row] = await this.dataSource.query<PlatformOrganizationView[]>(
       `${SELECT_VIEW} WHERE o.id = $1`,
       [id],
     );
     if (!row) throw new NotFoundException('Organization not found');
-    return row;
+    return { ...row, aiUsage: await this.quota.usage(id) };
+  }
+
+  // BR-AI-11, F-PLAT-02
+  async updateAiLimits(id: string, dto: AiLimitsDto, actor: Pick<AuthUser, 'id'>) {
+    await this.dataSource.transaction(async (m) => {
+      const before = await m.findOne(Organization, {
+        select: { id: true, aiDailyScoreLimit: true, aiDailyChatLimit: true },
+        where: { id },
+      });
+      if (!before) throw new NotFoundException('Organization not found');
+      await m.update(Organization, id, dto);
+      await this.audit.record(
+        {
+          organizationId: id,
+          actorId: actor.id,
+          action: AuditAction.OrgAiLimitsUpdated,
+          entity: AuditEntity.Organization,
+          entityId: id,
+          metadata: {
+            scoreFrom: before.aiDailyScoreLimit,
+            scoreTo: dto.aiDailyScoreLimit,
+            chatFrom: before.aiDailyChatLimit,
+            chatTo: dto.aiDailyChatLimit,
+          },
+        },
+        m,
+      );
+    });
+    this.quota.invalidate(id);
+    return this.findOne(id);
   }
 
   async transition(

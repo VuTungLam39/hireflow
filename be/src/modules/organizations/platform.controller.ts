@@ -5,7 +5,7 @@ import { Permissions } from '../../common/decorators/permissions.decorator.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { Permission } from '../../common/permissions/permission.enum.js';
 import { PipelineOpsService } from '../ai/pipeline/pipeline-ops.service.js';
-import { OrgReasonDto, QueryOrganizationsDto } from './dto/platform.dto.js';
+import { AiLimitsDto, OrgReasonDto, QueryOrganizationsDto } from './dto/platform.dto.js';
 import { PlatformOrganizationsService } from './platform-organizations.service.js';
 
 // MVP 3 · KH 8.2, US-20, BR-TEN-04
@@ -66,6 +66,17 @@ export class PlatformController {
   @ApiOperation({ summary: 'Mở khoá công ty: SUSPENDED → ACTIVE' })
   reactivate(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
     return this.organizations.transition(id, 'reactivate', user);
+  }
+
+  @Patch('organizations/:id/ai-limits')
+  @Permissions(Permission.PlatformManage)
+  @ApiOperation({ summary: 'Sửa hạn mức lượt AI mỗi ngày của công ty (BR-AI-11)' })
+  updateAiLimits(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AiLimitsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.organizations.updateAiLimits(id, dto, user);
   }
 
   // Chốt 17/11/2026 (BR-PROC-01): số đếm hàng đợi là của toàn hệ thống

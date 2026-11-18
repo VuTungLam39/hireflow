@@ -5,6 +5,7 @@ import {
   NotFoundException,
   type OnModuleInit,
 } from '@nestjs/common';
+import { AiQuotaService } from '../ai/ai-quota.service.js';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { Brackets, DataSource, EntityManager, In, MoreThan } from 'typeorm';
 import { ApplicationStatus } from '../../common/enums/application-status.enum.js';
@@ -90,6 +91,7 @@ export class InterviewsService implements OnModuleInit {
     private readonly notifications: NotificationsService,
     private readonly events: AppEvents,
     private readonly questions: InterviewQuestionSuggester,
+    private readonly quota: AiQuotaService,
   ) {}
 
   // E5 · BR-INT-04: cache theo (buổi phỏng vấn, phiên bản JD), giữ trong bộ nhớ
@@ -378,6 +380,8 @@ export class InterviewsService implements OnModuleInit {
         : null,
     ]);
     if (!requirements.length) return { items: [], cached: false };
+    // BR-AI-11
+    await this.quota.consumeChat(orgIdOf(user));
     const items = await this.questions.suggest(
       job.title,
       requirements.map((r) => ({

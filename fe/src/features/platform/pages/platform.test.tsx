@@ -81,4 +81,27 @@ describe('Platform companies', () => {
     }
     expect(within(queues).getByText('Tổng')).toBeInTheDocument()
   })
+
+  it('US-25: shows today against the limits and 7 days of usage, and saves new limits', async () => {
+    const user = userEvent.setup()
+    const org = db.organizations.find((o) => o.name === 'Đại Lộc Logistics')!
+    renderAsPlatform(`/platform/companies/${org.id}`)
+
+    const table = await screen.findByRole('table', { name: 'Lượt đã dùng 7 ngày gần nhất' })
+    expect(within(table).getAllByRole('row')).toHaveLength(8)
+    expect(within(table).getByText(/^Hôm nay/)).toBeInTheDocument()
+
+    const score = screen.getByLabelText('Hạn mức đọc CV mỗi ngày')
+    expect(score).toHaveValue(300)
+    await user.clear(score)
+    await user.type(score, '-5')
+    await user.click(screen.getByRole('button', { name: 'Lưu hạn mức' }))
+    expect(await screen.findByText('Tối thiểu 0')).toBeInTheDocument()
+
+    await user.clear(score)
+    await user.type(score, '1200')
+    await user.click(screen.getByRole('button', { name: 'Lưu hạn mức' }))
+    await vi.waitFor(() => expect(org.aiDailyScoreLimit).toBe(1200))
+    expect(screen.getByRole('button', { name: 'Lưu hạn mức' })).toBeDisabled()
+  })
 })

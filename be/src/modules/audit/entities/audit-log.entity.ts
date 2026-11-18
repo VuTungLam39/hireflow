@@ -30,6 +30,8 @@ export enum AuditAction {
   OrgRejected = 'ORG_REJECTED',
   OrgSuspended = 'ORG_SUSPENDED',
   OrgReactivated = 'ORG_REACTIVATED',
+  // BR-AI-11
+  OrgAiLimitsUpdated = 'ORG_AI_LIMITS_UPDATED',
 }
 
 export enum AuditEntity {

@@ -1,7 +1,7 @@
 import { http } from 'msw'
 import { Permission } from '@/lib/permissions'
 import type { OrganizationStatus } from '@/types/user'
-import { db } from '../data'
+import { db, type OrganizationRow } from '../data'
 import { api, authorize, fail, includesFolded, notFound, ok, paginate, searchParams } from '../http'
 
 type Kind = 'approve' | 'reject' | 'suspend' | 'reactivate'
@@ -13,6 +13,15 @@ const TRANSITIONS: Record<Kind, { from: OrganizationStatus; to: OrganizationStat
   suspend: { from: 'ACTIVE', to: 'SUSPENDED' },
   reactivate: { from: 'SUSPENDED', to: 'ACTIVE' },
 }
+
+// BR-AI-11: hôm nay trước, 6 ngày trước đó
+const usageOf = (o: OrganizationRow) =>
+  Array.from({ length: 7 }, (_, i) => ({
+    day: new Date(Date.now() + 7 * 3_600_000 - i * 86_400_000).toISOString().slice(0, 10),
+    cv: i === 0 ? Math.min(o.aiDailyScoreLimit, o.applications30d) : 0,
+    chat: i === 0 && o.status === 'ACTIVE' ? 3 : 0,
+  }))
+const detail = (o: OrganizationRow) => ({ ...o, aiUsage: usageOf(o) })
 
 // KH MVP 3 mục 8.2
 export const platformHandlers = [
@@ -37,7 +46,28 @@ export const platformHandlers = [
     const user = authorize(request, Permission.PlatformManage)
     if (user instanceof Response) return user
     const org = db.organizations.find((o) => o.id === params.id)
-    return org ? ok(org) : notFound('Organization')
+    return org ? ok(detail(org)) : notFound('Organization')
+  }),
+
+  http.patch(api('/platform/organizations/:id/ai-limits'), async ({ request, params }) => {
+    const user = authorize(request, Permission.PlatformManage)
+    if (user instanceof Response) return user
+    const org = db.organizations.find((o) => o.id === params.id)
+    if (!org) return notFound('Organization')
+    const body = (await request.json()) as { aiDailyScoreLimit: number; aiDailyChatLimit: number }
+    const bad = (['aiDailyScoreLimit', 'aiDailyChatLimit'] as const).filter(
+      (k) => !Number.isInteger(body[k]) || body[k] < 0 || body[k] > 100_000,
+    )
+    if (bad.length) {
+      return fail(
+        400,
+        'VALIDATION_FAILED',
+        'Validation failed',
+        bad.map((field) => ({ field, messages: [`${field} must not be greater than 100000`] })),
+      )
+    }
+    Object.assign(org, body)
+    return ok(detail(org))
   }),
 
   http.patch(api('/platform/organizations/:id/:kind'), async ({ request, params }) => {
@@ -59,7 +89,7 @@ export const platformHandlers = [
     org.status = t.to
     org.statusReason = needsReason ? reason!.trim() : null
     if (params.kind === 'approve') org.approvedAt = new Date().toISOString()
-    return ok(org)
+    return ok(detail(org))
   }),
 
   http.get(api('/platform/queues'), ({ request }) => {
