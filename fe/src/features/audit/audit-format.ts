@@ -1,4 +1,9 @@
-import { APPLICATION_STATUS, type ApplicationStatus } from '@/features/applications'
+import {
+  APPLICATION_STATUS,
+  REJECT_REASON_LABEL,
+  type ApplicationStatus,
+  type RejectReasonCode,
+} from '@/features/applications'
 import { ROLE_LABELS, type Role } from '@/types/user'
 import type { AuditAction, AuditLogItem } from './types'
 
@@ -20,6 +25,18 @@ export const AUDIT_ACTION_LABEL: Record<AuditAction, string> = {
   ORG_SUSPENDED: 'Sàn khoá công ty',
   ORG_REACTIVATED: 'Sàn mở khoá công ty',
   ORG_AI_LIMITS_UPDATED: 'Sàn đổi hạn mức lượt mỗi ngày',
+  JOB_CREATED: 'Tạo tin tuyển dụng',
+  JOB_UPDATED: 'Sửa tin tuyển dụng',
+  JOB_REQUIREMENTS_UPDATED: 'Sửa tiêu chí tin',
+  JOB_PUBLISHED: 'Đăng tin',
+  JOB_CLOSED: 'Đóng tin',
+  JOB_CLONED: 'Nhân bản tin',
+  JOB_DELETED: 'Xoá tin nháp',
+  INTERVIEW_SCHEDULED: 'Đặt lịch phỏng vấn',
+  INTERVIEW_UPDATED: 'Sửa lịch phỏng vấn',
+  INTERVIEW_CANCELLED: 'Huỷ phỏng vấn',
+  FEEDBACK_SUBMITTED: 'Nộp phiếu đánh giá',
+  FEEDBACK_UPDATED: 'Sửa phiếu đánh giá',
 }
 
 export const AUDIT_ACTIONS = Object.keys(AUDIT_ACTION_LABEL) as AuditAction[]
@@ -53,6 +70,9 @@ export function describeAudit(log: AuditLogItem): string {
         `${statusLabel(m.from)} → ${statusLabel(m.to)}`,
         m.reopen ? '(mở lại)' : null,
         // BR-DATA-03
+        m.reasonCode
+          ? `· ${REJECT_REASON_LABEL[m.reasonCode as RejectReasonCode] ?? m.reasonCode}`
+          : null,
         m.reason ? `· Lý do: ${m.reason}` : m.hasReason ? '· Có ghi lý do' : null,
       ]
         .filter(Boolean)

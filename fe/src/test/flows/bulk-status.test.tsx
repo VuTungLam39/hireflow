@@ -78,6 +78,10 @@ describe('bulk status change', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Từ chối 3 hồ sơ' }))
     const dialog = await screen.findByRole('dialog', { name: 'Từ chối 3 hồ sơ?' })
+    // BR-STS-03: phải chọn mã lý do
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Từ chối 3 hồ sơ' }))
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('Chọn một lý do để tiếp tục')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Chưa đủ kinh nghiệm' }))
     fireEvent.change(within(dialog).getByRole('textbox'), {
       target: { value: 'Chưa đủ kinh nghiệm' },
     })
@@ -89,6 +93,7 @@ describe('bulk status change', () => {
         ids: expect.arrayContaining(chosen),
         status: 'REJECTED',
         reason: 'Chưa đủ kinh nghiệm',
+        reasonCode: 'EXPERIENCE',
       },
     ])
     expect((bodies[0] as { ids: string[] }).ids).toHaveLength(3)

@@ -16,9 +16,29 @@ export type AuditAction =
   | 'ORG_SUSPENDED'
   | 'ORG_REACTIVATED'
   | 'ORG_AI_LIMITS_UPDATED'
+  | 'JOB_CREATED'
+  | 'JOB_UPDATED'
+  | 'JOB_REQUIREMENTS_UPDATED'
+  | 'JOB_PUBLISHED'
+  | 'JOB_CLOSED'
+  | 'JOB_CLONED'
+  | 'JOB_DELETED'
+  | 'INTERVIEW_SCHEDULED'
+  | 'INTERVIEW_UPDATED'
+  | 'INTERVIEW_CANCELLED'
+  | 'FEEDBACK_SUBMITTED'
+  | 'FEEDBACK_UPDATED'
 
 export type AuditEntity =
-  'cv_file' | 'application' | 'candidate' | 'user' | 'company' | 'media' | 'organization'
+  | 'cv_file'
+  | 'application'
+  | 'candidate'
+  | 'user'
+  | 'company'
+  | 'media'
+  | 'organization'
+  | 'job'
+  | 'interview'
 
 export interface AuditLogItem {
   id: string

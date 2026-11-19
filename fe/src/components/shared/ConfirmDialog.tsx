@@ -10,9 +10,16 @@ interface ConfirmDialogProps {
   cancelLabel?: string
   tone?: 'primary' | 'danger'
   loading?: boolean
-  requireReason?: { label: string; placeholder?: string; suggestions?: readonly string[] }
+  requireReason?: {
+    label: string
+    placeholder?: string
+    suggestions?: readonly string[]
+    /** Chọn một mã bằng chip; khi có codes, ô chữ chỉ bắt buộc với mã textRequiredFor */
+    codes?: readonly { value: string; label: string }[]
+    textRequiredFor?: string
+  }
   children?: ReactNode
-  onConfirm: (reason?: string) => void
+  onConfirm: (reason?: string, code?: string) => void
 }
 
 export function ConfirmDialog({
@@ -29,19 +36,24 @@ export function ConfirmDialog({
   onConfirm,
 }: ConfirmDialogProps) {
   const [reason, setReason] = useState('')
+  const [code, setCode] = useState<string>()
   const [touched, setTouched] = useState(false)
-  const reasonMissing = !!requireReason && !reason.trim()
+  const codes = requireReason?.codes
+  const codeMissing = !!codes && !code
+  const reasonMissing =
+    !!requireReason && !reason.trim() && (!codes || code === requireReason.textRequiredFor)
 
   const close = () => {
     setReason('')
+    setCode(undefined)
     setTouched(false)
     onClose()
   }
 
   const confirm = () => {
     setTouched(true)
-    if (reasonMissing) return
-    onConfirm(requireReason ? reason.trim() : undefined)
+    if (codeMissing || reasonMissing) return
+    onConfirm(requireReason ? reason.trim() || undefined : undefined, code)
   }
 
   return (
@@ -49,6 +61,29 @@ export function ConfirmDialog({
       <div className="space-y-4">
         {description && <div className="text-ink-2">{description}</div>}
         {children}
+        {codes && (
+          <fieldset className="space-y-1.5">
+            <legend className="type-label">Lý do từ chối</legend>
+            <div className="flex flex-wrap gap-1.5">
+              {codes.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  aria-pressed={code === c.value}
+                  className={chipClass(code === c.value)}
+                  onClick={() => setCode(c.value)}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+            {touched && codeMissing && (
+              <p role="alert" className="text-bad text-[13px]">
+                Chọn một lý do để tiếp tục
+              </p>
+            )}
+          </fieldset>
+        )}
         {requireReason && (
           <FormField
             label={requireReason.label}

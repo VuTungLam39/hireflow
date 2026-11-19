@@ -35,7 +35,8 @@ import {
   APPLICATION_STATUSES,
   APPLICATION_VIEWS,
   NEXT_STATUS,
-  REJECT_REASONS,
+  REJECT_REASON_INPUT,
+  type RejectReasonCode,
   SCORE_FAIR,
   SCORE_GOOD,
   type ApplicationStatus,
@@ -170,9 +171,9 @@ export default function ApplicationsPage() {
     commonStatus === 'NEW' ? 'SCREENING' : commonStatus === 'SCREENING' ? 'INTERVIEW' : undefined
   // F2 · BR-APP-12: hồ sơ OFFER và đã kết thúc không từ chối theo lô
   const rejectable = selectedItems.filter((a) => REJECTABLE_IN_BULK.includes(a.status))
-  const runBulk = (status: ApplicationStatus, reason?: string) =>
+  const runBulk = (status: ApplicationStatus, reason?: string, reasonCode?: RejectReasonCode) =>
     bulk.mutate(
-      { ids: selectedItems.map((a) => a.id), status, reason },
+      { ids: selectedItems.map((a) => a.id), status, reason, reasonCode },
       { onSuccess: ({ failed }) => setSelected(new Set(failed.map((f) => f.id))) },
     )
 
@@ -478,14 +479,10 @@ export default function ApplicationsPage() {
         }
         confirmLabel={`Từ chối ${rejectable.length} hồ sơ`}
         tone="danger"
-        requireReason={{
-          label: 'Lý do',
-          placeholder: 'Ví dụ: chưa đủ kinh nghiệm NestJS',
-          suggestions: REJECT_REASONS,
-        }}
+        requireReason={REJECT_REASON_INPUT}
         loading={bulk.isPending}
-        onConfirm={(reason) => {
-          runBulk('REJECTED', reason)
+        onConfirm={(reason, code) => {
+          runBulk('REJECTED', reason, code as RejectReasonCode | undefined)
           setRejectOpen(false)
         }}
       />

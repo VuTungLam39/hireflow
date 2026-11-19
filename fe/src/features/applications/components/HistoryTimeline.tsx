@@ -1,7 +1,7 @@
 import { ErrorState, Timeline } from '@/components/shared'
 import { Skeleton } from '@/components/ui'
 import { formatDateTime } from '@/lib/utils'
-import { APPLICATION_STATUS } from '../constants'
+import { APPLICATION_STATUS, REJECT_REASON_LABEL } from '../constants'
 import { useApplicationHistory } from '../hooks/use-applications'
 
 // US-07, BR-STS-06
@@ -38,7 +38,10 @@ export function HistoryTimeline({ applicationId }: { applicationId: string }) {
           <strong>Nộp hồ sơ</strong>
         ),
         meta: `${item.changedBy?.fullName ?? 'Ứng viên'} · ${formatDateTime(item.changedAt)}`,
-        quote: item.reason ?? undefined,
+        quote:
+          [item.reasonCode && REJECT_REASON_LABEL[item.reasonCode], item.reason]
+            .filter(Boolean)
+            .join(' · ') || undefined,
       }))}
     />
   )
