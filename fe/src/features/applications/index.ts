@@ -46,6 +46,9 @@ export type {
   ApplicationNote,
   BreakdownItem,
   HrUploadInput,
+  Offer,
+  OfferInput,
+  OfferStatus,
   StatusHistoryItem,
 } from './types'
 export { CompareDialog } from './components/CompareDialog'

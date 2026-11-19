@@ -5,6 +5,9 @@ import {
   REASON_REQUIRED,
   SCORE_GOOD,
   type ApplicationStatus,
+  type Offer,
+  type OfferInput,
+  type OfferStatus,
   type RejectReasonCode,
 } from '@/features/applications'
 import type { DashboardSummary, FunnelView } from '@/features/dashboard'
@@ -18,6 +21,7 @@ import {
   settleProcessing,
   uid,
   type ApplicationRow,
+  type OfferRow,
   type UserRow,
 } from '../data'
 import {
@@ -29,6 +33,7 @@ import {
   includesText,
   canSeeApplication,
   inScope,
+  jobOf,
   checkCvFile,
   notFound,
   ok,
@@ -78,6 +83,78 @@ function rejectInvalid(reason?: string, reasonCode?: RejectReasonCode) {
     return fail(400, 'REJECT_REASON_REQUIRED', 'Reason is required')
   }
   return null
+}
+
+// MVP 3.1 · BR-OFFER-02
+const OFFER_CLOSED: OfferStatus[] = ['ACCEPTED', 'DECLINED', 'WITHDRAWN', 'EXPIRED']
+const OFFER_ACTION: Record<
+  string,
+  { from: OfferStatus[]; to: OfferStatus; permission: Permission; needsReason?: boolean }
+> = {
+  submit: {
+    from: ['DRAFT'],
+    to: 'PENDING_APPROVAL',
+    permission: Permission.ApplicationUpdateStatus,
+  },
+  approve: {
+    from: ['PENDING_APPROVAL'],
+    to: 'APPROVED',
+    permission: Permission.ApplicationApproveOffer,
+  },
+  return: {
+    from: ['PENDING_APPROVAL'],
+    to: 'DRAFT',
+    permission: Permission.ApplicationApproveOffer,
+    needsReason: true,
+  },
+  send: { from: ['APPROVED'], to: 'SENT', permission: Permission.ApplicationUpdateStatus },
+  accept: { from: ['SENT'], to: 'ACCEPTED', permission: Permission.ApplicationUpdateStatus },
+  decline: { from: ['SENT'], to: 'DECLINED', permission: Permission.ApplicationUpdateStatus },
+  withdraw: {
+    from: ['DRAFT', 'PENDING_APPROVAL', 'APPROVED'],
+    to: 'WITHDRAWN',
+    permission: Permission.ApplicationUpdateStatus,
+    needsReason: true,
+  },
+}
+
+// Q7: HM phụ trách tin hoặc Admin
+function canApproveOffer(row: OfferRow, user: UserRow) {
+  if (user.role === Role.Admin) return true
+  const app = db.applications.find((a) => a.id === row.applicationId)!
+  return user.role === Role.HiringManager && jobOf(app).hiringManagerId === user.id
+}
+
+function toOffer(row: OfferRow, user: UserRow): Offer {
+  const app = db.applications.find((a) => a.id === row.applicationId)!
+  const ref = (id: string | null) => {
+    const u = id ? db.users.find((x) => x.id === id) : undefined
+    return u ? { id: u.id, fullName: u.fullName } : null
+  }
+  return {
+    id: row.id,
+    applicationId: row.applicationId,
+    status: row.status,
+    salaryAmount: row.salaryAmount,
+    salaryCurrency: row.salaryCurrency,
+    salaryPeriod: row.salaryPeriod,
+    startDate: row.startDate,
+    respondBy: row.respondBy,
+    note: row.note,
+    statusReason: row.statusReason,
+    createdBy: ref(row.createdById)!,
+    approvedBy: ref(row.approvedById),
+    approvedAt: row.approvedAt,
+    sentAt: null,
+    decidedAt: null,
+    createdAt: row.createdAt,
+    canApprove: row.status === 'PENDING_APPROVAL' && canApproveOffer(row, user),
+    letter: {
+      candidateName: candidateOf(app).fullName,
+      jobTitle: jobOf(app).title,
+      companyName: db.organizations[0]?.name ?? 'HireFlow Demo',
+    },
+  }
 }
 
 // US-06: cùng bộ lọc cho danh sách và xuất CSV
@@ -336,7 +413,8 @@ export const applicationHandlers = [
       reasonCode?: RejectReasonCode
     }
     // HIRED chỉ đi qua /hire (quyền approve-offer)
-    if (status === 'HIRED' || !NEXT_STATUS[app.status].includes(status)) {
+    // MVP 3.1 · BR-STS-05: OFFER, HIRED chỉ qua luồng offer
+    if (status === 'HIRED' || status === 'OFFER' || !NEXT_STATUS[app.status].includes(status)) {
       return fail(
         409,
         'INVALID_STATUS_TRANSITION',
@@ -349,40 +427,97 @@ export const applicationHandlers = [
     return ok(toApplicationDetail(app), { message: `Moved to ${APPLICATION_STATUS[status].label}` })
   }),
 
-  http.patch(api('/applications/:id/hire'), async ({ request, params }) => {
+  // MVP 3.1 · F-OFFER-01, BR-OFFER-02: cùng luật chuyển trạng thái với BE
+  http.get(api('/applications/:id/offers'), async ({ request, params }) => {
     await delay()
-    const user = authorize(request, Permission.ApplicationApproveOffer)
+    const user = authorize(request, Permission.ApplicationRead)
+    if (user instanceof Response) return user
+    if (user.role === Role.Interviewer) return fail(403, 'FORBIDDEN', 'Forbidden')
+    const app = findApplication(user, params.id)
+    if (app instanceof Response) return app
+    return ok(
+      db.offers
+        .filter((o) => o.applicationId === app.id)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .map((o) => toOffer(o, user)),
+    )
+  }),
+
+  http.post(api('/applications/:id/offers'), async ({ request, params }) => {
+    await delay()
+    const user = authorize(request, Permission.ApplicationUpdateStatus)
     if (user instanceof Response) return user
     const app = findApplication(user, params.id)
     if (app instanceof Response) return app
-    if (app.status !== 'OFFER') {
-      return fail(409, 'INVALID_STATUS_TRANSITION', 'Only OFFER can move to HIRED')
+    if (app.status !== 'INTERVIEW') return fail(409, 'INVALID_OFFER_TRANSITION', 'Not INTERVIEW')
+    if (db.offers.some((o) => o.applicationId === app.id && !OFFER_CLOSED.includes(o.status))) {
+      return fail(409, 'OFFER_EXISTS', 'Open offer exists')
     }
-    moveStatus(app, 'HIRED', user)
-    return ok(toApplicationDetail(app))
+    const body = (await request.json()) as OfferInput
+    const row: OfferRow = {
+      id: uid('offer'),
+      applicationId: app.id,
+      status: 'DRAFT',
+      ...body,
+      note: body.note ?? null,
+      statusReason: null,
+      createdById: user.id,
+      approvedById: null,
+      approvedAt: null,
+      createdAt: new Date().toISOString(),
+    }
+    db.offers.push(row)
+    return ok(toOffer(row, user), { status: 201 })
   }),
 
-  // BR-STS-05: Hiring Manager từ chối ở bước OFFER (cùng quyền duyệt offer), bắt buộc lý do
-  http.patch(api('/applications/:id/decline-offer'), async ({ request, params }) => {
+  http.patch(api('/offers/:id'), async ({ request, params }) => {
     await delay()
-    const user = authorize(request, Permission.ApplicationApproveOffer)
+    const user = authorize(request, Permission.ApplicationUpdateStatus)
     if (user instanceof Response) return user
-    const app = findApplication(user, params.id)
-    if (app instanceof Response) return app
-    if (app.status !== 'OFFER') {
-      return fail(409, 'INVALID_STATUS_TRANSITION', 'Only OFFER can be declined')
-    }
-    const { reason, reasonCode } = (await request.json()) as {
-      reason?: string
-      reasonCode?: RejectReasonCode
-    }
-    const invalid = rejectInvalid(reason, reasonCode)
-    if (invalid) return invalid
-    moveStatus(app, 'REJECTED', user, reason, reasonCode)
-    return ok(toApplicationDetail(app))
+    const row = db.offers.find((o) => o.id === params.id)
+    if (!row) return notFound('Offer')
+    if (row.status !== 'DRAFT') return fail(409, 'INVALID_OFFER_TRANSITION', 'Only DRAFT')
+    Object.assign(row, (await request.json()) as Partial<OfferInput>)
+    return ok(toOffer(row, user))
   }),
 
-  // BR-APP-10: HR tải CV hộ ứng viên vào job OPEN. Kiểm như nộp công khai, nguồn HR_UPLOAD.
+  http.patch(api('/offers/:id/:action'), async ({ request, params }) => {
+    await delay()
+    const action = String(params.action)
+    const step = OFFER_ACTION[action]
+    if (!step) return notFound('Action')
+    const user = authorize(request, step.permission)
+    if (user instanceof Response) return user
+    const row = db.offers.find((o) => o.id === params.id)
+    if (!row) return notFound('Offer')
+    if (!step.from.includes(row.status)) {
+      return fail(409, 'INVALID_OFFER_TRANSITION', `Cannot ${action} from ${row.status}`)
+    }
+    if (step.permission === Permission.ApplicationApproveOffer && !canApproveOffer(row, user)) {
+      return fail(403, 'OFFER_APPROVER_REQUIRED', 'Not the approver')
+    }
+    const { reason } = ((await request.json().catch(() => ({}))) ?? {}) as { reason?: string }
+    if (step.needsReason && !reason?.trim()) {
+      return fail(400, 'VALIDATION_FAILED', 'Validation failed', [
+        { field: 'reason', messages: ['reason should not be empty'] },
+      ])
+    }
+    const app = db.applications.find((a) => a.id === row.applicationId)!
+    row.status = step.to
+    if (reason !== undefined) row.statusReason = reason.trim() || null
+    if (action === 'approve') {
+      Object.assign(row, {
+        approvedById: user.id,
+        approvedAt: new Date().toISOString(),
+        statusReason: null,
+      })
+    }
+    if (action === 'send') moveStatus(app, 'OFFER', user)
+    if (action === 'accept') moveStatus(app, 'HIRED', user)
+    if (action === 'decline') moveStatus(app, 'REJECTED', user, reason, 'CANDIDATE_DECLINED')
+    return ok(toOffer(row, user))
+  }),
+
   http.post(api('/jobs/:id/applications'), async ({ request, params }) => {
     await latency(800)
     const user = authorize(request, Permission.ApplicationCreate)

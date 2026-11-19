@@ -7,10 +7,12 @@ import type {
   ApplicationDetail,
   ApplicationListItem,
   ApplicationNote,
-  HrUploadInput,
-  StatusHistoryItem,
   BulkStatusResult,
   CompareView,
+  HrUploadInput,
+  Offer,
+  OfferInput,
+  StatusHistoryItem,
 } from '../types'
 
 /** Tải dạng text thì lỗi cũng là chuỗi: đọc lại thành JSON để getErrorMessage hiểu mã lỗi */
@@ -85,14 +87,18 @@ export const applicationsApi = {
       })
     ).data.data,
 
-  /** OFFER → HIRED: route riêng, quyền application:approve-offer */
-  hire: async (id: string) =>
-    (await api.patch<ApiResponse<ApplicationDetail>>(`/applications/${id}/hire`)).data.data,
+  // MVP 3.1 · F-OFFER-01
+  offers: async (applicationId: string) =>
+    (await api.get<ApiResponse<Offer[]>>(`/applications/${applicationId}/offers`)).data.data,
 
-  /** Hiring Manager từ chối ở bước OFFER (BR-STS-05): OFFER → REJECTED, bắt buộc lý do */
-  declineOffer: async (id: string, input: { reason?: string; reasonCode?: RejectReasonCode }) =>
-    (await api.patch<ApiResponse<ApplicationDetail>>(`/applications/${id}/decline-offer`, input))
-      .data.data,
+  createOffer: async (applicationId: string, input: OfferInput) =>
+    (await api.post<ApiResponse<Offer>>(`/applications/${applicationId}/offers`, input)).data.data,
+
+  updateOffer: async (id: string, input: Partial<OfferInput>) =>
+    (await api.patch<ApiResponse<Offer>>(`/offers/${id}`, input)).data.data,
+
+  offerAction: async (id: string, action: string, body: object = {}) =>
+    (await api.patch<ApiResponse<Offer>>(`/offers/${id}/${action}`, body)).data.data,
 
   /** HR tải CV hộ ứng viên vào job OPEN (BR-APP-10). Multipart, nguồn HR_UPLOAD. */
   uploadForCandidate: async (

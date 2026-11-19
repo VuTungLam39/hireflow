@@ -106,3 +106,15 @@ export const APPLICATION_VIEWS = [
   { id: 'missing', label: 'Thiếu tiêu chí bắt buộc', params: { missingMust: 'true' } },
   { id: 'failed', label: 'Không đọc được', params: { aiStatus: 'FAILED' } },
 ] as const
+
+// MVP 3.1 · BR-OFFER-02
+export const OFFER_STATUS = {
+  DRAFT: { label: 'Bản nháp', closed: false },
+  PENDING_APPROVAL: { label: 'Chờ duyệt', closed: false },
+  APPROVED: { label: 'Đã duyệt', closed: false },
+  SENT: { label: 'Đã gửi ứng viên', closed: false },
+  ACCEPTED: { label: 'Ứng viên đã nhận', closed: true },
+  DECLINED: { label: 'Ứng viên từ chối', closed: true },
+  WITHDRAWN: { label: 'Đã rút', closed: true },
+  EXPIRED: { label: 'Hết hạn trả lời', closed: true },
+} as const

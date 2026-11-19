@@ -2,7 +2,6 @@ import { ArrowRight, Check, MoreHorizontal, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 import { ConfirmDialog } from '@/components/shared'
 import { Button, Popover, menuItemClass } from '@/components/ui'
-import { useApplicationInterviews } from '@/features/interviews'
 import { usePermission } from '@/hooks/use-permission'
 import { Permission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
@@ -24,31 +23,20 @@ interface StatusActionsProps {
 }
 
 const label = (next: ApplicationStatus) =>
-  next === 'HIRED'
-    ? 'Duyệt nhận việc'
-    : next === 'REJECTED'
-      ? 'Từ chối hồ sơ'
-      : next === 'WITHDRAWN'
-        ? 'Ghi nhận ứng viên rút'
-        : `Chuyển sang ${APPLICATION_STATUS[next].label}`
+  next === 'REJECTED'
+    ? 'Từ chối hồ sơ'
+    : next === 'WITHDRAWN'
+      ? 'Ghi nhận ứng viên rút'
+      : `Chuyển sang ${APPLICATION_STATUS[next].label}`
 
 // BR-STS-01 → 05
 export function StatusActions({ applicationId, status, className }: StatusActionsProps) {
   const canUpdate = usePermission(Permission.ApplicationUpdateStatus)
-  const canApprove = usePermission(Permission.ApplicationApproveOffer)
   const changeStatus = useChangeStatus(applicationId)
   const [target, setTarget] = useState<ApplicationStatus | null>(null)
   const [menu, setMenu] = useState(false)
-  // Q1, BR-STS-01
-  const interviews = useApplicationInterviews(applicationId, { enabled: target === 'OFFER' })
-  const noFeedback =
-    target === 'OFFER' && !!interviews.data && !interviews.data.some((iv) => iv.feedbacks.length)
-
-  const allowed = (next: ApplicationStatus) => {
-    if (next === 'HIRED') return canApprove
-    if (next === 'REJECTED' && status === 'OFFER') return canUpdate || canApprove
-    return canUpdate
-  }
+  // MVP 3.1 · BR-STS-05: OFFER, HIRED đi qua khối Offer
+  const allowed = (next: ApplicationStatus) => canUpdate && next !== 'OFFER' && next !== 'HIRED'
   const options = NEXT_STATUS[status].filter(allowed)
 
   if (APPLICATION_STATUS[status].terminal) {
@@ -152,22 +140,14 @@ export function StatusActions({ applicationId, status, className }: StatusAction
         loading={changeStatus.isPending}
         onConfirm={(reason, code) => {
           if (!target) return
-          const declineOffer = target === 'REJECTED' && status === 'OFFER' && !canUpdate
           changeStatus.mutate({
             status: target,
             reason,
             reasonCode: code as RejectReasonCode | undefined,
-            declineOffer,
           })
           setTarget(null)
         }}
-      >
-        {noFeedback && (
-          <p role="note" className="bg-warn-soft text-warn rounded-xs px-3 py-2 text-[13px]">
-            Hồ sơ chưa có phiếu đánh giá phỏng vấn nào.
-          </p>
-        )}
-      </ConfirmDialog>
+      />
     </>
   )
 }

@@ -292,19 +292,76 @@ describe('interviews', () => {
     expect(screen.queryByRole('region', { name: 'Tổng hợp phỏng vấn' })).not.toBeInTheDocument()
   })
 
-  it('Q1, BR-STS-01: moving to OFFER without any feedback warns but still allows it', async () => {
+  it('MVP 3.1 · Q1, BR-STS-05: OFFER is reached through an offer; drafting without feedback warns but is allowed', async () => {
     const app = db.applications.find(
       (a) =>
         a.status === 'INTERVIEW' &&
         !db.interviews.some((i) => i.applicationId === a.id && i.feedbacks.length),
     )!
     renderAt('hr@hireflow.dev', links.applicationDetail(app.id))
-    fireEvent.click(await screen.findByRole('button', { name: /Chuyển sang Đề nghị/ }))
-    const dialog = await screen.findByRole('dialog', { name: /Chuyển sang Đề nghị/ })
+    await screen.findByRole('heading', { name: 'Offer' })
+    expect(screen.queryByRole('button', { name: /Chuyển sang Đề nghị/ })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Soạn offer' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Soạn offer' })
     expect(await within(dialog).findByRole('note')).toHaveTextContent(
       'Hồ sơ chưa có phiếu đánh giá phỏng vấn nào.',
     )
-    expect(within(dialog).getByRole('button', { name: /Chuyển sang Đề nghị/ })).toBeEnabled()
+    fireEvent.change(within(dialog).getByLabelText('Mức lương'), { target: { value: '25000000' } })
+    fireEvent.change(within(dialog).getByLabelText('Hạn trả lời'), {
+      target: { value: '2099-01-15' },
+    })
+    fireEvent.change(within(dialog).getByLabelText('Ngày bắt đầu'), {
+      target: { value: '2099-01-01' },
+    })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tạo offer nháp' }))
+    expect(
+      within(dialog).getByText('Ngày bắt đầu không được trước hạn trả lời'),
+    ).toBeInTheDocument()
+    fireEvent.change(within(dialog).getByLabelText('Ngày bắt đầu'), {
+      target: { value: '2099-02-01' },
+    })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tạo offer nháp' }))
+
+    expect(await screen.findByRole('button', { name: 'Gửi duyệt' })).toBeInTheDocument()
+    expect(screen.getByText('25.000.000 VND/tháng')).toBeInTheDocument()
+    expect(db.offers.find((o) => o.applicationId === app.id)).toMatchObject({ status: 'DRAFT' })
+  })
+
+  it('MVP 3.1 · BR-OFFER-02, Q7: HR waits for approval; Admin approves; HR marks it sent and the application moves to OFFER', async () => {
+    const app = db.applications.find(
+      (a) => a.status === 'INTERVIEW' && !db.offers.some((o) => o.applicationId === a.id),
+    )!
+    db.offers.push({
+      id: 'offer-flow',
+      applicationId: app.id,
+      status: 'PENDING_APPROVAL',
+      salaryAmount: 30_000_000,
+      salaryCurrency: 'VND',
+      salaryPeriod: 'MONTH',
+      startDate: '2099-02-01',
+      respondBy: '2099-01-15',
+      note: null,
+      statusReason: null,
+      createdById: 'u-hr',
+      approvedById: null,
+      approvedAt: null,
+      createdAt: new Date().toISOString(),
+    })
+    renderAt('hr@hireflow.dev', links.applicationDetail(app.id))
+    expect(await screen.findByText(/Đang chờ Hiring Manager phụ trách tin/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Duyệt offer' })).not.toBeInTheDocument()
+    cleanup()
+
+    renderAt('admin@hireflow.dev', links.applicationDetail(app.id))
+    fireEvent.click(await screen.findByRole('button', { name: 'Duyệt offer' }))
+    expect(await screen.findByRole('button', { name: 'Đánh dấu đã gửi' })).toBeInTheDocument()
+    cleanup()
+
+    renderAt('hr@hireflow.dev', links.applicationDetail(app.id))
+    fireEvent.click(await screen.findByRole('button', { name: 'Đánh dấu đã gửi' }))
+    expect(await screen.findByRole('button', { name: 'Ứng viên nhận' })).toBeInTheDocument()
+    expect(app.status).toBe('OFFER')
   })
 
   it('HR cannot schedule while the application is not in INTERVIEW', async () => {

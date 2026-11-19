@@ -114,3 +114,44 @@ export interface CompareView {
   requirements: Pick<Requirement, 'id' | 'label' | 'type' | 'weight' | 'minYears'>[]
   applications: CompareApplication[]
 }
+
+/** MVP 3.1 · F-OFFER-01 */
+export type OfferStatus =
+  | 'DRAFT'
+  | 'PENDING_APPROVAL'
+  | 'APPROVED'
+  | 'SENT'
+  | 'ACCEPTED'
+  | 'DECLINED'
+  | 'WITHDRAWN'
+  | 'EXPIRED'
+
+export interface OfferInput {
+  salaryAmount: number
+  salaryCurrency: 'VND' | 'USD'
+  salaryPeriod: 'MONTH' | 'YEAR'
+  startDate: string
+  respondBy: string
+  note?: string
+}
+
+export interface Offer {
+  id: string
+  applicationId: string
+  status: OfferStatus
+  salaryAmount: number
+  salaryCurrency: 'VND' | 'USD'
+  salaryPeriod: 'MONTH' | 'YEAR'
+  startDate: string
+  respondBy: string
+  note: string | null
+  statusReason: string | null
+  createdBy: { id: string; fullName: string }
+  approvedBy: { id: string; fullName: string } | null
+  approvedAt: string | null
+  sentAt: string | null
+  decidedAt: string | null
+  createdAt: string
+  canApprove: boolean
+  letter: { candidateName: string; jobTitle: string; companyName: string }
+}
