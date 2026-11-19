@@ -54,6 +54,10 @@ export enum ErrorCode {
   BulkStatusNotAllowed = 'BULK_STATUS_NOT_ALLOWED',
   CompareInvalidSelection = 'COMPARE_INVALID_SELECTION',
   ApplicationNotWithdrawable = 'APPLICATION_NOT_WITHDRAWABLE',
+  // MVP 3.1 · F-OFFER-01
+  OfferExists = 'OFFER_EXISTS',
+  InvalidOfferTransition = 'INVALID_OFFER_TRANSITION',
+  OfferApproverRequired = 'OFFER_APPROVER_REQUIRED',
 
   // Interviews
   InterviewNotAllowed = 'INTERVIEW_NOT_ALLOWED',

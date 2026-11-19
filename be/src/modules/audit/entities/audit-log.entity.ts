@@ -45,6 +45,15 @@ export enum AuditAction {
   InterviewCancelled = 'INTERVIEW_CANCELLED',
   FeedbackSubmitted = 'FEEDBACK_SUBMITTED',
   FeedbackUpdated = 'FEEDBACK_UPDATED',
+  OfferCreated = 'OFFER_CREATED',
+  OfferSubmitted = 'OFFER_SUBMITTED',
+  OfferApproved = 'OFFER_APPROVED',
+  OfferReturned = 'OFFER_RETURNED',
+  OfferSent = 'OFFER_SENT',
+  OfferAccepted = 'OFFER_ACCEPTED',
+  OfferDeclined = 'OFFER_DECLINED',
+  OfferWithdrawn = 'OFFER_WITHDRAWN',
+  OfferExpired = 'OFFER_EXPIRED',
 }
 
 export enum AuditEntity {
@@ -57,6 +66,7 @@ export enum AuditEntity {
   Organization = 'organization',
   Job = 'job',
   Interview = 'interview',
+  Offer = 'offer',
 }
 
 // F-AUDIT-01 · Database Design 9: chỉ thêm, không sửa (trigger chặn UPDATE)

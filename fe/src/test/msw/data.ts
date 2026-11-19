@@ -9,6 +9,7 @@ import type {
   ApplicationStatus,
   BreakdownItem,
   MatchLevel,
+  OfferStatus,
   RejectReasonCode,
   ScoreFlag,
 } from '@/features/applications'
@@ -827,6 +828,23 @@ export interface InterviewRow {
   stageId?: string | null
 }
 
+export interface OfferRow {
+  id: string
+  applicationId: string
+  status: OfferStatus
+  salaryAmount: number
+  salaryCurrency: 'VND' | 'USD'
+  salaryPeriod: 'MONTH' | 'YEAR'
+  startDate: string
+  respondBy: string
+  note: string | null
+  statusReason: string | null
+  createdById: string
+  approvedById: string | null
+  approvedAt: string | null
+  createdAt: string
+}
+
 export interface StageRow {
   id: string
   jobId: string
@@ -926,6 +944,7 @@ export const db = {
   auditLogs,
   interviews,
   interviewStages: [] as StageRow[],
+  offers: [] as OfferRow[],
   /** BR-RANK-02: `${userId}:${jobId}` */
   rankingWeights: {} as Record<
     string,

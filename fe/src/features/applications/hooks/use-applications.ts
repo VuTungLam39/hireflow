@@ -103,25 +103,19 @@ interface ChangeStatusVars {
   status: ApplicationStatus
   reason?: string
   reasonCode?: RejectReasonCode
-  /** Hiring Manager từ chối ở bước OFFER: đi route /decline-offer (BR-STS-05) */
-  declineOffer?: boolean
 }
 
 /**
  * Đổi trạng thái có optimistic update: giao diện đổi ngay, lỗi thì trả lại như cũ.
- * OFFER → HIRED gọi route /hire; Hiring Manager từ chối ở OFFER gọi /decline-offer.
+ * OFFER, HIRED đi qua luồng offer (MVP 3.1 · BR-STS-05).
  */
 export function useChangeStatus(id: string) {
   const queryClient = useQueryClient()
   const key = applicationKeys.detail(id)
 
   return useMutation({
-    mutationFn: ({ status, reason, reasonCode, declineOffer }: ChangeStatusVars) =>
-      status === 'HIRED'
-        ? applicationsApi.hire(id)
-        : declineOffer
-          ? applicationsApi.declineOffer(id, { reason, reasonCode })
-          : applicationsApi.changeStatus(id, { status, reason, reasonCode }),
+    mutationFn: ({ status, reason, reasonCode }: ChangeStatusVars) =>
+      applicationsApi.changeStatus(id, { status, reason, reasonCode }),
     onMutate: async ({ status }) => {
       await queryClient.cancelQueries({ queryKey: key })
       const previous = queryClient.getQueryData<ApplicationDetail>(key)

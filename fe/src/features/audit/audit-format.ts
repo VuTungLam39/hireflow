@@ -37,6 +37,15 @@ export const AUDIT_ACTION_LABEL: Record<AuditAction, string> = {
   INTERVIEW_CANCELLED: 'Huỷ phỏng vấn',
   FEEDBACK_SUBMITTED: 'Nộp phiếu đánh giá',
   FEEDBACK_UPDATED: 'Sửa phiếu đánh giá',
+  OFFER_CREATED: 'Soạn offer',
+  OFFER_SUBMITTED: 'Gửi duyệt offer',
+  OFFER_APPROVED: 'Duyệt offer',
+  OFFER_RETURNED: 'Trả lại offer',
+  OFFER_SENT: 'Gửi offer cho ứng viên',
+  OFFER_ACCEPTED: 'Ứng viên nhận offer',
+  OFFER_DECLINED: 'Ứng viên từ chối offer',
+  OFFER_WITHDRAWN: 'Rút offer',
+  OFFER_EXPIRED: 'Offer hết hạn trả lời',
 }
 
 export const AUDIT_ACTIONS = Object.keys(AUDIT_ACTION_LABEL) as AuditAction[]

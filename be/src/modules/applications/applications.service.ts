@@ -56,7 +56,7 @@ import {
   stageSeconds,
 } from './application-status.js';
 import { BulkStatusDto } from './dto/bulk-status.dto.js';
-import { ChangeStatusDto, DeclineOfferDto } from './dto/change-status.dto.js';
+import { ChangeStatusDto } from './dto/change-status.dto.js';
 import { CompareApplicationsDto } from './dto/compare-applications.dto.js';
 import { CreateNoteDto } from './dto/create-note.dto.js';
 import { CvTextDto } from './dto/cv-text.dto.js';
@@ -529,13 +529,6 @@ export class ApplicationsService {
 
   // US-07, BR-STS-01 → 03, BR-STS-07
   async changeStatus(id: string, dto: ChangeStatusDto, user: ScopeUser) {
-    if (dto.status === ApplicationStatus.Hired) {
-      throw new BusinessException(
-        ErrorCode.InvalidStatusTransition,
-        'Use PATCH /applications/:id/hire to hire',
-        HttpStatus.CONFLICT,
-      );
-    }
     await this.findWritable(id, user);
     await this.transition(id, dto.status, dto, user);
     return this.findOne(id, user);
@@ -591,20 +584,6 @@ export class ApplicationsService {
       }
     }
     return result;
-  }
-
-  // US-09, BR-STS-04
-  async hire(id: string, user: ScopeUser) {
-    await this.findWritable(id, user);
-    await this.transition(id, ApplicationStatus.Hired, {}, user, ApplicationStatus.Offer);
-    return this.findOne(id, user);
-  }
-
-  // BR-STS-05
-  async declineOffer(id: string, dto: DeclineOfferDto, user: ScopeUser) {
-    await this.findWritable(id, user);
-    await this.transition(id, ApplicationStatus.Rejected, dto, user, ApplicationStatus.Offer);
-    return this.findOne(id, user);
   }
 
   // BR-AI-08
@@ -933,7 +912,57 @@ export class ApplicationsService {
     requiredFrom?: ApplicationStatus,
     meta?: { bulkId: string },
   ): Promise<void> {
-    await this.dataSource.transaction(async (manager) => {
+    await this.dataSource.transaction((manager) =>
+      this.transitionIn(manager, id, to, why, user, requiredFrom, meta),
+    );
+    this.events.emit('application.changed', { applicationId: id });
+  }
+
+  /**
+   * MVP 3.1 · BR-OFFER-02: luồng offer đổi trạng thái hồ sơ trong transaction của offer;
+   * nơi gọi tự phát 'application.changed' sau commit.
+   */
+  transitionForOffer(
+    manager: EntityManager,
+    id: string,
+    to: ApplicationStatus,
+    why: { reason?: string | null; reasonCode?: RejectReasonCode | null },
+    /** id trống: hệ thống tự làm (offer hết hạn), changed_by và actor để NULL */
+    user: Omit<ScopeUser, 'id'> & { id?: string },
+    requiredFrom: ApplicationStatus,
+    offerId: string,
+  ): Promise<void> {
+    return this.transitionIn(
+      manager,
+      id,
+      to,
+      why,
+      user as ScopeUser,
+      requiredFrom,
+      { offerId },
+      true,
+    );
+  }
+
+  private async transitionIn(
+    manager: EntityManager,
+    id: string,
+    to: ApplicationStatus,
+    why: { reason?: string | null; reasonCode?: RejectReasonCode | null },
+    user: ScopeUser,
+    requiredFrom?: ApplicationStatus,
+    meta?: { bulkId: string } | { offerId: string },
+    viaOffer = false,
+  ): Promise<void> {
+    {
+      // BR-STS-05 (MVP 3.1): OFFER/HIRED chỉ đi qua luồng offer
+      if (!viaOffer && (to === ApplicationStatus.Offer || to === ApplicationStatus.Hired)) {
+        throw new BusinessException(
+          ErrorCode.InvalidStatusTransition,
+          `Use the offer flow to move to ${to}`,
+          HttpStatus.CONFLICT,
+        );
+      }
       const app = await manager.findOne(Application, {
         where: { id },
         lock: { mode: 'pessimistic_write' },
@@ -978,8 +1007,7 @@ export class ApplicationsService {
         },
         manager,
       );
-    });
-    this.events.emit('application.changed', { applicationId: id });
+    }
   }
 
   private listQuery(user: ScopeUser): SelectQueryBuilder<Application> {

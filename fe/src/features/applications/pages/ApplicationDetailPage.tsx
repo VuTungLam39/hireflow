@@ -24,6 +24,7 @@ import { Role } from '@/types/user'
 import { APPLICATION_SOURCE } from '../constants'
 import { HistoryTimeline } from '../components/HistoryTimeline'
 import { NotesPanel } from '../components/NotesPanel'
+import { OfferPanel } from '../components/OfferPanel'
 import { StatusActions } from '../components/StatusActions'
 import { CvPanel, ScorePanel } from '../components/ReviewPanels'
 import { useEvidenceMarks } from '../hooks/use-evidence-marks'
@@ -159,6 +160,12 @@ export default function ApplicationDetailPage() {
           />
         </div>
       </header>
+
+      {!isInterviewer && (
+        <div className="pt-6">
+          <OfferPanel applicationId={app.id} status={app.status} />
+        </div>
+      )}
 
       <div className="grid gap-8 pt-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-10">
         <section

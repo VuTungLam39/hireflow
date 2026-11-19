@@ -1,3 +1,4 @@
+import { OffersService } from '../offers/offers.service.js';
 import { InjectQueue } from '@nestjs/bullmq';
 import {
   Injectable,
@@ -28,6 +29,7 @@ export class MaintenanceService implements OnApplicationBootstrap, OnModuleDestr
   private firstHeal?: NodeJS.Timeout;
 
   constructor(
+    private readonly offers: OffersService,
     @InjectQueue(QUEUE.maintenance) private readonly queue: Queue,
     private readonly candidates: CandidatesService,
     private readonly tokens: RefreshTokensService,
@@ -81,7 +83,9 @@ export class MaintenanceService implements OnApplicationBootstrap, OnModuleDestr
     const count =
       task === MAINTENANCE_TASK.anonymizeExpired
         ? await this.candidates.anonymizeExpired()
-        : await this.tokens.purgeExpired();
+        : task === MAINTENANCE_TASK.expireOffers
+          ? await this.offers.expireOverdue()
+          : await this.tokens.purgeExpired();
     this.logger.log(`${task}: ${count}`);
     return count;
   }

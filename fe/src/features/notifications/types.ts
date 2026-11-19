@@ -7,6 +7,9 @@ export type NotificationType =
   | 'INTERVIEW_UPDATED'
   | 'INTERVIEW_CANCELLED'
   | 'FEEDBACK_SUBMITTED'
+  | 'OFFER_PENDING_APPROVAL'
+  | 'OFFER_APPROVED'
+  | 'OFFER_RETURNED'
 
 export interface NotificationItem {
   id: string

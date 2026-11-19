@@ -39,6 +39,13 @@ export function notificationText(n: NotificationItem): string {
       return `Buổi phỏng vấn ${name} đã huỷ hoặc bạn không còn được phân công`
     case 'FEEDBACK_SUBMITTED':
       return `Có phiếu đánh giá mới cho ${name}`
+    // MVP 3.1 · F-OFFER-01
+    case 'OFFER_PENDING_APPROVAL':
+      return `Offer cho ${name} đang chờ bạn duyệt`
+    case 'OFFER_APPROVED':
+      return `Offer cho ${name} đã được duyệt, có thể gửi ứng viên`
+    case 'OFFER_RETURNED':
+      return `Offer cho ${name} bị trả lại để sửa`
   }
   if (n.type === 'CV_FAILED') return `Không đọc được CV của ${name}`
   const score = n.application?.score

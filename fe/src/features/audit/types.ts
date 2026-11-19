@@ -28,6 +28,15 @@ export type AuditAction =
   | 'INTERVIEW_CANCELLED'
   | 'FEEDBACK_SUBMITTED'
   | 'FEEDBACK_UPDATED'
+  | 'OFFER_CREATED'
+  | 'OFFER_SUBMITTED'
+  | 'OFFER_APPROVED'
+  | 'OFFER_RETURNED'
+  | 'OFFER_SENT'
+  | 'OFFER_ACCEPTED'
+  | 'OFFER_DECLINED'
+  | 'OFFER_WITHDRAWN'
+  | 'OFFER_EXPIRED'
 
 export type AuditEntity =
   | 'cv_file'
@@ -39,6 +48,7 @@ export type AuditEntity =
   | 'organization'
   | 'job'
   | 'interview'
+  | 'offer'
 
 export interface AuditLogItem {
   id: string
