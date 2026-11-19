@@ -10,6 +10,15 @@ export const interviewKeys = {
     [...interviewKeys.all, 'application', applicationId] as const,
   calendar: (params: InterviewListParams) => [...interviewKeys.all, 'calendar', params] as const,
   interviewers: () => [...interviewKeys.all, 'interviewers'] as const,
+  debrief: (applicationId: string) => [...interviewKeys.all, 'debrief', applicationId] as const,
+}
+
+// MVP 3.1 · F-INT-05: nằm dưới interviewKeys.all nên gửi phiếu là làm mới
+export function useDebrief(applicationId: string) {
+  return useQuery({
+    queryKey: interviewKeys.debrief(applicationId),
+    queryFn: () => interviewsApi.debrief(applicationId),
+  })
 }
 
 // F-INT-01, F-INT-02

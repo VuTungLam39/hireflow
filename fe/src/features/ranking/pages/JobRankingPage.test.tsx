@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { setupServer } from 'msw/node'
 import { links, paths } from '@/routes/paths'
 import { db } from '@/test/msw/data'
@@ -30,16 +30,22 @@ describe('JobRankingPage', () => {
     expect(screen.getByRole('button', { name: 'Lưu trọng số' })).toBeEnabled()
   })
 
-  it('lets a Hiring Manager try weights and reset them, without a save button', async () => {
+  it('MVP 3.1 · BR-RANK-02: a Hiring Manager saves weights for themselves only', async () => {
     renderAs('hm.eng@hireflow.dev')
     const slider = await screen.findByLabelText(job.requirements[0].label)
-    fireEvent.change(slider, { target: { value: job.requirements[0].weight === 3 ? 1 : 3 } })
+    const next = job.requirements[0].weight === 3 ? 1 : 3
+    fireEvent.change(slider, { target: { value: next } })
 
     expect(screen.queryByRole('button', { name: 'Lưu trọng số' })).not.toBeInTheDocument()
-    expect(screen.getByText('Chỉ là bản nháp để xem thử, không lưu.')).toBeInTheDocument()
     const reset = screen.getByRole('button', { name: 'Về mặc định' })
     expect(reset).toBeEnabled()
-    fireEvent.click(reset)
-    expect(reset).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu cho riêng tôi' }))
+
+    const hm = db.users.find((u) => u.email === 'hm.eng@hireflow.dev')!
+    await waitFor(() =>
+      expect(db.rankingWeights[`${hm.id}:${job.id}`]?.weights[job.requirements[0].id]).toBe(next),
+    )
+    expect(job.requirements[0].weight).not.toBe(next)
+    await waitFor(() => expect(reset).toBeDisabled())
   })
 })

@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Button, Dialog, DialogFooter, FormField, Textarea } from '@/components/ui'
+import { Button, chipClass, Dialog, DialogFooter, FormField, Textarea } from '@/components/ui'
 import { getErrorMessage } from '@/lib/errors'
 import { cn, formatTimeOnDate } from '@/lib/utils'
 import { useSubmitFeedback } from '../hooks/use-interviews'
-import { SCORE_LABEL } from '../lib/constants'
-import type { Interview, InterviewFeedback } from '../types'
+import { RECOMMENDATION, RECOMMENDATION_ORDER, SCORE_LABEL } from '../lib/constants'
+import type { Interview, InterviewFeedback, Recommendation } from '../types'
 import { QuestionSuggestions } from './QuestionSuggestions'
 
 interface RatingInputProps {
@@ -78,11 +78,14 @@ export function FeedbackDialog({
   const [ratings, setRatings] = useState<Record<string, number>>(initial)
   const [overall, setOverall] = useState<number | undefined>(existing?.overall)
   const [comment, setComment] = useState(existing?.comment ?? '')
+  const [recommendation, setRecommendation] = useState<Recommendation | undefined>(
+    existing?.recommendation ?? undefined,
+  )
   const [touched, setTouched] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const missing = requirements.filter((r) => !ratings[r.id])
-  const incomplete = missing.length > 0 || !overall
+  const incomplete = missing.length > 0 || !overall || !recommendation
 
   const save = () => {
     setTouched(true)
@@ -94,6 +97,7 @@ export function FeedbackDialog({
           overall: overall!,
           ratings: requirements.map((r) => ({ requirementId: r.id, score: ratings[r.id] })),
           comment: comment.trim() || undefined,
+          recommendation: recommendation!,
         },
       },
       {
@@ -132,9 +136,32 @@ export function FeedbackDialog({
             />
           </div>
         </div>
+        {/* MVP 3.1 · BR-INT-06 */}
+        <div
+          role="radiogroup"
+          aria-label="Đề xuất tuyển"
+          aria-invalid={touched && !recommendation}
+          className="space-y-1.5"
+        >
+          <p className="text-ink text-sm font-medium">Đề xuất tuyển</p>
+          <div className="flex flex-wrap gap-1.5">
+            {RECOMMENDATION_ORDER.map((r) => (
+              <button
+                key={r}
+                type="button"
+                role="radio"
+                aria-checked={recommendation === r}
+                className={chipClass(recommendation === r)}
+                onClick={() => setRecommendation(r)}
+              >
+                {RECOMMENDATION[r].label}
+              </button>
+            ))}
+          </div>
+        </div>
         {touched && incomplete && (
           <p role="alert" className="text-bad text-sm">
-            Chấm đủ mọi tiêu chí và phần đánh giá chung.
+            Chấm đủ mọi tiêu chí, phần đánh giá chung và chọn đề xuất tuyển.
           </p>
         )}
         <FormField

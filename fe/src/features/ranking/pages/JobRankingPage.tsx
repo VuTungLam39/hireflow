@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, ArrowRight, SlidersHorizontal, X } from 'lucide-react'
 import { useCallback, useDeferredValue, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { Can, EmptyState, ErrorState, PageHeader, SidePanel, Summary } from '@/components/shared'
+import { EmptyState, ErrorState, PageHeader, SidePanel, Summary } from '@/components/shared'
 import { Button, Skeleton, buttonVariants } from '@/components/ui'
 import {
   applicationQueries,
@@ -12,12 +12,13 @@ import {
 } from '@/features/applications'
 import type { Requirement } from '@/features/jobs'
 import { useMediaQuery } from '@/hooks/use-media-query'
+import { usePermission } from '@/hooks/use-permission'
 import { Permission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import { links, paths } from '@/routes/paths'
 import { RankingTable } from '../components/RankingTable'
 import { WeightSlider } from '../components/WeightSlider'
-import { useRanking, useSaveWeights } from '../hooks/use-ranking'
+import { useMyWeights, useRanking, useSaveMyWeights, useSaveWeights } from '../hooks/use-ranking'
 import { rankByWeights, type Ranked } from '../lib/score'
 import { useJobDraft, useRankingDraft } from '../store'
 import type { RankingData, RankingInput } from '../types'
@@ -62,6 +63,10 @@ function RankingView({
   const setWeight = useRankingDraft((s) => s.setWeight)
   const resetDraft = useRankingDraft((s) => s.reset)
   const { saveWeights, isPending: saving } = useSaveWeights(jobId)
+  // BR-RANK-02: người không sửa được tin lưu trọng số cho riêng mình
+  const canUpdateJob = usePermission(Permission.JobUpdate)
+  const mine = useMyWeights(jobId, !canUpdateJob)
+  const saveMine = useSaveMyWeights(jobId)
   const queryClient = useQueryClient()
   const wide = useMediaQuery('(min-width: 64rem)')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -78,10 +83,10 @@ function RankingView({
   )
   const compare = { ids: compareIds, onToggle: toggleCompare }
 
-  const savedWeights = useMemo(
-    () => Object.fromEntries(data.requirements.map((r) => [r.id, r.weight])),
-    [data.requirements],
-  )
+  const savedWeights = useMemo(() => {
+    const own = mine.data?.jdVersion === data.job.jdVersion ? mine.data.weights : undefined
+    return Object.fromEntries(data.requirements.map((r) => [r.id, own?.[r.id] ?? r.weight]))
+  }, [data.requirements, data.job.jdVersion, mine.data])
   const weights = useMemo(() => ({ ...savedWeights, ...draft }), [savedWeights, draft])
   const deferredWeights = useDeferredValue(weights)
 
@@ -103,8 +108,8 @@ function RankingView({
   }, [inputs, savedWeights])
   const ranked = useMemo(() => rankByWeights(inputs, deferredWeights), [inputs, deferredWeights])
 
-  const isDirty = data.requirements.some((r) => weights[r.id] !== r.weight)
-  const changedCount = data.requirements.filter((r) => weights[r.id] !== r.weight).length
+  const isDirty = data.requirements.some((r) => weights[r.id] !== savedWeights[r.id])
+  const changedCount = data.requirements.filter((r) => weights[r.id] !== savedWeights[r.id]).length
   const onWeightChange = useCallback(
     (requirementId: string, weight: number) => setWeight(jobId, requirementId, weight),
     [jobId, setWeight],
@@ -118,7 +123,9 @@ function RankingView({
   )
 
   const save = () =>
-    saveWeights(data.requirements.map(({ id, ...req }) => ({ ...req, weight: weights[id] })))
+    canUpdateJob
+      ? saveWeights(data.requirements.map(({ id, ...req }) => ({ ...req, weight: weights[id] })))
+      : saveMine.mutate({ jdVersion: data.job.jdVersion, weights })
 
   const notScored = data.items.length - scored.length
   const selected = ranked.find((r) => r.item.id === selectedId) ?? null
@@ -128,7 +135,8 @@ function RankingView({
       requirements={data.requirements}
       weights={weights}
       isDirty={isDirty}
-      saving={saving}
+      saving={saving || saveMine.isPending}
+      personal={!canUpdateJob}
       onChange={onWeightChange}
       onReset={() => resetDraft(jobId)}
       onSave={save}
@@ -293,6 +301,7 @@ function WeightBlock({
   weights,
   isDirty,
   saving,
+  personal,
   onChange,
   onReset,
   onSave,
@@ -301,6 +310,7 @@ function WeightBlock({
   weights: Record<string, number>
   isDirty: boolean
   saving: boolean
+  personal: boolean
   onChange: (id: string, w: number) => void
   onReset: () => void
   onSave: () => void
@@ -325,15 +335,10 @@ function WeightBlock({
           <Button variant="quiet" size="sm" disabled={!isDirty} onClick={onReset}>
             Về mặc định
           </Button>
-          {/* BR-AI-05 */}
-          <Can
-            permission={Permission.JobUpdate}
-            fallback={<span className="type-caption">Chỉ là bản nháp để xem thử, không lưu.</span>}
-          >
-            <Button size="sm" disabled={!isDirty} loading={saving} onClick={onSave}>
-              Lưu trọng số
-            </Button>
-          </Can>
+          {/* BR-AI-05: HR lưu cho tin; BR-RANK-02: người khác lưu cho riêng mình */}
+          <Button size="sm" disabled={!isDirty} loading={saving} onClick={onSave}>
+            {personal ? 'Lưu cho riêng tôi' : 'Lưu trọng số'}
+          </Button>
         </div>
       </div>
       <div className="mt-3 grid gap-x-8 gap-y-3 sm:grid-cols-2 xl:grid-cols-4">

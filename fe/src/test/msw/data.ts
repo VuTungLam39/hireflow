@@ -2,6 +2,7 @@
  * Dữ liệu giả trong bộ nhớ cho MSW. Sinh bằng bộ số ngẫu nhiên có seed cố định,
  * nên lần nào tải trang cũng ra cùng dữ liệu. Tải lại trang thì mọi thay đổi mất đi.
  */
+import type { Recommendation } from '@/features/interviews'
 import type {
   AiStatus,
   ApplicationSource,
@@ -198,6 +199,8 @@ export interface UserRow {
 }
 
 export interface JobRow extends JobDetails {
+  /** MVP 3.1 · F-JOB-12 */
+  hiringManagerId?: string | null
   id: string
   title: string
   status: JobStatus
@@ -805,6 +808,7 @@ export interface FeedbackRow {
   comment: string | null
   submittedAt: string
   editableUntil: string
+  recommendation?: Recommendation | null
 }
 
 export interface InterviewRow {
@@ -922,4 +926,9 @@ export const db = {
   auditLogs,
   interviews,
   interviewStages: [] as StageRow[],
+  /** BR-RANK-02: `${userId}:${jobId}` */
+  rankingWeights: {} as Record<
+    string,
+    { jdVersion: number; weights: Record<string, number>; updatedAt: string }
+  >,
 }

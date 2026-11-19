@@ -83,12 +83,16 @@ describe('interviews', () => {
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi phiếu' }))
     expect(
-      await within(dialog).findByText('Chấm đủ mọi tiêu chí và phần đánh giá chung.'),
+      await within(dialog).findByText(
+        'Chấm đủ mọi tiêu chí, phần đánh giá chung và chọn đề xuất tuyển.',
+      ),
     ).toBeInTheDocument()
 
     for (const group of within(dialog).getAllByRole('radiogroup')) {
+      if (group.getAttribute('aria-label') === 'Đề xuất tuyển') continue
       fireEvent.click(within(group).getByRole('radio', { name: /^4 –/ }))
     }
+    fireEvent.click(within(dialog).getByRole('radio', { name: 'Nên tuyển' }))
     fireEvent.change(within(dialog).getByLabelText('Nhận xét (tuỳ chọn)'), {
       target: { value: 'Nắm chắc NestJS' },
     })
@@ -97,6 +101,7 @@ describe('interviews', () => {
     expect(await screen.findByRole('button', { name: 'Sửa phiếu đánh giá' })).toBeInTheDocument()
     expect(screen.getByText('Nắm chắc NestJS')).toBeInTheDocument()
     expect(iv.feedbacks).toHaveLength(1)
+    expect(iv.feedbacks[0].recommendation).toBe('YES')
     expect(iv.status).toBe('COMPLETED')
   })
 
@@ -241,8 +246,10 @@ describe('interviews', () => {
       const dialog = await screen.findByRole('dialog')
       const group = within(dialog).getByRole('radiogroup', { name: 'Giao tiếp nhóm' })
       for (const g of within(dialog).getAllByRole('radiogroup')) {
+        if (g.getAttribute('aria-label') === 'Đề xuất tuyển') continue
         fireEvent.click(within(g).getByRole('radio', { name: /^4 –/ }))
       }
+      fireEvent.click(within(dialog).getByRole('radio', { name: 'Rất nên tuyển' }))
       expect(group).toBeInTheDocument()
       fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi phiếu' }))
       expect(await screen.findByRole('button', { name: 'Sửa phiếu đánh giá' })).toBeInTheDocument()
@@ -253,6 +260,36 @@ describe('interviews', () => {
       Object.assign(iv, before)
       db.interviewStages = []
     }
+  })
+
+  it('MVP 3.1 · F-INT-05: HR sees the debrief with averages and recommendations; interviewers do not', async () => {
+    const iv = upcoming()
+    const before = iv.feedbacks
+    iv.feedbacks = [
+      {
+        id: 'fb-debrief',
+        authorId: iv.interviewerIds[0],
+        overall: 4,
+        ratings: [],
+        comment: null,
+        recommendation: 'STRONG_YES',
+        submittedAt: new Date().toISOString(),
+        editableUntil: new Date(Date.now() + 86_400_000).toISOString(),
+      },
+    ]
+    onTestFinished(() => {
+      iv.feedbacks = before
+    })
+    renderAt('hr@hireflow.dev', links.applicationDetail(iv.applicationId))
+    fireEvent.click(await screen.findByRole('tab', { name: /Phỏng vấn/ }))
+    const debrief = await screen.findByRole('region', { name: 'Tổng hợp phỏng vấn' })
+    expect(within(debrief).getAllByText(/Rất nên tuyển/).length).toBeGreaterThan(0)
+    cleanup()
+
+    const author = db.users.find((u) => u.id === iv.feedbacks[0].authorId)!
+    renderAt(author.email, links.applicationDetail(iv.applicationId))
+    expect(await screen.findByText(/Vòng \d/)).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Tổng hợp phỏng vấn' })).not.toBeInTheDocument()
   })
 
   it('Q1, BR-STS-01: moving to OFFER without any feedback warns but still allows it', async () => {

@@ -80,6 +80,28 @@ export function useSaveRequirements() {
   })
 }
 
+// F-JOB-12
+export function useHiringManagers(enabled = true) {
+  return useQuery({
+    queryKey: [...jobKeys.all, 'hiring-managers'] as const,
+    queryFn: jobsApi.hiringManagers,
+    enabled,
+    staleTime: 5 * MINUTE,
+  })
+}
+
+export function useAssignHiringManager(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (userId: string | null) => jobsApi.assignHiringManager(id, userId),
+    onSuccess: (job) => {
+      queryClient.setQueryData(jobKeys.detail(id), job)
+      toast.success(job.hiringManager ? `Đã gán ${job.hiringManager.fullName}` : 'Đã bỏ gán')
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  })
+}
+
 // F-INT-04
 export function useInterviewStages(id: string | undefined, enabled = true) {
   return useQuery({

@@ -2,6 +2,7 @@ import { api, SLOW_TIMEOUT_MS } from '@/lib/api-client'
 import type { ApiResponse, Paginated } from '@/types/api'
 import type { JobListParams } from '../schemas/job.schema'
 import type {
+  HiringManagerOption,
   InterviewStage,
   InterviewStageInput,
   Job,
@@ -39,6 +40,13 @@ export const jobsApi = {
     ).data.data,
 
   /** Thay toàn bộ tiêu chí → BE tăng jdVersion và tính lại điểm trong queue (202) */
+  // F-JOB-12
+  hiringManagers: async () =>
+    (await api.get<ApiResponse<HiringManagerOption[]>>('/jobs/hiring-managers')).data.data,
+
+  assignHiringManager: async (id: string, userId: string | null) =>
+    (await api.patch<ApiResponse<Job>>(`/jobs/${id}/hiring-manager`, { userId })).data.data,
+
   // F-INT-04
   interviewStages: async (id: string) =>
     (await api.get<ApiResponse<InterviewStage[]>>(`/jobs/${id}/interview-stages`)).data.data,

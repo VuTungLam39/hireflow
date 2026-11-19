@@ -245,6 +245,10 @@ export function toJob(job: JobRow): Job {
     workMode: job.workMode,
     headcount: job.headcount,
     benefits: job.benefits,
+    hiringManager: (() => {
+      const hm = job.hiringManagerId && db.users.find((u) => u.id === job.hiringManagerId)
+      return hm ? { id: hm.id, fullName: hm.fullName } : null
+    })(),
     jdText: job.jdText,
     jdVersion: job.jdVersion,
     requirements: job.requirements,

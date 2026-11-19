@@ -1,11 +1,12 @@
 import { api, SLOW_TIMEOUT_MS } from '@/lib/api-client'
 import type { ApiResponse, CursorMeta } from '@/types/api'
 import type {
+  Debrief,
   FeedbackInput,
   Interview,
   InterviewFeedback,
-  Interviewer,
   InterviewListParams,
+  Interviewer,
   QuestionSuggestion,
   ScheduleInput,
 } from '../types'
@@ -34,6 +35,11 @@ export const interviewsApi = {
     } while (cursor)
     return items
   },
+
+  // MVP 3.1 · F-INT-05
+  debrief: async (applicationId: string) =>
+    (await api.get<ApiResponse<Debrief>>(`/applications/${applicationId}/interviews/debrief`)).data
+      .data,
 
   forApplication: async (applicationId: string) =>
     (await api.get<ApiResponse<Interview[]>>(`/applications/${applicationId}/interviews`)).data

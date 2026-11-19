@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { cn, formatDate } from '@/lib/utils'
 import { PIPELINE_STAGES } from '../constants'
 import { salaryOf } from '../lib/job-details'
+import { HiringManagerField } from './HiringManagerField'
 import { JobFacts } from './JobFacts'
 import type { Job } from '../types'
 
@@ -14,10 +15,18 @@ interface JobOverviewProps {
   highlights?: ReactNode
   /** F1: phễu của tin, do tầng layout ghép vào để jobs không phụ thuộc dashboard */
   funnel?: ReactNode
+  /** F-JOB-12: được gán Hiring Manager phụ trách */
+  canEdit?: boolean
 }
 
 // F-JOB-01
-export function JobOverview({ job, onOpenApplications, highlights, funnel }: JobOverviewProps) {
+export function JobOverview({
+  job,
+  onOpenApplications,
+  highlights,
+  funnel,
+  canEdit = false,
+}: JobOverviewProps) {
   const facts: [string, string][] = [
     ['Ngày tạo', formatDate(job.createdAt)],
     ['Cập nhật lần cuối', formatDate(job.updatedAt)],
@@ -26,6 +35,7 @@ export function JobOverview({ job, onOpenApplications, highlights, funnel }: Job
 
   return (
     <div className="space-y-8">
+      <HiringManagerField job={job} canEdit={canEdit && job.status !== 'CLOSED'} />
       <section aria-labelledby="job-apps">
         <div className="flex items-baseline justify-between gap-4">
           <h3 id="job-apps" className="type-heading">
