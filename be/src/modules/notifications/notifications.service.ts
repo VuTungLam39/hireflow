@@ -73,12 +73,13 @@ export class NotificationsService implements OnModuleInit {
       .andWhere(
         '(' +
           (owner ? 'u.id = :creator' : 'u.role = :hr') +
-          ' OR (u.role = :hm AND u.departmentId = :dept))',
+          ' OR (u.role = :hm AND (u.departmentId = :dept OR u.id = :manager)))',
         {
           creator: app.job.createdBy,
           hr: Role.Hr,
           hm: Role.HiringManager,
           dept: app.job.departmentId,
+          manager: app.job.hiringManagerId,
         },
       )
       .getRawMany<{ id: string }>();
@@ -130,7 +131,7 @@ export class NotificationsService implements OnModuleInit {
         jobId: true,
         status: true,
         aiStatus: true,
-        job: { id: true, departmentId: true },
+        job: { id: true, departmentId: true, hiringManagerId: true },
       },
       where: { id: applicationId },
       relations: { job: true },
@@ -140,6 +141,7 @@ export class NotificationsService implements OnModuleInit {
       kind: 'application',
       organizationId: app.organizationId,
       departmentId: app.job.departmentId,
+      hiringManagerId: app.job.hiringManagerId,
       applicationId: app.id,
       jobId: app.jobId,
       status: app.status,

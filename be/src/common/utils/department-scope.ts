@@ -33,6 +33,17 @@ export function dataScope(role: Role): DataScope {
   }
 }
 
+// MVP 3.1 · BR-JOB-12: HM thấy tin của phòng mình và tin được gán phụ trách (luôn trong công ty mình)
+export function inManagerScope(
+  user: ScopeUser,
+  job: { departmentId: string; hiringManagerId?: string | null },
+): boolean {
+  return (
+    (!!user.departmentId && job.departmentId === user.departmentId) ||
+    (!!user.id && job.hiringManagerId === user.id)
+  );
+}
+
 // BR-INT-02: cột để lọc "được giao" cho Interviewer; không truyền thì Interviewer không thấy gì
 export interface AssignedScope {
   applicationIdColumn?: string;
@@ -83,9 +94,18 @@ export function applyDepartmentScope<T extends ObjectLiteral>(
   qb.andWhere(`${orgColumn} = :scopeOrgId`, { scopeOrgId: orgIdOf(user) });
   if (scope === 'all') return qb;
   if (scope === 'assigned') return applyInterviewerScope(qb, user, assigned);
-  if (!user.departmentId) return qb.andWhere('1 = 0');
-  return qb.andWhere(`${departmentColumn} = :scopeDepartmentId`, {
+  // BR-JOB-12: departmentColumn luôn là cột phòng ban của tin; cột HM phụ trách nằm cạnh nó
+  const managerColumn = departmentColumn.replace(/departmentId$/, 'hiringManagerId');
+  if (managerColumn === departmentColumn) {
+    throw new Error(`departmentColumn must be <job alias>.departmentId, got ${departmentColumn}`);
+  }
+  const parts: string[] = [];
+  if (user.departmentId) parts.push(`${departmentColumn} = :scopeDepartmentId`);
+  if (user.id) parts.push(`${managerColumn} = :scopeManagerId`);
+  if (!parts.length) return qb.andWhere('1 = 0');
+  return qb.andWhere(`(${parts.join(' OR ')})`, {
     scopeDepartmentId: user.departmentId,
+    scopeManagerId: user.id,
   });
 }
 
@@ -101,9 +121,13 @@ export function applyCandidateScope<T extends ObjectLiteral>(
   qb.andWhere(`${orgColumn} = :scopeOrgId`, { scopeOrgId: orgIdOf(user) });
   if (scope === 'all') return qb;
   if (scope === 'assigned') return applyInterviewerScope(qb, user, assigned);
-  if (!user.departmentId) return qb.andWhere('1 = 0');
+  // BR-JOB-12
+  const parts: string[] = [];
+  if (user.departmentId) parts.push(`"scope_job"."department_id" = :scopeDepartmentId`);
+  if (user.id) parts.push(`"scope_job"."hiring_manager_id" = :scopeManagerId`);
+  if (!parts.length) return qb.andWhere('1 = 0');
   return qb.andWhere(
-    `EXISTS (SELECT 1 FROM "applications" "scope_app" INNER JOIN "jobs" "scope_job" ON "scope_job"."id" = "scope_app"."job_id" WHERE "scope_app"."candidate_id" = ${candidateIdColumn} AND "scope_app"."deleted_at" IS NULL AND "scope_job"."deleted_at" IS NULL AND "scope_job"."department_id" = :scopeDepartmentId)`,
-    { scopeDepartmentId: user.departmentId },
+    `EXISTS (SELECT 1 FROM "applications" "scope_app" INNER JOIN "jobs" "scope_job" ON "scope_job"."id" = "scope_app"."job_id" WHERE "scope_app"."candidate_id" = ${candidateIdColumn} AND "scope_app"."deleted_at" IS NULL AND "scope_job"."deleted_at" IS NULL AND (${parts.join(' OR ')}))`,
+    { scopeDepartmentId: user.departmentId, scopeManagerId: user.id },
   );
 }

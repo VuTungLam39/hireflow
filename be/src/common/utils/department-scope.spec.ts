@@ -6,6 +6,7 @@ import {
   applyDepartmentScope,
   applyInterviewerScope,
   dataScope,
+  inManagerScope,
   orgIdOf,
 } from './department-scope.js';
 
@@ -50,6 +51,34 @@ describe.each([
       column,
     );
     expect(qb.andWhere).toHaveBeenCalledWith('1 = 0');
+  });
+
+  it('MVP 3.1 · BR-JOB-12: a hiring manager also sees jobs assigned to them, still inside the organization', () => {
+    const qb = fakeQb();
+    apply(
+      qb,
+      { id: 'u-hm', role: Role.HiringManager, departmentId: 'd-1', organizationId: ORG },
+      'org.col',
+      column,
+    );
+    expect(qb.andWhere.mock.calls[0]).toEqual(ORG_FILTER);
+    const [sql, params] = qb.andWhere.mock.calls[1] as [string, object];
+    expect(sql).toMatch(/ OR /);
+    expect(sql).toMatch(/hiring_?[mM]anager_?[iI]d/);
+    expect(params).toEqual({ scopeDepartmentId: 'd-1', scopeManagerId: 'u-hm' });
+  });
+
+  it('BR-JOB-12: a hiring manager without a department sees only assigned jobs', () => {
+    const qb = fakeQb();
+    apply(
+      qb,
+      { id: 'u-hm', role: Role.HiringManager, departmentId: null, organizationId: ORG },
+      'org.col',
+      column,
+    );
+    const [sql] = qb.andWhere.mock.calls[1] as [string];
+    expect(sql).not.toMatch(/department/i);
+    expect(sql).toMatch(/hiring_?[mM]anager_?[iI]d/);
   });
 
   it('refuses a user without an organization (BR-TEN-01)', () => {
@@ -130,5 +159,21 @@ describe('orgIdOf (BR-TEN-01)', () => {
 
   it('refuses a user without an organization', () => {
     expect(() => orgIdOf({ organizationId: null })).toThrow(ForbiddenException);
+  });
+});
+
+describe('inManagerScope (BR-JOB-12)', () => {
+  const hm = { id: 'u-hm', role: Role.HiringManager, departmentId: 'd-1', organizationId: ORG };
+  it.each([
+    [{ departmentId: 'd-1', hiringManagerId: null }, true],
+    [{ departmentId: 'd-2', hiringManagerId: 'u-hm' }, true],
+    [{ departmentId: 'd-2', hiringManagerId: 'u-other' }, false],
+    [{ departmentId: 'd-2' }, false],
+  ])('job %o → %s', (job, expected) => {
+    expect(inManagerScope(hm, job)).toBe(expected);
+  });
+
+  it('applyDepartmentScope refuses a column that is not <alias>.departmentId', () => {
+    expect(() => applyDepartmentScope(fakeQb(), hm, 'org.col', 'dep.id')).toThrow();
   });
 });

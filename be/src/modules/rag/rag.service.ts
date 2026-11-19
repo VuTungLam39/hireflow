@@ -28,7 +28,7 @@ import { searchKeywords } from './keywords.js';
 import { retrieveChunks, toVector, type RetrievalMode, type RetrievedRow } from './retrieval.js';
 import { CHAT_SYSTEM, chatPrompt, NOT_ENOUGH_INFO } from './prompts/chat.prompt.js';
 
-type ScopeUser = Pick<AuthUser, 'role' | 'departmentId' | 'organizationId'>;
+type ScopeUser = Pick<AuthUser, 'role' | 'departmentId' | 'organizationId'> & { id?: string };
 
 // F-SEARCH-01: lấy 30 đoạn rồi gộp theo ứng viên, tối đa 10 người
 const CV_SEARCH_CHUNKS = 30;
@@ -170,7 +170,7 @@ export class RagService implements OnApplicationBootstrap {
   // F-SEARCH-01 · US-13 · BR-ACC-07: Kho ứng viên tìm theo kỹ năng trong CV, mỗi người một dòng
   async searchCv(query: string, user: ScopeUser): Promise<CvSearchResult> {
     const empty: CvSearchResult = { items: [], degraded: false };
-    if (dataScope(user.role) === 'department' && !user.departmentId) return empty;
+    if (dataScope(user.role) === 'department' && !user.departmentId && !user.id) return empty;
     const keywords = searchKeywords(query);
     let vector: number[];
     let mode: RetrievalMode = 'hybrid';
@@ -211,7 +211,7 @@ export class RagService implements OnApplicationBootstrap {
   // US-08, BR-AI-10, BR-ACC-07
   async prepare(question: string, user: ScopeUser): Promise<ChatPlan> {
     const empty: ChatPlan = { question, sources: [], context: [] };
-    if (dataScope(user.role) === 'department' && !user.departmentId) return empty;
+    if (dataScope(user.role) === 'department' && !user.departmentId && !user.id) return empty;
     // BR-AI-11: embedding không tính, lượt dành cho câu trả lời của LLM
     await this.quota.consumeChat(orgIdOf(user));
 

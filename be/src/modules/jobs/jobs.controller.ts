@@ -21,6 +21,7 @@ import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js'
 import { Permission } from '../../common/permissions/permission.enum.js';
 import { CreateJobDto } from './dto/create-job.dto.js';
 import { QueryJobDto } from './dto/query-job.dto.js';
+import { AssignHiringManagerDto, SaveRankingWeightsDto } from './dto/ranking-weights.dto.js';
 import { SaveInterviewStagesDto } from './dto/save-interview-stages.dto.js';
 import { SaveRequirementsDto } from './dto/save-requirements.dto.js';
 import { UpdateJobDto } from './dto/update-job.dto.js';
@@ -38,6 +39,14 @@ export class JobsController {
   @ApiOperation({ summary: 'Danh sách job kèm pipeline (lọc theo phạm vi phòng ban)' })
   findAll(@Query() query: QueryJobDto, @CurrentUser() user: AuthUser) {
     return this.jobsService.findAll(query, user);
+  }
+
+  // MVP 3.1 · F-JOB-12: khai báo trước ':id'
+  @Get('hiring-managers')
+  @Permissions(Permission.JobUpdate)
+  @ApiOperation({ summary: 'Hiring Manager đang hoạt động của công ty, để gán phụ trách tin' })
+  hiringManagers(@CurrentUser() user: AuthUser) {
+    return this.jobsService.hiringManagers(user);
   }
 
   @Get(':id')
@@ -91,6 +100,39 @@ export class JobsController {
   @ApiOperation({ summary: 'AI gợi ý tiêu chí từ JD (không lưu); 503 AI_UNAVAILABLE khi LLM lỗi' })
   suggestRequirements(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
     return this.jobsService.suggestRequirements(id, user);
+  }
+
+  // MVP 3.1 · F-JOB-12
+  @Patch(':id/hiring-manager')
+  @Permissions(Permission.JobUpdate)
+  @ApiOperation({ summary: 'Gán / bỏ gán Hiring Manager phụ trách tin (BR-JOB-12)' })
+  assignHiringManager(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AssignHiringManagerDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.jobsService.assignHiringManager(id, dto.userId, user);
+  }
+
+  // MVP 3.1 · BR-RANK-02: trọng số của chính người gọi
+  @Get(':id/ranking-weights')
+  @Permissions(Permission.ApplicationRead)
+  @ApiOperation({
+    summary: 'Trọng số xếp hạng đã lưu của tôi; null khi chưa lưu hoặc tin đổi tiêu chí',
+  })
+  rankingWeights(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.jobsService.rankingWeights(id, user);
+  }
+
+  @Put(':id/ranking-weights')
+  @Permissions(Permission.ApplicationRead)
+  @ApiOperation({ summary: 'Lưu trọng số xếp hạng cho riêng tôi (không đổi điểm của tin)' })
+  saveRankingWeights(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SaveRankingWeightsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.jobsService.saveRankingWeights(id, dto, user);
   }
 
   // MVP 3.1 · F-INT-04
