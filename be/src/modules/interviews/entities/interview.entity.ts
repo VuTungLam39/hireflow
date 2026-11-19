@@ -10,6 +10,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { JobInterviewStage } from '../../jobs/entities/job-interview-stage.entity.js';
 import { Organization } from '../../organizations/entities/organization.entity.js';
 import { Application } from '../../applications/entities/application.entity.js';
 import { User } from '../../users/entities/user.entity.js';
@@ -57,6 +58,15 @@ export class Interview {
 
   @Column({ type: 'smallint' })
   round: number;
+
+  // F-INT-04: NULL với buổi tạo trước MVP 3.1 hoặc tin chưa cấu hình vòng
+  @Index('IDX_interviews_stage_id')
+  @Column({ type: 'uuid', nullable: true })
+  stageId: string | null;
+
+  @ManyToOne(() => JobInterviewStage, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'stage_id', foreignKeyConstraintName: 'FK_interviews_stage_id' })
+  stage?: JobInterviewStage | null;
 
   @Column({ type: 'timestamptz' })
   scheduledAt: Date;

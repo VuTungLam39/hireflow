@@ -175,12 +175,13 @@ describe('Interviews (e2e)', () => {
     }
   });
 
+  let clonedJob = '';
   afterAll(async () => {
     await ds.getRepository(Application).delete({ jobId: In([ids.job, ids.otherJob]) });
     await ds.getRepository(CvFile).delete({ candidateId: In(candidates) });
     await ds.getRepository(Candidate).delete({ id: In(candidates) });
-    await ds.getRepository(JobRequirement).delete({ jobId: ids.job });
-    await ds.getRepository(Job).delete({ id: In([ids.job, ids.otherJob]) });
+    await ds.getRepository(JobRequirement).delete({ jobId: In([ids.job, clonedJob || ids.job]) });
+    await ds.getRepository(Job).delete({ id: In([ids.job, ids.otherJob, clonedJob || ids.job]) });
     await ds.getRepository(User).delete({ email: In(Object.values(emails)) });
     await ds.getRepository(Department).delete({ id: ids.dep });
     await app.close();
@@ -485,6 +486,114 @@ describe('Interviews (e2e)', () => {
       expect(forB.body.data).toHaveLength(1);
       expect(forB.body.data[0].feedbacks).toHaveLength(1);
       expect(forB.body.data[0].feedbacks[0].author.id).toBe(userIds.ivB);
+    });
+  });
+
+  describe('interview stages (MVP 3.1 · F-INT-04, BR-INT-05)', () => {
+    const stagesUrl = () => `/api/v1/jobs/${ids.job}/interview-stages`;
+    const put = (who: Who, stages: unknown[]) =>
+      as(who, request(server()).put(stagesUrl())).send({ stages });
+    type StageView = {
+      id: string;
+      name: string;
+      locked: boolean;
+      criteria: { id: string; label: string }[];
+    };
+    let stages: StageView[] = [];
+    let staged = '';
+
+    it('HR saves named stages with their own criteria; the order is the round number', async () => {
+      const res = await put('hr', [
+        { name: 'Vòng kỹ thuật', criteria: [{ label: 'Thiết kế API' }, { label: 'SQL' }] },
+        { name: 'Vòng văn hoá', criteria: [{ label: 'Giao tiếp' }] },
+      ]).expect(200);
+      stages = res.body.data;
+      expect(stages.map((st) => [st.name, st.locked, st.criteria.length])).toEqual([
+        ['Vòng kỹ thuật', false, 2],
+        ['Vòng văn hoá', false, 1],
+      ]);
+      const read = await as('hr', request(server()).get(stagesUrl())).expect(200);
+      expect(read.body.data).toEqual(stages);
+      await put('hm', []).expect(403);
+      const bad = await put('hr', [{ id: randomUUID(), name: 'X', criteria: [{ label: 'A' }] }]);
+      expect(bad.status).toBe(400);
+    });
+
+    it('scheduling with a stage of another job is refused; with a stage, round = stage order', async () => {
+      const wrong = await schedule('hr', apps.a, {
+        scheduledAt: inDays(6, 15),
+        interviewerIds: [userIds.ivB],
+        stageId: randomUUID(),
+      }).expect(400);
+      expect(wrong.body.errors[0].field).toBe('stageId');
+      const res = await schedule('hr', apps.a, {
+        scheduledAt: inDays(6, 15),
+        interviewerIds: [userIds.ivB],
+        stageId: stages[1].id,
+      }).expect(201);
+      staged = res.body.data.id;
+      expect(res.body.data).toMatchObject({
+        round: 2,
+        stage: { id: stages[1].id, name: 'Vòng văn hoá', criteria: stages[1].criteria },
+      });
+    });
+
+    it('feedback on a staged interview is scored on the stage criteria, not the job criteria', async () => {
+      await startNow(staged);
+      const url = `/api/v1/interviews/${staged}/feedback`;
+      const wrong = await as('ivB', request(server()).put(url))
+        .send({ overall: 4, ratings: ratings() })
+        .expect(400);
+      expect(wrong.body.errors[0].field).toBe('ratings');
+      const res = await as('ivB', request(server()).put(url))
+        .send({ overall: 4, ratings: [{ requirementId: stages[1].criteria[0].id, score: 5 }] })
+        .expect(200);
+      expect(res.body.data.ratings).toEqual([
+        { requirementId: stages[1].criteria[0].id, label: 'Giao tiếp', score: 5 },
+      ]);
+    });
+
+    it('a stage with feedback is locked: only renames pass, removing or changing criteria is STAGE_IN_USE', async () => {
+      const [tech, culture] = stages;
+      const locked = await as('hr', request(server()).get(stagesUrl())).expect(200);
+      expect(locked.body.data.map((st: StageView) => st.locked)).toEqual([false, true]);
+
+      const removed = await put('hr', [{ id: tech.id, name: tech.name, criteria: tech.criteria }]);
+      expect(removed.status).toBe(409);
+      expect(removed.body.code).toBe('STAGE_IN_USE');
+      const added = await put('hr', [
+        { id: tech.id, name: tech.name, criteria: tech.criteria },
+        { id: culture.id, name: culture.name, criteria: [...culture.criteria, { label: 'Mới' }] },
+      ]).expect(409);
+      expect(added.body.code).toBe('STAGE_IN_USE');
+
+      const renamed = await put('hr', [
+        {
+          id: culture.id,
+          name: 'Vòng văn hoá nhóm',
+          criteria: [{ ...culture.criteria[0], label: 'Giao tiếp nhóm' }],
+        },
+        { id: tech.id, name: tech.name, criteria: tech.criteria },
+      ]).expect(200);
+      expect(renamed.body.data.map((st: StageView) => [st.id, st.name])).toEqual([
+        [culture.id, 'Vòng văn hoá nhóm'],
+        [tech.id, 'Vòng kỹ thuật'],
+      ]);
+    });
+
+    it('cloning a job copies its stages', async () => {
+      const res = await as('hr', request(server()).post(`/api/v1/jobs/${ids.job}/clone`)).expect(
+        201,
+      );
+      clonedJob = res.body.data.id;
+      const copy = await as(
+        'hr',
+        request(server()).get(`/api/v1/jobs/${clonedJob}/interview-stages`),
+      ).expect(200);
+      expect(copy.body.data.map((st: StageView) => [st.name, st.locked])).toEqual([
+        ['Vòng văn hoá nhóm', false],
+        ['Vòng kỹ thuật', false],
+      ]);
     });
   });
 

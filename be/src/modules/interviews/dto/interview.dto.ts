@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -50,9 +50,16 @@ export class ScheduleInterviewDto {
   @ArrayUnique()
   @IsUUID('all', { each: true })
   interviewerIds: string[];
+
+  @ApiPropertyOptional({
+    description: 'Vòng phỏng vấn của tin (F-INT-04); không đổi được sau khi tạo',
+  })
+  @IsOptional()
+  @IsUUID()
+  stageId?: string;
 }
 
-export class UpdateInterviewDto extends PartialType(ScheduleInterviewDto) {}
+export class UpdateInterviewDto extends PartialType(OmitType(ScheduleInterviewDto, ['stageId'])) {}
 
 export class CancelInterviewDto {
   @ApiProperty({ maxLength: 1000 })

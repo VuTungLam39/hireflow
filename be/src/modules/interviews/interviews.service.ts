@@ -24,6 +24,10 @@ import { Application } from '../applications/entities/application.entity.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity.js';
 import { CvFile } from '../files/entities/cv-file.entity.js';
+import {
+  JobInterviewStage,
+  type StageCriterion,
+} from '../jobs/entities/job-interview-stage.entity.js';
 import { JobRequirement, RequirementType } from '../jobs/entities/job-requirement.entity.js';
 import { NotificationType } from '../notifications/entities/notification.entity.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
@@ -65,6 +69,8 @@ export interface InterviewView {
   id: string;
   applicationId: string;
   round: number;
+  /** F-INT-04: null khi buổi không gắn vòng, phiếu chấm theo tiêu chí của tin */
+  stage: { id: string; name: string; criteria: StageCriterion[] } | null;
   scheduledAt: Date;
   durationMinutes: number;
   location: string;
@@ -241,7 +247,20 @@ export class InterviewsService implements OnModuleInit {
       const start = new Date(dto.scheduledAt);
       await this.assertNoConflict(manager, dto.interviewerIds, start, dto.durationMinutes, null);
 
+      // F-INT-04: có vòng thì số vòng theo thứ tự vòng của tin
+      const stage = dto.stageId
+        ? await manager.findOneBy(JobInterviewStage, { id: dto.stageId, jobId: app.jobId })
+        : null;
+      if (dto.stageId && !stage) {
+        throw new BusinessException(
+          ErrorCode.ValidationFailed,
+          'Validation failed',
+          HttpStatus.BAD_REQUEST,
+          [{ field: 'stageId', messages: ['Vòng không thuộc tin của hồ sơ này'] }],
+        );
+      }
       const round =
+        stage?.position ??
         (await manager.countBy(Interview, {
           applicationId,
           status: In([InterviewStatus.Scheduled, InterviewStatus.Completed]),
@@ -251,6 +270,7 @@ export class InterviewsService implements OnModuleInit {
           organizationId: app.organizationId,
           applicationId,
           round: Math.min(round, 20),
+          stageId: stage?.id ?? null,
           scheduledAt: start,
           durationMinutes: dto.durationMinutes,
           location: dto.location,
@@ -455,7 +475,7 @@ export class InterviewsService implements OnModuleInit {
             HttpStatus.CONFLICT,
           );
         }
-        const ratings = await this.checkRatings(manager, iv.application!, dto);
+        const ratings = await this.checkRatings(manager, iv, dto);
         const existing = await manager.findOneBy(InterviewFeedback, {
           interviewId: id,
           authorId: user.id,
@@ -665,12 +685,19 @@ export class InterviewsService implements OnModuleInit {
     return iv;
   }
 
-  private async checkRatings(manager: EntityManager, app: Application, dto: FeedbackDto) {
-    const requirements = await manager.find(JobRequirement, {
-      select: ['id', 'label'],
-      where: { jobId: app.jobId, jdVersion: app.job!.jdVersion },
-      order: { position: 'ASC' },
-    });
+  // BR-INT-03: chấm theo tiêu chí của vòng; buổi không có vòng chấm theo tiêu chí của tin
+  private async checkRatings(manager: EntityManager, iv: Interview, dto: FeedbackDto) {
+    const app = iv.application!;
+    const stage = iv.stageId
+      ? await manager.findOneBy(JobInterviewStage, { id: iv.stageId })
+      : null;
+    const requirements = stage
+      ? stage.criteria
+      : await manager.find(JobRequirement, {
+          select: ['id', 'label'],
+          where: { jobId: app.jobId, jdVersion: app.job!.jdVersion },
+          order: { position: 'ASC' },
+        });
     const given = new Map(dto.ratings.map((r) => [r.requirementId, r.score]));
     const missing = requirements.filter((r) => !given.has(r.id));
     const unknown = dto.ratings.filter((r) => !requirements.some((q) => q.id === r.requirementId));
@@ -735,6 +762,7 @@ export class InterviewsService implements OnModuleInit {
       .addSelect(['candidate.id', 'candidate.fullName'])
       .leftJoin('app.job', 'job')
       .addSelect(['job.id', 'job.title'])
+      .leftJoinAndSelect('iv.stage', 'stage')
       .where('iv.id IN (:...ids)', { ids })
       .orderBy('iv.scheduledAt', 'ASC')
       .addOrderBy('au.fullName', 'ASC')
@@ -747,6 +775,9 @@ export class InterviewsService implements OnModuleInit {
         id: iv.id,
         applicationId: iv.applicationId,
         round: iv.round,
+        stage: iv.stage
+          ? { id: iv.stage.id, name: iv.stage.name, criteria: iv.stage.criteria }
+          : null,
         scheduledAt: iv.scheduledAt,
         durationMinutes: iv.durationMinutes,
         location: iv.location,
