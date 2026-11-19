@@ -36,6 +36,9 @@ import {
 import type { StorageService } from '../../../modules/files/storage/storage.service.js';
 import { InterviewAssignee } from '../../../modules/interviews/entities/interview-assignee.entity.js';
 import { InterviewFeedback } from '../../../modules/interviews/entities/interview-feedback.entity.js';
+import { JobInterviewStage } from '../../../modules/jobs/entities/job-interview-stage.entity.js';
+import { Offer, OfferStatus, SalaryPeriod } from '../../../modules/offers/entities/offer.entity.js';
+import { FeedbackRecommendation } from '../../../common/enums/feedback-recommendation.enum.js';
 import {
   Interview,
   InterviewStatus,
@@ -69,7 +72,9 @@ export const demoId = (name: string) => {
 const BUSINESS_TABLES = [
   'company_profile',
   'media_files',
+  'offers',
   'interviews',
+  'job_interview_stages',
   'application_notes',
   'application_status_history',
   'applications',
@@ -134,6 +139,7 @@ export async function seedDemo(
       await seedCvFiles(manager, cvs);
       await seedApplications(manager, { jobs, candidateIds, userIds, cvs });
       await seedInterviews(manager, userIds);
+      await seedOffers(manager, userIds);
       for (const image of images) {
         await storage.put(image.checked.key, image.checked.buffer, image.checked.mime);
         storedKeys.push(image.checked.key);
@@ -558,8 +564,8 @@ async function seedApplications(
     ];
     let status = ApplicationStatus.New;
     let changedAt = appliedAt;
-    for (const [step, [to, when, by, reason]] of def.steps.entries()) {
-      assertTransition(status, to, reason);
+    for (const [step, [to, when, by, reason, reasonCode]] of def.steps.entries()) {
+      assertTransition(status, to, reason, reasonCode);
       const stepAt = at(when);
       if (stepAt <= changedAt)
         throw new Error(`Application ${index}: step ${step} goes back in time`);
@@ -580,6 +586,7 @@ async function seedApplications(
         fromStatus: status,
         toStatus: to,
         reason: reason ?? null,
+        reasonCode: reasonCode ?? null,
         changedBy: ctx.userIds.get(by)!,
         changedAt: stepAt,
         prevStageSeconds: stageSeconds(changedAt, stepAt),
@@ -677,17 +684,48 @@ async function seedInterviews(manager: EntityManager, userIds: Map<string, strin
       location: 'https://meet.google.com/demo-hireflow-2',
     },
   ];
+  // MVP 3.1 · F-INT-04, F-JOB-12: tin của buổi có phiếu có 2 vòng và HM phụ trách khác phòng
+  const showcase = apps[0]?.jobId;
+  const stageIds: string[] = [];
+  // kịch bản demo 11c → 12: HR soạn offer cho Nam, Trần Đức Long duyệt
+  await manager.update(Job, demoId('job:backend'), { hiringManagerId: userIds.get('hm.eng')! });
+  if (showcase) {
+    await manager.update(Job, showcase, { hiringManagerId: userIds.get('hm.eng')! });
+    for (const [position, [name, criteria]] of (
+      [
+        ['Phỏng vấn chuyên môn', ['Kiến thức nền tảng', 'Thiết kế hệ thống', 'Giải quyết vấn đề']],
+        ['Phỏng vấn văn hoá', ['Giao tiếp', 'Tinh thần hợp tác']],
+      ] as const
+    ).entries()) {
+      const id = demoId(`stage:${showcase}:${position}`);
+      stageIds.push(id);
+      await manager.insert(JobInterviewStage, {
+        id,
+        jobId: showcase,
+        position: position + 1,
+        name,
+        criteria: criteria.map((label, k) => ({ id: demoId(`criterion:${id}:${k}`), label })),
+      });
+    }
+  }
   for (const [i, app] of apps.entries()) {
     const plan = plans[i];
-    const requirements = await manager.find(JobRequirement, {
-      where: { jobId: app.jobId, jdVersion: app.job!.jdVersion },
-      order: { position: 'ASC' },
-    });
+    const stage =
+      app.jobId === showcase
+        ? await manager.findOneBy(JobInterviewStage, { id: stageIds[0] })
+        : null;
+    const requirements = stage
+      ? stage.criteria
+      : await manager.find(JobRequirement, {
+          where: { jobId: app.jobId, jdVersion: app.job!.jdVersion },
+          order: { position: 'ASC' },
+        });
     const id = demoId(`interview:${app.id}`);
     await manager.insert(Interview, {
       organizationId: DEFAULT_ORGANIZATION_ID,
       id,
       applicationId: app.id,
+      stageId: stage?.id ?? null,
       round: 1,
       scheduledAt: plan.at,
       durationMinutes: 60,
@@ -708,6 +746,7 @@ async function seedInterviews(manager: EntityManager, userIds: Map<string, strin
         interviewId: id,
         authorId,
         overall: 4 - k,
+        recommendation: k === 0 ? FeedbackRecommendation.StrongYes : FeedbackRecommendation.Yes,
         ratings: requirements.map((r, j) => ({
           requirementId: r.id,
           label: r.label,
@@ -722,6 +761,53 @@ async function seedInterviews(manager: EntityManager, userIds: Map<string, strin
         editableUntil: new Date(submittedAt.getTime() + 24 * 3_600_000),
       });
     }
+  }
+}
+
+// MVP 3.1 · F-OFFER-01: chờ HM duyệt (buổi có phiếu), đã gửi (hồ sơ OFFER), đã nhận (hồ sơ HIRED)
+async function seedOffers(manager: EntityManager, userIds: Map<string, string>): Promise<void> {
+  const pick = (status: ApplicationStatus) =>
+    manager
+      .getRepository(Application)
+      .createQueryBuilder('app')
+      .innerJoin('app.candidate', 'candidate')
+      .where('app.status = :status', { status })
+      .andWhere('candidate.anonymizedAt IS NULL')
+      .orderBy('app.score', 'DESC', 'NULLS LAST')
+      .addOrderBy('app.id')
+      .getOne();
+  const hr = userIds.get('hr.ha')!;
+  const admin = userIds.get('admin')!;
+  const daysFromNow = (n: number) => vnToday(new Date(Date.now() + n * DAY));
+  const plans = [
+    {
+      app: await pick(ApplicationStatus.Interview),
+      status: OfferStatus.PendingApproval,
+      salary: 32_000_000,
+    },
+    { app: await pick(ApplicationStatus.Offer), status: OfferStatus.Sent, salary: 28_000_000 },
+    { app: await pick(ApplicationStatus.Hired), status: OfferStatus.Accepted, salary: 35_000_000 },
+  ];
+  for (const { app, status, salary } of plans) {
+    if (!app) continue;
+    const approved = status !== OfferStatus.PendingApproval;
+    await manager.insert(Offer, {
+      id: demoId(`offer:${app.id}`),
+      organizationId: DEFAULT_ORGANIZATION_ID,
+      applicationId: app.id,
+      status,
+      salaryAmount: salary,
+      salaryCurrency: 'VND',
+      salaryPeriod: SalaryPeriod.Month,
+      startDate: daysFromNow(status === OfferStatus.Accepted ? -10 : 30),
+      respondBy: daysFromNow(status === OfferStatus.Accepted ? -20 : 7),
+      note: 'Thử việc 2 tháng hưởng 100% lương; thưởng tháng 13; bảo hiểm sức khoẻ.',
+      createdBy: hr,
+      approvedBy: approved ? admin : null,
+      approvedAt: approved ? new Date(Date.now() - 5 * DAY) : null,
+      sentAt: approved ? new Date(Date.now() - 4 * DAY) : null,
+      decidedAt: status === OfferStatus.Accepted ? new Date(Date.now() - 2 * DAY) : null,
+    });
   }
 }
 

@@ -1,9 +1,17 @@
 import { ApplicationSource } from '../../../common/enums/application-source.enum.js';
 import { ApplicationStatus } from '../../../common/enums/application-status.enum.js';
+import { RejectReasonCode } from '../../../common/enums/reject-reason-code.enum.js';
 
 const S = ApplicationStatus;
+const R = RejectReasonCode;
 
-export type DemoStep = [to: ApplicationStatus, at: string, by: string, reason?: string];
+export type DemoStep = [
+  to: ApplicationStatus,
+  at: string,
+  by: string,
+  reason?: string,
+  reasonCode?: RejectReasonCode,
+];
 export type DemoNote = [by: string, at: string, content: string];
 
 export interface DemoApplication {
@@ -83,6 +91,7 @@ export const APPLICATIONS: DemoApplication[] = [
         '2026-09-23 11:00',
         'hr.ha',
         'Chưa có kinh nghiệm NestJS và TypeScript, hồ sơ hợp vị trí Java hơn',
+        R.SkillGap,
       ],
     ],
     notes: [
@@ -176,7 +185,13 @@ export const APPLICATIONS: DemoApplication[] = [
     steps: [
       [S.Screening, '2026-09-12 10:00', 'hr.ha'],
       [S.Interview, '2026-09-17 09:30', 'hr.ha'],
-      [S.Rejected, '2026-09-24 17:00', 'hr.ha', 'Kết quả phỏng vấn kỹ thuật React chưa đạt'],
+      [
+        S.Rejected,
+        '2026-09-24 17:00',
+        'hr.ha',
+        'Kết quả phỏng vấn kỹ thuật React chưa đạt',
+        R.SkillGap,
+      ],
     ],
     notes: [
       [
@@ -328,7 +343,13 @@ export const APPLICATIONS: DemoApplication[] = [
     ai: 'DONE',
     steps: [
       [S.Screening, '2026-07-30 09:00', 'hr.ha'],
-      [S.Rejected, '2026-08-04 15:00', 'hr.ha', 'Chưa đủ kinh nghiệm SQL và chưa dùng công cụ BI'],
+      [
+        S.Rejected,
+        '2026-08-04 15:00',
+        'hr.ha',
+        'Chưa đủ kinh nghiệm SQL và chưa dùng công cụ BI',
+        R.Experience,
+      ],
     ],
     notes: [],
   },
@@ -372,7 +393,13 @@ export const APPLICATIONS: DemoApplication[] = [
       [S.Screening, '2026-07-15 09:30', 'hr.ha'],
       [S.Interview, '2026-07-22 10:00', 'hr.ha'],
       [S.Offer, '2026-08-05 15:00', 'hr.ha'],
-      [S.Rejected, '2026-08-08 10:00', 'hm.sales', 'Mức lương mong muốn vượt ngân sách của vị trí'],
+      [
+        S.Rejected,
+        '2026-08-08 10:00',
+        'hm.sales',
+        'Mức lương mong muốn vượt ngân sách của vị trí',
+        R.Salary,
+      ],
     ],
     notes: [],
   },
@@ -455,7 +482,15 @@ export const APPLICATIONS: DemoApplication[] = [
     source: PUBLIC,
     appliedAt: '2026-09-14 13:30',
     ai: 'DONE',
-    steps: [[S.Rejected, '2026-09-16 10:00', 'hr.bao', 'Chưa có kinh nghiệm chạy Facebook Ads']],
+    steps: [
+      [
+        S.Rejected,
+        '2026-09-16 10:00',
+        'hr.bao',
+        'Chưa có kinh nghiệm chạy Facebook Ads',
+        R.Experience,
+      ],
+    ],
     notes: [
       [
         'hr.bao',

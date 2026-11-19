@@ -76,7 +76,9 @@ export default function PrivacyPolicyPage() {
             vector dùng để tìm kiếm.
           </li>
           <li>
-            Người tuyển dụng tạo ra: trạng thái hồ sơ, ghi chú, lịch và phiếu đánh giá phỏng vấn.
+            Người tuyển dụng tạo ra: trạng thái hồ sơ và lý do từ chối, ghi chú, lịch và phiếu đánh
+            giá phỏng vấn (gồm đề xuất tuyển của người phỏng vấn), đề nghị tuyển dụng (mức lương,
+            ngày bắt đầu, hạn trả lời).
           </li>
         </ul>
         <p>
@@ -152,9 +154,9 @@ export default function PrivacyPolicyPage() {
       <Section title="6. Lưu bao lâu">
         <p>
           Tối đa 12 tháng kể từ lần nộp gần nhất. Hết hạn, hoặc khi bạn yêu cầu xoá, hệ thống ẩn
-          danh: xoá file CV, dữ liệu trích xuất từ CV, vector tìm kiếm, ghi chú và nhận xét phỏng
-          vấn; thay họ tên, email, số điện thoại. Bản sao lưu cơ sở dữ liệu tự hết hạn theo chu kỳ
-          của nhà cung cấp.
+          danh: xoá file CV, dữ liệu trích xuất từ CV, vector tìm kiếm, ghi chú, nhận xét phỏng vấn
+          và đề nghị tuyển dụng; thay họ tên, email, số điện thoại. Bản sao lưu cơ sở dữ liệu tự hết
+          hạn theo chu kỳ của nhà cung cấp.
         </p>
         <p>
           Link theo dõi hồ sơ hết hạn sau 90 ngày kể từ ngày nộp. Ai có link đều xem được trạng thái
