@@ -7,7 +7,10 @@ import { RejectReasonCode } from '../../../common/enums/reject-reason-code.enum.
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
 export class ChangeStatusDto {
-  @ApiProperty({ enum: ApplicationStatus, description: 'Không nhận HIRED (dùng /hire)' })
+  @ApiProperty({
+    enum: ApplicationStatus,
+    description: 'Không nhận OFFER, HIRED (đi qua luồng offer)',
+  })
   @IsEnum(ApplicationStatus)
   status: ApplicationStatus;
 
@@ -22,18 +25,4 @@ export class ChangeStatusDto {
   @IsOptional()
   @IsEnum(RejectReasonCode)
   reasonCode?: RejectReasonCode;
-}
-
-export class DeclineOfferDto {
-  @ApiProperty({ enum: RejectReasonCode, description: 'Bắt buộc (BR-STS-03)' })
-  @IsOptional()
-  @IsEnum(RejectReasonCode)
-  reasonCode?: RejectReasonCode;
-
-  @ApiPropertyOptional({ description: 'Bắt buộc khi reasonCode = OTHER' })
-  @IsOptional()
-  @Transform(trim)
-  @IsString()
-  @MaxLength(1000)
-  reason?: string;
 }

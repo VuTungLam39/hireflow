@@ -33,6 +33,7 @@ import { EmailModule } from './modules/email/email.module.js';
 import { FilesModule } from './modules/files/files.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { InterviewsModule } from './modules/interviews/interviews.module.js';
+import { OffersModule } from './modules/offers/offers.module.js';
 import { CompanyModule } from './modules/company/company.module.js';
 import { JobsModule } from './modules/jobs/jobs.module.js';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module.js';
@@ -102,6 +103,7 @@ import { UsersModule } from './modules/users/users.module.js';
     MaintenanceModule,
     NotificationsModule,
     InterviewsModule,
+    OffersModule,
   ],
   providers: [
     // Guards chạy theo thứ tự đăng ký: xác thực JWT -> rate limit (theo user, chưa đăng nhập theo IP) -> phân quyền

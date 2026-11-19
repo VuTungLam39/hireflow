@@ -220,6 +220,11 @@ export class CandidatesService {
       this.assertNotAnonymized(candidate);
 
       // BR-APP-14: link theo dõi và email đã gửi chứa email ứng viên
+      // MVP 3.1 · BR-DATA-03: offer chứa lương
+      await manager.query(
+        `DELETE FROM offers WHERE application_id IN (SELECT id FROM applications WHERE candidate_id = $1)`,
+        [id],
+      );
       await manager.query(
         `DELETE FROM auth_tokens WHERE application_id IN (SELECT id FROM applications WHERE candidate_id = $1)`,
         [id],

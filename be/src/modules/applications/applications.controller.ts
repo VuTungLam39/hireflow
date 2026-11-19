@@ -32,7 +32,7 @@ import { CV_UPLOAD_OPTIONS } from '../files/cv-upload.options.js';
 import { exportFileName } from './application-export.js';
 import { ApplicationsService } from './applications.service.js';
 import { BulkStatusDto } from './dto/bulk-status.dto.js';
-import { ChangeStatusDto, DeclineOfferDto } from './dto/change-status.dto.js';
+import { ChangeStatusDto } from './dto/change-status.dto.js';
 import { CompareApplicationsDto } from './dto/compare-applications.dto.js';
 import { CreateNoteDto } from './dto/create-note.dto.js';
 import { CvTextDto } from './dto/cv-text.dto.js';
@@ -132,26 +132,6 @@ export class ApplicationsController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.applicationsService.changeStatus(id, dto, user);
-  }
-
-  @Patch(':id/hire')
-  @Permissions(Permission.ApplicationApproveOffer)
-  @ApiOperation({ summary: 'Duyệt nhận việc: OFFER → HIRED' })
-  @ResponseMessage('Candidate hired')
-  hire(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
-    return this.applicationsService.hire(id, user);
-  }
-
-  @Patch(':id/decline-offer')
-  @Permissions(Permission.ApplicationApproveOffer)
-  @ApiOperation({ summary: 'Từ chối ở bước OFFER: OFFER → REJECTED, bắt buộc lý do' })
-  @ResponseMessage('Offer declined')
-  declineOffer(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: DeclineOfferDto,
-    @CurrentUser() user: AuthUser,
-  ) {
-    return this.applicationsService.declineOffer(id, dto, user);
   }
 
   @Post(':id/rescore')

@@ -19,6 +19,10 @@ export enum NotificationType {
   InterviewUpdated = 'INTERVIEW_UPDATED',
   InterviewCancelled = 'INTERVIEW_CANCELLED',
   FeedbackSubmitted = 'FEEDBACK_SUBMITTED',
+  // MVP 3.1 · F-OFFER-01
+  OfferPendingApproval = 'OFFER_PENDING_APPROVAL',
+  OfferApproved = 'OFFER_APPROVED',
+  OfferReturned = 'OFFER_RETURNED',
 }
 
 // F-NOTI-01 · Database Design 9

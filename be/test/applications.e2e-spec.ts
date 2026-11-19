@@ -402,52 +402,16 @@ describe('Applications (e2e)', () => {
     });
   });
 
-  describe('offer approval (US-09, BR-STS-04, 05)', () => {
-    it('HR cannot hire; a manager of another department gets SCOPE_FORBIDDEN', async () => {
-      await as('hr', request(server()).patch(`/api/v1/applications/${ids.a2}/hire`)).expect(403);
-      const res = await as(
-        'hmB',
-        request(server()).patch(`/api/v1/applications/${ids.a2}/hire`),
-      ).expect(403);
-      expect(res.body.code).toBe('SCOPE_FORBIDDEN');
-    });
-
-    it('BR-STS-05: declining an offer needs a reason', async () => {
-      const res = await as(
-        'hmA',
-        request(server()).patch(`/api/v1/applications/${ids.a2}/decline-offer`),
-      )
-        .send({})
-        .expect(400);
-      expect(res.body.code).toBe('REJECT_REASON_REQUIRED');
-    });
-
-    it('the department manager hires, once', async () => {
-      const res = await as(
-        'hmA',
-        request(server()).patch(`/api/v1/applications/${ids.a2}/hire`),
-      ).expect(200);
-      expect(res.body.data.status).toBe('HIRED');
-      await as('hmA', request(server()).patch(`/api/v1/applications/${ids.a2}/hire`)).expect(409);
-      const history = await as(
-        'hmA',
-        request(server()).get(`/api/v1/applications/${ids.a2}/history`),
-      ).expect(200);
-      expect(history.body.data[0]).toMatchObject({
-        fromStatus: 'OFFER',
-        toStatus: 'HIRED',
-        changedBy: { fullName: 'Trưởng phòng A' },
-      });
-    });
-
-    it('BR-STS-05: decline-offer only works from OFFER', async () => {
-      const res = await as(
-        'hmB',
-        request(server()).patch(`/api/v1/applications/${ids.a3}/decline-offer`),
-      )
+  describe('OFFER and HIRED only through the offer flow (MVP 3.1 · BR-STS-05, BR-OFFER-02)', () => {
+    it('the old hire / decline-offer routes are gone and /status cannot reach OFFER or HIRED', async () => {
+      await as('hmA', request(server()).patch(`/api/v1/applications/${ids.a2}/hire`)).expect(404);
+      await as('hmA', request(server()).patch(`/api/v1/applications/${ids.a2}/decline-offer`))
         .send({ reasonCode: 'SALARY' })
+        .expect(404);
+      const hired = await as('hr', request(server()).patch(`/api/v1/applications/${ids.a2}/status`))
+        .send({ status: 'HIRED' })
         .expect(409);
-      expect(res.body.code).toBe('INVALID_STATUS_TRANSITION');
+      expect(hired.body.code).toBe('INVALID_STATUS_TRANSITION');
     });
   });
 

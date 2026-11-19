@@ -27,6 +27,7 @@ import {
   RequirementType,
 } from '../src/modules/jobs/entities/job-requirement.entity.js';
 import { Job, JobStatus } from '../src/modules/jobs/entities/job.entity.js';
+import { Offer } from '../src/modules/offers/entities/offer.entity.js';
 import { Notification } from '../src/modules/notifications/entities/notification.entity.js';
 import {
   Organization,
@@ -62,6 +63,7 @@ describe('Cross-tenant isolation (e2e)', () => {
     interview: '',
     media: '',
     notification: '',
+    offer: '',
     hrEmail: `x-hr-${run}@example.com`,
     candidateEmail: `x-cand-${run}@example.com`,
   };
@@ -212,7 +214,18 @@ describe('Cross-tenant isolation (e2e)', () => {
         metadata: {},
       }),
     );
+    // MVP 3.1 · F-OFFER-01
+    const offer = await ds.getRepository(Offer).save(
+      inA({
+        applicationId: application.id,
+        salaryAmount: 20_000_000,
+        startDate: '2099-01-15',
+        respondBy: '2099-01-01',
+        createdBy: hr.id,
+      }),
+    );
     Object.assign(a, {
+      offer: offer.id,
       dept: dept.id,
       hr: hr.id,
       interviewer: interviewer.id,
@@ -333,6 +346,8 @@ describe('Cross-tenant isolation (e2e)', () => {
       UsersController: { id: a.hr },
       AdminJobsController: { applicationId: a.app },
       PlatformController: { id: orgA },
+      ApplicationOffersController: { applicationId: a.app },
+      OffersController: { id: a.offer },
     };
     return byController[route.controller]?.[param];
   };
