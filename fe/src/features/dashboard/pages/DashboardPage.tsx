@@ -55,9 +55,10 @@ export default function DashboardPage() {
           {
             key: 'offers',
             count: t.offers,
-            text: (c: number) => `${n(c)} đề nghị chờ bạn duyệt`,
+            // MVP 3.1 · BR-OFFER-02: hồ sơ OFFER là offer đã gửi; duyệt offer báo qua chuông
+            text: (c: number) => `${n(c)} offer đang chờ ứng viên trả lời`,
             to: links.applications({ status: 'OFFER' }),
-            action: 'Duyệt',
+            action: 'Xem',
           },
         ]
       : []),
