@@ -120,6 +120,10 @@ export const routes: RouteObject[] = [
             path: paths.verifyEmail,
             lazy: page(() => import('@/features/employers/pages/VerifyEmailPage')),
           },
+          {
+            path: paths.applicationTrack,
+            lazy: page(() => import('@/features/public-jobs/pages/TrackApplicationPage')),
+          },
         ],
       },
       {

@@ -67,3 +67,16 @@ export interface PublicDepartmentCount {
   name: string
   count: number
 }
+
+/** KH MVP 3 mục 9.4: trạng thái rút gọn ứng viên thấy qua link theo dõi */
+export type TrackStage = 'RECEIVED' | 'REVIEWING' | 'INTERVIEW' | 'DECIDED' | 'WITHDRAWN'
+
+/** BR-APP-14: không có id, điểm, cờ, ghi chú hay trạng thái nội bộ */
+export interface ApplicationTrack {
+  jobTitle: string
+  companyName: string
+  companySlug: string
+  appliedAt: string
+  stage: TrackStage
+  withdrawable: boolean
+}

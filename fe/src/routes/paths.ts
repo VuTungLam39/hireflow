@@ -41,6 +41,8 @@ export const paths = {
   employerRegister: '/employers/register',
   employerCheckEmail: '/employers/check-email',
   verifyEmail: '/verify-email',
+  // MVP 3 · US-26: link trong email xác nhận nộp hồ sơ
+  applicationTrack: '/applications/track',
 } as const
 
 const withQuery = (path: string, query?: Record<string, string | undefined>) => {
