@@ -22,6 +22,7 @@ import { applyDepartmentScope, dataScope, orgIdOf } from '../../common/utils/dep
 import { escapeLike } from '../../common/utils/text.js';
 import { vnToday } from '../../common/utils/vn-date.js';
 import { AuditService } from '../audit/audit.service.js';
+import { ApplicationTrackingService } from './application-tracking.service.js';
 import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity.js';
 import { CvPipelineService } from '../ai/pipeline/cv-pipeline.service.js';
 import { CandidatesService } from '../candidates/candidates.service.js';
@@ -77,7 +78,7 @@ export interface BulkStatusResult {
 
 export const HR_CONSENT_VERSION = 'HR_CONFIRMED';
 // BR-APP-04
-export const PUBLIC_CONSENT_VERSION = 'v3';
+export const PUBLIC_CONSENT_VERSION = 'v4';
 const VN_OFFSET = '+07:00';
 const DAY_MS = 86_400_000;
 
@@ -151,6 +152,7 @@ export class ApplicationsService {
     private readonly pipeline: CvPipelineService,
     private readonly events: AppEvents,
     private readonly audit: AuditService,
+    private readonly tracking: ApplicationTrackingService,
   ) {}
 
   // US-06, BR-ACC-07
@@ -726,7 +728,7 @@ export class ApplicationsService {
     if (job.status !== JobStatus.Open) {
       throw new BusinessException(ErrorCode.JobNotOpen, 'Job is not open', HttpStatus.CONFLICT);
     }
-    const applicationId = await this.submit(
+    const { applicationId } = await this.submit(
       job,
       { fullName: dto.fullName, email: dto.email, phone: dto.phone },
       file,
@@ -746,7 +748,13 @@ export class ApplicationsService {
     requestId?: string,
   ): Promise<null> {
     const job = await this.dataSource.getRepository(Job).findOne({
-      select: { id: true, deadline: true, organizationId: true },
+      select: {
+        id: true,
+        title: true,
+        deadline: true,
+        organizationId: true,
+        organization: { name: true },
+      },
       // BR-ORG-04: chỉ công ty ACTIVE nhận hồ sơ công khai
       where: {
         id: jobId,
@@ -766,12 +774,19 @@ export class ApplicationsService {
     }
     // BR-APP-06
     if (dto.website) return null;
-    const applicationId = await this.submit(
+    const { applicationId, outboxId } = await this.submit(
       job,
       { fullName: dto.fullName, email: dto.email, phone: dto.phone },
       file,
-      { source: ApplicationSource.PublicForm, consentVersion: PUBLIC_CONSENT_VERSION, by: null },
+      {
+        source: ApplicationSource.PublicForm,
+        consentVersion: PUBLIC_CONSENT_VERSION,
+        by: null,
+        track: { jobTitle: job.title, companyName: job.organization!.name },
+      },
     );
+    // BR-APP-14
+    if (outboxId) await this.tracking.dispatch(outboxId);
     // Kickoff 12: cv.uploaded
     await this.pipeline.enqueueApplication(applicationId, requestId);
     // BR-APP-07
@@ -783,8 +798,13 @@ export class ApplicationsService {
     job: Pick<Job, 'id' | 'organizationId'>,
     contact: { fullName: string; email: string; phone?: string },
     file: UploadedCv | undefined,
-    opts: { source: ApplicationSource; consentVersion: string; by: string | null },
-  ): Promise<string> {
+    opts: {
+      source: ApplicationSource;
+      consentVersion: string;
+      by: string | null;
+      track?: { jobTitle: string; companyName: string };
+    },
+  ): Promise<{ applicationId: string; outboxId: string | null }> {
     const cv = checkCv(file);
     const { id: jobId, organizationId } = job;
     const known = await this.candidatesService.findByEmail(contact.email, organizationId);
@@ -795,7 +815,7 @@ export class ApplicationsService {
     );
     const storageKey = reusable ? null : await this.filesService.store(cv);
 
-    let result: { applicationId: string; storedUnused: boolean };
+    let result: { applicationId: string; outboxId: string | null; storedUnused: boolean };
     const attempt = () =>
       this.dataSource.transaction(async (manager) => {
         const candidate = await this.candidatesService.upsertForApplication(
@@ -823,7 +843,16 @@ export class ApplicationsService {
           source: opts.source,
           changedBy: opts.by,
         });
-        return { applicationId: id, storedUnused: !!(reused && storageKey) };
+        const outboxId = opts.track
+          ? await this.tracking.issue(manager, {
+              applicationId: id,
+              organizationId,
+              to: contact.email,
+              fullName: contact.fullName,
+              ...opts.track,
+            })
+          : null;
+        return { applicationId: id, outboxId, storedUnused: !!(reused && storageKey) };
       });
     try {
       // BR-CAND-01
@@ -838,7 +867,7 @@ export class ApplicationsService {
     // Kickoff 13
     if (result.storedUnused)
       await this.filesService.removeStored(storageKey!).catch(() => undefined);
-    return result.applicationId;
+    return { applicationId: result.applicationId, outboxId: result.outboxId };
   }
 
   // F-MATCH-02, BR-MATCH-03

@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Post,
@@ -15,14 +17,20 @@ import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { RequestId } from '../../common/decorators/request-id.decorator.js';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator.js';
+import { ApplicationTrackingService } from '../applications/application-tracking.service.js';
 import { ApplicationsService } from '../applications/applications.service.js';
 import { PublicApplyDto } from '../applications/dto/public-apply.dto.js';
+import {
+  TrackApplicationQueryDto,
+  WithdrawApplicationDto,
+} from '../applications/dto/track-application.dto.js';
 import type { UploadedCv } from '../files/cv-file.rules.js';
 import { CV_UPLOAD_OPTIONS } from '../files/cv-upload.options.js';
 import { QueryPublicJobsDto } from '../jobs/dto/query-public-jobs.dto.js';
 import { JobsService } from '../jobs/jobs.service.js';
 
 const HOUR_MS = 3_600_000;
+const MINUTE_MS = 60_000;
 
 // API Contract 4.7
 @ApiTags('Public')
@@ -66,5 +74,29 @@ export class PublicJobsController {
     @RequestId() requestId?: string,
   ) {
     return this.applicationsService.applyPublic(id, dto, file, requestId);
+  }
+}
+
+// MVP 3 · F-APP-12, BR-APP-14
+@ApiTags('Public')
+@Public()
+@Controller('public/applications')
+export class PublicApplicationsController {
+  constructor(private readonly tracking: ApplicationTrackingService) {}
+
+  @Get('track')
+  @Throttle({ default: { limit: 30, ttl: MINUTE_MS } })
+  @ApiOperation({ summary: 'Ứng viên xem trạng thái rút gọn qua link theo dõi' })
+  track(@Query() query: TrackApplicationQueryDto) {
+    return this.tracking.track(query.t);
+  }
+
+  @Post('withdraw')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: MINUTE_MS } })
+  @ApiOperation({ summary: 'Ứng viên tự rút hồ sơ qua link theo dõi' })
+  @ResponseMessage('Application withdrawn')
+  withdraw(@Body() dto: WithdrawApplicationDto) {
+    return this.tracking.withdraw(dto.token);
   }
 }

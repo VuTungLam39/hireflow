@@ -110,6 +110,21 @@ export function renderEmail<T extends EmailTemplate>(
         ],
         action: login,
       });
+    // BR-APP-14
+    case EmailTemplate.ApplicationReceived:
+      return compose({
+        subject: `Đã nhận hồ sơ ứng tuyển "${p.jobTitle}"`,
+        lines: [
+          `Chào ${p.fullName},`,
+          `Công ty "${p.companyName}" đã nhận hồ sơ của bạn cho vị trí "${p.jobTitle}".`,
+          'Bạn có thể xem trạng thái hồ sơ hoặc tự rút hồ sơ qua link dưới đây.',
+        ],
+        action: {
+          label: 'Theo dõi hồ sơ',
+          url: `${appUrl}/applications/track?t=${encodeURIComponent(p.token ?? '')}`,
+        },
+        note: 'Link hết hạn sau 90 ngày kể từ ngày nộp. Đừng chuyển tiếp email này: ai có link đều xem được trạng thái và rút được hồ sơ.',
+      });
     default: {
       const unhandled: never = template as never;
       throw new Error(`Unknown email template ${String(unhandled)}`);

@@ -53,6 +53,7 @@ export enum ErrorCode {
   ExportTooLarge = 'EXPORT_TOO_LARGE',
   BulkStatusNotAllowed = 'BULK_STATUS_NOT_ALLOWED',
   CompareInvalidSelection = 'COMPARE_INVALID_SELECTION',
+  ApplicationNotWithdrawable = 'APPLICATION_NOT_WITHDRAWABLE',
 
   // Interviews
   InterviewNotAllowed = 'INTERVIEW_NOT_ALLOWED',

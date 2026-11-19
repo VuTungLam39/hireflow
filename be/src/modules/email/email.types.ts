@@ -10,6 +10,7 @@ export enum EmailTemplate {
   OrgRejected = 'ORG_REJECTED',
   OrgSuspended = 'ORG_SUSPENDED',
   OrgReactivated = 'ORG_REACTIVATED',
+  ApplicationReceived = 'APPLICATION_RECEIVED',
 }
 
 export interface EmailPayloads {
@@ -19,6 +20,12 @@ export interface EmailPayloads {
   [EmailTemplate.OrgRejected]: { companyName: string; reason: string };
   [EmailTemplate.OrgSuspended]: { companyName: string; reason: string };
   [EmailTemplate.OrgReactivated]: { companyName: string };
+  [EmailTemplate.ApplicationReceived]: {
+    fullName: string;
+    jobTitle: string;
+    companyName: string;
+    token: string;
+  };
 }
 
 export interface EmailMessage {
