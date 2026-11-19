@@ -16,7 +16,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Authenticated } from '../../common/decorators/permissions.decorator.js';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
-import { dataScope } from '../../common/utils/department-scope.js';
+import { dataScope, inManagerScope } from '../../common/utils/department-scope.js';
 import { QueryNotificationDto } from './dto/query-notification.dto.js';
 import { NotificationsService } from './notifications.service.js';
 import { type RealtimeEvent, RealtimeHub } from './realtime-hub.service.js';
@@ -99,7 +99,7 @@ export class NotificationsController {
           unreadCount: event.unreadCount,
         });
       } else {
-        const { kind: _kind, departmentId: _dept, ...data } = event;
+        const { kind: _kind, departmentId: _dept, hiringManagerId: _hm, ...data } = event;
         send('application', data);
       }
     });
@@ -129,5 +129,5 @@ export function visibleTo(
   if (event.organizationId !== user.organizationId) return false;
   const scope = dataScope(user.role);
   if (scope === 'all') return true;
-  return scope === 'department' && event.departmentId === user.departmentId;
+  return scope === 'department' && inManagerScope(user, event);
 }

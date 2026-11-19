@@ -17,6 +17,8 @@ export type RealtimeEvent =
       kind: 'application';
       organizationId: string;
       departmentId: string;
+      /** BR-JOB-12 */
+      hiringManagerId: string | null;
       applicationId: string;
       jobId: string;
       status: ApplicationStatus;

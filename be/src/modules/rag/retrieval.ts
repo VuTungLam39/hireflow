@@ -3,7 +3,7 @@ import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js'
 import { dataScope, orgIdOf } from '../../common/utils/department-scope.js';
 import type { CvSection } from './cv-chunks.js';
 
-type ScopeUser = Pick<AuthUser, 'role' | 'departmentId' | 'organizationId'>;
+type ScopeUser = Pick<AuthUser, 'role' | 'departmentId' | 'organizationId'> & { id?: string };
 
 export interface RetrievedRow {
   chunkId: string;
@@ -52,9 +52,10 @@ export function retrieveChunks(
   let scope = '';
   const access = dataScope(user.role);
   if (access !== 'all') {
-    if (access !== 'department' || !user.departmentId) return Promise.resolve([]);
-    params.push(user.departmentId);
-    scope = `AND j.department_id = $${params.length}`;
+    if (access !== 'department' || (!user.departmentId && !user.id)) return Promise.resolve([]);
+    // BR-JOB-12
+    params.push(user.departmentId ?? null, user.id ?? null);
+    scope = `AND (j.department_id = $${params.length - 1} OR j.hiring_manager_id = $${params.length})`;
   }
   const readable = (alias: string) => `
     JOIN cv_files cf ON cf.id = ${alias}.cv_file_id AND cf.deleted_at IS NULL

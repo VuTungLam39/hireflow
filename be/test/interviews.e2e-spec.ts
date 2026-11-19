@@ -383,13 +383,23 @@ describe('Interviews (e2e)', () => {
 
   describe('feedback (F-INT-03, BR-INT-03)', () => {
     const put = (who: Who, body: Record<string, unknown>) =>
-      as(who, request(server()).put(`/api/v1/interviews/${interviewA}/feedback`)).send(body);
+      as(who, request(server()).put(`/api/v1/interviews/${interviewA}/feedback`)).send({
+        recommendation: 'YES',
+        ...body,
+      });
 
     it('BR-INT-03: feedback opens at the start time, needs every criterion, and only from an assignee', async () => {
       const early = await put('ivA', { overall: 4, ratings: ratings() }).expect(409);
       expect(early.body.code).toBe('INTERVIEW_NOT_STARTED');
       await startNow(interviewA);
 
+      // MVP 3.1 · BR-INT-06: phiếu mới bắt buộc đề xuất
+      const noRecommendation = await put('ivA', {
+        overall: 4,
+        ratings: ratings(),
+        recommendation: undefined,
+      }).expect(400);
+      expect(noRecommendation.body.errors[0].field).toBe('recommendation');
       const partial = await put('ivA', { overall: 4, ratings: ratings().slice(0, 1) }).expect(400);
       expect(partial.body.errors[0].field).toBe('ratings');
       await put('ivA', { overall: 6, ratings: ratings() }).expect(400);
@@ -465,7 +475,7 @@ describe('Interviews (e2e)', () => {
       expect(second.body.data.round).toBe(2);
       await startNow(second.body.data.id);
       await as('ivB', request(server()).put(`/api/v1/interviews/${second.body.data.id}/feedback`))
-        .send({ overall: 2, ratings: ratings(2) })
+        .send({ overall: 2, ratings: ratings(2), recommendation: 'NO' })
         .expect(200);
 
       const forHr = await as(
@@ -542,11 +552,15 @@ describe('Interviews (e2e)', () => {
       await startNow(staged);
       const url = `/api/v1/interviews/${staged}/feedback`;
       const wrong = await as('ivB', request(server()).put(url))
-        .send({ overall: 4, ratings: ratings() })
+        .send({ overall: 4, ratings: ratings(), recommendation: 'YES' })
         .expect(400);
       expect(wrong.body.errors[0].field).toBe('ratings');
       const res = await as('ivB', request(server()).put(url))
-        .send({ overall: 4, ratings: [{ requirementId: stages[1].criteria[0].id, score: 5 }] })
+        .send({
+          overall: 4,
+          ratings: [{ requirementId: stages[1].criteria[0].id, score: 5 }],
+          recommendation: 'STRONG_YES',
+        })
         .expect(200);
       expect(res.body.data.ratings).toEqual([
         { requirementId: stages[1].criteria[0].id, label: 'Giao tiếp', score: 5 },

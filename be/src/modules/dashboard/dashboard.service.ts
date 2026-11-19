@@ -13,12 +13,13 @@ import { DashboardCache } from './dashboard-cache.service.js';
 import type { QueryFunnelDto } from './dto/query-funnel.dto.js';
 import { buildFunnel, type FunnelView, type TransitionRow } from './funnel.js';
 
-type ScopeUser = Pick<AuthUser, 'role' | 'departmentId' | 'organizationId'>;
+type ScopeUser = Pick<AuthUser, 'role' | 'departmentId' | 'organizationId'> & { id?: string };
 
 // BR-ACC-07, BR-TEN-03
 const cacheScope = (user: ScopeUser) => {
   const scope = dataScope(user.role);
-  return `org:${orgIdOf(user)}:${scope === 'department' ? `dept:${user.departmentId}` : scope}`;
+  // BR-JOB-12: HM có thể được gán tin riêng nên cache theo từng người
+  return `org:${orgIdOf(user)}:${scope === 'department' ? `dept:${user.departmentId}:hm:${user.id}` : scope}`;
 };
 
 export interface DashboardSummaryView {

@@ -7,6 +7,7 @@ import type {
 } from '@/features/jobs'
 import type { RankingData } from '@/features/ranking'
 import { Permission } from '@/lib/permissions'
+import { Role } from '@/types/user'
 import { applyScore, db, settleProcessing, SKILLS, uid, type JobRow, type UserRow } from '../data'
 import {
   api,
@@ -44,6 +45,26 @@ const stagesOf = (jobId: string): InterviewStage[] =>
     }))
 
 export const jobHandlers = [
+  // MVP 3.1 · F-JOB-12: khai báo trước /jobs/:id
+  http.get(api('/jobs/hiring-managers'), async ({ request }) => {
+    await delay()
+    const user = authorize(request, Permission.JobUpdate)
+    if (user instanceof Response) return user
+    return ok(
+      db.users
+        .filter((u) => u.role === Role.HiringManager && u.isActive)
+        .map((u) => {
+          const d = db.departments.find((x) => x.id === u.departmentId)
+          return {
+            id: u.id,
+            fullName: u.fullName,
+            email: u.email,
+            department: d ? { id: d.id, name: d.name } : null,
+          }
+        }),
+    )
+  }),
+
   http.get(api('/jobs'), async ({ request }) => {
     await delay()
     const user = authorize(request, Permission.JobRead)
@@ -192,6 +213,23 @@ export const jobHandlers = [
   }),
 
   // Thay tiêu chí → tăng jdVersion → tính lại điểm (BE làm trong queue, ở đây làm luôn) → 202
+  // MVP 3.1 · F-JOB-12
+  http.patch(api('/jobs/:id/hiring-manager'), async ({ request, params }) => {
+    await delay()
+    const user = authorize(request, Permission.JobUpdate)
+    if (user instanceof Response) return user
+    const job = findJob(user, params.id)
+    if (job instanceof Response) return job
+    const { userId } = (await request.json()) as { userId: string | null }
+    if (userId && !db.users.some((u) => u.id === userId && u.role === Role.HiringManager)) {
+      return fail(400, 'VALIDATION_FAILED', 'Validation failed', [
+        { field: 'userId', messages: ['Chọn một Hiring Manager đang hoạt động của công ty'] },
+      ])
+    }
+    job.hiringManagerId = userId
+    return ok(toJob(job))
+  }),
+
   // MVP 3.1 · F-INT-04, BR-INT-05
   http.get(api('/jobs/:id/interview-stages'), async ({ request, params }) => {
     await delay()
@@ -278,6 +316,30 @@ export const jobHandlers = [
   }),
 
   // Đề xuất bổ sung kickoff 10.2: dữ liệu cho bảng xếp hạng + thanh trọng số
+  // MVP 3.1 · BR-RANK-02
+  http.get(api('/jobs/:id/ranking-weights'), async ({ request, params }) => {
+    await delay()
+    const user = authorize(request, Permission.ApplicationRead)
+    if (user instanceof Response) return user
+    const job = findJob(user, params.id)
+    if (job instanceof Response) return job
+    const row = db.rankingWeights[`${user.id}:${job.id}`]
+    return ok(row && row.jdVersion === job.jdVersion ? row : null)
+  }),
+
+  http.put(api('/jobs/:id/ranking-weights'), async ({ request, params }) => {
+    await delay()
+    const user = authorize(request, Permission.ApplicationRead)
+    if (user instanceof Response) return user
+    const job = findJob(user, params.id)
+    if (job instanceof Response) return job
+    const body = (await request.json()) as { jdVersion: number; weights: Record<string, number> }
+    if (body.jdVersion !== job.jdVersion) return fail(409, 'CONFLICT', 'Requirements changed')
+    const row = { ...body, updatedAt: new Date().toISOString() }
+    db.rankingWeights[`${user.id}:${job.id}`] = row
+    return ok(row)
+  }),
+
   http.get(api('/jobs/:id/ranking'), async ({ request, params }) => {
     await delay()
     const user = authorize(request, Permission.JobRead)

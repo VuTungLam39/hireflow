@@ -116,6 +116,17 @@ export class ApplicationInterviewsController {
     return this.interviews.forApplication(applicationId, user);
   }
 
+  // MVP 3.1 · F-INT-05
+  @Get('debrief')
+  @Permissions(Permission.ApplicationRead)
+  @ApiOperation({ summary: 'Tổng hợp phiếu theo vòng: điểm trung bình, đề xuất, nhận xét' })
+  debrief(
+    @Param('applicationId', ParseUUIDPipe) applicationId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.interviews.debrief(applicationId, user);
+  }
+
   @Post()
   @Permissions(Permission.InterviewManage)
   @ApiOperation({ summary: 'Đặt lịch phỏng vấn và phân công Interviewer (hồ sơ ở INTERVIEW)' })

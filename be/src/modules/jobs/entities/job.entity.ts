@@ -75,6 +75,15 @@ export class Job extends AbstractEntity {
   @JoinColumn({ name: 'department_id', foreignKeyConstraintName: 'FK_jobs_department_id' })
   department?: Department;
 
+  // MVP 3.1 · F-JOB-12, BR-JOB-12
+  @Index('IDX_jobs_hiring_manager_id')
+  @Column({ type: 'uuid', nullable: true })
+  hiringManagerId: string | null;
+
+  @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'hiring_manager_id', foreignKeyConstraintName: 'FK_jobs_hiring_manager_id' })
+  hiringManager?: User | null;
+
   @Column({ type: 'enum', enum: JobStatus, default: JobStatus.Draft })
   status: JobStatus;
 

@@ -65,6 +65,8 @@ export interface JobPipeline {
 }
 
 export interface Job extends JobSummary, JobDetails {
+  /** MVP 3.1 · F-JOB-12 */
+  hiringManager: { id: string; fullName: string } | null
   jdText: string
   /** Tăng 1 mỗi lần lưu tiêu chí; điểm được tính lại theo phiên bản này */
   jdVersion: number
@@ -93,4 +95,12 @@ export interface InterviewStageInput {
   id?: string
   name: string
   criteria: { id?: string; label: string }[]
+}
+
+/** MVP 3.1 · F-JOB-12 */
+export interface HiringManagerOption {
+  id: string
+  fullName: string
+  email: string
+  department: { id: string; name: string } | null
 }

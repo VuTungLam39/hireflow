@@ -10,9 +10,10 @@ import { Role } from '@/types/user'
 import { useApplicationInterviews, useCancelInterview } from '../hooks/use-interviews'
 import { averageOverall, formatSlot, isLink } from '../lib/format'
 import { useNow } from '../hooks/use-now'
-import { INTERVIEW_STATUS } from '../lib/constants'
+import { INTERVIEW_STATUS, RECOMMENDATION } from '../lib/constants'
 import { PENDING_LABEL, pendingOf } from '../lib/pending'
 import type { Interview, InterviewFeedback } from '../types'
+import { DebriefPanel } from './DebriefPanel'
 import { FeedbackDialog } from './FeedbackDialog'
 import { QuestionSuggestions } from './QuestionSuggestions'
 import { ScheduleInterviewDialog } from './ScheduleInterviewDialog'
@@ -43,6 +44,14 @@ function FeedbackView({ feedback }: { feedback: InterviewFeedback }) {
           </li>
         ))}
       </ul>
+      {feedback.recommendation && (
+        <p className="text-ink-2">
+          Đề xuất:{' '}
+          <span className="text-ink font-medium">
+            {RECOMMENDATION[feedback.recommendation].label}
+          </span>
+        </p>
+      )}
       {feedback.comment && <p className="text-ink-2 whitespace-pre-line">{feedback.comment}</p>}
       <p className="text-ink-muted text-xs">Gửi {formatDateTime(feedback.submittedAt)}</p>
     </div>
@@ -77,6 +86,7 @@ export function InterviewPanel({
 
   return (
     <div className="space-y-3">
+      {!isInterviewer && <DebriefPanel applicationId={applicationId} />}
       {canManage && (
         <div className="space-y-1">
           <Button size="sm" disabled={!canSchedule} onClick={() => setScheduling(true)}>

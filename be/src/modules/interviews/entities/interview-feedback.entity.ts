@@ -1,3 +1,4 @@
+import { FeedbackRecommendation } from '../../../common/enums/feedback-recommendation.enum.js';
 import {
   Check,
   Column,
@@ -55,6 +56,15 @@ export class InterviewFeedback {
 
   @Column({ type: 'text', nullable: true })
   comment: string | null;
+
+  // F-INT-05: NULL ở phiếu nộp trước MVP 3.1
+  @Column({
+    type: 'enum',
+    enum: FeedbackRecommendation,
+    enumName: 'feedback_recommendation_enum',
+    nullable: true,
+  })
+  recommendation: FeedbackRecommendation | null;
 
   @Column({ type: 'timestamptz' })
   editableUntil: Date;

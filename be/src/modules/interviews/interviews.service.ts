@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   HttpStatus,
   Injectable,
   Logger,
@@ -15,13 +16,20 @@ import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
 import { CursorResult } from '../../common/dto/cursor-result.dto.js';
 import { decodeCursor, encodeCursor } from '../../common/utils/cursor.js';
-import { applyDepartmentScope, dataScope, orgIdOf } from '../../common/utils/department-scope.js';
+import {
+  applyDepartmentScope,
+  dataScope,
+  inManagerScope,
+  orgIdOf,
+} from '../../common/utils/department-scope.js';
 import {
   InterviewQuestionSuggester,
   type QuestionSuggestion,
 } from '../ai/interview-questions.service.js';
 import { Application } from '../applications/entities/application.entity.js';
 import { AuditService } from '../audit/audit.service.js';
+import { buildDebrief, type DebriefView } from './debrief.js';
+import { FeedbackRecommendation } from '../../common/enums/feedback-recommendation.enum.js';
 import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity.js';
 import { CvFile } from '../files/entities/cv-file.entity.js';
 import {
@@ -61,6 +69,8 @@ export interface FeedbackView {
   overall: number;
   ratings: { requirementId: string; label: string; score: number }[];
   comment: string | null;
+  /** F-INT-05: null ở phiếu nộp trước MVP 3.1 */
+  recommendation: FeedbackRecommendation | null;
   submittedAt: Date;
   editableUntil: Date;
 }
@@ -213,6 +223,43 @@ export class InterviewsService implements OnModuleInit {
       );
     }
     return this.views(ids, user, false);
+  }
+
+  // MVP 3.1 · F-INT-05, BR-INT-07: Interviewer không xem debrief (BR-INT-02)
+  async debrief(applicationId: string, user: ScopeUser): Promise<DebriefView> {
+    if (dataScope(user.role) === 'assigned') {
+      throw new ForbiddenException('Interviewers cannot view the debrief');
+    }
+    await this.readableApplication(applicationId, user);
+    const rows = await this.dataSource
+      .getRepository(Interview)
+      .createQueryBuilder('iv')
+      .leftJoinAndSelect('iv.stage', 'stage')
+      .leftJoinAndSelect('iv.assignees', 'ia')
+      .leftJoinAndSelect('iv.feedbacks', 'fb')
+      .leftJoin('fb.author', 'fa')
+      .addSelect(['fa.id', 'fa.fullName'])
+      .where('iv.applicationId = :applicationId', { applicationId })
+      .andWhere('iv.status <> :cancelled', { cancelled: InterviewStatus.Cancelled })
+      .getMany();
+    return buildDebrief(
+      rows.map((iv) => ({
+        id: iv.id,
+        round: iv.round,
+        scheduledAt: iv.scheduledAt,
+        stage: iv.stage ? { id: iv.stage.id, name: iv.stage.name } : null,
+        interviewerCount: iv.assignees?.length ?? 0,
+        feedbacks: (iv.feedbacks ?? []).map((f) => ({
+          authorId: f.authorId,
+          authorName: f.author!.fullName,
+          overall: f.overall,
+          ratings: f.ratings,
+          recommendation: f.recommendation,
+          comment: f.comment,
+          submittedAt: f.submittedAt,
+        })),
+      })),
+    );
   }
 
   // F-INT-01, BR-INT-01
@@ -438,11 +485,11 @@ export class InterviewsService implements OnModuleInit {
     return { items, cached: false };
   }
 
-  // Danh mục Feature 9.2: Admin, HR mọi buổi; HM buổi của phòng mình; Interviewer buổi được giao
+  // Danh mục Feature 9.2: Admin, HR mọi buổi; HM buổi của phòng mình và tin được gán; Interviewer buổi được giao
   private async canSuggest(iv: Interview, user: ScopeUser): Promise<boolean> {
     if (dataScope(user.role) === 'all') return true;
     if (dataScope(user.role) === 'department') {
-      return !!user.departmentId && iv.application!.job!.departmentId === user.departmentId;
+      return inManagerScope(user, iv.application!.job!);
     }
     return this.dataSource
       .getRepository(InterviewAssignee)
@@ -494,6 +541,7 @@ export class InterviewsService implements OnModuleInit {
             overall: dto.overall,
             ratings,
             comment: dto.comment || null,
+            recommendation: dto.recommendation,
           });
           feedbackId = existing.id;
         } else {
@@ -504,6 +552,7 @@ export class InterviewsService implements OnModuleInit {
               overall: dto.overall,
               ratings,
               comment: dto.comment || null,
+              recommendation: dto.recommendation,
               editableUntil: new Date(now.getTime() + FEEDBACK_EDIT_HOURS * 3_600_000),
             }),
           );
@@ -796,6 +845,7 @@ export class InterviewsService implements OnModuleInit {
           overall: f.overall,
           ratings: f.ratings,
           comment: f.comment,
+          recommendation: f.recommendation,
           submittedAt: f.submittedAt,
           editableUntil: f.editableUntil,
         })),

@@ -1,5 +1,5 @@
 import { delay, http } from 'msw'
-import type { Interview } from '@/features/interviews'
+import type { Interview, Recommendation } from '@/features/interviews'
 import { Permission } from '@/lib/permissions'
 import type { CursorMeta } from '@/types/api'
 import { Role } from '@/types/user'
@@ -47,6 +47,7 @@ function toInterview(iv: InterviewRow, viewerId: string, withApplication: boolea
       .filter((f) => viewer.role !== Role.Interviewer || f.authorId === viewerId)
       .map((f) => ({
         ...f,
+        recommendation: f.recommendation ?? null,
         author: { id: f.authorId, fullName: db.users.find((u) => u.id === f.authorId)!.fullName },
       })),
     ...(withApplication && {
@@ -124,6 +125,60 @@ export const interviewHandlers = [
       rows.slice(start, start + limit).map((iv) => toInterview(iv, user.id, true)),
       { meta },
     )
+  }),
+
+  // MVP 3.1 · F-INT-05: tổng hợp gọn cho giao diện; BE có đủ trường
+  http.get(api('/applications/:id/interviews/debrief'), async ({ request, params }) => {
+    await delay()
+    const user = authorize(request, Permission.ApplicationRead)
+    if (user instanceof Response) return user
+    if (user.role === Role.Interviewer) return fail(403, 'FORBIDDEN', 'Forbidden')
+    const app = db.applications.find((a) => a.id === params.id)
+    if (!app || !canSeeApplication(user, app)) return notFound('Application')
+    const ivs = db.interviews
+      .filter((iv) => iv.applicationId === app.id && iv.status !== 'CANCELLED')
+      .sort((a, b) => a.round - b.round)
+    const tally = () => ({ STRONG_NO: 0, NO: 0, YES: 0, STRONG_YES: 0, NONE: 0 })
+    const avg = (xs: number[]) =>
+      xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null
+    const total = tally()
+    const groups = ivs.map((iv) => {
+      const t = tally()
+      const byCriterion = new Map<string, { label: string; values: number[] }>()
+      for (const f of iv.feedbacks) {
+        t[f.recommendation ?? 'NONE'] += 1
+        total[f.recommendation ?? 'NONE'] += 1
+        for (const r of f.ratings) {
+          const e = byCriterion.get(r.requirementId) ?? { label: r.label, values: [] }
+          e.values.push(r.score)
+          byCriterion.set(r.requirementId, e)
+        }
+      }
+      const stage = stageView(iv.stageId)
+      return {
+        stage: stage && { id: stage.id, name: stage.name },
+        round: iv.round,
+        interviews: 1,
+        expectedFeedbacks: iv.interviewerIds.length,
+        feedbackCount: iv.feedbacks.length,
+        overallAvg: avg(iv.feedbacks.map((f) => f.overall)),
+        criteria: [...byCriterion].map(([requirementId, e]) => ({
+          requirementId,
+          label: e.label,
+          avg: avg(e.values)!,
+          n: e.values.length,
+        })),
+        recommendations: t,
+        feedbacks: [],
+      }
+    })
+    const all = ivs.flatMap((iv) => iv.feedbacks)
+    return ok({
+      feedbackCount: all.length,
+      overallAvg: avg(all.map((f) => f.overall)),
+      recommendations: total,
+      groups,
+    })
   }),
 
   http.get(api('/applications/:id/interviews'), async ({ request, params }) => {
@@ -290,6 +345,13 @@ export const interviewHandlers = [
       overall: number
       ratings: { requirementId: string; score: number }[]
       comment?: string
+      recommendation?: Recommendation
+    }
+    // MVP 3.1 · BR-INT-06
+    if (!body.recommendation) {
+      return fail(400, 'VALIDATION_FAILED', 'Validation failed', [
+        { field: 'recommendation', messages: ['Chọn đề xuất tuyển'] },
+      ])
     }
     const app = db.applications.find((a) => a.id === iv.applicationId)!
     // BR-INT-03: buổi có vòng chấm theo tiêu chí của vòng
@@ -321,7 +383,12 @@ export const interviewHandlers = [
       submittedAt: now.toISOString(),
       editableUntil: new Date(now.getTime() + DAY_MS).toISOString(),
     }
-    Object.assign(row, { overall: body.overall, ratings, comment: body.comment?.trim() || null })
+    Object.assign(row, {
+      overall: body.overall,
+      ratings,
+      comment: body.comment?.trim() || null,
+      recommendation: body.recommendation,
+    })
     if (!existing) iv.feedbacks.push(row)
     if (iv.feedbacks.length >= iv.interviewerIds.length) iv.status = 'COMPLETED'
     const author = db.users.find((u) => u.id === user.id)!

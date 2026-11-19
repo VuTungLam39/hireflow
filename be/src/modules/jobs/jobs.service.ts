@@ -35,6 +35,10 @@ import { SaveInterviewStagesDto } from './dto/save-interview-stages.dto.js';
 import { JobInterviewStage } from './entities/job-interview-stage.entity.js';
 import { validateStages, type InterviewStageView } from './interview-stages.js';
 import { JobRequirement } from './entities/job-requirement.entity.js';
+import { RankingWeight } from './entities/ranking-weight.entity.js';
+import { SaveRankingWeightsDto } from './dto/ranking-weights.dto.js';
+import { User } from '../users/entities/user.entity.js';
+import { Role } from '../../common/enums/role.enum.js';
 import {
   EmploymentType,
   Job,
@@ -93,7 +97,15 @@ export interface JobDetailsView {
   benefits: string;
 }
 
+export interface RankingWeightsView {
+  jdVersion: number;
+  weights: Record<string, number>;
+  updatedAt: Date;
+}
+
 export interface JobView extends JobSummaryView, JobDetailsView {
+  /** F-JOB-12 */
+  hiringManager: { id: string; fullName: string } | null;
   jdText: string;
   jdVersion: number;
   requirements: RequirementView[];
@@ -239,6 +251,9 @@ export class JobsService {
       workMode: job.workMode,
       headcount: job.headcount,
       benefits: job.benefits,
+      hiringManager: job.hiringManager
+        ? { id: job.hiringManager.id, fullName: job.hiringManager.fullName }
+        : null,
       jdText: job.jdText,
       jdVersion: job.jdVersion,
       requirements,
@@ -365,6 +380,94 @@ export class JobsService {
     this.events.emit('job.changed', { jobId: id });
     await this.log(AuditAction.JobUpdated, id, user, { fields: Object.keys(dto).sort().join(',') });
     return this.findOne(id, user);
+  }
+
+  // MVP 3.1 · F-JOB-12
+  async hiringManagers(user: ScopeUser) {
+    const rows = await this.dataSource.getRepository(User).find({
+      select: { id: true, fullName: true, email: true, department: { id: true, name: true } },
+      where: { role: Role.HiringManager, isActive: true, organizationId: orgIdOf(user) },
+      relations: { department: true },
+      order: { fullName: 'ASC' },
+    });
+    return rows.map((u) => ({
+      id: u.id,
+      fullName: u.fullName,
+      email: u.email,
+      department: u.department ? { id: u.department.id, name: u.department.name } : null,
+    }));
+  }
+
+  // MVP 3.1 · F-JOB-12, BR-JOB-12: HM phụ trách phải là hiring_manager đang hoạt động cùng công ty
+  async assignHiringManager(id: string, userId: string | null, user: ScopeUser): Promise<JobView> {
+    const job = await this.getOrFail(id, user);
+    this.assertEditable(job);
+    if (userId) {
+      const ok = await this.dataSource.getRepository(User).existsBy({
+        id: userId,
+        organizationId: job.organizationId,
+        role: Role.HiringManager,
+        isActive: true,
+      });
+      if (!ok) {
+        throw new BusinessException(
+          ErrorCode.ValidationFailed,
+          'Validation failed',
+          HttpStatus.BAD_REQUEST,
+          [{ field: 'userId', messages: ['Chọn một Hiring Manager đang hoạt động của công ty'] }],
+        );
+      }
+    }
+    await this.jobsRepository.update(id, { hiringManagerId: userId });
+    this.events.emit('job.changed', { jobId: id });
+    await this.log(AuditAction.JobUpdated, id, user, { fields: 'hiringManager' });
+    return this.findOne(id, user);
+  }
+
+  // MVP 3.1 · BR-RANK-02: chỉ trả khi còn đúng phiên bản tiêu chí hiện tại
+  async rankingWeights(id: string, user: ScopeUser): Promise<RankingWeightsView | null> {
+    const job = await this.findScoped(id, user);
+    const row = await this.dataSource
+      .getRepository(RankingWeight)
+      .findOneBy({ jobId: id, userId: user.id! });
+    if (!row || row.jdVersion !== job.jdVersion) return null;
+    return { jdVersion: row.jdVersion, weights: row.weights, updatedAt: row.updatedAt };
+  }
+
+  async saveRankingWeights(
+    id: string,
+    dto: SaveRankingWeightsDto,
+    user: ScopeUser,
+  ): Promise<RankingWeightsView> {
+    const job = await this.findScoped(id, user);
+    if (dto.jdVersion !== job.jdVersion) {
+      throw new BusinessException(
+        ErrorCode.Conflict,
+        'Requirements changed, reload the ranking',
+        HttpStatus.CONFLICT,
+      );
+    }
+    const requirements = await this.currentRequirements(job);
+    const ids = new Set(requirements.map((r) => r.id));
+    const entries = Object.entries(dto.weights);
+    if (
+      entries.length !== ids.size ||
+      entries.some(([k, v]) => !ids.has(k) || !Number.isInteger(v) || v < 1 || v > 3)
+    ) {
+      throw new BusinessException(
+        ErrorCode.ValidationFailed,
+        'Validation failed',
+        HttpStatus.BAD_REQUEST,
+        [{ field: 'weights', messages: ['Mỗi tiêu chí của tin một trọng số 1–3'] }],
+      );
+    }
+    await this.dataSource
+      .getRepository(RankingWeight)
+      .upsert({ userId: user.id!, jobId: id, jdVersion: job.jdVersion, weights: dto.weights }, [
+        'userId',
+        'jobId',
+      ]);
+    return (await this.rankingWeights(id, user))!;
   }
 
   // F-INT-04
@@ -817,6 +920,8 @@ export class JobsService {
       .createQueryBuilder('job')
       .innerJoin('job.department', 'department')
       .addSelect(['department.id', 'department.name'])
+      .leftJoin('job.hiringManager', 'hm')
+      .addSelect(['hm.id', 'hm.fullName'])
       .where('job.id = :id', { id });
     const job = await applyDepartmentScope(qb, user, 'job.organizationId', 'job.departmentId', {
       jobIdColumn: '"job"."id"',

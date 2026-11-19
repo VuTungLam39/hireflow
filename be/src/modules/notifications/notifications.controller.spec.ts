@@ -8,6 +8,7 @@ const appEvent: RealtimeEvent = {
   kind: 'application',
   organizationId: 'org-1',
   departmentId: 'd-1',
+  hiringManagerId: null,
   applicationId: 'a-1',
   jobId: 'j-1',
   status: ApplicationStatus.Screening,
@@ -30,6 +31,15 @@ describe('visibleTo', () => {
   it('shows a hiring manager only their department', () => {
     expect(visibleTo(appEvent, user(Role.HiringManager, 'd-1'))).toBe(true);
     expect(visibleTo(appEvent, user(Role.HiringManager, 'd-2'))).toBe(false);
+  });
+
+  it('MVP 3.1 · BR-JOB-12: shows a hiring manager events of a job assigned to them in another department', () => {
+    const assigned = { ...appEvent, hiringManagerId: 'u-1' };
+    expect(visibleTo(assigned, user(Role.HiringManager, 'd-2'))).toBe(true);
+    expect(visibleTo(assigned, { ...user(Role.HiringManager, 'd-2'), id: 'u-2' })).toBe(false);
+    expect(
+      visibleTo(assigned, { ...user(Role.HiringManager, 'd-2'), organizationId: 'org-2' }),
+    ).toBe(false);
   });
 
   it.each([Role.Admin, Role.Hr])('hides another organization events from %s', (role) => {

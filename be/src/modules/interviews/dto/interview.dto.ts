@@ -7,6 +7,7 @@ import {
   IsArray,
   IsBoolean,
   IsDateString,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -17,6 +18,8 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+
+import { FeedbackRecommendation } from '../../../common/enums/feedback-recommendation.enum.js';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
@@ -151,4 +154,8 @@ export class FeedbackDto {
   @IsString()
   @MaxLength(2000)
   comment?: string;
+
+  @ApiProperty({ enum: FeedbackRecommendation, description: 'Đề xuất tuyển (BR-INT-06)' })
+  @IsEnum(FeedbackRecommendation)
+  recommendation: FeedbackRecommendation;
 }

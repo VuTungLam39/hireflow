@@ -9,4 +9,19 @@ export const rankingApi = {
    */
   get: async (jobId: string) =>
     (await api.get<ApiResponse<RankingData>>(`/jobs/${jobId}/ranking`)).data.data,
+
+  // MVP 3.1 · BR-RANK-02: trọng số của riêng người xem
+  myWeights: async (jobId: string) =>
+    (await api.get<ApiResponse<MyWeights | null>>(`/jobs/${jobId}/ranking-weights`)).data.data,
+
+  saveMyWeights: async (
+    jobId: string,
+    input: { jdVersion: number; weights: Record<string, number> },
+  ) => (await api.put<ApiResponse<MyWeights>>(`/jobs/${jobId}/ranking-weights`, input)).data.data,
+}
+
+export interface MyWeights {
+  jdVersion: number
+  weights: Record<string, number>
+  updatedAt: string
 }

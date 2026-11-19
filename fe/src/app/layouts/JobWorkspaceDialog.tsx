@@ -143,6 +143,7 @@ export function JobWorkspaceDialog({ id, tab: initialTab, onClose }: JobWorkspac
           {current === 'overview' && (
             <JobOverview
               job={query.data}
+              canEdit={canEdit}
               onOpenApplications={openApplications}
               highlights={
                 <JobApplicationHighlights

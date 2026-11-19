@@ -19,7 +19,12 @@ import { RejectReasonCode } from '../../common/enums/reject-reason-code.enum.js'
 import { ScoreFlag } from '../../common/enums/score-flag.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
-import { applyDepartmentScope, dataScope, orgIdOf } from '../../common/utils/department-scope.js';
+import {
+  applyDepartmentScope,
+  dataScope,
+  inManagerScope,
+  orgIdOf,
+} from '../../common/utils/department-scope.js';
 import { escapeLike } from '../../common/utils/text.js';
 import { vnToday } from '../../common/utils/vn-date.js';
 import { AuditService } from '../audit/audit.service.js';
@@ -551,7 +556,7 @@ export class ApplicationsService {
     const rows = await this.applicationsRepository
       .createQueryBuilder('app')
       .innerJoin('app.job', 'job')
-      .select(['app.id', 'app.status', 'job.id', 'job.departmentId'])
+      .select(['app.id', 'app.status', 'job.id', 'job.departmentId', 'job.hiringManagerId'])
       .where('app.id IN (:...ids)', { ids: dto.ids })
       .getMany();
     const byId = new Map(rows.map((a) => [a.id, a]));
@@ -562,10 +567,7 @@ export class ApplicationsService {
       const app = byId.get(id);
       if (!app) {
         result.failed.push({ id, code: ErrorCode.NotFound });
-      } else if (
-        dataScope(user.role) === 'department' &&
-        app.job!.departmentId !== user.departmentId
-      ) {
+      } else if (dataScope(user.role) === 'department' && !inManagerScope(user, app.job!)) {
         result.failed.push({ id, code: ErrorCode.ScopeForbidden });
       } else if (app.status === dto.status) {
         result.unchanged.push(id);
@@ -1028,7 +1030,7 @@ export class ApplicationsService {
         message: 'Application is outside your organization',
       });
     }
-    if (dataScope(user.role) === 'department' && app.job!.departmentId !== user.departmentId) {
+    if (dataScope(user.role) === 'department' && !inManagerScope(user, app.job!)) {
       throw new ForbiddenException({
         code: ErrorCode.ScopeForbidden,
         message: 'Application is outside your department',
