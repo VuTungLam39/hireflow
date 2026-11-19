@@ -1,5 +1,6 @@
 import { ApplicationSource } from '../../common/enums/application-source.enum.js';
 import { ApplicationStatus } from '../../common/enums/application-status.enum.js';
+import { RejectReasonCode } from '../../common/enums/reject-reason-code.enum.js';
 import { buildFunnel, type TransitionRow } from './funnel.js';
 
 const S = ApplicationStatus;
@@ -85,5 +86,22 @@ describe('buildFunnel (F1, BR-REP-01)', () => {
     expect(f.stages[2].reached).toBe(1);
     expect(f.stages[2].conversionFromPrev).toBe(1);
     expect(f.bySource[0].reachedInterview).toBe(1);
+  });
+
+  it('F-APP-13: counts rejections per reason code, older ones as UNCLASSIFIED', () => {
+    const f = buildFunnel(
+      [
+        row(P, null, S.New, 6),
+        { ...row(P, S.New, S.Rejected, 3), reasonCode: RejectReasonCode.SkillGap },
+        { ...row(H, S.Screening, S.Rejected, 1), reasonCode: RejectReasonCode.SkillGap },
+        { ...row(P, S.Screening, S.Rejected, 1), reasonCode: null },
+        row(P, S.New, S.Withdrawn, 1),
+      ],
+      range,
+    );
+    expect(f.rejectionReasons).toEqual([
+      { code: 'SKILL_GAP', count: 4 },
+      { code: 'UNCLASSIFIED', count: 1 },
+    ]);
   });
 });

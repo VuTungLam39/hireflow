@@ -21,6 +21,8 @@ import {
   type QuestionSuggestion,
 } from '../ai/interview-questions.service.js';
 import { Application } from '../applications/entities/application.entity.js';
+import { AuditService } from '../audit/audit.service.js';
+import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity.js';
 import { CvFile } from '../files/entities/cv-file.entity.js';
 import { JobRequirement, RequirementType } from '../jobs/entities/job-requirement.entity.js';
 import { NotificationType } from '../notifications/entities/notification.entity.js';
@@ -92,7 +94,20 @@ export class InterviewsService implements OnModuleInit {
     private readonly events: AppEvents,
     private readonly questions: InterviewQuestionSuggester,
     private readonly quota: AiQuotaService,
+    private readonly audit: AuditService,
   ) {}
+
+  // F-AUDIT-02: metadata không chứa nhận xét hay điểm
+  private log(action: AuditAction, interviewId: string, user: ScopeUser, applicationId: string) {
+    return this.audit.recordSafely({
+      organizationId: orgIdOf(user),
+      actorId: user.id ?? null,
+      action,
+      entity: AuditEntity.Interview,
+      entityId: interviewId,
+      metadata: { applicationId },
+    });
+  }
 
   // E5 · BR-INT-04: cache theo (buổi phỏng vấn, phiên bản JD), giữ trong bộ nhớ
   private readonly questionCache = new Map<string, { at: number; items: QuestionSuggestion[] }>();
@@ -254,6 +269,7 @@ export class InterviewsService implements OnModuleInit {
       applicationId,
       id,
     );
+    await this.log(AuditAction.InterviewScheduled, id, user, applicationId);
     return (await this.views([id], user, true))[0];
   }
 
@@ -313,6 +329,7 @@ export class InterviewsService implements OnModuleInit {
       result.applicationId,
       id,
     );
+    await this.log(AuditAction.InterviewUpdated, id, user, result.applicationId);
     return (await this.views([id], user, true))[0];
   }
 
@@ -328,6 +345,7 @@ export class InterviewsService implements OnModuleInit {
       return { applicationId: iv.applicationId, assignees: rows.map((a) => a.userId) };
     });
     await this.notifySafely(assignees, NotificationType.InterviewCancelled, applicationId, id);
+    await this.log(AuditAction.InterviewCancelled, id, user, applicationId);
     return (await this.views([id], user, true))[0];
   }
 
@@ -498,6 +516,12 @@ export class InterviewsService implements OnModuleInit {
         id,
       );
     }
+    await this.log(
+      first ? AuditAction.FeedbackSubmitted : AuditAction.FeedbackUpdated,
+      id,
+      user,
+      applicationId,
+    );
     const view = (await this.views([id], user, false))[0];
     return view.feedbacks.find((f) => f.id === feedbackId)!;
   }

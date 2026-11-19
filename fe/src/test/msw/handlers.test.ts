@@ -309,23 +309,27 @@ describe('mock API', () => {
     await loginAs('hm.eng@hireflow.dev')
     const offer = (await applicationsApi.list({ ...listAll, status: 'OFFER' })).items[0]
     expect(offer).toBeDefined()
-    await expect(applicationsApi.declineOffer(offer.id, ' ')).rejects.toSatisfy(
+    await expect(applicationsApi.declineOffer(offer.id, { reason: ' ' })).rejects.toSatisfy(
       (e) => getErrorCode(e) === 'REJECT_REASON_REQUIRED',
     )
-    const declined = await applicationsApi.declineOffer(offer.id, 'Không thống nhất được lương')
+    const declined = await applicationsApi.declineOffer(offer.id, {
+      reasonCode: 'SALARY',
+      reason: 'Không thống nhất được lương',
+    })
     expect(declined.status).toBe('REJECTED')
     const history = await applicationsApi.history(offer.id)
     expect(history[0]).toMatchObject({
       fromStatus: 'OFFER',
       toStatus: 'REJECTED',
       reason: 'Không thống nhất được lương',
+      reasonCode: 'SALARY',
     })
 
     await loginAs('hr@hireflow.dev')
     const other = (await applicationsApi.list({ ...listAll, status: 'OFFER' })).items[0]
-    await expect(applicationsApi.declineOffer(other.id, 'x')).rejects.toSatisfy(
-      (e) => getErrorCode(e) === 'FORBIDDEN',
-    )
+    await expect(
+      applicationsApi.declineOffer(other.id, { reasonCode: 'OTHER', reason: 'x' }),
+    ).rejects.toSatisfy((e) => getErrorCode(e) === 'FORBIDDEN')
   })
 
   it('rescores a scored application without leaving DONE (BR-AI-08)', async () => {

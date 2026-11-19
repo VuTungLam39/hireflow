@@ -11,7 +11,12 @@ import { jobKeys } from '@/features/jobs'
 import { getErrorCode, getErrorMessage } from '@/lib/errors'
 import { useRealtimeStore } from '@/stores/realtime.store'
 import { applicationsApi } from '../api/applications.api'
-import { AI_POLL_INTERVAL, APPLICATION_STATUS, type ApplicationStatus } from '../constants'
+import {
+  AI_POLL_INTERVAL,
+  APPLICATION_STATUS,
+  type ApplicationStatus,
+  type RejectReasonCode,
+} from '../constants'
 import type { ApplicationListParams } from '../schemas/application.schema'
 import type { ApplicationDetail, HrUploadInput } from '../types'
 
@@ -97,6 +102,7 @@ export function useAddNote(id: string) {
 interface ChangeStatusVars {
   status: ApplicationStatus
   reason?: string
+  reasonCode?: RejectReasonCode
   /** Hiring Manager từ chối ở bước OFFER: đi route /decline-offer (BR-STS-05) */
   declineOffer?: boolean
 }
@@ -110,12 +116,12 @@ export function useChangeStatus(id: string) {
   const key = applicationKeys.detail(id)
 
   return useMutation({
-    mutationFn: ({ status, reason, declineOffer }: ChangeStatusVars) =>
+    mutationFn: ({ status, reason, reasonCode, declineOffer }: ChangeStatusVars) =>
       status === 'HIRED'
         ? applicationsApi.hire(id)
         : declineOffer
-          ? applicationsApi.declineOffer(id, reason ?? '')
-          : applicationsApi.changeStatus(id, { status, reason }),
+          ? applicationsApi.declineOffer(id, { reason, reasonCode })
+          : applicationsApi.changeStatus(id, { status, reason, reasonCode }),
     onMutate: async ({ status }) => {
       await queryClient.cancelQueries({ queryKey: key })
       const previous = queryClient.getQueryData<ApplicationDetail>(key)

@@ -1,7 +1,11 @@
 import { useId, useState } from 'react'
 import { EmptyState, ErrorState } from '@/components/shared'
 import { SegmentedControl, Skeleton } from '@/components/ui'
-import { APPLICATION_SOURCE, APPLICATION_STATUS } from '@/features/applications'
+import {
+  APPLICATION_SOURCE,
+  APPLICATION_STATUS,
+  REJECT_REASON_LABEL,
+} from '@/features/applications'
 import { formatTime } from '@/lib/utils'
 import { isoDayToVnText, shiftIsoDay, todayIsoDay } from '@/lib/vn-day'
 import { useFunnel } from '../hooks/use-dashboard'
@@ -131,6 +135,21 @@ export function FunnelReport({ jobId, since, headingLevel: Heading = 'h2' }: Fun
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+            {data!.rejectionReasons.length > 0 && (
+              <div className="border-line-soft border-t px-5 py-3">
+                <h3 className="type-label mb-2">Lý do từ chối</h3>
+                <dl className="space-y-1">
+                  {data!.rejectionReasons.map((r) => (
+                    <div key={r.code} className="flex justify-between gap-3 text-sm">
+                      <dt className="text-ink-2">
+                        {r.code === 'UNCLASSIFIED' ? 'Chưa phân loại' : REJECT_REASON_LABEL[r.code]}
+                      </dt>
+                      <dd className="num text-ink font-semibold">{n(r.count)}</dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
             )}
             {data!.reopened > 0 && (

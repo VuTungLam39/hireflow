@@ -12,6 +12,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { ApplicationStatus } from '../../../common/enums/application-status.enum.js';
+import { RejectReasonCode } from '../../../common/enums/reject-reason-code.enum.js';
 
 export const BULK_STATUS_MAX = 100;
 
@@ -31,10 +32,14 @@ export class BulkStatusDto {
   @IsEnum(ApplicationStatus)
   status: ApplicationStatus;
 
-  @ApiPropertyOptional({ description: 'Bắt buộc khi status = REJECTED, dùng chung cho cả lô' })
+  @ApiPropertyOptional({ description: 'Bắt buộc khi reasonCode = OTHER, dùng chung cho cả lô' })
   @IsOptional()
   @Transform(trim)
   @IsString()
   @MaxLength(1000)
   reason?: string;
+  @ApiPropertyOptional({ enum: RejectReasonCode, description: 'Bắt buộc khi status = REJECTED' })
+  @IsOptional()
+  @IsEnum(RejectReasonCode)
+  reasonCode?: RejectReasonCode;
 }

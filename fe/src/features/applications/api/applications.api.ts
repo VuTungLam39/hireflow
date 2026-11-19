@@ -1,7 +1,7 @@
 import { isAxiosError, type AxiosProgressEvent } from 'axios'
 import { api, SLOW_TIMEOUT_MS } from '@/lib/api-client'
 import type { ApiResponse, Paginated } from '@/types/api'
-import type { ApplicationStatus } from '../constants'
+import type { ApplicationStatus, RejectReasonCode } from '../constants'
 import type { ApplicationListParams } from '../schemas/application.schema'
 import type {
   ApplicationDetail,
@@ -63,11 +63,19 @@ export const applicationsApi = {
     (await api.post<ApiResponse<ApplicationNote>>(`/applications/${id}/notes`, { content })).data
       .data,
 
-  changeStatus: async (id: string, input: { status: ApplicationStatus; reason?: string }) =>
+  changeStatus: async (
+    id: string,
+    input: { status: ApplicationStatus; reason?: string; reasonCode?: RejectReasonCode },
+  ) =>
     (await api.patch<ApiResponse<ApplicationDetail>>(`/applications/${id}/status`, input)).data
       .data,
 
-  bulkStatus: async (input: { ids: string[]; status: ApplicationStatus; reason?: string }) =>
+  bulkStatus: async (input: {
+    ids: string[]
+    status: ApplicationStatus
+    reason?: string
+    reasonCode?: RejectReasonCode
+  }) =>
     (await api.post<ApiResponse<BulkStatusResult>>('/applications/bulk-status', input)).data.data,
 
   compare: async (jobId: string, ids: string[]) =>
@@ -82,12 +90,9 @@ export const applicationsApi = {
     (await api.patch<ApiResponse<ApplicationDetail>>(`/applications/${id}/hire`)).data.data,
 
   /** Hiring Manager từ chối ở bước OFFER (BR-STS-05): OFFER → REJECTED, bắt buộc lý do */
-  declineOffer: async (id: string, reason: string) =>
-    (
-      await api.patch<ApiResponse<ApplicationDetail>>(`/applications/${id}/decline-offer`, {
-        reason,
-      })
-    ).data.data,
+  declineOffer: async (id: string, input: { reason?: string; reasonCode?: RejectReasonCode }) =>
+    (await api.patch<ApiResponse<ApplicationDetail>>(`/applications/${id}/decline-offer`, input))
+      .data.data,
 
   /** HR tải CV hộ ứng viên vào job OPEN (BR-APP-10). Multipart, nguồn HR_UPLOAD. */
   uploadForCandidate: async (

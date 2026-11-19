@@ -8,11 +8,13 @@ export {
   APPLICATION_VIEWS,
   NEXT_STATUS,
   REASON_REQUIRED,
-  REJECT_REASONS,
+  REJECT_REASON_CODES,
+  REJECT_REASON_LABEL,
   SCORE_FAIR,
   SCORE_GOOD,
   SCORE_FLAGS,
 } from './constants'
+export type { RejectReasonCode } from './constants'
 export type {
   AiStatus,
   ApplicationSource,

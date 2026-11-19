@@ -51,6 +51,8 @@ describe('FunnelReport', () => {
     renderAs('hr@hireflow.dev')
 
     expect(await screen.findByRole('heading', { level: 2, name: 'Phễu tuyển dụng' })).toBeVisible()
+    // F-APP-13
+    expect(await screen.findByRole('heading', { level: 3, name: 'Lý do từ chối' })).toBeVisible()
     expect(
       screen.getByText(
         new RegExp(`Hồ sơ nộp từ ${isoDayToVnText(from)} đến ${isoDayToVnText(to)}`),

@@ -173,6 +173,7 @@ describe('Bulk status change (e2e)', () => {
     const res = await bulk('hr', {
       ids: [apps.withInterview, apps.offer],
       status: S.Rejected,
+      reasonCode: 'CULTURE',
       reason: 'Không phù hợp văn hoá',
     }).expect(200);
     expect(res.body.data.succeeded).toEqual([apps.withInterview]);

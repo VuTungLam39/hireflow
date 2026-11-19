@@ -1,5 +1,6 @@
 import { ApplicationSource } from '../../common/enums/application-source.enum.js';
 import { ApplicationStatus } from '../../common/enums/application-status.enum.js';
+import type { RejectReasonCode } from '../../common/enums/reject-reason-code.enum.js';
 
 const S = ApplicationStatus;
 const STAGES = [S.New, S.Screening, S.Interview, S.Offer, S.Hired] as const;
@@ -11,6 +12,8 @@ export interface TransitionRow {
   source: ApplicationSource;
   fromStatus: ApplicationStatus | null;
   toStatus: ApplicationStatus;
+  /** F-APP-13: chỉ có ở dòng → REJECTED từ MVP 3.1 */
+  reasonCode?: RejectReasonCode | null;
   n: number;
   p50: number | null;
 }
@@ -37,6 +40,8 @@ export interface FunnelView {
     hired: number;
   }[];
   reopened: number;
+  /** F-APP-13: số lần từ chối theo mã; UNCLASSIFIED = từ chối trước MVP 3.1 */
+  rejectionReasons: { code: RejectReasonCode | 'UNCLASSIFIED'; count: number }[];
 }
 
 const ratio = (part: number, whole: number) =>
@@ -96,5 +101,16 @@ export function buildFunnel(
       hired: reachedOf(S.Hired, source),
     })),
     reopened: count((r) => r.fromStatus !== null && CLOSED.includes(r.fromStatus)),
+    rejectionReasons: rejectionReasons(rows),
   };
+}
+
+function rejectionReasons(rows: TransitionRow[]): FunnelView['rejectionReasons'] {
+  const byCode = new Map<RejectReasonCode | 'UNCLASSIFIED', number>();
+  for (const r of rows) {
+    if (r.toStatus !== S.Rejected) continue;
+    const code = r.reasonCode ?? 'UNCLASSIFIED';
+    byCode.set(code, (byCode.get(code) ?? 0) + r.n);
+  }
+  return [...byCode].map(([code, count]) => ({ code, count })).sort((a, b) => b.count - a.count);
 }

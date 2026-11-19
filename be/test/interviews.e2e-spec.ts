@@ -415,6 +415,15 @@ describe('Interviews (e2e)', () => {
       );
 
       await put('ivA', { overall: 5, ratings: ratings(5) }).expect(200);
+      // F-AUDIT-02: metadata không chứa điểm hay nhận xét
+      const logs: { action: string; metadata: object }[] = await ds.query(
+        `SELECT action, metadata FROM audit_logs WHERE entity = 'interview' AND entity_id = $1 ORDER BY created_at, id`,
+        [interviewA],
+      );
+      expect(logs.map((l) => l.action)).toEqual(
+        expect.arrayContaining(['INTERVIEW_SCHEDULED', 'FEEDBACK_SUBMITTED', 'FEEDBACK_UPDATED']),
+      );
+      for (const l of logs) expect(Object.keys(l.metadata)).toEqual(['applicationId']);
       await ds
         .getRepository(InterviewFeedback)
         .update({ interviewId: interviewA }, { editableUntil: new Date(Date.now() - 1000) });
@@ -538,7 +547,7 @@ describe('Interviews (e2e)', () => {
         .getRepository(Interview)
         .update(held.body.data.id, { scheduledAt: new Date(Date.now() - 3_600_000) });
       await as('hr', request(server()).patch(`/api/v1/applications/${apps.b}/status`))
-        .send({ status: 'REJECTED', reason: 'Không phù hợp' })
+        .send({ status: 'REJECTED', reasonCode: 'CULTURE', reason: 'Không phù hợp' })
         .expect(200);
       await vi.waitFor(
         async () =>

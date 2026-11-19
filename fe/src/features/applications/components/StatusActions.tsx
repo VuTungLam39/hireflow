@@ -10,7 +10,8 @@ import {
   APPLICATION_STATUS,
   NEXT_STATUS,
   REASON_REQUIRED,
-  REJECT_REASONS,
+  REJECT_REASON_INPUT,
+  type RejectReasonCode,
   REOPENABLE,
   type ApplicationStatus,
 } from '../constants'
@@ -147,20 +148,17 @@ export function StatusActions({ applicationId, status, className }: StatusAction
         }
         confirmLabel={target ? label(target) : 'Xác nhận'}
         tone={target === 'REJECTED' ? 'danger' : 'primary'}
-        requireReason={
-          needReason
-            ? {
-                label: 'Lý do',
-                placeholder: 'Ví dụ: chưa đủ kinh nghiệm NestJS',
-                suggestions: REJECT_REASONS,
-              }
-            : undefined
-        }
+        requireReason={needReason ? REJECT_REASON_INPUT : undefined}
         loading={changeStatus.isPending}
-        onConfirm={(reason) => {
+        onConfirm={(reason, code) => {
           if (!target) return
           const declineOffer = target === 'REJECTED' && status === 'OFFER' && !canUpdate
-          changeStatus.mutate({ status: target, reason, declineOffer })
+          changeStatus.mutate({
+            status: target,
+            reason,
+            reasonCode: code as RejectReasonCode | undefined,
+            declineOffer,
+          })
           setTarget(null)
         }}
       >

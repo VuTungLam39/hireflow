@@ -1,4 +1,8 @@
-import type { ApplicationSource, ApplicationStatus } from '@/features/applications'
+import type {
+  ApplicationSource,
+  ApplicationStatus,
+  RejectReasonCode,
+} from '@/features/applications'
 
 /** GET /dashboard/summary – đã lọc theo scope của người xem (kickoff FR-DASH) */
 export interface DashboardSummary {
@@ -44,4 +48,6 @@ export interface FunnelView {
   stages: FunnelStage[]
   bySource: { source: ApplicationSource; cohort: number; reachedInterview: number; hired: number }[]
   reopened: number
+  /** F-APP-13: UNCLASSIFIED = từ chối trước MVP 3.1, chưa có mã */
+  rejectionReasons: { code: RejectReasonCode | 'UNCLASSIFIED'; count: number }[]
 }

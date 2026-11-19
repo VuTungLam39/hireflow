@@ -73,13 +73,28 @@ export const APPLICATION_SORT_FIELDS = ['createdAt', 'score'] as const
 /** Hỏi lại trạng thái AI mỗi 3 giây khi đang chấm (FE Architecture mục 9.3) */
 export const AI_POLL_INTERVAL = 3_000
 
-export const REJECT_REASONS = [
-  'Chưa đủ kinh nghiệm',
-  'Thiếu kỹ năng bắt buộc',
-  'Không phù hợp văn hoá nhóm',
-  'Mức lương không phù hợp',
-  'Đã chọn ứng viên khác',
-] as const
+// MVP 3.1 · F-APP-13, BR-STS-03: khớp RejectReasonCode ở BE
+export const REJECT_REASON_LABEL = {
+  SKILL_GAP: 'Thiếu kỹ năng bắt buộc',
+  EXPERIENCE: 'Chưa đủ kinh nghiệm',
+  CULTURE: 'Không phù hợp văn hoá nhóm',
+  SALARY: 'Mức lương không phù hợp',
+  OTHER_CANDIDATE: 'Đã chọn ứng viên khác',
+  CANDIDATE_DECLINED: 'Ứng viên từ chối',
+  NO_SHOW: 'Không đến phỏng vấn',
+  OTHER: 'Lý do khác',
+} as const
+export type RejectReasonCode = keyof typeof REJECT_REASON_LABEL
+export const REJECT_REASON_CODES = (Object.keys(REJECT_REASON_LABEL) as RejectReasonCode[]).map(
+  (value) => ({ value, label: REJECT_REASON_LABEL[value] }),
+)
+/** Hộp từ chối: chọn mã, ghi chữ bắt buộc khi chọn "Lý do khác" */
+export const REJECT_REASON_INPUT = {
+  label: 'Ghi chú',
+  placeholder: 'Ghi thêm nếu cần, ví dụ: chưa đủ kinh nghiệm NestJS',
+  codes: REJECT_REASON_CODES,
+  textRequiredFor: 'OTHER',
+}
 
 export const SCORE_GOOD = 70
 export const SCORE_FAIR = 40

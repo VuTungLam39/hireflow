@@ -4,6 +4,7 @@ import type {
   ApplicationSource,
   ApplicationStatus,
   MatchLevel,
+  RejectReasonCode,
   ScoreFlag,
 } from './constants'
 
@@ -58,6 +59,8 @@ export interface StatusHistoryItem {
   fromStatus: ApplicationStatus | null
   toStatus: ApplicationStatus
   reason: string | null
+  /** F-APP-13: null ở lần từ chối trước MVP 3.1 */
+  reasonCode: RejectReasonCode | null
   changedBy: { id: string; fullName: string } | null
   changedAt: string
 }

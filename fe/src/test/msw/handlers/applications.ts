@@ -5,6 +5,7 @@ import {
   REASON_REQUIRED,
   SCORE_GOOD,
   type ApplicationStatus,
+  type RejectReasonCode,
 } from '@/features/applications'
 import type { DashboardSummary, FunnelView } from '@/features/dashboard'
 import { Permission } from '@/lib/permissions'
@@ -50,17 +51,33 @@ function findApplication(user: UserRow, id: unknown): ApplicationRow | Response 
   return app && canSeeApplication(user, app) ? app : notFound('Application')
 }
 
-function moveStatus(app: ApplicationRow, to: ApplicationStatus, user: UserRow, reason?: string) {
+function moveStatus(
+  app: ApplicationRow,
+  to: ApplicationStatus,
+  user: UserRow,
+  reason?: string,
+  reasonCode?: RejectReasonCode,
+) {
   db.history.push({
     id: uid('his'),
     applicationId: app.id,
     fromStatus: app.status,
     toStatus: to,
-    reason: reason ?? null,
+    reason: reason?.trim() || null,
+    reasonCode: to === 'REJECTED' ? (reasonCode ?? null) : null,
     changedById: user.id,
     changedAt: new Date().toISOString(),
   })
   app.status = to
+}
+
+// BR-STS-03 (MVP 3.1): bắt buộc mã lý do; mã OTHER bắt buộc ghi chữ
+function rejectInvalid(reason?: string, reasonCode?: RejectReasonCode) {
+  if (!reasonCode) return fail(400, 'REJECT_REASON_REQUIRED', 'Reason code is required')
+  if (reasonCode === 'OTHER' && !reason?.trim()) {
+    return fail(400, 'REJECT_REASON_REQUIRED', 'Reason is required')
+  }
+  return null
 }
 
 // US-06: cùng bộ lọc cho danh sách và xuất CSV
@@ -159,6 +176,7 @@ export const applicationHandlers = [
       .sort((a, b) => b.changedAt.localeCompare(a.changedAt))
       .map(({ changedById, applicationId: _id, ...h }) => ({
         ...h,
+        reasonCode: h.reasonCode ?? null,
         changedBy: userRef(changedById),
       }))
     return ok(rows)
@@ -205,10 +223,11 @@ export const applicationHandlers = [
     await delay()
     const user = authorize(request, Permission.ApplicationUpdateStatus)
     if (user instanceof Response) return user
-    const { ids, status, reason } = (await request.json()) as {
+    const { ids, status, reason, reasonCode } = (await request.json()) as {
       ids: string[]
       status: ApplicationStatus
       reason?: string
+      reasonCode?: RejectReasonCode
     }
     if (
       !Array.isArray(ids) ||
@@ -225,9 +244,8 @@ export const applicationHandlers = [
         'Bulk change only allows SCREENING, INTERVIEW, REJECTED',
       )
     }
-    if (status === 'REJECTED' && !reason?.trim()) {
-      return fail(400, 'REJECT_REASON_REQUIRED', 'Reason is required')
-    }
+    const invalid = status === 'REJECTED' && rejectInvalid(reason, reasonCode)
+    if (invalid) return invalid
     const result = {
       succeeded: [] as string[],
       unchanged: [] as string[],
@@ -240,7 +258,7 @@ export const applicationHandlers = [
       else if (app.status === 'OFFER' || !NEXT_STATUS[app.status].includes(status))
         result.failed.push({ id, code: 'INVALID_STATUS_TRANSITION' })
       else {
-        moveStatus(app, status, user, reason)
+        moveStatus(app, status, user, reason, reasonCode)
         result.succeeded.push(id)
       }
     }
@@ -312,9 +330,10 @@ export const applicationHandlers = [
     if (user instanceof Response) return user
     const app = findApplication(user, params.id)
     if (app instanceof Response) return app
-    const { status, reason } = (await request.json()) as {
+    const { status, reason, reasonCode } = (await request.json()) as {
       status: ApplicationStatus
       reason?: string
+      reasonCode?: RejectReasonCode
     }
     // HIRED chỉ đi qua /hire (quyền approve-offer)
     if (status === 'HIRED' || !NEXT_STATUS[app.status].includes(status)) {
@@ -324,10 +343,9 @@ export const applicationHandlers = [
         `Cannot move application from ${app.status} to ${status}`,
       )
     }
-    if (REASON_REQUIRED.includes(status) && !reason?.trim()) {
-      return fail(400, 'REJECT_REASON_REQUIRED', 'Reason is required')
-    }
-    moveStatus(app, status, user, reason)
+    const invalid = REASON_REQUIRED.includes(status) && rejectInvalid(reason, reasonCode)
+    if (invalid) return invalid
+    moveStatus(app, status, user, reason, reasonCode)
     return ok(toApplicationDetail(app), { message: `Moved to ${APPLICATION_STATUS[status].label}` })
   }),
 
@@ -354,9 +372,13 @@ export const applicationHandlers = [
     if (app.status !== 'OFFER') {
       return fail(409, 'INVALID_STATUS_TRANSITION', 'Only OFFER can be declined')
     }
-    const { reason } = (await request.json()) as { reason?: string }
-    if (!reason?.trim()) return fail(400, 'REJECT_REASON_REQUIRED', 'Reason is required')
-    moveStatus(app, 'REJECTED', user, reason.trim())
+    const { reason, reasonCode } = (await request.json()) as {
+      reason?: string
+      reasonCode?: RejectReasonCode
+    }
+    const invalid = rejectInvalid(reason, reasonCode)
+    if (invalid) return invalid
+    moveStatus(app, 'REJECTED', user, reason, reasonCode)
     return ok(toApplicationDetail(app))
   }),
 
@@ -585,6 +607,17 @@ export const applicationHandlers = [
       })),
       reopened: rows.filter((h) => h.fromStatus === 'REJECTED' || h.fromStatus === 'WITHDRAWN')
         .length,
+      rejectionReasons: Object.entries(
+        rows
+          .filter((h) => h.toStatus === 'REJECTED')
+          .reduce<Record<string, number>>((acc, h) => {
+            const code = h.reasonCode ?? 'UNCLASSIFIED'
+            acc[code] = (acc[code] ?? 0) + 1
+            return acc
+          }, {}),
+      )
+        .map(([code, count]) => ({ code: code as RejectReasonCode | 'UNCLASSIFIED', count }))
+        .sort((a, b) => b.count - a.count),
     }
     return ok(view)
   }),

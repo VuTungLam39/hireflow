@@ -151,7 +151,7 @@ export class ApplicationsController {
     @Body() dto: DeclineOfferDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.applicationsService.declineOffer(id, dto.reason, user);
+    return this.applicationsService.declineOffer(id, dto, user);
   }
 
   @Post(':id/rescore')

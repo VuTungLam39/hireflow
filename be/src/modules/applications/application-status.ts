@@ -1,5 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
 import { ApplicationStatus } from '../../common/enums/application-status.enum.js';
+import { RejectReasonCode } from '../../common/enums/reject-reason-code.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 
 const S = ApplicationStatus;
@@ -39,6 +40,7 @@ export function assertTransition(
   from: ApplicationStatus,
   to: ApplicationStatus,
   reason?: string | null,
+  reasonCode?: RejectReasonCode | null,
 ): void {
   if (!canTransition(from, to)) {
     throw new BusinessException(
@@ -47,8 +49,17 @@ export function assertTransition(
       HttpStatus.CONFLICT,
     );
   }
-  // BR-STS-02
-  if (to === S.Rejected && !reason?.trim()) {
+  if (to !== S.Rejected) return;
+  // BR-STS-03 (MVP 3.1): bắt buộc mã lý do; mã OTHER bắt buộc ghi chữ
+  if (!reasonCode) {
+    throw new BusinessException(
+      ErrorCode.RejectReasonRequired,
+      'Reason code is required',
+      HttpStatus.BAD_REQUEST,
+      [{ field: 'reasonCode', messages: ['Chọn lý do từ chối'] }],
+    );
+  }
+  if (reasonCode === RejectReasonCode.Other && !reason?.trim()) {
     throw new BusinessException(
       ErrorCode.RejectReasonRequired,
       'Reason is required',

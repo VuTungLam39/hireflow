@@ -8,6 +8,7 @@ import type {
   ApplicationStatus,
   BreakdownItem,
   MatchLevel,
+  RejectReasonCode,
   ScoreFlag,
 } from '@/features/applications'
 import type {
@@ -261,6 +262,7 @@ export interface HistoryRow {
   fromStatus: ApplicationStatus | null
   toStatus: ApplicationStatus
   reason: string | null
+  reasonCode?: RejectReasonCode | null
   changedById: string | null
   changedAt: string
 }
@@ -597,11 +599,11 @@ const STATUS_WEIGHTS: [ApplicationStatus, number][] = [
   ['REJECTED', 16],
   ['WITHDRAWN', 5],
 ]
-const REJECT_REASONS = [
-  'Chưa đủ số năm kinh nghiệm yêu cầu',
-  'Kỹ năng chưa phù hợp với vị trí',
-  'Mức lương kỳ vọng vượt ngân sách',
-  'Không đạt vòng phỏng vấn kỹ thuật',
+const REJECT_REASONS: [RejectReasonCode, string][] = [
+  ['EXPERIENCE', 'Chưa đủ số năm kinh nghiệm yêu cầu'],
+  ['SKILL_GAP', 'Kỹ năng chưa phù hợp với vị trí'],
+  ['SALARY', 'Mức lương kỳ vọng vượt ngân sách'],
+  ['SKILL_GAP', 'Không đạt vòng phỏng vấn kỹ thuật'],
 ]
 const NOTE_SAMPLES = [
   'Ứng viên trả lời tốt phần thiết kế hệ thống.',
@@ -620,13 +622,19 @@ function weightedStatus(): ApplicationStatus {
 
 function buildHistory(app: ApplicationRow) {
   let at = new Date(app.createdAt).getTime()
-  const push = (from: ApplicationStatus | null, to: ApplicationStatus, reason: string | null) => {
+  const push = (
+    from: ApplicationStatus | null,
+    to: ApplicationStatus,
+    reason: string | null,
+    reasonCode: RejectReasonCode | null = null,
+  ) => {
     history.push({
       id: uid('his'),
       applicationId: app.id,
       fromStatus: from,
       toStatus: to,
       reason,
+      reasonCode,
       changedById: from === null ? null : pick(['u-hr', 'u-hr', 'u-hm-eng']),
       changedAt: new Date(at).toISOString(),
     })
@@ -638,11 +646,9 @@ function buildHistory(app: ApplicationRow) {
   const stopAt = terminal ? between(0, 3) : FORWARD.indexOf(app.status)
   for (let i = 1; i <= stopAt; i++) push(FORWARD[i - 1], FORWARD[i], null)
   if (terminal) {
-    push(
-      FORWARD[stopAt],
-      app.status,
-      app.status === 'REJECTED' ? pick(REJECT_REASONS) : 'Ứng viên đã nhận việc nơi khác',
-    )
+    const [code, text] =
+      app.status === 'REJECTED' ? pick(REJECT_REASONS) : [null, 'Ứng viên đã nhận việc nơi khác']
+    push(FORWARD[stopAt], app.status, text, code)
   }
 }
 

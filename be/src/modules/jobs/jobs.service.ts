@@ -18,6 +18,12 @@ import { CvPipelineService } from '../ai/pipeline/cv-pipeline.service.js';
 import { RequirementsSuggester } from '../ai/requirements-suggester.service.js';
 import { AiQuotaService } from '../ai/ai-quota.service.js';
 import { Application } from '../applications/entities/application.entity.js';
+import { AuditService } from '../audit/audit.service.js';
+import {
+  AuditAction,
+  AuditEntity,
+  type AuditMetadata,
+} from '../audit/entities/audit-log.entity.js';
 import { DepartmentsService } from '../departments/departments.service.js';
 import { MatchingService } from '../matching/matching.service.js';
 import { CreateJobDto } from './dto/create-job.dto.js';
@@ -162,7 +168,20 @@ export class JobsService {
     private readonly prerender: PrerenderHookService,
     private readonly matching: MatchingService,
     private readonly events: AppEvents,
+    private readonly audit: AuditService,
   ) {}
+
+  // F-AUDIT-02
+  private log(action: AuditAction, jobId: string, user: ScopeUser, metadata?: AuditMetadata) {
+    return this.audit.recordSafely({
+      organizationId: orgIdOf(user),
+      actorId: user.id ?? null,
+      action,
+      entity: AuditEntity.Job,
+      entityId: jobId,
+      metadata,
+    });
+  }
 
   async findAll(query: QueryJobDto, user: ScopeUser): Promise<PaginatedResult<JobSummaryView>> {
     const qb = this.jobsRepository
@@ -257,6 +276,7 @@ export class JobsService {
       }),
     );
     this.events.emit('job.changed', { jobId: saved.id });
+    await this.log(AuditAction.JobCreated, saved.id, user);
     return this.findOne(saved.id, user);
   }
 
@@ -310,6 +330,7 @@ export class JobsService {
       return job.id;
     });
     this.events.emit('job.changed', { jobId: newId });
+    await this.log(AuditAction.JobCloned, newId, user, { sourceId: id });
     return this.findOne(newId, user);
   }
 
@@ -325,6 +346,7 @@ export class JobsService {
     await this.jobsRepository.update(id, dto);
     if (job.status === JobStatus.Open) this.prerender.schedule('job.updated');
     this.events.emit('job.changed', { jobId: id });
+    await this.log(AuditAction.JobUpdated, id, user, { fields: Object.keys(dto).sort().join(',') });
     return this.findOne(id, user);
   }
 
@@ -369,6 +391,10 @@ export class JobsService {
       this.prerender.schedule('job.requirements.updated');
       await this.matching.enqueue(id, result.jdVersion, requestId);
     }
+    await this.log(AuditAction.JobRequirementsUpdated, id, user, {
+      jdVersion: result.jdVersion,
+      count: dto.requirements.length,
+    });
     return { jdVersion: result.jdVersion };
   }
 
@@ -401,6 +427,7 @@ export class JobsService {
     });
     this.prerender.schedule('job.published');
     this.events.emit('job.changed', { jobId: id });
+    await this.log(AuditAction.JobPublished, id, user, { jdVersion });
     // Kickoff 12: job.published
     await this.matching.enqueue(id, jdVersion, requestId);
     return this.findOne(id, user);
@@ -421,6 +448,7 @@ export class JobsService {
     });
     this.prerender.schedule('job.closed');
     this.events.emit('job.changed', { jobId: id });
+    await this.log(AuditAction.JobClosed, id, user);
     return this.findOne(id, user);
   }
 
@@ -439,6 +467,7 @@ export class JobsService {
     }
     await this.jobsRepository.softDelete(id);
     this.events.emit('job.changed', { jobId: id });
+    await this.log(AuditAction.JobDeleted, id, user);
   }
 
   // US-05

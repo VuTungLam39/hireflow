@@ -43,7 +43,7 @@ describe('Funnel report (e2e)', () => {
     as(who, request(server()).get(`/api/v1/dashboard/funnel?${qs}`));
   const move = (id: string, status: ApplicationStatus, reason?: string) =>
     as('hr', request(server()).patch(`/api/v1/applications/${id}/status`))
-      .send({ status, reason })
+      .send({ status, reason, ...(status === S.Rejected ? { reasonCode: 'EXPERIENCE' } : {}) })
       .expect(200);
 
   beforeAll(async () => {
