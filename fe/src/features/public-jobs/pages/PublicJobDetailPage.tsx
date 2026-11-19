@@ -158,8 +158,8 @@ export default function PublicJobDetailPage() {
                 <h2 className="type-heading text-xl">Chúng tôi đã nhận hồ sơ của bạn</h2>
                 <p className="type-body">
                   Hồ sơ của bạn đã được tiếp nhận vào hệ thống tuyển dụng. Bộ phận tuyển dụng sẽ xem
-                  xét và liên hệ trực tiếp nếu hồ sơ phù hợp. Hệ thống không gửi email xác nhận tự
-                  động.
+                  xét và liên hệ trực tiếp nếu hồ sơ phù hợp. Chúng tôi đã gửi email xác nhận kèm
+                  link để bạn theo dõi trạng thái hoặc tự rút hồ sơ.
                 </p>
                 <Link to={paths.publicJobs} className={buttonVariants({ variant: 'secondary' })}>
                   Xem vị trí khác

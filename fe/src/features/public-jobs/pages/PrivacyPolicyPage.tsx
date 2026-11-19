@@ -93,6 +93,10 @@ export default function PrivacyPolicyPage() {
             Gợi ý hồ sơ của bạn cho vị trí khác phù hợp của cùng công ty, trong thời gian lưu trữ
             (mục 6).
           </li>
+          <li>
+            Gửi email xác nhận đã nhận hồ sơ tới email bạn khai khi nộp. Email có link theo dõi để
+            bạn xem trạng thái rút gọn của hồ sơ và tự rút hồ sơ.
+          </li>
         </ul>
       </Section>
 
@@ -130,8 +134,8 @@ export default function PrivacyPolicyPage() {
         <p>
           Dữ liệu được lưu và xử lý trên dịch vụ thuê ở nước ngoài: Render, Neon (máy chủ ứng dụng
           và cơ sở dữ liệu), Backblaze B2 (file CV), Vercel (giao diện web), Google và Groq (trí tuệ
-          nhân tạo), Mailjet (gửi email tài khoản cho nhà tuyển dụng; bản demo hiện không gửi email
-          cho ứng viên).
+          nhân tạo), Mailjet (gửi email tài khoản cho nhà tuyển dụng và email xác nhận nộp hồ sơ cho
+          ứng viên).
         </p>
         <p>
           HireFlow là sàn của nhiều công ty. Hồ sơ chỉ hiển thị cho công ty đăng vị trí bạn nộp. Nếu
@@ -151,6 +155,11 @@ export default function PrivacyPolicyPage() {
           danh: xoá file CV, dữ liệu trích xuất từ CV, vector tìm kiếm, ghi chú và nhận xét phỏng
           vấn; thay họ tên, email, số điện thoại. Bản sao lưu cơ sở dữ liệu tự hết hạn theo chu kỳ
           của nhà cung cấp.
+        </p>
+        <p>
+          Link theo dõi hồ sơ hết hạn sau 90 ngày kể từ ngày nộp. Ai có link đều xem được trạng thái
+          rút gọn và rút được hồ sơ, nên đừng chuyển tiếp email này. Khi hồ sơ bị ẩn danh, link bị
+          xoá ngay cùng bản ghi email đã gửi.
         </p>
         <p>
           Nếu công ty bạn nộp hồ sơ bị Quản trị sàn khoá hoặc từ chối, tin tuyển dụng của công ty

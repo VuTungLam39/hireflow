@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import type { PaginationParams } from '@/types/api'
 import type { PublicJobsListParams } from '../schemas'
@@ -12,6 +12,7 @@ export const publicJobKeys = {
   detail: (id: string) => [...publicJobKeys.all, 'detail', id] as const,
   companies: (params: PaginationParams) => [...publicJobKeys.all, 'companies', params] as const,
   company: (slug: string) => [...publicJobKeys.all, 'company', slug] as const,
+  track: (token: string) => [...publicJobKeys.all, 'track', token] as const,
 }
 
 const MINUTE = 60_000
@@ -70,4 +71,22 @@ export function useApply(jobId: string) {
     onSettled: () => setProgress(null),
   })
   return { ...mutation, progress }
+}
+
+// US-26 · BR-APP-14
+export function useApplicationTrack(token: string) {
+  return useQuery({
+    queryKey: publicJobKeys.track(token),
+    queryFn: () => publicJobsApi.track(token),
+    enabled: !!token,
+    retry: false,
+  })
+}
+
+export function useWithdrawApplication(token: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => publicJobsApi.withdraw(token),
+    onSuccess: (data) => qc.setQueryData(publicJobKeys.track(token), data),
+  })
 }

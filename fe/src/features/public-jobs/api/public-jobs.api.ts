@@ -4,6 +4,7 @@ import type { ApiResponse, Paginated } from '@/types/api'
 import type { PaginationParams } from '@/types/api'
 import type { PublicJobsListParams } from '../schemas'
 import type {
+  ApplicationTrack,
   PublicCompanyCard,
   PublicCompanyPage,
   PublicDepartmentCount,
@@ -65,4 +66,13 @@ export const publicJobsApi = {
         e.total && onProgress?.(Math.round((e.loaded / e.total) * 100)),
     })
   },
+
+  // US-26 · BR-APP-14
+  track: async (t: string) =>
+    (await api.get<ApiResponse<ApplicationTrack>>('/public/applications/track', { params: { t } }))
+      .data.data,
+
+  withdraw: async (token: string) =>
+    (await api.post<ApiResponse<ApplicationTrack>>('/public/applications/withdraw', { token })).data
+      .data,
 }

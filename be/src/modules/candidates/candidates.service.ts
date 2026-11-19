@@ -20,6 +20,7 @@ import { escapeLike } from '../../common/utils/text.js';
 import { Application } from '../applications/entities/application.entity.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity.js';
+import { EmailTemplate } from '../email/email.types.js';
 import { CvFile } from '../files/entities/cv-file.entity.js';
 import { FilesService } from '../files/files.service.js';
 import { JobMatch } from '../matching/entities/job-match.entity.js';
@@ -217,6 +218,16 @@ export class CandidatesService {
       if (!candidate) throw new NotFoundException('Candidate not found');
       if (candidate.anonymizedAt && !strict) return null;
       this.assertNotAnonymized(candidate);
+
+      // BR-APP-14: link theo dõi và email đã gửi chứa email ứng viên
+      await manager.query(
+        `DELETE FROM auth_tokens WHERE application_id IN (SELECT id FROM applications WHERE candidate_id = $1)`,
+        [id],
+      );
+      await manager.query(
+        `DELETE FROM email_outbox WHERE organization_id = $1 AND "to" = $2 AND template = $3`,
+        [candidate.organizationId, candidate.email, EmailTemplate.ApplicationReceived],
+      );
 
       const files = await manager.find(CvFile, {
         select: ['storageKey'],

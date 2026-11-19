@@ -1,9 +1,11 @@
 import { delay, http } from 'msw'
 import type {
+  ApplicationTrack,
   PublicCompanyCard,
   PublicCompanyRef,
   PublicJob,
   PublicJobSummary,
+  TrackStage,
 } from '@/features/public-jobs'
 import { salaryOf } from '@/features/jobs'
 import { todayIsoDay } from '@/lib/vn-day'
@@ -20,6 +22,24 @@ import {
   paginate,
   searchParams,
 } from '../http'
+
+// US-26: hai link theo dõi mẫu, trạng thái giữ trong bộ nhớ
+export const TRACK_TOKEN = 'track-token-1234567890'
+export const DECIDED_TRACK_TOKEN = 'track-decided-1234567890'
+const WITHDRAWABLE: TrackStage[] = ['RECEIVED', 'REVIEWING', 'INTERVIEW']
+const tracked: Record<string, { stage: TrackStage }> = {
+  [TRACK_TOKEN]: { stage: 'REVIEWING' },
+  [DECIDED_TRACK_TOKEN]: { stage: 'DECIDED' },
+}
+const trackedBy = (token: string | null) => (token ? tracked[token] : undefined)
+const trackView = ({ stage }: { stage: TrackStage }): ApplicationTrack => ({
+  jobTitle: 'Backend Developer (NestJS)',
+  companyName: demoOrg().name,
+  companySlug: demoOrg().slug,
+  appliedAt: '2026-11-10T03:00:00.000Z',
+  stage,
+  withdrawable: WITHDRAWABLE.includes(stage),
+})
 
 // MVP 3: mọi tin mẫu thuộc công ty demo
 const demoOrg = () => db.organizations.find((o) => o.id === MOCK_ORG_ID)!
@@ -211,6 +231,25 @@ export const publicHandlers = [
     })
     // Không trả id hay trạng thái cho trang công khai
     return ok(null, { status: 201, message: 'Application submitted' })
+  }),
+
+  // US-26 · BR-APP-14
+  http.get(api('/public/applications/track'), async ({ request }) => {
+    await latency(200)
+    const tracked = trackedBy(searchParams(request).get('t'))
+    return tracked ? ok(trackView(tracked)) : fail(400, 'TOKEN_INVALID', 'Tracking link is invalid')
+  }),
+
+  http.post(api('/public/applications/withdraw'), async ({ request }) => {
+    await latency(300)
+    const { token } = (await request.json()) as { token: string }
+    const tracked = trackedBy(token)
+    if (!tracked) return fail(400, 'TOKEN_INVALID', 'Tracking link is invalid')
+    if (!WITHDRAWABLE.includes(tracked.stage)) {
+      return fail(409, 'APPLICATION_NOT_WITHDRAWABLE', 'Cannot withdraw')
+    }
+    tracked.stage = 'WITHDRAWN'
+    return ok(trackView(tracked), { message: 'Application withdrawn' })
   }),
 ]
 
