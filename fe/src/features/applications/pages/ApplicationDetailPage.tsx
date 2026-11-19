@@ -175,6 +175,7 @@ export default function ApplicationDetailPage() {
                 applicationId={app.id}
                 applicationStatus={app.status}
                 requirements={app.requirements}
+                jobId={app.job.id}
               />
             </>
           ) : (
@@ -316,6 +317,7 @@ function ActivityTabs({
             applicationId={app.id}
             applicationStatus={app.status}
             requirements={app.requirements}
+            jobId={app.job.id}
           />
         )}
       </div>

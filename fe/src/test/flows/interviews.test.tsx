@@ -12,11 +12,17 @@ import { db } from '@/test/msw/data'
 import { applicationHandlers } from '@/test/msw/handlers/applications'
 import { authHandlers } from '@/test/msw/handlers/auth'
 import { interviewHandlers } from '@/test/msw/handlers/interviews'
+import { jobHandlers } from '@/test/msw/handlers/jobs'
 import { api, tokenFor, toUser } from '@/test/msw/http'
 import { toLocalInput } from '@/features/interviews/lib/format'
 import InterviewsPage from '@/features/interviews/pages/InterviewsPage'
 
-const server = setupServer(...authHandlers, ...applicationHandlers, ...interviewHandlers)
+const server = setupServer(
+  ...authHandlers,
+  ...applicationHandlers,
+  ...interviewHandlers,
+  ...jobHandlers,
+)
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
@@ -169,6 +175,84 @@ describe('interviews', () => {
     expect(
       db.interviews.some((i) => i.applicationId === app.id && i.interviewerIds.includes('u-iv2')),
     ).toBe(true)
+  })
+
+  it('MVP 3.1 · F-INT-04: HR picks a named stage; the round follows the stage order', async () => {
+    const app = db.applications.find(
+      (a) => a.status === 'INTERVIEW' && !db.interviews.some((i) => i.applicationId === a.id),
+    )!
+    db.interviewStages.push(
+      {
+        id: 'stg-a',
+        jobId: app.jobId,
+        position: 1,
+        name: 'Vòng kỹ thuật',
+        criteria: [{ id: 'k1', label: 'API' }],
+      },
+      {
+        id: 'stg-b',
+        jobId: app.jobId,
+        position: 2,
+        name: 'Vòng văn hoá',
+        criteria: [{ id: 'k2', label: 'Giao tiếp' }],
+      },
+    )
+    try {
+      renderAt('hr@hireflow.dev', links.applicationDetail(app.id))
+      fireEvent.click(await screen.findByRole('tab', { name: /Phỏng vấn/ }))
+      fireEvent.click(await screen.findByRole('button', { name: 'Đặt lịch phỏng vấn' }))
+      const dialog = await screen.findByRole('dialog')
+      fireEvent.change(await within(dialog).findByLabelText('Vòng'), { target: { value: 'stg-b' } })
+      fireEvent.change(within(dialog).getByLabelText('Ngày giờ'), {
+        target: { value: toLocalInput(new Date(Date.now() + 4 * 86_400_000).toISOString()) },
+      })
+      fireEvent.change(within(dialog).getByLabelText('Địa điểm'), {
+        target: { value: 'Phòng 502' },
+      })
+      fireEvent.click(await within(dialog).findByRole('checkbox', { name: /Phạm Thùy Linh/ }))
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Đặt lịch' }))
+
+      expect(await screen.findByText('· Vòng văn hoá')).toBeInTheDocument()
+      expect(db.interviews.find((i) => i.applicationId === app.id)).toMatchObject({
+        stageId: 'stg-b',
+        round: 2,
+      })
+    } finally {
+      db.interviewStages = []
+    }
+  })
+
+  it('MVP 3.1 · BR-INT-03: feedback on a staged interview rates the stage criteria', async () => {
+    const iv = pastInterview()
+    const app = db.applications.find((a) => a.id === iv.applicationId)!
+    const before = { stageId: iv.stageId, feedbacks: iv.feedbacks, status: iv.status }
+    db.interviewStages.push({
+      id: 'stg-c',
+      jobId: app.jobId,
+      position: 1,
+      name: 'Vòng văn hoá',
+      criteria: [{ id: 'k3', label: 'Giao tiếp nhóm' }],
+    })
+    iv.stageId = 'stg-c'
+    iv.feedbacks = []
+    try {
+      renderAt('interviewer@hireflow.dev', links.applicationDetail(iv.applicationId))
+      fireEvent.click(await screen.findByRole('button', { name: 'Gửi phiếu đánh giá' }))
+      const dialog = await screen.findByRole('dialog')
+      const group = within(dialog).getByRole('radiogroup', { name: 'Giao tiếp nhóm' })
+      for (const g of within(dialog).getAllByRole('radiogroup')) {
+        fireEvent.click(within(g).getByRole('radio', { name: /^4 –/ }))
+      }
+      expect(group).toBeInTheDocument()
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi phiếu' }))
+      expect(await screen.findByRole('button', { name: 'Sửa phiếu đánh giá' })).toBeInTheDocument()
+      expect(iv.feedbacks[0].ratings).toEqual([
+        { requirementId: 'k3', label: 'Giao tiếp nhóm', score: 4 },
+      ])
+    } finally {
+      Object.assign(iv, before)
+      db.interviewStages = []
+    }
   })
 
   it('Q1, BR-STS-01: moving to OFFER without any feedback warns but still allows it', async () => {

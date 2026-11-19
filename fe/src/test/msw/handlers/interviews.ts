@@ -19,6 +19,11 @@ import {
 
 const DAY_MS = 86_400_000
 
+const stageView = (id?: string | null) => {
+  const s = id ? db.interviewStages.find((x) => x.id === id) : undefined
+  return s ? { id: s.id, name: s.name, criteria: s.criteria } : null
+}
+
 function toInterview(iv: InterviewRow, viewerId: string, withApplication: boolean): Interview {
   const viewer = db.users.find((u) => u.id === viewerId)!
   const app = db.applications.find((a) => a.id === iv.applicationId)!
@@ -27,6 +32,7 @@ function toInterview(iv: InterviewRow, viewerId: string, withApplication: boolea
     id: iv.id,
     applicationId: iv.applicationId,
     round: iv.round,
+    stage: stageView(iv.stageId),
     scheduledAt: iv.scheduledAt,
     durationMinutes: iv.durationMinutes,
     location: iv.location,
@@ -152,6 +158,15 @@ export const interviewHandlers = [
       durationMinutes: number
       location: string
       interviewerIds: string[]
+      stageId?: string
+    }
+    const stage = body.stageId
+      ? db.interviewStages.find((s) => s.id === body.stageId && s.jobId === app.jobId)
+      : undefined
+    if (body.stageId && !stage) {
+      return fail(400, 'VALIDATION_FAILED', 'Validation failed', [
+        { field: 'stageId', messages: ['Vòng không thuộc tin của hồ sơ này'] },
+      ])
     }
     const start = new Date(body.scheduledAt)
     if (!(start.getTime() > Date.now())) {
@@ -173,8 +188,10 @@ export const interviewHandlers = [
       id: uid('iv'),
       applicationId: app.id,
       round:
+        stage?.position ??
         db.interviews.filter((i) => i.applicationId === app.id && i.status !== 'CANCELLED').length +
-        1,
+          1,
+      stageId: stage?.id ?? null,
       scheduledAt: start.toISOString(),
       durationMinutes: body.durationMinutes,
       location: body.location,
@@ -275,7 +292,8 @@ export const interviewHandlers = [
       comment?: string
     }
     const app = db.applications.find((a) => a.id === iv.applicationId)!
-    const reqs = jobOf(app).requirements
+    // BR-INT-03: buổi có vòng chấm theo tiêu chí của vòng
+    const reqs = stageView(iv.stageId)?.criteria ?? jobOf(app).requirements
     if (
       reqs.length !== body.ratings.length ||
       reqs.some((r) => !body.ratings.some((x) => x.requirementId === r.id))

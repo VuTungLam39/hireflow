@@ -819,6 +819,16 @@ export interface InterviewRow {
   createdAt: string
   interviewerIds: string[]
   feedbacks: FeedbackRow[]
+  /** MVP 3.1 · F-INT-04 */
+  stageId?: string | null
+}
+
+export interface StageRow {
+  id: string
+  jobId: string
+  position: number
+  name: string
+  criteria: { id: string; label: string }[]
 }
 
 const interviews: InterviewRow[] = applications
@@ -911,4 +921,5 @@ export const db = {
   notifications,
   auditLogs,
   interviews,
+  interviewStages: [] as StageRow[],
 }

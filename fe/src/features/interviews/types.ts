@@ -16,6 +16,8 @@ export interface Interview {
   id: string
   applicationId: string
   round: number
+  /** MVP 3.1 · F-INT-04: null khi không theo vòng, phiếu chấm theo tiêu chí của tin */
+  stage: { id: string; name: string; criteria: { id: string; label: string }[] } | null
   scheduledAt: string
   durationMinutes: number
   location: string
@@ -44,6 +46,8 @@ export interface ScheduleInput {
   durationMinutes: number
   location: string
   interviewerIds: string[]
+  /** Chỉ khi tạo buổi mới; không đổi được sau khi tạo */
+  stageId?: string
 }
 
 export interface FeedbackInput {

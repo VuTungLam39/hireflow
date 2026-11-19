@@ -74,6 +74,7 @@ export function QuickView({ id, listQuery, hideScore, onClose }: QuickViewProps)
                   applicationId={app.id}
                   applicationStatus={app.status}
                   requirements={app.requirements}
+                  jobId={app.job.id}
                 />
               </section>
             )}

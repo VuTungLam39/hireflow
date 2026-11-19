@@ -4,7 +4,7 @@ import { useOpenDetail } from '@/hooks/use-detail'
 import { getErrorMessage } from '@/lib/errors'
 import { jobsApi } from '../api/jobs.api'
 import type { JobListParams } from '../schemas/job.schema'
-import type { JobInput, RequirementInput } from '../types'
+import type { InterviewStageInput, JobInput, RequirementInput } from '../types'
 
 export const jobKeys = {
   all: ['jobs'] as const,
@@ -13,6 +13,7 @@ export const jobKeys = {
   detail: (id: string) => [...jobKeys.all, 'detail', id] as const,
   /** Đặt dưới detail để invalidate job thì bảng xếp hạng cũng làm mới */
   ranking: (id: string) => [...jobKeys.detail(id), 'ranking'] as const,
+  stages: (id: string) => [...jobKeys.detail(id), 'interview-stages'] as const,
 }
 
 const MINUTE = 60_000
@@ -74,6 +75,29 @@ export function useSaveRequirements() {
     onSuccess: ({ jdVersion }, { id }) => {
       toast.success(`Đã lưu tiêu chí (phiên bản ${jdVersion}). Điểm đang được tính lại.`)
       return queryClient.invalidateQueries({ queryKey: jobKeys.detail(id) })
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  })
+}
+
+// F-INT-04
+export function useInterviewStages(id: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: jobKeys.stages(id ?? ''),
+    queryFn: () => jobsApi.interviewStages(id!),
+    enabled: !!id && enabled,
+    staleTime: MINUTE,
+  })
+}
+
+export function useSaveInterviewStages() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, stages }: { id: string; stages: InterviewStageInput[] }) =>
+      jobsApi.saveInterviewStages(id, stages),
+    onSuccess: (data, { id }) => {
+      queryClient.setQueryData(jobKeys.stages(id), data)
+      toast.success('Đã lưu vòng phỏng vấn')
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })

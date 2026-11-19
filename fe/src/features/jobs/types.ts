@@ -78,3 +78,19 @@ export interface JobInput extends Partial<JobDetails> {
   location: string
   jdText: string
 }
+
+/** MVP 3.1 · F-INT-04: vòng phỏng vấn có tên, tiêu chí chấm riêng */
+export interface InterviewStage {
+  id: string
+  position: number
+  name: string
+  criteria: { id: string; label: string }[]
+  /** Đã có phiếu đánh giá: chỉ đổi được tên (BR-INT-05) */
+  locked: boolean
+}
+
+export interface InterviewStageInput {
+  id?: string
+  name: string
+  criteria: { id?: string; label: string }[]
+}

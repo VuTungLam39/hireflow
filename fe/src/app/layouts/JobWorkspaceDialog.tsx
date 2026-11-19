@@ -10,6 +10,7 @@ import {
 import {
   JobActionBar,
   JobInfoSection,
+  InterviewStagesEditor,
   JobOverview,
   JobRequirementsSection,
   JobStatusBadge,
@@ -34,7 +35,15 @@ const funnelSince = (startedAt: string) => {
   return start > floor ? start : floor
 }
 
-const TABS = ['overview', 'content', 'criteria', 'applications', 'ranking', 'matches'] as const
+const TABS = [
+  'overview',
+  'content',
+  'criteria',
+  'stages',
+  'applications',
+  'ranking',
+  'matches',
+] as const
 export type JobTab = (typeof TABS)[number]
 
 interface JobWorkspaceDialogProps {
@@ -64,6 +73,7 @@ export function JobWorkspaceDialog({ id, tab: initialTab, onClose }: JobWorkspac
         { id: 'overview', label: 'Tổng quan' },
         { id: 'content', label: 'Nội dung tin' },
         { id: 'criteria', label: 'Tiêu chí chấm', count: job.requirements.length },
+        { id: 'stages', label: 'Vòng phỏng vấn' },
         ...(live
           ? [
               { id: 'applications' as const, label: 'Hồ sơ', count: job.applicationCount },
@@ -191,6 +201,7 @@ export function JobWorkspaceDialog({ id, tab: initialTab, onClose }: JobWorkspac
               </aside>
             </div>
           )}
+          {current === 'stages' && <InterviewStagesEditor job={query.data} canEdit={canEdit} />}
           {current === 'applications' && (
             <JobApplicationsList key={appStatus ?? 'all'} jobId={id} initialStatus={appStatus} />
           )}

@@ -1,7 +1,14 @@
 import { api, SLOW_TIMEOUT_MS } from '@/lib/api-client'
 import type { ApiResponse, Paginated } from '@/types/api'
 import type { JobListParams } from '../schemas/job.schema'
-import type { Job, JobInput, JobSummary, RequirementInput } from '../types'
+import type {
+  InterviewStage,
+  InterviewStageInput,
+  Job,
+  JobInput,
+  JobSummary,
+  RequirementInput,
+} from '../types'
 
 export const jobsApi = {
   list: async (params: Partial<JobListParams>): Promise<Paginated<JobSummary>> => {
@@ -32,6 +39,14 @@ export const jobsApi = {
     ).data.data,
 
   /** Thay toàn bộ tiêu chí → BE tăng jdVersion và tính lại điểm trong queue (202) */
+  // F-INT-04
+  interviewStages: async (id: string) =>
+    (await api.get<ApiResponse<InterviewStage[]>>(`/jobs/${id}/interview-stages`)).data.data,
+
+  saveInterviewStages: async (id: string, stages: InterviewStageInput[]) =>
+    (await api.put<ApiResponse<InterviewStage[]>>(`/jobs/${id}/interview-stages`, { stages })).data
+      .data,
+
   saveRequirements: async (id: string, requirements: RequirementInput[]) =>
     (
       await api.put<ApiResponse<{ jdVersion: number }>>(`/jobs/${id}/requirements`, {
