@@ -131,7 +131,8 @@ Chế độ mobile mặc định của Lighthouse 12 (giả lập Moto G Power, 
 - **SEO 82 → 100**: CSR thiếu meta description (chỉ có sau khi JS chạy) và thiếu `robots.txt`.
 - **TBT tăng 10–40 ms** ở bản prerender: đây là chi phí hydrate (React duyệt lại cây có sẵn). Vẫn thấp hơn nhiều ngưỡng 200 ms của Lighthouse.
 - **FCP còn ~2,3 s** chủ yếu do file CSS Tailwind (chặn render ~0,45 s) và độ trễ mạng giả lập. Có thể giảm tiếp bằng inline CSS quan trọng; chưa làm vì lợi ích nhỏ so với rủi ro.
-- **Dashboard** đo sau khi đăng nhập nên cache đã ấm; chỉ để tham khảo, không so được với trang công khai. Dashboard không cần SEO, `robots.txt` cố ý chặn mọi trang trừ `/jobs`.
+- **Dashboard** đo sau khi đăng nhập nên cache đã ấm; chỉ để tham khảo, không so được với trang công khai. Dashboard không cần SEO, `robots.txt` cố ý chặn mọi trang trừ `/jobs`, `/companies`, `/chinh-sach-du-lieu` và ảnh công khai.
+- **Trang công ty `/companies/:slug` (MVP 3):** phần tử LCP là ảnh bìa. Prerender chép ảnh công khai thành file tĩnh cùng đường dẫn và bỏ modulepreload ở trang dựng sẵn (#101). PSI mobile trên prod vẫn 83–85 vì LCP mô phỏng gộp ~260 KB JS mà `index.js` tải ngay; trace quan sát của PSI cho LCP ~0,26 s, Lighthouse cục bộ vào URL prod 99 điểm. Chấp nhận, không hoãn tải `index.js` (form nộp CV sẽ tương tác muộn).
 
 ## 5. Tải dữ liệu song song với code (loader của React Router)
 
