@@ -1,4 +1,5 @@
 import { ApplicationStatus as S } from '../../common/enums/application-status.enum.js';
+import { RejectReasonCode } from '../../common/enums/reject-reason-code.enum.js';
 import { BusinessException } from '../../common/exceptions/index.js';
 import {
   assertReopenable,
@@ -47,10 +48,24 @@ describe('application status flow (Kickoff 5.2)', () => {
     expect(error.code).toBe('INVALID_STATUS_TRANSITION');
   });
 
+  it('requires a reason code to reject, free text alone is not enough (BR-STS-03)', () => {
+    const error = errorOf(() => assertTransition(S.Screening, S.Rejected, 'Không phù hợp'));
+    expect(error.getStatus()).toBe(400);
+    expect(error.code).toBe('REJECT_REASON_REQUIRED');
+  });
+
+  it('accepts a reason code without text', () => {
+    expect(() =>
+      assertTransition(S.Screening, S.Rejected, null, RejectReasonCode.SkillGap),
+    ).not.toThrow();
+  });
+
   it.each([undefined, null, '', '   '])(
-    'requires a reason to reject (%s) (BR-STS-02)',
+    'code OTHER requires a written reason (%s) (BR-STS-03)',
     (reason) => {
-      const error = errorOf(() => assertTransition(S.Screening, S.Rejected, reason));
+      const error = errorOf(() =>
+        assertTransition(S.Screening, S.Rejected, reason, RejectReasonCode.Other),
+      );
       expect(error.getStatus()).toBe(400);
       expect(error.code).toBe('REJECT_REASON_REQUIRED');
     },

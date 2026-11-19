@@ -83,6 +83,7 @@ export class DashboardService {
         .select('app.source', 'source')
         .addSelect('h.fromStatus', 'fromStatus')
         .addSelect('h.toStatus', 'toStatus')
+        .addSelect('h.reasonCode', 'reasonCode')
         .addSelect('COUNT(*)::int', 'n')
         .addSelect('percentile_disc(0.5) WITHIN GROUP (ORDER BY h.prev_stage_seconds)', 'p50')
         .where('app.createdAt >= :start AND app.createdAt < :end', {
@@ -91,7 +92,8 @@ export class DashboardService {
         })
         .groupBy('app.source')
         .addGroupBy('h.fromStatus')
-        .addGroupBy('h.toStatus');
+        .addGroupBy('h.toStatus')
+        .addGroupBy('h.reasonCode');
       if (query.jobId) qb.andWhere('app.jobId = :jobId', { jobId: query.jobId });
       const rows = await applyDepartmentScope(
         qb,

@@ -343,7 +343,11 @@ describe('Dashboard cache, realtime notifications, audit log (e2e)', () => {
     it('records status changes with actor, IP and request id; only Admin can read', async () => {
       await as('hr', request(server()).patch(`/api/v1/applications/${ids.app}/status`))
         .set('X-Request-Id', `rt-${run}`)
-        .send({ status: ApplicationStatus.Rejected, reason: 'Chưa đủ kinh nghiệm' })
+        .send({
+          status: ApplicationStatus.Rejected,
+          reasonCode: 'EXPERIENCE',
+          reason: 'Chưa đủ kinh nghiệm',
+        })
         .expect(200);
 
       await as('hr', request(server()).get(`/api/v1/audit-logs?entityId=${ids.app}`)).expect(403);
@@ -357,7 +361,7 @@ describe('Dashboard cache, realtime notifications, audit log (e2e)', () => {
         action: 'APPLICATION_STATUS_CHANGED',
         entity: 'application',
         entityId: ids.app,
-        metadata: { from: 'SCREENING', to: 'REJECTED', hasReason: true },
+        metadata: { from: 'SCREENING', to: 'REJECTED', hasReason: true, reasonCode: 'EXPERIENCE' },
         requestId: `rt-${run}`,
         ip: expect.any(String),
         actor: { id: userIds.hr, fullName: 'RT HR', email: emails.hr },

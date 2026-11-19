@@ -32,6 +32,19 @@ export enum AuditAction {
   OrgReactivated = 'ORG_REACTIVATED',
   // BR-AI-11
   OrgAiLimitsUpdated = 'ORG_AI_LIMITS_UPDATED',
+  // MVP 3.1 · F-AUDIT-02, BR-AUDIT-03
+  JobCreated = 'JOB_CREATED',
+  JobUpdated = 'JOB_UPDATED',
+  JobRequirementsUpdated = 'JOB_REQUIREMENTS_UPDATED',
+  JobPublished = 'JOB_PUBLISHED',
+  JobClosed = 'JOB_CLOSED',
+  JobCloned = 'JOB_CLONED',
+  JobDeleted = 'JOB_DELETED',
+  InterviewScheduled = 'INTERVIEW_SCHEDULED',
+  InterviewUpdated = 'INTERVIEW_UPDATED',
+  InterviewCancelled = 'INTERVIEW_CANCELLED',
+  FeedbackSubmitted = 'FEEDBACK_SUBMITTED',
+  FeedbackUpdated = 'FEEDBACK_UPDATED',
 }
 
 export enum AuditEntity {
@@ -42,6 +55,8 @@ export enum AuditEntity {
   Company = 'company',
   Media = 'media',
   Organization = 'organization',
+  Job = 'job',
+  Interview = 'interview',
 }
 
 // F-AUDIT-01 · Database Design 9: chỉ thêm, không sửa (trigger chặn UPDATE)

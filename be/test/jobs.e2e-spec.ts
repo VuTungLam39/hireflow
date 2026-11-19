@@ -221,6 +221,16 @@ describe('Jobs (e2e)', () => {
       expect(res.body.data.status).toBe('OPEN');
       expect(res.body.data.publishedAt).toBeTruthy();
       await as('hr', request(server()).patch(`/api/v1/jobs/${jobA}/publish`)).expect(409);
+
+      // F-AUDIT-02
+      const actions: { action: string }[] = await ds.query(
+        `SELECT action FROM audit_logs WHERE entity = 'job' AND entity_id = $1 ORDER BY created_at, id`,
+        [jobA],
+      );
+      expect(actions.map((a) => a.action)).toEqual(
+        expect.arrayContaining(['JOB_REQUIREMENTS_UPDATED', 'JOB_PUBLISHED']),
+      );
+      expect(actions.filter((a) => a.action === 'JOB_PUBLISHED')).toHaveLength(1);
     });
 
     it('BR-JOB-05: AI suggests requirements without saving them (LLM giả)', async () => {

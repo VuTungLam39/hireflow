@@ -15,6 +15,7 @@ import { AiStatus } from '../../common/enums/ai-status.enum.js';
 import { AppEvents } from '../../common/events/app-events.js';
 import { ApplicationSource } from '../../common/enums/application-source.enum.js';
 import { ApplicationStatus } from '../../common/enums/application-status.enum.js';
+import { RejectReasonCode } from '../../common/enums/reject-reason-code.enum.js';
 import { ScoreFlag } from '../../common/enums/score-flag.enum.js';
 import { BusinessException, ErrorCode } from '../../common/exceptions/index.js';
 import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js';
@@ -49,7 +50,7 @@ import {
   stageSeconds,
 } from './application-status.js';
 import { BulkStatusDto } from './dto/bulk-status.dto.js';
-import { ChangeStatusDto } from './dto/change-status.dto.js';
+import { ChangeStatusDto, DeclineOfferDto } from './dto/change-status.dto.js';
 import { CompareApplicationsDto } from './dto/compare-applications.dto.js';
 import { CreateNoteDto } from './dto/create-note.dto.js';
 import { CvTextDto } from './dto/cv-text.dto.js';
@@ -488,6 +489,7 @@ export class ApplicationsService {
       fromStatus: h.fromStatus,
       toStatus: h.toStatus,
       reason: h.reason,
+      reasonCode: h.reasonCode,
       changedBy: h.changer ? { id: h.changer.id, fullName: h.changer.fullName } : null,
       changedAt: h.changedAt,
     }));
@@ -528,7 +530,7 @@ export class ApplicationsService {
       );
     }
     await this.findWritable(id, user);
-    await this.transition(id, dto.status, dto.reason ?? null, user);
+    await this.transition(id, dto.status, dto, user);
     return this.findOne(id, user);
   }
 
@@ -540,8 +542,9 @@ export class ApplicationsService {
         `Bulk change only allows ${BULK_ALLOWED.join(', ')}`,
       );
     }
-    if (dto.status === ApplicationStatus.Rejected && !dto.reason?.trim()) {
-      throw new BusinessException(ErrorCode.RejectReasonRequired, 'Reason is required');
+    // BR-STS-03: cả lô dùng chung một lý do, kiểm một lần trước khi chạy
+    if (dto.status === ApplicationStatus.Rejected) {
+      assertTransition(ApplicationStatus.New, dto.status, dto.reason, dto.reasonCode);
     }
     const rows = await this.applicationsRepository
       .createQueryBuilder('app')
@@ -570,7 +573,7 @@ export class ApplicationsService {
       } else {
         try {
           // requiredFrom = trạng thái vừa đọc: kiểm lại trong khoá dòng, hồ sơ bị đổi giữa chừng thì báo lỗi
-          await this.transition(id, dto.status, dto.reason ?? null, user, app.status, { bulkId });
+          await this.transition(id, dto.status, dto, user, app.status, { bulkId });
           result.succeeded.push(id);
         } catch (error) {
           if (error instanceof BusinessException) {
@@ -589,20 +592,14 @@ export class ApplicationsService {
   // US-09, BR-STS-04
   async hire(id: string, user: ScopeUser) {
     await this.findWritable(id, user);
-    await this.transition(id, ApplicationStatus.Hired, null, user, ApplicationStatus.Offer);
+    await this.transition(id, ApplicationStatus.Hired, {}, user, ApplicationStatus.Offer);
     return this.findOne(id, user);
   }
 
   // BR-STS-05
-  async declineOffer(id: string, reason: string | undefined, user: ScopeUser) {
+  async declineOffer(id: string, dto: DeclineOfferDto, user: ScopeUser) {
     await this.findWritable(id, user);
-    await this.transition(
-      id,
-      ApplicationStatus.Rejected,
-      reason ?? null,
-      user,
-      ApplicationStatus.Offer,
-    );
+    await this.transition(id, ApplicationStatus.Rejected, dto, user, ApplicationStatus.Offer);
     return this.findOne(id, user);
   }
 
@@ -900,7 +897,7 @@ export class ApplicationsService {
   private async transition(
     id: string,
     to: ApplicationStatus,
-    reason: string | null,
+    why: { reason?: string | null; reasonCode?: RejectReasonCode | null },
     user: ScopeUser,
     requiredFrom?: ApplicationStatus,
     meta?: { bulkId: string },
@@ -918,14 +915,17 @@ export class ApplicationsService {
           HttpStatus.CONFLICT,
         );
       }
-      assertTransition(app.status, to, reason);
+      assertTransition(app.status, to, why.reason, why.reasonCode);
+      const reason = why.reason?.trim() || null;
+      const reasonCode = to === ApplicationStatus.Rejected ? (why.reasonCode ?? null) : null;
       const now = new Date();
       await manager.update(Application, id, { status: to, statusChangedAt: now });
       await manager.insert(ApplicationStatusHistory, {
         applicationId: id,
         fromStatus: app.status,
         toStatus: to,
-        reason: reason?.trim() || null,
+        reason,
+        reasonCode,
         changedBy: user.id,
         changedAt: now,
         prevStageSeconds: stageSeconds(app.statusChangedAt, now),
@@ -937,7 +937,13 @@ export class ApplicationsService {
           action: AuditAction.ApplicationStatusChanged,
           entity: AuditEntity.Application,
           entityId: id,
-          metadata: { from: app.status, to, hasReason: Boolean(reason?.trim()), ...meta },
+          metadata: {
+            from: app.status,
+            to,
+            hasReason: Boolean(reason),
+            ...(reasonCode ? { reasonCode } : {}),
+            ...meta,
+          },
         },
         manager,
       );

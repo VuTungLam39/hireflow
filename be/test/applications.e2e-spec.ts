@@ -365,11 +365,24 @@ describe('Applications (e2e)', () => {
       expect((await change('hr', ids.a1, { status: 'HIRED' }).expect(409)).body.code).toBe(
         'INVALID_STATUS_TRANSITION',
       );
-      const noReason = await change('hr', ids.a1, { status: 'REJECTED', reason: '  ' }).expect(400);
-      expect(noReason.body).toMatchObject({
+      const noCode = await change('hr', ids.a1, { status: 'REJECTED', reason: 'Lý do' }).expect(
+        400,
+      );
+      expect(noCode.body).toMatchObject({
+        code: 'REJECT_REASON_REQUIRED',
+        errors: [{ field: 'reasonCode' }],
+      });
+      const otherNoText = await change('hr', ids.a1, {
+        status: 'REJECTED',
+        reasonCode: 'OTHER',
+        reason: '  ',
+      }).expect(400);
+      expect(otherNoText.body).toMatchObject({
         code: 'REJECT_REASON_REQUIRED',
         errors: [{ field: 'reason' }],
       });
+      const badCode = await change('hr', ids.a1, { status: 'REJECTED', reasonCode: 'NOPE' });
+      expect(badCode.status).toBe(400);
     });
 
     it('a hiring manager cannot change status (only approve offers)', async () => {
@@ -432,7 +445,7 @@ describe('Applications (e2e)', () => {
         'hmB',
         request(server()).patch(`/api/v1/applications/${ids.a3}/decline-offer`),
       )
-        .send({ reason: 'Lương' })
+        .send({ reasonCode: 'SALARY' })
         .expect(409);
       expect(res.body.code).toBe('INVALID_STATUS_TRANSITION');
     });

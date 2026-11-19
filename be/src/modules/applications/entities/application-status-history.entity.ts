@@ -9,6 +9,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { ApplicationStatus } from '../../../common/enums/application-status.enum.js';
+import { RejectReasonCode } from '../../../common/enums/reject-reason-code.enum.js';
 import { User } from '../../users/entities/user.entity.js';
 import { Application } from './application.entity.js';
 
@@ -17,7 +18,11 @@ import { Application } from './application.entity.js';
 @Index('IDX_application_status_history_application_id_changed_at', ['applicationId', 'changedAt'])
 @Check(
   'CK_application_status_history_reject_reason',
-  `"to_status" <> 'REJECTED' OR "reason" IS NOT NULL`,
+  `"to_status" <> 'REJECTED' OR "reason" IS NOT NULL OR "reason_code" IS NOT NULL`,
+)
+@Check(
+  'CK_application_status_history_reason_code_other',
+  `"reason_code" IS DISTINCT FROM 'OTHER' OR "reason" IS NOT NULL`,
 )
 @Check(
   'CK_application_status_history_prev_stage_seconds',
@@ -50,6 +55,15 @@ export class ApplicationStatusHistory {
 
   @Column({ type: 'text', nullable: true })
   reason: string | null;
+
+  // F-APP-13: NULL ở các lần từ chối trước MVP 3.1
+  @Column({
+    type: 'enum',
+    enum: RejectReasonCode,
+    enumName: 'reject_reason_code_enum',
+    nullable: true,
+  })
+  reasonCode: RejectReasonCode | null;
 
   @Column({ type: 'uuid', nullable: true })
   changedBy: string | null;
