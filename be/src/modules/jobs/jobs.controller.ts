@@ -21,6 +21,7 @@ import type { AuthUser } from '../../common/interfaces/jwt-payload.interface.js'
 import { Permission } from '../../common/permissions/permission.enum.js';
 import { CreateJobDto } from './dto/create-job.dto.js';
 import { QueryJobDto } from './dto/query-job.dto.js';
+import { SaveInterviewStagesDto } from './dto/save-interview-stages.dto.js';
 import { SaveRequirementsDto } from './dto/save-requirements.dto.js';
 import { UpdateJobDto } from './dto/update-job.dto.js';
 import { JobsService } from './jobs.service.js';
@@ -90,6 +91,25 @@ export class JobsController {
   @ApiOperation({ summary: 'AI gợi ý tiêu chí từ JD (không lưu); 503 AI_UNAVAILABLE khi LLM lỗi' })
   suggestRequirements(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
     return this.jobsService.suggestRequirements(id, user);
+  }
+
+  // MVP 3.1 · F-INT-04
+  @Get(':id/interview-stages')
+  @Permissions(Permission.JobRead)
+  @ApiOperation({ summary: 'Vòng phỏng vấn của tin; locked = đã có phiếu, chỉ đổi được tên' })
+  interviewStages(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.jobsService.interviewStages(id, user);
+  }
+
+  @Put(':id/interview-stages')
+  @Permissions(Permission.JobUpdate)
+  @ApiOperation({ summary: 'Thay toàn bộ vòng phỏng vấn (BR-INT-05)' })
+  saveInterviewStages(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SaveInterviewStagesDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.jobsService.saveInterviewStages(id, dto, user);
   }
 
   @Put(':id/requirements')

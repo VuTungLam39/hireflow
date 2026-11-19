@@ -133,6 +133,7 @@ export function ApplicationDialog({ id, onClose }: ApplicationDialogProps) {
                 applicationId={id}
                 applicationStatus={query.data.status}
                 requirements={query.data.requirements}
+                jobId={query.data.job.id}
               />
             </>
           )}
@@ -153,6 +154,7 @@ export function ApplicationDialog({ id, onClose }: ApplicationDialogProps) {
               applicationId={id}
               applicationStatus={query.data.status}
               requirements={query.data.requirements}
+              jobId={query.data.job.id}
             />
           )}
           {tab === 'app-history' && <HistoryTimeline applicationId={id} />}

@@ -43,6 +43,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
     'Bộ lọc khớp hơn 5.000 hồ sơ. Thu hẹp theo tin, trạng thái hoặc ngày nộp rồi xuất lại',
   BULK_STATUS_NOT_ALLOWED: 'Chỉ chuyển hàng loạt sang Sàng lọc, Phỏng vấn hoặc Từ chối',
   COMPARE_INVALID_SELECTION: 'Chỉ so sánh 2–3 hồ sơ của cùng một tin',
+  STAGE_IN_USE: 'Vòng đã có phiếu đánh giá nên chỉ đổi được tên',
   APPLICATION_NOT_WITHDRAWABLE: 'Hồ sơ đã có kết quả hoặc đã rút nên không rút được nữa',
   COMPANY_PROFILE_INCOMPLETE: 'Trang công ty chưa đủ tên, logo và giới thiệu',
   FILE_TOO_LARGE: 'File lớn hơn 5MB',

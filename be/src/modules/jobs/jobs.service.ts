@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, Repository, SelectQueryBuilder } from 'typeorm';
+import { DataSource, EntityManager, In, Repository, SelectQueryBuilder } from 'typeorm';
 import { PaginatedResult } from '../../common/dto/paginated-result.dto.js';
 import { AiStatus } from '../../common/enums/ai-status.enum.js';
 import { ApplicationStatus } from '../../common/enums/application-status.enum.js';
@@ -30,6 +31,9 @@ import { CreateJobDto } from './dto/create-job.dto.js';
 import { QueryJobDto } from './dto/query-job.dto.js';
 import { SaveRequirementsDto } from './dto/save-requirements.dto.js';
 import { UpdateJobDto } from './dto/update-job.dto.js';
+import { SaveInterviewStagesDto } from './dto/save-interview-stages.dto.js';
+import { JobInterviewStage } from './entities/job-interview-stage.entity.js';
+import { validateStages, type InterviewStageView } from './interview-stages.js';
 import { JobRequirement } from './entities/job-requirement.entity.js';
 import {
   EmploymentType,
@@ -327,6 +331,19 @@ export class JobsService {
           })),
         );
       }
+      // F-INT-04: chép vòng phỏng vấn, giữ id tiêu chí (khoá chỉ có nghĩa trong một vòng)
+      const stages = await manager.findBy(JobInterviewStage, { jobId: id });
+      if (stages.length) {
+        await manager.insert(
+          JobInterviewStage,
+          stages.map((s) => ({
+            jobId: job.id,
+            position: s.position,
+            name: s.name,
+            criteria: s.criteria,
+          })),
+        );
+      }
       return job.id;
     });
     this.events.emit('job.changed', { jobId: newId });
@@ -348,6 +365,79 @@ export class JobsService {
     this.events.emit('job.changed', { jobId: id });
     await this.log(AuditAction.JobUpdated, id, user, { fields: Object.keys(dto).sort().join(',') });
     return this.findOne(id, user);
+  }
+
+  // F-INT-04
+  async interviewStages(id: string, user: ScopeUser): Promise<InterviewStageView[]> {
+    await this.findScoped(id, user);
+    return this.stageViews(this.dataSource.manager, id);
+  }
+
+  // F-INT-04, BR-INT-05: thay toàn bộ; vòng đã có phiếu chỉ được đổi tên (vòng và tiêu chí)
+  async saveInterviewStages(
+    id: string,
+    dto: SaveInterviewStagesDto,
+    user: ScopeUser,
+  ): Promise<InterviewStageView[]> {
+    const stages = await this.dataSource.transaction(async (manager) => {
+      const job = await this.lockJob(manager, id, user);
+      this.assertEditable(job);
+      const existing = await manager.findBy(JobInterviewStage, { jobId: id });
+      const byId = new Map(existing.map((s) => [s.id, s]));
+      const used = await this.stagesWithFeedback(
+        manager,
+        existing.map((s) => s.id),
+      );
+      validateStages(dto, byId, used);
+
+      const keep = new Set(dto.stages.map((s) => s.id).filter(Boolean));
+      const removed = existing.filter((s) => !keep.has(s.id)).map((s) => s.id);
+      if (removed.length) await manager.delete(JobInterviewStage, { id: In(removed) });
+      for (const [index, s] of dto.stages.entries()) {
+        const row = {
+          position: index + 1,
+          name: s.name,
+          criteria: s.criteria.map((c) => ({ id: c.id ?? randomUUID(), label: c.label })),
+        };
+        if (s.id) await manager.update(JobInterviewStage, s.id, row);
+        else await manager.insert(JobInterviewStage, { jobId: id, ...row });
+      }
+      return this.stageViews(manager, id);
+    });
+    await this.log(AuditAction.JobUpdated, id, user, {
+      fields: 'interviewStages',
+      count: stages.length,
+    });
+    return stages;
+  }
+
+  private async stageViews(manager: EntityManager, jobId: string): Promise<InterviewStageView[]> {
+    const rows = await manager.find(JobInterviewStage, {
+      where: { jobId },
+      order: { position: 'ASC' },
+    });
+    const used = await this.stagesWithFeedback(
+      manager,
+      rows.map((r) => r.id),
+    );
+    return rows.map((r) => ({
+      id: r.id,
+      position: r.position,
+      name: r.name,
+      criteria: r.criteria,
+      locked: used.has(r.id),
+    }));
+  }
+
+  private async stagesWithFeedback(manager: EntityManager, ids: string[]): Promise<Set<string>> {
+    if (!ids.length) return new Set();
+    const rows: { stageId: string }[] = await manager.query(
+      `SELECT DISTINCT i.stage_id AS "stageId" FROM interviews i
+       JOIN interview_feedbacks f ON f.interview_id = i.id
+       WHERE i.stage_id = ANY($1::uuid[])`,
+      [ids],
+    );
+    return new Set(rows.map((r) => r.stageId));
   }
 
   // Kickoff 8.2

@@ -21,6 +21,8 @@ interface InterviewPanelProps {
   applicationId: string
   applicationStatus: string
   requirements: { id: string; label: string }[]
+  /** F-INT-04: chọn vòng khi đặt lịch */
+  jobId: string
 }
 
 function FeedbackView({ feedback }: { feedback: InterviewFeedback }) {
@@ -52,6 +54,7 @@ export function InterviewPanel({
   applicationId,
   applicationStatus,
   requirements,
+  jobId,
 }: InterviewPanelProps) {
   const userId = useAuthStore((s) => s.user?.id)
   const isInterviewer = useAuthStore((s) => s.user?.role === Role.Interviewer)
@@ -102,7 +105,12 @@ export function InterviewPanel({
               <li key={iv.id} className="border-line bg-surface space-y-3 rounded-md border p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0 space-y-1">
-                    <p className="type-subheading">Vòng {iv.round}</p>
+                    <p className="type-subheading">
+                      Vòng {iv.round}
+                      {iv.stage && (
+                        <span className="text-ink-2 font-normal"> · {iv.stage.name}</span>
+                      )}
+                    </p>
                     <p className="text-ink-2 flex items-center gap-1.5 text-sm">
                       <Clock className="text-ink-faint size-4 shrink-0" />
                       {formatSlot(iv.scheduledAt, iv.durationMinutes)}
@@ -217,6 +225,7 @@ export function InterviewPanel({
       {scheduling && (
         <ScheduleInterviewDialog
           applicationId={applicationId}
+          jobId={jobId}
           open
           onClose={() => setScheduling(false)}
         />
@@ -232,7 +241,7 @@ export function InterviewPanel({
       {reviewing && (
         <FeedbackDialog
           interview={reviewing}
-          requirements={requirements}
+          requirements={reviewing.stage?.criteria ?? requirements}
           existing={myFeedback(reviewing)}
           open
           onClose={() => setReviewing(null)}

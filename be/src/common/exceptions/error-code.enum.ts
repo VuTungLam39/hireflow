@@ -61,6 +61,7 @@ export enum ErrorCode {
   InterviewNotEditable = 'INTERVIEW_NOT_EDITABLE',
   InterviewNotStarted = 'INTERVIEW_NOT_STARTED',
   FeedbackLocked = 'FEEDBACK_LOCKED',
+  StageInUse = 'STAGE_IN_USE',
 
   // AI
   AiUnavailable = 'AI_UNAVAILABLE',

@@ -1,5 +1,10 @@
 import { delay, http } from 'msw'
-import type { JobInput, RequirementInput } from '@/features/jobs'
+import type {
+  InterviewStage,
+  InterviewStageInput,
+  JobInput,
+  RequirementInput,
+} from '@/features/jobs'
 import type { RankingData } from '@/features/ranking'
 import { Permission } from '@/lib/permissions'
 import { applyScore, db, settleProcessing, SKILLS, uid, type JobRow, type UserRow } from '../data'
@@ -28,6 +33,15 @@ function findJob(user: UserRow, id: unknown): JobRow | Response {
 
 /** BR-JOB-04: job CLOSED không sửa JD, tiêu chí */
 const notEditable = () => fail(409, 'JOB_NOT_EDITABLE', 'Closed jobs cannot be edited')
+
+const stagesOf = (jobId: string): InterviewStage[] =>
+  db.interviewStages
+    .filter((s) => s.jobId === jobId)
+    .sort((a, b) => a.position - b.position)
+    .map((s) => ({
+      ...s,
+      locked: db.interviews.some((iv) => iv.stageId === s.id && iv.feedbacks.length > 0),
+    }))
 
 export const jobHandlers = [
   http.get(api('/jobs'), async ({ request }) => {
@@ -178,6 +192,49 @@ export const jobHandlers = [
   }),
 
   // Thay tiêu chí → tăng jdVersion → tính lại điểm (BE làm trong queue, ở đây làm luôn) → 202
+  // MVP 3.1 · F-INT-04, BR-INT-05
+  http.get(api('/jobs/:id/interview-stages'), async ({ request, params }) => {
+    await delay()
+    const user = authorize(request, Permission.JobRead)
+    if (user instanceof Response) return user
+    const job = findJob(user, params.id)
+    if (job instanceof Response) return job
+    return ok(stagesOf(job.id))
+  }),
+
+  http.put(api('/jobs/:id/interview-stages'), async ({ request, params }) => {
+    await delay()
+    const user = authorize(request, Permission.JobUpdate)
+    if (user instanceof Response) return user
+    const job = findJob(user, params.id)
+    if (job instanceof Response) return job
+    if (job.status === 'CLOSED') return notEditable()
+    const { stages } = (await request.json()) as { stages: InterviewStageInput[] }
+    const before = stagesOf(job.id)
+    for (const old of before.filter((s) => s.locked)) {
+      const next = stages.find((s) => s.id === old.id)
+      const ids = next?.criteria.map((c) => c.id) ?? []
+      const same =
+        !!next &&
+        ids.length === old.criteria.length &&
+        old.criteria.every((c) => ids.includes(c.id))
+      if (!same) {
+        return fail(409, 'STAGE_IN_USE', `Stage "${old.name}" already has feedback`)
+      }
+    }
+    db.interviewStages = [
+      ...db.interviewStages.filter((s) => s.jobId !== job.id),
+      ...stages.map((s, i) => ({
+        id: s.id ?? uid('stg'),
+        jobId: job.id,
+        position: i + 1,
+        name: s.name,
+        criteria: s.criteria.map((c) => ({ id: c.id ?? uid('crit'), label: c.label })),
+      })),
+    ]
+    return ok(stagesOf(job.id))
+  }),
+
   http.put(api('/jobs/:id/requirements'), async ({ request, params }) => {
     await delay()
     const user = authorize(request, Permission.JobUpdate)

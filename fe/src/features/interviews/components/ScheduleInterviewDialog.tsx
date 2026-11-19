@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { Button, Dialog, FormField, Input, Select, Spinner } from '@/components/ui'
+import { useInterviewStages } from '@/features/jobs'
 import { applyServerErrors, getErrorMessage } from '@/lib/errors'
 import {
   useInterviewers,
@@ -26,11 +27,14 @@ const scheduleSchema = z.object({
     .array(z.string())
     .min(1, 'Chọn ít nhất một người phỏng vấn')
     .max(MAX_INTERVIEWERS, `Tối đa ${MAX_INTERVIEWERS} người`),
+  stageId: z.string(),
 })
 type ScheduleForm = z.input<typeof scheduleSchema>
 
 interface ScheduleInterviewDialogProps {
   applicationId: string
+  /** F-INT-04: để chọn vòng khi tạo buổi mới */
+  jobId?: string
   /** Có giá trị: đổi lịch buổi này */
   interview?: Interview
   open: boolean
@@ -40,11 +44,13 @@ interface ScheduleInterviewDialogProps {
 // F-INT-01, BR-INT-01
 export function ScheduleInterviewDialog({
   applicationId,
+  jobId,
   interview,
   open,
   onClose,
 }: ScheduleInterviewDialogProps) {
   const interviewers = useInterviewers(open)
+  const stages = useInterviewStages(jobId, open && !interview)
   const schedule = useScheduleInterview(applicationId)
   const update = useUpdateInterview()
   const pending = schedule.isPending || update.isPending
@@ -54,8 +60,9 @@ export function ScheduleInterviewDialog({
         durationMinutes: interview.durationMinutes,
         location: interview.location,
         interviewerIds: interview.interviewers.map((i) => i.id),
+        stageId: interview.stage?.id ?? '',
       }
-    : { scheduledAt: '', durationMinutes: 60, location: '', interviewerIds: [] }
+    : { scheduledAt: '', durationMinutes: 60, location: '', interviewerIds: [], stageId: '' }
 
   const {
     register,
@@ -111,7 +118,7 @@ export function ScheduleInterviewDialog({
       },
     }
     if (interview) update.mutate({ id: interview.id, input }, handlers)
-    else schedule.mutate(input, handlers)
+    else schedule.mutate({ ...input, stageId: values.stageId || undefined }, handlers)
   })
 
   return (
@@ -142,6 +149,18 @@ export function ScheduleInterviewDialog({
             </Select>
           </FormField>
         </div>
+        {!interview && !!stages.data?.length && (
+          <FormField label="Vòng" htmlFor="iv-stage">
+            <Select id="iv-stage" className="w-full" {...register('stageId')}>
+              <option value="">Không theo vòng (chấm theo tiêu chí của tin)</option>
+              {stages.data.map((s) => (
+                <option key={s.id} value={s.id}>
+                  Vòng {s.position} · {s.name}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+        )}
         <FormField label="Địa điểm" htmlFor="iv-location" error={errors.location?.message}>
           <Input
             id="iv-location"
