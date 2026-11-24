@@ -128,7 +128,7 @@ describe('CompanyPage', () => {
     renderPage()
     const brand = await screen.findByRole('region', { name: 'Logo và ảnh bìa' })
     fireEvent.click(within(brand).getByRole('button', { name: 'Gỡ ảnh' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Gỡ logo?' })
+    const dialog = await screen.findByRole('alertdialog', { name: 'Gỡ logo?' })
     expect(dialog).toHaveTextContent('Trang công ty sẽ ẩn khỏi trang tuyển dụng')
     expect(companyState.media).toHaveLength(1)
     fireEvent.click(within(dialog).getByRole('button', { name: 'Gỡ ảnh' }))

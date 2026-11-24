@@ -2,7 +2,6 @@ import { Lock, LockOpen, Pencil, Trash2, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { z } from 'zod'
 import {
-  ConfirmDialog,
   DataTable,
   FilterBar,
   FilterMenu,
@@ -12,7 +11,7 @@ import {
   SearchInput,
   type Column,
 } from '@/components/shared'
-import { Avatar, Button } from '@/components/ui'
+import { AlertDialog, Avatar, Button } from '@/components/ui'
 import { pageFields, useListParams } from '@/hooks/use-list-params'
 import { cn, formatDateTime, formatDaysAgo } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
@@ -191,13 +190,13 @@ export default function UsersPage() {
           onClose={() => setEditing(null)}
         />
       )}
-      <ConfirmDialog
+      <AlertDialog
         open={!!locking}
         onClose={() => setLocking(null)}
         title={`Khoá tài khoản ${locking?.fullName ?? ''}?`}
         description="Mọi phiên đăng nhập của người này bị thu hồi ngay. Bạn có thể mở khoá lại sau."
         confirmLabel="Khoá tài khoản"
-        tone="danger"
+        confirmVariant="danger"
         loading={setStatus.isPending}
         onConfirm={() =>
           locking &&
@@ -207,13 +206,13 @@ export default function UsersPage() {
           )
         }
       />
-      <ConfirmDialog
+      <AlertDialog
         open={!!deleting}
         onClose={() => setDeleting(null)}
         title="Xoá người dùng?"
         description={`Tài khoản ${deleting?.email} sẽ bị xoá và không đăng nhập được nữa.`}
         confirmLabel="Xoá người dùng"
-        tone="danger"
+        confirmVariant="danger"
         loading={deleteUser.isPending}
         onConfirm={() =>
           deleting && deleteUser.mutate(deleting.id, { onSettled: () => setDeleting(null) })

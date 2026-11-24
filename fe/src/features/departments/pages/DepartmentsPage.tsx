@@ -2,7 +2,6 @@ import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { z } from 'zod'
 import {
-  ConfirmDialog,
   DataTable,
   PageHeader,
   RowMenu,
@@ -10,7 +9,7 @@ import {
   Summary,
   type Column,
 } from '@/components/shared'
-import { Button } from '@/components/ui'
+import { AlertDialog, Button } from '@/components/ui'
 import { pageFields, useListParams } from '@/hooks/use-list-params'
 import { DepartmentFormDialog } from '../components/DepartmentFormDialog'
 import { useDeleteDepartment, useDepartments } from '../hooks/use-departments'
@@ -125,13 +124,13 @@ export default function DepartmentsPage() {
         department={editing}
         onClose={() => setEditing(undefined)}
       />
-      <ConfirmDialog
+      <AlertDialog
         open={!!deleting}
         onClose={() => setDeleting(null)}
         title={`Xoá phòng ban ${deleting?.name ?? ''}?`}
         description="Phòng ban không còn người dùng và tin tuyển dụng nên xoá được."
         confirmLabel="Xoá phòng ban"
-        tone="danger"
+        confirmVariant="danger"
         loading={remove.isPending}
         onConfirm={() =>
           deleting && remove.mutate(deleting.id, { onSettled: () => setDeleting(null) })

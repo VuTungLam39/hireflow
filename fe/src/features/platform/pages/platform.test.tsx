@@ -42,7 +42,7 @@ describe('Platform companies', () => {
     renderAsPlatform(`/platform/companies/${org.id}`)
 
     await user.click(await screen.findByRole('button', { name: 'Duyệt' }))
-    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Duyệt' }))
+    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Duyệt' }))
 
     expect(await screen.findByText('Đang hoạt động')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Khoá công ty' })).toBeInTheDocument()
@@ -55,7 +55,7 @@ describe('Platform companies', () => {
     renderAsPlatform(`/platform/companies/${org.id}`)
 
     await user.click(await screen.findByRole('button', { name: 'Khoá công ty' }))
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('alertdialog')
     await user.click(within(dialog).getByRole('button', { name: 'Khoá công ty' }))
     expect(within(dialog).getByText('Nhập lý do để tiếp tục')).toBeInTheDocument()
 

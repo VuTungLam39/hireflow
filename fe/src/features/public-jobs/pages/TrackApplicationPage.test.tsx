@@ -22,7 +22,7 @@ describe('TrackApplicationPage', () => {
 
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: 'Rút hồ sơ' }))
-    const dialog = await screen.findByRole('dialog')
+    const dialog = await screen.findByRole('alertdialog')
     await user.click(within(dialog).getByRole('button', { name: 'Rút hồ sơ' }))
 
     expect(await screen.findByRole('heading', { name: 'Bạn đã rút hồ sơ' })).toBeInTheDocument()

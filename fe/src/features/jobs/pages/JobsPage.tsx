@@ -14,7 +14,6 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import {
   Can,
-  ConfirmDialog,
   DataTable,
   DensityToggle,
   FilterBar,
@@ -25,7 +24,7 @@ import {
   type ActiveFilter,
   type Column,
 } from '@/components/shared'
-import { Button, Popover, Tabs, buttonVariants, menuItemClass } from '@/components/ui'
+import { AlertDialog, Button, buttonVariants, menuItemClass, Popover, Tabs } from '@/components/ui'
 import { useDepartmentOptions } from '@/features/departments'
 import { useAuthStore } from '@/stores/auth.store'
 import { Role } from '@/types/user'
@@ -274,7 +273,7 @@ export default function JobsPage() {
         onPageChange={(page) => setParams({ page })}
       />
 
-      <ConfirmDialog
+      <AlertDialog
         open={!!pending}
         onClose={() => setPending(null)}
         title={pending?.type === 'publish' ? 'Đăng tin tuyển dụng?' : 'Đóng tin tuyển dụng?'}
@@ -284,7 +283,7 @@ export default function JobsPage() {
             : `“${pending?.job.title}” sẽ ngừng nhận hồ sơ mới; hồ sơ đã có vẫn xử lý bình thường. Tin đã đóng không mở lại được.`
         }
         confirmLabel={pending?.type === 'publish' ? 'Đăng tin' : 'Đóng tin'}
-        tone={pending?.type === 'close' ? 'danger' : 'primary'}
+        confirmVariant={pending?.type === 'close' ? 'danger' : 'primary'}
         loading={action.isPending}
         onConfirm={() =>
           pending && action.mutate(pending.job.id, { onSettled: () => setPending(null) })

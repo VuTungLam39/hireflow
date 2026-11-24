@@ -1,7 +1,6 @@
 import { MoreHorizontal } from 'lucide-react'
-import { Fragment, useState, type ReactNode } from 'react'
-import { Button, Popover, menuItemClass } from '@/components/ui'
-import { cn } from '@/lib/utils'
+import type { ReactNode } from 'react'
+import { Button, DropdownMenu } from '@/components/ui'
 
 export interface RowMenuItem {
   label: string
@@ -22,43 +21,17 @@ export function RowMenu({
   items: RowMenuItem[]
   note?: ReactNode
 }) {
-  const [open, setOpen] = useState(false)
   return (
-    <Popover
-      open={open}
-      onOpenChange={setOpen}
+    <DropdownMenu
       align="end"
-      role="menu"
-      label={label}
       className="w-64"
-      trigger={(props) => (
-        <Button variant="quiet" size="icon-sm" aria-label={label} {...props}>
+      note={note}
+      items={items.map(({ danger, ...i }) => ({ ...i, variant: danger ? 'danger' : undefined }))}
+      trigger={
+        <Button variant="ghost" size="icon-sm" aria-label={label}>
           <MoreHorizontal />
         </Button>
-      )}
-    >
-      {items.map((item) => (
-        <Fragment key={item.label}>
-          {item.separated && <div className="border-line-soft my-1 border-t" />}
-          <button
-            type="button"
-            role="menuitem"
-            disabled={item.disabled}
-            className={cn(
-              menuItemClass,
-              item.danger && !item.disabled && 'text-bad hover:text-bad [&_svg]:text-bad',
-            )}
-            onClick={() => {
-              setOpen(false)
-              item.onSelect()
-            }}
-          >
-            {item.icon}
-            {item.label}
-          </button>
-        </Fragment>
-      ))}
-      {note && <p className="type-caption px-2.5 pt-1 pb-1.5">{note}</p>}
-    </Popover>
+      }
+    />
   )
 }

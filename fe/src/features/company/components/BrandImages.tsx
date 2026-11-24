@@ -1,7 +1,7 @@
 import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { ConfirmDialog } from '@/components/shared'
-import { Button } from '@/components/ui'
+
+import { AlertDialog, Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { mediaSrc } from '../api/company.api'
 import { useRemoveMedia, useUploadMedia } from '../hooks/use-company'
@@ -68,13 +68,13 @@ function Slot({
         )}
       </div>
       {media && (
-        <ConfirmDialog
+        <AlertDialog
           open={confirming}
           onClose={() => setConfirming(false)}
           title={`Gỡ ${title.toLowerCase()}?`}
           description={removeWarning}
           confirmLabel="Gỡ ảnh"
-          tone="danger"
+          confirmVariant="danger"
           loading={remove.isPending}
           onConfirm={() => remove.mutate(media.id, { onSettled: () => setConfirming(false) })}
         />

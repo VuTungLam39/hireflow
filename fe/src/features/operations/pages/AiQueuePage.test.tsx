@@ -39,7 +39,9 @@ describe('AiQueuePage', () => {
     const user = userEvent.setup()
     renderAsAdmin()
     await user.click(await screen.findByRole('button', { name: /^Chạy lại \d+ hồ sơ$/ }))
-    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Chạy lại' }))
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Chạy lại' }),
+    )
 
     expect(await screen.findByText('Không có hồ sơ nào cần xử lý')).toBeInTheDocument()
     expect(screen.queryByText(/hồ sơ cần xử lý$/)).not.toBeInTheDocument()

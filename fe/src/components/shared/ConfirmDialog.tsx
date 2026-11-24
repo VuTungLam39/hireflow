@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+// Bản cũ – chỉ còn cho call site vùng khoá (slice 7–11); mã mới dùng AlertDialog
 import { Button, Dialog, DialogFooter, FormField, Textarea, chipClass } from '@/components/ui'
 
 interface ConfirmDialogProps {

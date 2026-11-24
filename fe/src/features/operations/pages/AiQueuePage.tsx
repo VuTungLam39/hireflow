@@ -2,8 +2,8 @@ import { RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { z } from 'zod'
-import { ConfirmDialog, DataTable, PageHeader, Summary, type Column } from '@/components/shared'
-import { Button } from '@/components/ui'
+import { DataTable, PageHeader, Summary, type Column } from '@/components/shared'
+import { AlertDialog, Button } from '@/components/ui'
 import { AiStatusBadge } from '@/features/applications'
 import { pageFields, useListParams } from '@/hooks/use-list-params'
 import { formatDateTime } from '@/lib/utils'
@@ -133,7 +133,7 @@ export default function AiQueuePage() {
         />
       </section>
 
-      <ConfirmDialog
+      <AlertDialog
         open={confirmAll}
         onClose={() => setConfirmAll(false)}
         title="Chạy lại tất cả?"
