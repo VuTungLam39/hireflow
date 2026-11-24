@@ -9,6 +9,11 @@ HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
   this.removeAttribute('open')
 }
 
+// jsdom thiếu API mà Radix Select dùng
+Element.prototype.scrollIntoView ??= function () {}
+Element.prototype.hasPointerCapture ??= () => false
+Element.prototype.releasePointerCapture ??= function () {}
+
 afterEach(() => {
   cleanup()
   localStorage.clear()

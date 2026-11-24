@@ -128,3 +128,22 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - **Hành vi:** lần đầu vào khu nội bộ tải thêm chunk `MainLayout` (route lazy; React Router giữ màn hình cũ tới khi tải xong). Đây là thay đổi tải ở AppShell — giữ nguyên hành vi, được coi là PR chuẩn bị theo [D-10]; slice 5 xem lại.
 - **Kiểm:** format, lint, check:design, check:terms, typecheck, toàn bộ test, build (gồm prerender) xanh. `package.json` không đổi. Vùng khoá: 0 file (chỉ đổi đường import từ router).
 - **PR:** #121 — **trạng thái: awaiting merge.**
+
+## Entry 5 — Slice 3: Tabs, Popover, Tooltip, rich Select (🟢)
+- **Trước slice — smoke PR #121 (merge `cce3c8e`):** route công khai `/jobs` không tải chunk `MainLayout`; khu nội bộ `/`, `/users`, `/manage/jobs` hiển thị đúng; điều hướng client-side qua sidebar (`/` → `/users`) ✔ (phiên đăng nhập của chủ dự án).
+- **Spec + tickets:** issue #122. Base `feat/phase05-slice3-tabs-popover` từ `main @ cce3c8e`.
+- **Phụ thuộc mới:** `@radix-ui/react-popover` 1.3.1, `@radix-ui/react-tooltip` 1.4.1, `@radix-ui/react-select` 2.4.1 (pin chính xác).
+- **Đã làm:**
+  - **Tabs:** Home/End + mũi tên vòng (**F-18 đóng**). Giữ bản tự viết (lệch có lý do, bên dưới).
+  - **Popover** trên Radix, giữ API (trigger render-prop, `role` dialog/menu/listbox, `align`, `side`), **không Portal** (giữ vị trí DOM cho call site cũ), có xử lý va chạm mép (collision-aware). Menu + **listbox** đi bằng mũi tên/Home/End, mở thì focus vào lựa chọn đang chọn (**F-13 đóng** cho FilterBar "Trạng thái"). Esc chỉ đóng popover (chặn lan xuống dialog/phím tắt trang) và trả focus về nút; bấm lại nút mở thì đóng.
+  - **Tooltip** trên Radix: hover 400 ms, focus bàn phím mở ngay, Escape đóng; như bản cũ không bật khi focus đến từ cú bấm chuột. Escape trong Sheet/Dialog: lần đầu đóng tooltip đang mở (lớp trên cùng), lần sau đóng Sheet/Dialog.
+  - **RichSelect** mới (Radix Select): `options {value,label,description?,icon?}`, `value`, `onValueChange`, `placeholder`, `disabled`; mũi tên, Enter, typeahead, Escape theo Radix. Chưa có call site.
+  - Test setup: polyfill jsdom `scrollIntoView`/`hasPointerCapture` cho Radix Select; helper axe trong test component tắt rule `region` (rule cấp trang về landmark).
+- **Bundle (route vào, gzip):** sau #121 **288.44** → sau slice 3 **290.95 KB (+2.51)**; vẫn dưới mốc trước Radix (291.21). Popover/Tooltip thêm ít vì popper/floating-ui đã vào từ DropdownMenu (slice 2). **RichSelect chưa được đo** (chưa có call site → bị tree-shake); đo ở slice đầu tiên dùng nó.
+- **Kiểm:** 5 test mới (Tabs Home/End/vòng; Popover listbox focus-đang-chọn/mũi tên/End/vòng/Esc trả focus; bấm lại nút đóng; Tooltip focus/Escape; RichSelect bàn phím) + axe 0 · 297 test xanh (gồm test Popover cũ: Esc không lan, menu bàn phím) · format, lint, check:design, check:terms, typecheck, build xanh. Vùng khoá: 0 file (call site Popover/Tooltip/Tabs trong vùng khoá chạy qua API cũ, test vẫn xanh).
+- **Lệch so với contract (ghi nợ):**
+  - **Tabs không dùng Radix:** call site (JobsPage, ApplicationsPage, PlatformCompaniesPage) dùng Tabs làm thanh lọc không có panel; Radix Tabs gắn `aria-controls` tới `Tabs.Content` nó tự render → ARIA trỏ tới phần tử không tồn tại. Đổi sang Radix khi có call site panel thật (hoặc tách "FilterTabs" khỏi "Tabs"). Cần chủ dự án xác nhận lệch này so với primitives decision.
+  - Tabs `segmented` (thay SegmentedControl) chưa làm.
+  - Tooltip: prop vẫn là `label` (contract ghi `content`) để không phải sửa call site vùng khoá.
+- **`package.json`:** thêm 3 dependency Radix (runtime).
+- **PR:** _(điền sau khi mở)_ — **trạng thái: awaiting merge.**
