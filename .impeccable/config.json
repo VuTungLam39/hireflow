@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "arial",
+        "createdAt": "2026-11-17T16:59:32.079Z",
+        "reason": "Claude: email HTML (be/src/modules/email/email.templates.ts) cần font hệ thống vì client email không tải web font"
+      }
+    ]
+  }
+}
