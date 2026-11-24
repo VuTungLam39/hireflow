@@ -32,7 +32,7 @@ describe('Platform companies', () => {
     expect(within(table).getByText('Đại Lộc Logistics')).toBeInTheDocument()
     expect(within(table).queryByText('Ví Mây')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('tab', { name: 'Tất cả' }))
+    await user.click(screen.getByRole('radio', { name: 'Tất cả' }))
     expect(await within(table).findByText('Ví Mây')).toBeInTheDocument()
   })
 

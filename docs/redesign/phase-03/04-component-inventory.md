@@ -77,4 +77,6 @@ Interactive primitives in scope: Dialog/AlertDialog/Sheet, Popover, Dropdown Men
 
 **Recommendation: Option 1 — adopt Radix for the interactive primitives listed above, introduced slice by slice behind house components; keep native elements for Input, Textarea, Checkbox, simple Select.** Reason: the behaviours the contracts require (APG keyboard maps, focus management, layering) are exactly what Radix provides and what our hand-rolled set already fails partially; the ongoing accessibility maintenance cost of Option 2 outweighs an estimated 25–40 KB that is split across routes. Condition: the first Phase 05 slice that adopts Radix measures the real bundle delta and records it; if it exceeds 40 KB gzip on any entry route, stop and revisit.
 
+> **Sửa đổi Phase 05 — P5-D04 (chủ dự án, 24/11/2026):** Tabs **không** dùng Radix. Trong sản phẩm, Tabs chủ yếu là thanh lọc không có panel; mẫu tab của Radix/WAI-ARIA bắt buộc tablist/tab/tabpanel, ép vào sẽ sinh `aria-controls` trỏ tới panel không tồn tại. Thanh lọc dùng `FilterTabs` (radiogroup/radio, `aria-checked`, roving focus, Home/End); Tabs có panel thật chuyển Radix ở slice dựng lại trang đó (DetailDialog – slice 5, ApplicationDetailPage – slice 8). Chi tiết: `docs/redesign/phase-05/README.md` → Quyết định Phase 05.
+
 STOP — file 05 contracts are written after the owner chooses.

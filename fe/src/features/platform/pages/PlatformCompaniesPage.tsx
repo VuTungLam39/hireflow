@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router'
 import { z } from 'zod'
 import { DataTable, FilterBar, PageHeader, SearchInput, type Column } from '@/components/shared'
-import { Tabs } from '@/components/ui'
+import { FilterTabs } from '@/components/ui'
 import { pageFields, useListParams } from '@/hooks/use-list-params'
 import { formatDate } from '@/lib/utils'
 import { links } from '@/routes/paths'
@@ -87,7 +87,7 @@ export default function PlatformCompaniesPage() {
         description="Duyệt công ty mới đăng ký, khoá hoặc mở khoá công ty đang hoạt động."
       />
 
-      <Tabs
+      <FilterTabs
         label="Lọc theo trạng thái công ty"
         tabs={[
           ...STATUSES.map((s) => ({ id: s, label: ORG_STATUS[s].label })),

@@ -3,6 +3,14 @@
 Validation status carried in: Phase 04 PASSED — internally validated only; human task time not measured.
 Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 merged + Security Gate re-check passed.
 
+## Quyết định Phase 05 (decision log)
+| ID | Ngày | Quyết định (chủ dự án) | Đối chiếu | Lý do / điều kiện |
+|---|---|---|---|---|
+| P5-D01 | 24/11/2026 | Văn bản pháp lý/chính sách ngoài phạm vi guard thuật ngữ; không sửa câu chữ chính sách | GLOSSARY Avoid list, Phase 03 file 09 | guard chỉ cho UI copy + thuật ngữ tính năng (Entry 1, thực hiện ở Entry 2) |
+| P5-D02 | 24/11/2026 | (a) Giữ nhìn cũ, lật token theo trang bằng `data-theme="v2"`; (b) cấm sửa file vùng khoá ở slice không khoá, kể cả call site; (c) VF-10 dựng primitive ở slice 1, gắn ở slice 10 | luật strangler (Phase 03 file 09), [D-02] | lật cơ học + sổ lật theme; primitive tương thích ngược; checklist bàn giao (Entry 2) |
+| P5-D03 | 24/11/2026 | PR giảm bundle route vào trước slice 3 | primitives decision — điều kiện dừng 40 KB | route vào 321.35 → 288.44 KB; Radix vẫn ở `vendor` (Entry 4) |
+| P5-D04 | 24/11/2026 | **Tabs giữ engine tự viết, không Radix** | **Phase 03 file 04 — primitives decision Option 1 (Tabs: Radix inside)**; contract Tabs (file 05) | Tabs trong sản phẩm là **thanh lọc không có panel**; Radix Tabs sinh `aria-controls` tới panel không tồn tại. Điều kiện: (1) ghi vào decision log, đối chiếu primitives decision ✔; (2) bản tự viết phải đúng ngữ nghĩa thanh lọc → `FilterTabs` = radiogroup/radio + `aria-checked` (Entry 6); (3) trang đầu tiên có tab-có-panel thật → chuyển Radix Tabs ở slice đó và tách tên: **Tabs** = tab có panel, **FilterTabs** = thanh lọc. Điểm kích hoạt đã có sẵn: DetailDialog (slice 5), ApplicationDetailPage (slice 8) |
+
 ## Entry 0 — Planning record merged into main (pre-Slice 0)
 - **Decision:** owner, 24/11/2026 — option (a): merge planning branch into main before Slice 0, via PR, with verification gate.
 - **Verification:** `git log origin/main..feat/mvp31-s5-release` = 7 commits (513b8e7, 2db8ba6, a5af803, 24775d3, 931decc, 05baf4b, 279f90f; commit "B" for conversation logs was never made). `git diff --name-only origin/main...feat/mvp31-s5-release` = 532 files; **no** `fe/src/`, `be/`, `fe/package*.json`, product lockfiles or migrations (1bf3c67 and earlier were already on main via PR #109).
@@ -147,3 +155,14 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
   - Tooltip: prop vẫn là `label` (contract ghi `content`) để không phải sửa call site vùng khoá.
 - **`package.json`:** thêm 3 dependency Radix (runtime).
 - **PR:** #123 — **trạng thái: awaiting merge.**
+
+## Entry 6 — Slice 3 merge + smoke; FilterTabs (P5-D04 điều kiện 2)
+- **Slice 3:** PR #123 — CI xanh. **Merged:** `639d644`.
+- **Production smoke slice 3 (Playwright, phiên đăng nhập của chủ dự án, 24/11/2026):** Tin tuyển dụng — tab End → "Đã đóng", Home → "Tất cả" ✔ (F-18); bộ lọc listbox "Phòng ban" — mở bằng Enter → focus vào lựa chọn, ArrowDown/End đi đúng, Escape đóng + trả focus về nút ✔ (F-13); tooltip sidebar (rail thu gọn) — hiện khi hover và khi focus bàn phím, Escape tắt ✔.
+- **Kiểm ARIA của Tabs tự viết (P5-D04 điều kiện 2):** **có lỗi** — Tabs gán `role="tablist"`/`role="tab"`/`aria-selected` cho cả nơi dùng làm thanh lọc không có panel (cùng lỗi Radix sẽ gây). Phân loại call site: tab có panel thật = `components/shared/DetailDialog` (`tabpanel` + `aria-labelledby`), `applications/pages/ApplicationDetailPage` (vùng khoá); thanh lọc = `jobs/pages/JobsPage`, `platform/pages/PlatformCompaniesPage`, `applications/pages/ApplicationsPage` (vùng khoá).
+- **Sửa:** `Tabs` thêm `semantics: 'tabs' | 'filter'`; export `FilterTabs` (radiogroup/radio, `aria-checked`, giữ roving focus + mũi tên + Home/End — chọn radiogroup vì hành vi thật là một lựa chọn, mũi tên vừa chuyển vừa chọn). JobsPage + PlatformCompaniesPage → `FilterTabs`; test platform chờ `radio`. Test mới: không còn tablist/tab, radiogroup có tên, End chọn + chuyển focus, axe 0.
+- **Còn lại (bàn giao):**
+  - [ ] `applications/pages/ApplicationsPage` (vùng khoá) → `FilterTabs` — slice 7.
+  - [ ] DetailDialog → Radix Tabs (tab có panel) — slice 5; ApplicationDetailPage → Radix Tabs — slice 8. Khi đó `Tabs` chỉ còn nghĩa tab-có-panel.
+  - [ ] **Đo bundle RichSelect** ở slice đầu tiên gắn nó vào trang thật (hiện bị tree-shake, chưa đo — Entry 5).
+- **PR:** #124 — **trạng thái: awaiting merge.**
