@@ -1,0 +1,75 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>P1 · Chi tiết hồ sơ (prototype)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="proto.css"><script src="proto.js"></script>
+<style>
+.split{display:grid;grid-template-columns:minmax(0,3fr) minmax(300px,2fr);gap:16px;align-items:start}
+.cv{font-size:16px;line-height:1.7;max-width:72ch}.cv h2.sec{font:500 13px/1.4 "Be Vietnam Pro";letter-spacing:.04em;text-transform:uppercase;color:var(--color-muted-foreground);margin:16px 0 4px}
+.crit{list-style:none;margin:0;padding:0}.crit li{border-bottom:1px solid var(--color-border);padding:10px 0}
+.crit button.c{all:unset;cursor:pointer;display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:100%}
+.crit button.c:focus-visible{outline:2px solid var(--color-focus-ring);outline-offset:2px}
+.q{font-family:"Source Serif 4",serif;font-style:italic;margin:4px 0 0 28px}
+.hdr{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+@media (max-width:900px){.split{grid-template-columns:1fr}.side{order:-1}}
+</style></head><body>
+<div class="proto-bar">PROTOTYPE P1 · CV Review · tài liệu kiểm chứng nội bộ (internally validated only), không phải sản phẩm</div>
+<a class="skip" href="#main">Bỏ qua tới nội dung</a>
+<div class="rail-menu"><b>HireFlow</b><button class="btn ghost" aria-label="Mở điều hướng" data-open="navSheet">☰</button></div>
+<div class="app"><nav class="rail" aria-label="Điều hướng chính"><span class="brand">HireFlow</span><a href="#">◷ <span>Hôm nay</span></a><a href="#">▤ <span>Tin tuyển dụng</span></a><a href="p3-pipeline.html" aria-current="page">☰ <span>Hồ sơ</span></a><a href="#">◫ <span>Phỏng vấn</span></a></nav>
+<main id="main" tabindex="-1">
+<p class="small"><a href="p3-pipeline.html">Hồ sơ</a> › Kỹ sư Backend (NestJS)</p>
+
+<div data-state="loading" aria-busy="true"><h1 class="sr">Đang tải hồ sơ</h1><div class="skel" style="width:40%;height:24px"></div><div class="split"><div class="card"><div class="skel"></div><div class="skel"></div><div class="skel" style="width:70%"></div></div><div class="card"><div class="skel"></div><div class="skel"></div></div></div></div>
+
+<div data-state="notfound" class="card state-panel"><h1>Không tìm thấy hồ sơ này</h1><p class="muted">Hồ sơ không tồn tại hoặc bạn không có quyền xem.</p><a class="btn" href="p3-pipeline.html">Về danh sách hồ sơ</a></div>
+
+<div data-state="ready denied processing failed submiterror">
+<div class="hdr"><div><h1>Nguyễn Thị Hồng Nhung</h1><span class="muted">Kỹ sư Backend (NestJS) · nộp 18/11/2026 · </span><span class="badge b-warn">Phỏng vấn</span></div>
+<div class="row"><span class="num" style="font-size:28px;font-weight:600">82</span><span class="badge b-ok">Phù hợp cao</span>
+<button class="btn primary" id="decide" data-state="ready submiterror processing failed" onclick="mark('open decision');openDialog('decision',this)">Chuyển trạng thái ▾</button></div></div>
+<div data-state="denied" class="alert b-info" role="status">Bạn không có quyền thực hiện thao tác này. Bạn vẫn xem được hồ sơ và Phiếu đánh giá.</div>
+<div data-state="processing" class="notice" role="status">Đang đọc CV · Mức phù hợp sẽ cập nhật khi xong.</div>
+<div data-state="failed" class="alert b-bad" role="alert">Không đọc được CV. <button class="btn">Nhập nội dung CV</button></div>
+<div class="split">
+<article class="card cv serif" aria-label="CV (nội dung đã trích xuất dùng để chấm điểm)">
+<p class="small muted" style="font-family:'Be Vietnam Pro'">Nội dung CV đã trích xuất · đây là văn bản hệ thống dùng để kiểm căn cứ.</p>
+<h2 class="sec">Kinh nghiệm</h2><p><b>Công ty Cổ phần Thanh toán Việt</b> · 2021 – nay<br>Phát triển dịch vụ đối soát cho ví điện tử, <mark id="m1" tabindex="0" aria-describedby="c1n">5 năm làm việc với NestJS và PostgreSQL trên môi trường sản xuất</mark>, xử lý hơn hai triệu giao dịch mỗi ngày.</p>
+<p>Thiết kế lại quy trình triển khai: <mark id="m2" tabindex="0" aria-describedby="c2n">đóng gói toàn bộ dịch vụ bằng Docker và dựng CI/CD trên GitLab</mark>, rút thời gian phát hành từ một tuần xuống một ngày.</p>
+<p>Tham gia dự án tích hợp <mark id="m4" tabindex="0" aria-describedby="c4n">Kafka cho luồng sự kiện thanh toán trong 1 năm</mark>.</p>
+<h2 class="sec">Học vấn</h2><p>Đại học Bách khoa Hà Nội · Kỹ thuật phần mềm, 2019.</p>
+<h2 class="sec">Kỹ năng</h2><p>Tiếng Anh giao tiếp (IELTS 7.0), đàm phán với đối tác ngân hàng.</p></article>
+<aside class="side card" aria-label="Tiêu chí và căn cứ"><h2>Tiêu chí</h2><ul class="crit">
+<li><button class="c" data-mark="m1" aria-controls="m1"><span class="dot y">1</span><span id="c1n">NestJS ≥ 3 năm</span><span class="badge b-ok">Khớp</span><span class="muted small">Bắt buộc · trọng số 3</span></button><p class="q">“5 năm làm việc với NestJS và PostgreSQL trên môi trường sản xuất”</p></li>
+<li><button class="c" data-mark="m2" aria-controls="m2"><span class="dot y">2</span><span id="c2n">Docker, CI/CD</span><span class="badge b-ok">Khớp</span><span class="muted small">Nên có</span></button><p class="q">“đóng gói toàn bộ dịch vụ bằng Docker và dựng CI/CD trên GitLab”</p></li>
+<li><button class="c" disabled><span class="dot">3</span><span>AWS</span><span class="badge b-neutral">Không thấy trong CV</span><span class="muted small">Nên có</span></button></li>
+<li><button class="c" data-mark="m4" aria-controls="m4"><span class="dot h">4</span><span id="c4n">Kafka ≥ 2 năm</span><span class="badge b-warn">Khớp một phần</span></button><p class="q">“Kafka cho luồng sự kiện thanh toán trong 1 năm”</p></li></ul>
+<details style="margin-top:12px"><summary>Có căn cứ bị loại (1)</summary><p class="small">“Thành thạo Kubernetes” · không tìm thấy nguyên văn trong CV nên không được tính.</p></details>
+<details><summary>Phiếu đánh giá (2)</summary><p class="small">Lê Minh Đức · Vòng kỹ thuật: Nên tuyển · Trần Thu Hà · Vòng cuối: Cân nhắc</p></details>
+<p role="status" id="live" class="small muted" aria-live="polite"></p></aside></div></div>
+</main></div>
+
+<dialog id="decision" aria-labelledby="dt"><form method="dialog" class="d-body" id="decForm">
+<h2 id="dt">Chuyển trạng thái hồ sơ</h2><p class="muted small">Nguyễn Thị Hồng Nhung · hiện tại: Phỏng vấn</p>
+<div class="field"><label for="to">Trạng thái mới</label><select id="to"><option value="">— Chọn trạng thái —</option><option>Sàng lọc</option><option>Từ chối</option></select><span class="err" id="toErr" hidden>Chọn trạng thái mới.</span></div>
+<div class="field" id="whyF" hidden><label for="why">Lý do (bắt buộc)</label><select id="why"><option value="">— Chọn lý do —</option><option>Thiếu kỹ năng bắt buộc</option><option>Chưa đủ kinh nghiệm</option><option>Đã chọn ứng viên khác</option><option>Lý do khác</option></select><span class="err" id="whyErr" hidden>Vui lòng chọn lý do từ chối.</span></div>
+<p class="small muted">Offer chỉ tạo trong mục Offer của hồ sơ.</p>
+<div class="alert b-bad" id="saveErr" hidden role="alert">Chưa lưu được · kết nối gián đoạn. Lựa chọn của bạn vẫn được giữ. <button type="button" class="btn" id="retry">Thử lại</button></div>
+</form><div class="d-foot"><button class="btn" data-close>Huỷ</button><button class="btn primary" id="confirm">Xác nhận</button></div></dialog>
+<dialog id="done" aria-labelledby="dd"><div class="d-body"><h2 id="dd">Đã chuyển trạng thái</h2><p class="muted">Thay đổi và lý do (nếu có) đã lưu vào lịch sử hồ sơ.</p></div><div class="d-foot"><button class="btn primary" data-close>Đóng</button></div></dialog>
+<dialog id="navSheet" class="sheet" aria-label="Điều hướng"><div class="d-body"><nav><p><a href="#">Hôm nay</a></p><p><a href="#">Tin tuyển dụng</a></p><p><a href="p3-pipeline.html">Hồ sơ</a></p><p><a href="#">Phỏng vấn</a></p></nav></div><div class="d-foot"><button class="btn" data-close>Đóng</button></div></dialog>
+<script>
+stateSwitcher(['ready','loading','notfound','denied','processing','failed','submiterror']);
+// two-way evidence linking (Phase 03 file 06)
+$$('button.c[data-mark]').forEach(b => b.onclick = () => { mark('open evidence');$$('mark').forEach(m=>m.classList.remove('focus')); const m=document.getElementById(b.dataset.mark); m.classList.add('focus'); m.scrollIntoView({block:'center'}); m.focus(); m._crit=b; $('#live').textContent='Đang hiển thị căn cứ cho '+b.querySelector('[id]').textContent; });
+$$('mark').forEach(m => m.onkeydown = e => { if((e.key==='Enter'||e.key==='Escape')&&m._crit){e.preventDefault();m._crit.focus();} });
+document.addEventListener('click',e=>{if(e.target.id==='retry'){$('#saveErr').hidden=true;$('#confirm').click();}});
+$('#to').onchange=()=>{const r=$('#to').value==='Từ chối';$('#whyF').hidden=!r;$('#confirm').className='btn '+(r?'danger':'primary');$('#confirm').textContent=r?'Xác nhận từ chối':'Xác nhận';};
+$('#confirm').onclick = () => {
+  if(!$('#to').value){$('#toErr').hidden=false;$('#to').focus();return;}
+  if($('#to').value==='Từ chối'&&!$('#why').value){$('#whyErr').hidden=false;$('#why').setAttribute('aria-invalid','true');$('#why').focus();return;}
+  const b=$('#confirm'); b.setAttribute('aria-busy','true'); b.textContent='Đang lưu…';
+  setTimeout(()=>{ b.removeAttribute('aria-busy'); b.textContent=$('#to').value==='Từ chối'?'Xác nhận từ chối':'Xác nhận';
+    if(state==='submiterror'){$('#saveErr').hidden=false;return;}
+    $('#decision').close(); mark('confirmed'); openDialog('done',$('#decide')); },400);
+};
+</script></body></html>

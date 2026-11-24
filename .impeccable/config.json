@@ -44,6 +44,69 @@
         ],
         "createdAt": "2026-11-24T06:45:39.147Z",
         "reason": "Claude: flagged element is .wrap, the data-table card; text inset comes from th/td padding 12px (card mode: tr padding 12px); edge-to-edge rows intended for ledger table (DD-01)"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-04/prototypes/p1-cv-review.html"
+        ],
+        "createdAt": "2026-11-24T08:41:41.187Z",
+        "reason": "user confirmed: owner approved Direction A paper/ink/marker palette (DD-01); background is DESIGN.md token colors.background; validation prototype, not product"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-04/prototypes/p2-ranking.html"
+        ],
+        "createdAt": "2026-11-24T08:41:41.334Z",
+        "reason": "user confirmed: owner approved Direction A paper/ink/marker palette (DD-01); background is DESIGN.md token colors.background; validation prototype, not product"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-04/prototypes/p3-pipeline.html"
+        ],
+        "createdAt": "2026-11-24T08:41:41.487Z",
+        "reason": "user confirmed: owner approved Direction A paper/ink/marker palette (DD-01); background is DESIGN.md token colors.background; validation prototype, not product"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-04/prototypes/p4-public.html"
+        ],
+        "createdAt": "2026-11-24T08:41:41.729Z",
+        "reason": "user confirmed: owner approved Direction A paper/ink/marker palette (DD-01); background is DESIGN.md token colors.background; validation prototype, not product"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-04/prototypes/p5-evaluation.html"
+        ],
+        "createdAt": "2026-11-24T08:41:41.984Z",
+        "reason": "user confirmed: owner approved Direction A paper/ink/marker palette (DD-01); background is DESIGN.md token colors.background; validation prototype, not product"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-04/prototypes/p2-ranking.html"
+        ],
+        "createdAt": "2026-11-24T08:41:42.207Z",
+        "reason": "Claude: flagged .wrap is the DataTable card; cell padding 12px provides the inset (same false positive as phase-02 ledger)"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-04/prototypes/p3-pipeline.html"
+        ],
+        "createdAt": "2026-11-24T08:41:42.378Z",
+        "reason": "Claude: flagged .wrap is the DataTable card; cell padding 12px provides the inset (same false positive as phase-02 ledger)"
       }
     ]
   }

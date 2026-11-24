@@ -1,0 +1,55 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>P2 — Xếp hạng hồ sơ (prototype)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Source+Serif+4:ital,wght@0,400;1,400&display=swap">
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="proto.css"><script src="proto.js"></script>
+<style>
+.weights{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}.weights label{display:flex;gap:6px;align-items:center;font-weight:400}
+.weights select{min-height:32px;padding:4px 8px}
+tr.exp td{height:auto;white-space:normal;padding:8px 12px 12px;background:#fdfcf9}
+.q{font-family:"Source Serif 4",serif;font-style:italic}
+@media (max-width:1100px){.p3{display:none}}
+@media (max-width:600px){table,tbody,tr{display:block}thead{display:none}tr{border-bottom:1px solid var(--color-border);padding:8px 12px}td{display:inline-block;height:auto;border:0;padding:2px 8px 2px 0}td:first-child{display:block;position:static;box-shadow:none}.p2{display:none}}
+</style></head><body>
+<div class="proto-bar">PROTOTYPE P2 — Xếp hạng hồ sơ · internally validated only · không phải sản phẩm</div>
+<a class="skip" href="#main">Bỏ qua tới nội dung</a>
+<div class="rail-menu"><b>HireFlow</b><button class="btn ghost" aria-label="Mở điều hướng">☰</button></div>
+<div class="app"><nav class="rail" aria-label="Điều hướng chính"><span class="brand">HireFlow</span><a href="#">◷ <span>Hôm nay</span></a><a href="#" aria-current="page">▤ <span>Tin tuyển dụng</span></a><a href="p3-pipeline.html">☰ <span>Hồ sơ</span></a></nav>
+<main id="main" tabindex="-1">
+<p class="small"><a href="#">Tin tuyển dụng</a> › Kỹ sư Backend (NestJS)</p>
+<h1>Xếp hạng hồ sơ</h1>
+<div role="tablist" aria-label="Mục của tin" class="row" id="tl" style="border-bottom:1px solid var(--color-border);margin-bottom:8px">
+<button class="btn ghost" role="tab" aria-selected="false" aria-controls="x1" tabindex="-1">Tổng quan</button><button class="btn ghost" role="tab" aria-selected="false" aria-controls="x2" tabindex="-1">Hồ sơ</button><button class="btn ghost" role="tab" aria-selected="true" aria-controls="x3">Xếp hạng</button><button class="btn ghost" role="tab" aria-selected="false" aria-controls="x4" tabindex="-1">Tiêu chí</button></div>
+<div id="x1" hidden></div><div id="x2" hidden></div><div id="x4" hidden></div>
+<div id="x3" role="tabpanel">
+<div data-state="stale" class="notice" role="status">Tiêu chí của tin vừa đổi — 12 hồ sơ đang được chấm lại. Xếp hạng có thể chưa cập nhật · <a href="?state=ready">Tải lại</a></div>
+<fieldset class="weights" data-state="ready stale"><legend class="small muted">Trọng số (1 ít quan trọng – 3 rất quan trọng)</legend>
+<label><span class="dot y">1</span>NestJS <select data-w="0"><option value="1">1 · ít quan trọng</option><option value="2">2 · quan trọng</option><option value="3" selected>3 · rất quan trọng</option></select></label>
+<label><span class="dot y">2</span>Docker, CI/CD <select data-w="1"><option value="1">1 · ít quan trọng</option><option value="2" selected>2 · quan trọng</option><option value="3">3 · rất quan trọng</option></select></label>
+<label><span class="dot y">3</span>AWS <select data-w="2"><option value="1" selected>1 · ít quan trọng</option><option value="2">2 · quan trọng</option><option value="3">3 · rất quan trọng</option></select></label>
+<label><span class="dot y">4</span>Kafka <select data-w="3"><option value="1">1 · ít quan trọng</option><option value="2" selected>2 · quan trọng</option><option value="3">3 · rất quan trọng</option></select></label></fieldset>
+<div data-state="loading"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+<div data-state="empty" class="card state-panel"><h2>Chưa có hồ sơ nào được chấm</h2><p class="muted">Hồ sơ mới cần vài phút để đọc CV. Danh sách sẽ tự cập nhật.</p></div>
+<div data-state="ready stale" class="wrap"><table><thead><tr><th>Hồ sơ</th><th>Mức phù hợp</th><th>Tiêu chí</th><th class="p2">Trạng thái</th><th class="p3">Cờ</th></tr></thead><tbody id="tb"></tbody></table></div>
+<p role="status" aria-live="polite" class="sr" id="rlive"></p><p class="small muted" data-state="ready stale">Phím J/K để di chuyển, x để mở căn cứ, Enter để mở hồ sơ.</p>
+</div></main></div>
+<script>
+stateSwitcher(['ready','loading','empty','stale']); tabs($('#tl'));
+const P=[["Nguyễn Thị Hồng Nhung",[1,1,0,.5],"Phỏng vấn"],["Trần Quốc Bảo",[1,.5,1,0],"Sàng lọc"],["Lê Minh Khoa",[.5,1,0,1],"Mới"],["Phạm Thu Quỳnh",[1,0,0,.5],"Mới"],["Hoàng Ngọc Đức",[0,1,1,1],"Sàng lọc"],["Huỳnh Văn Phượng",[1,1,1,0],"Phỏng vấn"],["Võ Thanh Tuấn",[.5,.5,.5,.5],"Mới"],["Đặng Đức Yến",[0,0,1,1],"Mới"]];
+const Q=["“5 năm làm việc với NestJS và PostgreSQL”","“đóng gói dịch vụ bằng Docker”","“chứng chỉ AWS Solutions Architect”","“Kafka cho luồng sự kiện trong 1 năm”"];
+let focus=0;
+function render(){const w=$$('[data-w]').map(s=>+s.value),tot=w.reduce((a,b)=>a+b,0);
+ const rows=P.map(([n,m,s])=>({n,m,s,score:Math.round(100*m.reduce((a,x,i)=>a+x*w[i],0)/tot),miss:m[0]===0})).sort((a,b)=>b.score-a.score);
+ $('#tb').innerHTML=rows.map((r,i)=>{const band=r.score>=70?['Phù hợp cao','b-ok']:r.score>=40?['Phù hợp một phần','b-warn']:['Phù hợp thấp','b-neutral'];
+  return `<tr tabindex="-1" data-i="${i}"><td><a href="p1-cv-review.html">${i+1}. ${r.n}</a></td><td class="num"><b>${r.score}</b> <span class="badge ${band[1]}">${band[0]}</span></td><td><button class="btn ghost" aria-expanded="false" aria-label="Xem căn cứ của ${r.n}" style="padding:2px 4px;min-height:28px">${r.m.map((x,k)=>`<span class="dot ${x===1?'y':x?'h':''}" title="Tiêu chí ${k+1}">${k+1}</span>`).join('')}</button></td><td class="p2"><span class="badge b-neutral">${r.s}</span></td><td class="p3">${r.miss?'<span class="badge b-warn">Thiếu tiêu chí bắt buộc</span>':''}</td></tr>`}).join('');
+ $$('#tb button').forEach(b=>b.onclick=()=>toggle(b.closest('tr')));setFocus(Math.min(focus,rows.length-1));}
+function toggle(tr){const b=tr.querySelector('button[aria-expanded]'),open=b.getAttribute('aria-expanded')==='true';
+ if(open){tr.nextElementSibling?.classList.contains('exp')&&tr.nextElementSibling.remove();b.setAttribute('aria-expanded','false');return;}
+ mark('open evidence');const m=[...tr.querySelectorAll('.dot')].map(d=>d.className);const x=document.createElement('tr');x.className='exp';
+ x.innerHTML=`<td colspan="5">${Q.map((q,k)=>`<div><span class="dot ${m[k].includes('y')?'y':m[k].includes('h')?'h':''}">${k+1}</span> ${m[k].includes('y')||m[k].includes('h')?'<span class="q">'+q+'</span>':'<span class="muted">Không thấy trong CV</span>'}</div>`).join('')}</td>`;tr.after(x);b.setAttribute('aria-expanded','true');}
+function setFocus(i){$$('#tb tr:not(.exp)').forEach((r,j)=>r.classList.toggle('focus',j===i));focus=i;}
+document.addEventListener('keydown',e=>{if(e.target.matches('select,input'))return;const r=$$('#tb tr:not(.exp)');
+ if(e.key==='j'||e.key==='ArrowDown'&&e.target.closest('#tb')){setFocus(Math.min(focus+1,r.length-1));r[focus].focus();}
+ if(e.key==='k'||e.key==='ArrowUp'&&e.target.closest('#tb')){setFocus(Math.max(focus-1,0));r[focus].focus();}
+ if(e.key==='x')toggle(r[focus]); if(e.key==='Enter'&&e.target.tagName==='TR')location='p1-cv-review.html';});
+$$('[data-w]').forEach(s=>s.onchange=()=>{render();$('#rlive').textContent='Đã sắp xếp lại theo trọng số mới';});render();
+</script></body></html>
