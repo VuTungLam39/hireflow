@@ -184,4 +184,4 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - **VF-06:** "Rút hồ sơ" đã là AlertDialog từ slice 2 (test TrackApplicationPage chờ `alertdialog`).
 - **Vấn đề hợp đồng API — DL-17/RR-10 (ghi nhận, không sửa trong slice, §05.2):** `findPublicOne` chỉ trả tin `status = OPEN`; tin quá deadline vẫn trả **vô thời hạn** với `expired: true` (không có mốc 30 ngày → 404); tin `CLOSED` trả 404 **ngay** (không có cửa sổ 30 ngày "Đã hết hạn"). FE hiện hiển thị đúng những gì API trả (banner hết hạn + tắt Ứng tuyển + việc khác). **Đề xuất riêng cho chủ dự án:** backend thêm cửa sổ 30 ngày cho cả tin quá deadline và tin CLOSED (cần mốc thời điểm đóng). Không làm workaround phía FE.
 - **`package.json`:** thêm `cmdk` (runtime).
-- **PR:** _(điền sau khi mở)_ — **trạng thái: awaiting merge.**
+- **PR:** #126 — **trạng thái: awaiting merge.**
