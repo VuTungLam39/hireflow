@@ -1,5 +1,5 @@
 import * as RM from '@radix-ui/react-dropdown-menu'
-import { Fragment, type ReactNode } from 'react'
+import { Fragment, useRef, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 export interface DropdownMenuItem {
@@ -31,9 +31,12 @@ export function DropdownMenu({
   note,
   className,
 }: DropdownMenuProps) {
+  const triggerRef = useRef<HTMLButtonElement>(null)
   return (
     <RM.Root modal={false}>
-      <RM.Trigger asChild>{trigger}</RM.Trigger>
+      <RM.Trigger asChild ref={triggerRef}>
+        {trigger}
+      </RM.Trigger>
       <RM.Portal>
         <RM.Content
           align={align}
@@ -48,7 +51,11 @@ export function DropdownMenu({
               {item.separated && <RM.Separator className="border-line-soft my-1 border-t" />}
               <RM.Item
                 disabled={item.disabled}
-                onSelect={item.onSelect}
+                onSelect={() => {
+                  // hộp thoại mở từ mục menu ghi nhớ nút mở menu để trả focus khi đóng
+                  triggerRef.current?.focus()
+                  item.onSelect()
+                }}
                 className={cn(
                   itemClass,
                   item.variant === 'danger' &&
