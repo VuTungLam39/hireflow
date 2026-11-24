@@ -198,4 +198,4 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - **LCP:** chưa so — máy chủ preview cục bộ không so được với production; đo trên production trước/sau merge.
 - **Chưa làm trong 4b (ghi nợ):** Job Summary theo SurfaceContext — chưa có component tóm tắt việc làm dùng chung hai bề mặt (JobRows chỉ công khai); làm khi slice 6/12 dựng component dùng chung. Bố cục chi tiết theo prototype P4 (thẻ "Yêu cầu", bước "1. Thông tin / 2. Xong") không đổi — 4b chỉ lật token theo P5-D05.
 - **Kiểm:** format, lint, check:design, check:terms, check:tokens, typecheck, toàn bộ test, build xanh. `package.json` không đổi. Vùng khoá: 0 file.
-- **PR:** _(điền sau khi mở)_ — **trạng thái: awaiting merge.**
+- **PR:** #127 — **trạng thái: awaiting merge.**
