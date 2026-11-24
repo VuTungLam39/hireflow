@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui'
 import { ArrowRight } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { cn, formatDate } from '@/lib/utils'
@@ -42,14 +43,10 @@ export function JobOverview({
             Hồ sơ theo bước
           </h3>
           {job.status !== 'DRAFT' && job.applicationCount > 0 && (
-            <button
-              type="button"
-              onClick={() => onOpenApplications()}
-              className="text-brand inline-flex items-center gap-1 text-sm font-medium hover:underline"
-            >
+            <Button variant="link" onClick={() => onOpenApplications()}>
               Xem {job.applicationCount.toLocaleString('vi-VN')} hồ sơ
-              <ArrowRight className="size-4" />
-            </button>
+              <ArrowRight />
+            </Button>
           )}
         </div>
         {job.status === 'DRAFT' ? (

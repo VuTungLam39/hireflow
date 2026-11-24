@@ -4,15 +4,17 @@ import { fieldBase, fieldInvalid } from './field-styles'
 
 interface TextareaProps extends ComponentProps<'textarea'> {
   invalid?: boolean
+  autoGrow?: boolean
 }
 
-export function Textarea({ className, invalid, ...props }: TextareaProps) {
+export function Textarea({ className, invalid, autoGrow, ...props }: TextareaProps) {
   return (
     <textarea
       aria-invalid={invalid || undefined}
       className={cn(
         fieldBase,
         'min-h-24 px-3 py-2 leading-[22px]',
+        autoGrow && 'field-sizing-content max-h-96',
         invalid && fieldInvalid,
         className,
       )}

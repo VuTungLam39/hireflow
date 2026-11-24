@@ -212,13 +212,9 @@ export function RequirementEditor({
               {isSuggested && !readOnly && (
                 <p className="type-caption flex items-center gap-2">
                   <span className="text-warn font-medium">Gợi ý – hãy kiểm tra</span>
-                  <button
-                    type="button"
-                    onClick={() => confirm(field.id)}
-                    className="text-brand font-medium hover:underline"
-                  >
+                  <Button variant="link" onClick={() => confirm(field.id)}>
                     Giữ nguyên
-                  </button>
+                  </Button>
                 </p>
               )}
               {err && (
