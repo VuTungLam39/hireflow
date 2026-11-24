@@ -71,7 +71,7 @@ export function Tabs<T extends string>({
   }
 
   const move = (from: number, delta: number) => {
-    const next = tabs[(from + delta + tabs.length) % tabs.length]
+    const next = tabs[(((from + delta) % tabs.length) + tabs.length) % tabs.length]
     onChange(next.id)
     requestAnimationFrame(() =>
       document.getElementById(tabId(prefix, next.id))?.focus({ preventScroll: true }),
@@ -100,6 +100,10 @@ export function Tabs<T extends string>({
               onKeyDown={(e) => {
                 if (e.key === 'ArrowRight') move(index, 1)
                 if (e.key === 'ArrowLeft') move(index, -1)
+                // F-18
+                if (e.key === 'Home') move(0, 0)
+                if (e.key === 'End') move(tabs.length - 1, 0)
+                if (e.key === 'Home' || e.key === 'End') e.preventDefault()
               }}
               className={cn(
                 'relative -mb-px flex h-10 shrink-0 items-center gap-1.5 border-b-2 text-sm whitespace-nowrap transition-colors duration-150',

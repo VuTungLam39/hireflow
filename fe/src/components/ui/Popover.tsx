@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react'
+import * as RP from '@radix-ui/react-popover'
+import { useId, useRef, type KeyboardEvent, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 interface TriggerProps {
@@ -8,12 +9,8 @@ interface TriggerProps {
   onClick: () => void
 }
 
-const menuItems = (menu: HTMLElement | null) =>
-  Array.from(
-    menu?.querySelectorAll<HTMLElement>(
-      '[role^="menuitem"]:not([disabled]):not([aria-disabled="true"])',
-    ) ?? [],
-  )
+const ITEMS =
+  '[role^="menuitem"]:not([disabled]):not([aria-disabled="true"]), [role="option"]:not([disabled]):not([aria-disabled="true"])'
 
 interface PopoverProps {
   open: boolean
@@ -40,81 +37,86 @@ export function Popover({
 }: PopoverProps) {
   const ref = useRef<HTMLDivElement>(null)
   const id = useId()
+  const list = role !== 'dialog'
+  const items = () =>
+    Array.from(document.getElementById(id)?.querySelectorAll<HTMLElement>(ITEMS) ?? [])
 
-  useEffect(() => {
-    if (!open || role !== 'menu') return
-    const items = menuItems(document.getElementById(id))
-    ;(items.find((el) => el.getAttribute('aria-checked') === 'true') ?? items[0])?.focus()
-  }, [open, role, id])
-
-  useEffect(() => {
-    if (!open) return
-    const onPointer = (e: PointerEvent) => {
-      if (!ref.current?.contains(e.target as Node)) onOpenChange(false)
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.defaultPrevented) return
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        e.stopPropagation()
-        onOpenChange(false)
-        ;(ref.current?.querySelector('[aria-expanded]') as HTMLElement | null)?.focus()
-        return
-      }
-      if (role !== 'menu' || !ref.current?.contains(document.activeElement)) return
-      if (e.key === 'Tab') {
-        onOpenChange(false)
-        return
-      }
-      const items = menuItems(document.getElementById(id))
-      if (items.length === 0) return
-      const at = items.indexOf(document.activeElement as HTMLElement)
-      const next =
-        e.key === 'ArrowDown'
-          ? (at + 1) % items.length
-          : e.key === 'ArrowUp'
-            ? (at - 1 + items.length) % items.length
-            : e.key === 'Home'
-              ? 0
-              : e.key === 'End'
-                ? items.length - 1
-                : null
-      if (next === null) return
-      e.preventDefault()
-      items[next].focus()
-    }
-    document.addEventListener('pointerdown', onPointer)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('pointerdown', onPointer)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open, onOpenChange, role, id])
+  // F-13: menu và listbox đi bằng mũi tên, Home/End
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (!list) return
+    if (e.key === 'Tab' && role === 'menu') return onOpenChange(false)
+    const all = items()
+    if (all.length === 0) return
+    const at = all.indexOf(document.activeElement as HTMLElement)
+    const next =
+      e.key === 'ArrowDown'
+        ? (at + 1) % all.length
+        : e.key === 'ArrowUp'
+          ? (at - 1 + all.length) % all.length
+          : e.key === 'Home'
+            ? 0
+            : e.key === 'End'
+              ? all.length - 1
+              : null
+    if (next === null) return
+    e.preventDefault()
+    all[next].focus()
+  }
 
   return (
-    <div ref={ref} className="relative inline-flex">
-      {trigger({
-        'aria-expanded': open,
-        'aria-haspopup': role,
-        'aria-controls': id,
-        onClick: () => onOpenChange(!open),
-      })}
-      {open && (
-        <div
-          id={id}
-          role={role}
-          aria-label={label}
-          className={cn(
-            'border-line bg-surface shadow-float animate-float-in absolute z-50 min-w-48 rounded-md border p-1.5',
-            side === 'bottom' ? 'top-full mt-1.5' : 'bottom-full mb-1.5',
-            align === 'start' ? 'left-0 origin-top-left' : 'right-0 origin-top-right',
-            className,
-          )}
-        >
-          {children}
+    <RP.Root open={open} onOpenChange={onOpenChange}>
+      <RP.Anchor asChild>
+        <div ref={ref} className="relative inline-flex">
+          {trigger({
+            'aria-expanded': open,
+            'aria-haspopup': role,
+            'aria-controls': id,
+            onClick: () => onOpenChange(!open),
+          })}
+          {/* không Portal: giữ vị trí DOM như bản cũ cho call site hiện có */}
+          <RP.Content
+            id={id}
+            role={role}
+            aria-label={label}
+            align={align}
+            side={side}
+            sideOffset={6}
+            collisionPadding={8}
+            onKeyDown={onKeyDown}
+            onEscapeKeyDown={(e) => {
+              // Esc chỉ đóng popover, không lọt xuống dialog/phím tắt trang phía sau
+              e.preventDefault()
+              e.stopPropagation()
+              onOpenChange(false)
+              ref.current?.querySelector<HTMLElement>('[aria-expanded]')?.focus()
+            }}
+            onOpenAutoFocus={(e) => {
+              if (!list) return
+              e.preventDefault()
+              const all = items()
+              ;(
+                all.find((el) => el.matches('[aria-checked="true"], [aria-selected="true"]')) ??
+                all[0]
+              )?.focus()
+            }}
+            onCloseAutoFocus={(e) => {
+              e.preventDefault()
+              ref.current?.querySelector<HTMLElement>('[aria-expanded]')?.focus()
+            }}
+            onInteractOutside={(e) => {
+              // bấm lại nút mở: để onClick của nút tự đóng, tránh đóng rồi mở lại
+              if (ref.current?.contains(e.target as Node)) e.preventDefault()
+            }}
+            className={cn(
+              'border-line bg-surface shadow-float animate-float-in z-50 min-w-48 rounded-md border p-1.5',
+              className,
+            )}
+          >
+            {children}
+          </RP.Content>
         </div>
-      )}
-    </div>
+      </RP.Anchor>
+    </RP.Root>
   )
 }
 
