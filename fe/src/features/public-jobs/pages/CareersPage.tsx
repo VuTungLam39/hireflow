@@ -91,7 +91,7 @@ export default function CareersPage() {
       )}
       {company.benefits.length > 0 && (
         <Section id="phuc-loi" title="Phúc lợi">
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {company.benefits.map((b) => (
               <li key={b.title} className="border-line rounded-md border px-5 py-4">
                 <p className="text-ink font-medium">{b.title}</p>
@@ -125,7 +125,7 @@ export default function CareersPage() {
       )}
       {company.offices.length > 0 && (
         <Section id="van-phong" title="Văn phòng">
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {company.offices.map((o) => (
               <li key={o.name} className="border-line flex gap-3 rounded-md border px-5 py-4">
                 <MapPin aria-hidden className="text-ink-muted mt-0.5 size-4 shrink-0" />

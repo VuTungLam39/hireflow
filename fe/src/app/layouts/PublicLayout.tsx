@@ -1,5 +1,5 @@
 import { Menu } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { Button, DropdownMenu } from '@/components/ui'
 import { useFocusMainOnNavigate } from '@/hooks/use-focus-main'
@@ -18,8 +18,15 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
 export function PublicLayout({ children }: { children?: ReactNode }) {
   useFocusMainOnNavigate()
   const navigate = useNavigate()
+  // P5-D02: trang công khai đã lật v2 (slice 4b); <html> để overlay qua Portal cũng lật
+  useEffect(() => {
+    document.documentElement.dataset.theme = 'v2'
+    return () => {
+      delete document.documentElement.dataset.theme
+    }
+  }, [])
   return (
-    <div className="bg-surface text-ink-2 flex min-h-dvh flex-col">
+    <div data-theme="v2" className="bg-surface text-ink-2 flex min-h-dvh flex-col">
       <a
         href="#main"
         className="bg-ink sr-only z-[70] rounded-sm px-3 py-2 text-white focus:not-sr-only focus:fixed focus:top-2 focus:left-2"

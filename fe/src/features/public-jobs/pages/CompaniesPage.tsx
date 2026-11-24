@@ -35,7 +35,7 @@ export default function CompaniesPage() {
       </header>
 
       {isPending ? (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }, (_, i) => (
             <li key={i}>
               <Skeleton className="h-36 w-full rounded-md" />
@@ -51,7 +51,7 @@ export default function CompaniesPage() {
         />
       ) : (
         <>
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((c) => (
               <li key={c.slug}>
                 <Link

@@ -72,7 +72,8 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
 ### Sổ lật theme (data-theme="v2")
 | Trang / route | Slice | Trạng thái |
 |---|---|---|
-| (chưa trang nào) | — | mọi trang đang v1 |
+| PublicLayout + mọi trang công khai: `/jobs`, `/jobs/:id`, `/jobs/:id/apply` (form trong trang chi tiết), `/companies`, `/companies/:slug`, `/track`, `/privacy`, `/employers/*`, 404 công khai cho khách | 4b | **v2** (PR 4b) |
+| AuthLayout (`/login`), mọi trang nội bộ | — | v1 |
 Quy tắc: lật cả trang trong slice dựng lại trang đó bằng `data-theme="v2"` trên gốc trang/layout; không lật từng component.
 
 ### Bàn giao cho slice khoá (không sửa ở slice 1)
@@ -184,4 +185,17 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - **VF-06:** "Rút hồ sơ" đã là AlertDialog từ slice 2 (test TrackApplicationPage chờ `alertdialog`).
 - **Vấn đề hợp đồng API — DL-17/RR-10 (ghi nhận, không sửa trong slice, §05.2):** `findPublicOne` chỉ trả tin `status = OPEN`; tin quá deadline vẫn trả **vô thời hạn** với `expired: true` (không có mốc 30 ngày → 404); tin `CLOSED` trả 404 **ngay** (không có cửa sổ 30 ngày "Đã hết hạn"). FE hiện hiển thị đúng những gì API trả (banner hết hạn + tắt Ứng tuyển + việc khác). **Đề xuất riêng cho chủ dự án:** backend thêm cửa sổ 30 ngày cho cả tin quá deadline và tin CLOSED (cần mốc thời điểm đóng). Không làm workaround phía FE.
 - **`package.json`:** thêm `cmdk` (runtime).
-- **PR:** #126 — **trạng thái: awaiting merge.**
+- **PR:** #126 — CI xanh. **Merged:** `7ad5f84`.
+- **Production smoke 4a (Playwright, phiên khách, 24/11/2026):** F-10 — `/trang-khong-co-that` → "Không tìm thấy trang này", URL giữ nguyên ✔; `/manage/jobs` (khách) → `/login` như cũ ✔; F-01 bbox 320/360/390/430/640/1024 → 0 chồng lấn, đích ≥24 px, không tràn ✔; RR-05 — 390 px "Bộ lọc (1)" → Dialog → Combobox gõ "Chợ" (tìm server) → chọn "Chợ Lành" → URL `company=cho-lanh`, nút "Bộ lọc (2)" ✔. **Ghi nhận (có từ trước, không do 4a):** bấm trước khi trang prerender hydrate xong thì cú bấm bị mất (script đầu bấm ngay sau `load` → Dialog không mở; chờ hydrate thì mở bình thường) — đề xuất xem lại ở slice 5/12 (vd. tắt control tới khi hydrate).
+
+## Entry 8 — Slice 4b: lật trang công khai sang v2 (🟢)
+- **Base:** `feat/phase05-slice4b-public-v2` từ `main @ 7ad5f84`. Issue #125 (4b), quyết định P5-D05.
+- **Cơ chế lật (cơ học, P5-D02a):** `[data-theme='v2']` trong `ui-theme.css` ngoài `--ui-*` còn ánh xạ lại **token cũ** (`--color-ink/surface/line/brand/good/warn/bad/info/marker…`, `--radius-*`, `--font-display`) sang giá trị v2 — utility Tailwind v4 đọc biến nên mọi class cũ trong phạm vi tự đổi, **không viết lại class nào**. `PublicLayout` đặt `data-theme="v2"` trên gốc (HTML prerender đúng ngay) và trên `<html>` khi mount (overlay qua Portal — Dialog "Bộ lọc", Tooltip, Menu — cũng lật); gỡ khi rời layout. Token DESIGN.md còn thiếu (`*-soft`) trộn `color-mix` từ màu gốc v2 (`shortcut:` đã ghi ở slice 1).
+- **Typography:** tiêu đề công khai chuyển Bricolage → Be Vietnam Pro 600 (DESIGN.md); Bricolage còn tải cho trang nội bộ v1.
+- **Sửa kèm (có từ trước):** `/companies` và trang công ty tràn ngang 28 px ở 320 (lưới một cột track `auto` không co) → `grid-cols-1`.
+- **So trước (production v1) / sau (build mới, `/api` proxy sang production, chỉ GET), 5 trang × 8 bề rộng (320/360/390/430/768/1024/1280/1440):** sau = 40/40 lượt `data-theme=v2`; **0** phần tử còn màu xanh lá cũ `rgb(30,91,79)`; mỗi trang đúng 1 `h1`; tiêu đề Be Vietnam Pro; nút chính `rgb(31,78,121)`; không tràn ngang (sau khi sửa lưới). Ảnh 390/1440 duyệt mắt: danh sách việc làm, chi tiết + thanh "Ứng tuyển vị trí này", công ty, 404.
+- **Trợ năng:** axe trên trình duyệt thật (bật tương phản màu) — `/jobs`, chi tiết việc làm, `/companies`, trang công ty, 404 × 390/1440 → **0 vi phạm**.
+- **LCP:** chưa so — máy chủ preview cục bộ không so được với production; đo trên production trước/sau merge.
+- **Chưa làm trong 4b (ghi nợ):** Job Summary theo SurfaceContext — chưa có component tóm tắt việc làm dùng chung hai bề mặt (JobRows chỉ công khai); làm khi slice 6/12 dựng component dùng chung. Bố cục chi tiết theo prototype P4 (thẻ "Yêu cầu", bước "1. Thông tin / 2. Xong") không đổi — 4b chỉ lật token theo P5-D05.
+- **Kiểm:** format, lint, check:design, check:terms, check:tokens, typecheck, toàn bộ test, build xanh. `package.json` không đổi. Vùng khoá: 0 file.
+- **PR:** #127 — **trạng thái: awaiting merge.**
