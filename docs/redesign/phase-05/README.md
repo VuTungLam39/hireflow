@@ -109,5 +109,22 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 
 - **PR:** #119 — CI xanh. **Merged:** `e9f029b`.
 - **Production smoke (Playwright, 24/11/2026):** trang công khai `/jobs` `/companies` `/login` + 1 chi tiết việc làm × 1440/1024/768/390 → 16/16 không tràn ngang, không chữ bị bóp; `--ui-primary` vẫn màu cũ; chunk `vendor-TmOoJZmz.js` (có Radix) đúng bản build. **Overlay (chủ dự án tự đăng nhập Admin công ty; chỉ mở rồi huỷ, không xác nhận thao tác nào)** — `/users`, `/departments` × 1440/390: menu hàng mở bằng Enter, tên menu = nhãn nút, focus vào mục đầu, Escape đóng + trả focus về nút ✔; "Sửa thông tin"/"Sửa phòng ban" mở Dialog: focus vào trong, Tab bị bẫy, cuộn trang khoá, rộng 480 px (1440) / toàn màn hình 390 px (390), Escape đóng ✔.
-- **Lỗi phát hiện ở smoke:** Dialog mở **từ mục menu** → đóng thì focus rơi về đầu trang thay vì nút "Thao tác với…" (Dialog ghi nhớ phần tử focus đúng lúc menu vừa đóng, focus chưa về nút). Test jsdom cũ không có ca menu → dialog. **Hotfix:** `fix/phase05-slice2-menu-return-focus` — DropdownMenu đưa focus về nút mở trước khi chạy `onSelect`; thêm test tái hiện (đỏ trước, xanh sau). PR + merge + smoke lại: ghi bên dưới.
+- **Lỗi phát hiện ở smoke:** Dialog mở **từ mục menu** → đóng thì focus rơi về đầu trang thay vì nút "Thao tác với…" (Dialog ghi nhớ phần tử focus đúng lúc menu vừa đóng, focus chưa về nút). Test jsdom cũ không có ca menu → dialog. **Hotfix:** `fix/phase05-slice2-menu-return-focus` — DropdownMenu đưa focus về nút mở trước khi chạy `onSelect`; thêm test tái hiện (đỏ trước, xanh sau). PR #120, merge `c2f9bba`. **Smoke lại (cùng phiên đăng nhập):** `/users`, `/departments` × 1440/390 — đóng Dialog mở từ menu → focus về đúng nút "Thao tác với …" ✔ (4/4).
 - **Chưa kiểm trên trình duyệt thật:** AlertDialog (không mở để tránh chạm thao tác thật — chỉ có test jsdom), Sheet (chưa có call site), "Rút hồ sơ" trang tra cứu (cần link tra cứu).
+
+## Entry 4 — Giảm bundle route vào trước slice 3 (chủ dự án duyệt 24/11/2026)
+- **Lý do:** sau slice 2 route vào +30.14 KB, còn ~9.9 KB trước ngưỡng 40 KB; slice 3 (Popover/Tooltip kéo floating-ui) nhiều khả năng vượt.
+- **Thử và kết quả đo (gzip mức 9, tổng JS+CSS `index.html` tải/preload; mốc trước Radix = 291.21 KB):**
+  | Cách | Route vào | Radix ở route vào? |
+  |---|---|---|
+  | sau slice 2 (main) | 321.35 | có (chunk `vendor`) |
+  | nhóm chunk `radix` riêng | 321.68 | có — chunk `ui` (chứa `PageLoader` mà router import) kéo nó vào |
+  | + `MainLayout` lazy + import sâu query/schema applications | 288.71 | có |
+  | + gom module overlay vào nhóm `radix` | 289.59 | có — rolldown đặt helper dùng chung vào chunk đó, `index`/`vendor` import ngược |
+  | `vendor` loại Radix (Radix vào chunk `ui`) | 288.64 | có |
+  | **chọn: chỉ sửa router, giữ nguyên `vite.config`** | **288.44** | có (`vendor`) |
+- **Thay đổi:** `fe/src/routes/router.tsx` — `MainLayout` tải lazy (route vào công khai không còn kéo layout nội bộ + DetailHost + barrel applications); `applicationQueries`/`applicationListSchema` import thẳng file thay vì barrel `@/features/applications` (barrel kéo ApplicationDialog/CompareDialog vào route vào).
+- **Kết quả:** route vào **321.35 → 288.44 KB (−32.91 KB)**, thấp hơn mốc trước Radix 2.77 KB → dư địa so với ngưỡng 40 KB trở lại ~42.8 KB cho slice 3. **Không đạt mục tiêu ban đầu "Radix chỉ tải ở route có overlay":** Radix vẫn nằm trong `vendor` tải mọi route — tách được thì phải bỏ barrel `@/components/ui` ở route vào hoặc nạp overlay lazy; để lại, đo lại ở slice 3.
+- **Hành vi:** lần đầu vào khu nội bộ tải thêm chunk `MainLayout` (route lazy; React Router giữ màn hình cũ tới khi tải xong). Đây là thay đổi tải ở AppShell — giữ nguyên hành vi, được coi là PR chuẩn bị theo [D-10]; slice 5 xem lại.
+- **Kiểm:** format, lint, check:design, check:terms, typecheck, toàn bộ test, build (gồm prerender) xanh. `package.json` không đổi. Vùng khoá: 0 file (chỉ đổi đường import từ router).
+- **PR:** #121 — **trạng thái: awaiting merge.**

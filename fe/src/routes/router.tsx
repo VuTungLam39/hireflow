@@ -7,10 +7,10 @@ import {
   type RouteObject,
 } from 'react-router'
 import { AuthLayout } from '@/app/layouts/AuthLayout'
-import { MainLayout } from '@/app/layouts/MainLayout'
 import { PublicLayout } from '@/app/layouts/PublicLayout'
 import { PageLoader } from '@/components/ui'
-import { applicationListSchema, applicationQueries } from '@/features/applications'
+import { applicationQueries } from '@/features/applications/hooks/use-applications'
+import { applicationListSchema } from '@/features/applications/schemas/application.schema'
 import { restoreSession, sessionUnavailable } from '@/features/auth'
 import { parseListParams } from '@/hooks/use-list-params'
 import { Permission } from '@/lib/permissions'
@@ -143,7 +143,10 @@ export const routes: RouteObject[] = [
         loader: protectedLoader,
         children: [
           {
-            element: <MainLayout />,
+            // layout nội bộ tải lazy: route vào công khai không kéo code nội bộ (ngưỡng 40 KB, Phase 03)
+            lazy: async () => ({
+              Component: (await import('@/app/layouts/MainLayout')).MainLayout,
+            }),
             children: [
               requires(
                 Permission.DashboardRead,
