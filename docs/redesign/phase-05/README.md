@@ -32,5 +32,5 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
   - [ ] dashboard/FunnelReport — "Đã nhận" (slice 12)
   - [ ] jobs/JobsPage, ranking/RankingTable — "Xếp hạng ứng viên" (slice 6/9)
   - [ ] public-jobs/PrivacyPolicyPage — "bằng chứng", "nhận xét phỏng vấn" (slice 4; văn bản pháp lý → hỏi chủ dự án trước khi đổi)
-- **PR:** _(điền sau khi mở)_ — **trạng thái: awaiting merge.**
+- **PR:** #112 — CI xanh (FE lint/typecheck/test/build gồm check:tokens + check:terms; BE lint/unit/build; BE e2e; Vercel preview deploy). Preview trả 302 (Vercel Deployment Protection) → chưa so giao diện 1440/1024/768/390 và chưa đo LCP; cần chủ dự án mở preview khi đã đăng nhập Vercel, hoặc kiểm sau merge. **Trạng thái: awaiting merge.**
 - **Merge hash / production smoke:** chưa có.
