@@ -116,6 +116,10 @@ jobs:
       - run: npm run lint
       - name: Design Spec v1.0 – no raw colors, gradients, page animations, AI wording
         run: npm run check:design
+      - name: DESIGN.md lint + generated theme in sync (Phase 05 slice 0)
+        run: npm run check:tokens
+      - name: GLOSSARY Avoid list in UI copy (Phase 05 slice 0)
+        run: npm run check:terms
       - run: npm run typecheck
       - run: npm test
       - run: npm run build

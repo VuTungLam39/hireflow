@@ -61,7 +61,7 @@ describe('FunnelReport', () => {
     const first = await stageRow('Mới')
     expect(first).toHaveTextContent(`Mới${cohort.toLocaleString('vi-VN')}`)
     expect(first).toHaveTextContent('Mọi hồ sơ đã nộp')
-    for (const label of ['Sàng lọc', 'Phỏng vấn', 'Đề nghị', 'Đã nhận']) {
+    for (const label of ['Sàng lọc', 'Phỏng vấn', 'Offer', 'Đã nhận việc']) {
       expect(await stageRow(label)).toHaveTextContent(/từ bước trước/)
     }
     expect(funnelUrls[0].searchParams.get('from')).toBe(from)

@@ -1,14 +1,15 @@
 import type { BadgeTone } from '@/components/ui'
+import { APPLICATION_STATUS_LABEL as L, SCORE_FLAG_LABEL } from '@/lib/terms'
 
 /** Nguồn sự thật cho trạng thái application (kickoff mục 5.2). Giá trị khớp BE. */
 export const APPLICATION_STATUS = {
-  NEW: { label: 'Mới', tone: 'neutral', terminal: false, step: 0 },
-  SCREENING: { label: 'Sàng lọc', tone: 'info', terminal: false, step: 1 },
-  INTERVIEW: { label: 'Phỏng vấn', tone: 'warning', terminal: false, step: 2 },
-  OFFER: { label: 'Đề nghị', tone: 'info', terminal: false, step: 3 },
-  HIRED: { label: 'Đã nhận', tone: 'success', terminal: true, step: 4 },
-  REJECTED: { label: 'Từ chối', tone: 'danger', terminal: true, step: -1 },
-  WITHDRAWN: { label: 'Ứng viên rút', tone: 'neutral', terminal: true, step: -1 },
+  NEW: { label: L.NEW.internal, tone: 'neutral', terminal: false, step: 0 },
+  SCREENING: { label: L.SCREENING.internal, tone: 'info', terminal: false, step: 1 },
+  INTERVIEW: { label: L.INTERVIEW.internal, tone: 'warning', terminal: false, step: 2 },
+  OFFER: { label: L.OFFER.internal, tone: 'info', terminal: false, step: 3 },
+  HIRED: { label: L.HIRED.internal, tone: 'success', terminal: true, step: 4 },
+  REJECTED: { label: L.REJECTED.internal, tone: 'danger', terminal: true, step: -1 },
+  WITHDRAWN: { label: L.WITHDRAWN.internal, tone: 'neutral', terminal: true, step: -1 },
 } as const satisfies Record<
   string,
   { label: string; tone: BadgeTone; terminal: boolean; step: number }
@@ -46,8 +47,12 @@ export const AI_STATUS = {
 export type AiStatus = keyof typeof AI_STATUS
 
 export const SCORE_FLAGS = {
-  MISSING_MUST: { label: 'Thiếu tiêu chí bắt buộc', short: 'thiếu bắt buộc', tone: 'warning' },
-  UNVERIFIED_EVIDENCE: { label: 'Có bằng chứng bị loại', short: 'căn cứ bị loại', tone: 'danger' },
+  MISSING_MUST: { label: SCORE_FLAG_LABEL.MISSING_MUST, short: 'thiếu bắt buộc', tone: 'warning' },
+  UNVERIFIED_EVIDENCE: {
+    label: SCORE_FLAG_LABEL.UNVERIFIED_EVIDENCE,
+    short: 'căn cứ bị loại',
+    tone: 'danger',
+  },
 } as const satisfies Record<string, { label: string; short: string; tone: BadgeTone }>
 export type ScoreFlag = keyof typeof SCORE_FLAGS
 

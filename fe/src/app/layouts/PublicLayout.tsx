@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet } from 'react-router'
 import { useFocusMainOnNavigate } from '@/hooks/use-focus-main'
+import { SurfaceProvider } from '@/lib/surface-provider'
 import { cn } from '@/lib/utils'
 import { paths } from '@/routes/paths'
 import { DemoNotice } from '@/features/public-jobs'
@@ -59,7 +60,9 @@ export function PublicLayout() {
         className="mx-auto w-full max-w-[960px] flex-1 px-4 pt-10 pb-16 outline-none sm:pt-14"
       >
         <DemoNotice className="mb-8" />
-        <Outlet />
+        <SurfaceProvider value="public">
+          <Outlet />
+        </SurfaceProvider>
       </main>
       <footer className="border-line type-caption border-t">
         <div className="mx-auto flex max-w-[960px] flex-wrap items-center justify-between gap-2 px-4 py-6">
