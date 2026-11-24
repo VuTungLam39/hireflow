@@ -26,7 +26,7 @@ export const JOB_SORT_FIELDS = ['createdAt', 'title', 'publishedAt'] as const
 export const PIPELINE_STAGES = [
   { key: 'new', label: 'Mới', short: 'mới' },
   { key: 'inProgress', label: 'Đang xử lý', short: 'đang xử lý' },
-  { key: 'hired', label: 'Đã nhận', short: 'nhận' },
+  { key: 'hired', label: 'Đã nhận việc', short: 'nhận việc' },
   { key: 'closed', label: 'Đã loại', short: 'loại' },
 ] as const
 

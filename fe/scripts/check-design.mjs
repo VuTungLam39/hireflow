@@ -49,7 +49,7 @@ for (const rule of rules) {
   const where = new Map()
   for (const file of files) {
     if (rule.skip?.test(file)) continue
-    if (file.endsWith('index.css') && rule.name !== 'Gradient') continue
+    if (/index\.css$|[\\/]styles[\\/]/.test(file) && rule.name !== 'Gradient') continue
     const n = readFileSync(file, 'utf8').match(rule.re)?.length ?? 0
     if (n) {
       hits += n
