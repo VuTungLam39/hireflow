@@ -1,0 +1,15 @@
+# 08 — Design Decision Log (Phase 02)
+
+| ID | Date | Decision | Alternatives | Reason |
+|---|---|---|---|---|
+| DD-01 | 24/11/2026 | **Direction A "Hồ sơ có căn cứ"** chosen, with B's table system (sticky identity column, column priority, saved views, inline expansion) | B "Bàn điều phối" (32/45), C "Một việc mỗi lúc" (32/45) | A is the only direction whose structure is the product promise (evidence-backed scoring, RR-16); A's weaknesses (density, two typefaces) are adjustable parameters, B's (generic identity, second public skin) and C's (weak ranking/compare, mobile-first against DL-18) are structural. A's text-layer-as-document presentation aligns with SG-03 remediation R3. B and C closed on structural grounds. |
+| DD-02 | 24/11/2026 | Accepted trade-off: fewer rows per screen than B by default; compact mode mitigates | — | file 06 |
+| DD-03 | 24/11/2026 | Score band labels **Phù hợp cao / Phù hợp một phần / Phù hợp thấp**; thresholds 70/40 recorded as current scoring configuration (`SCORE_GOOD`/`SCORE_FAIR`), not design tokens — if thresholds change, labels stay | keep unnamed bands | one vocabulary family with "Mức phù hợp" and "Khớp một phần" |
+| DD-04 | 24/11/2026 | **Khớp một phần** replaces "Một phần" | — | per-criterion family Khớp / Khớp một phần / Không thấy trong CV |
+| DD-05 | 24/11/2026 | **Có căn cứ bị loại** replaces "Có bằng chứng bị loại" | — | GLOSSARY: "Căn cứ" settled, "bằng chứng" on Avoid list |
+| DD-06 | 24/11/2026 | Public tracking page never exposes Offer (OFFER/HIRED/REJECTED → "Đã có kết quả") | — | scope column; existing BR-APP-14 |
+| DD-07 | 24/11/2026 | Terminology table finalized in GLOSSARY "Thuật ngữ giao diện" with scope column | — | [D-09]; used verbatim by Phase 03 and every Phase 05 slice |
+| DD-08 | 24/11/2026 | **No dark mode** in this redesign; semantic tokens kept clean for a later addition | dark mode now | [D-09] standing decision, not reopened by the owner |
+| DD-09 | 24/11/2026 | Concept freeze gate on A only (3 screens, 4 widths); one revision round applied to parameters (dot border, column threshold, mobile rail, badge) | concepts for B/C | B/C lost structurally; mockups would not change that |
+| DD-10 | 24/11/2026 | Recorded deviation: plan §02.9 names `frontend-design` — not installed; `ui-ux-pro-max`, `emil-design-eng` present but not run; palettes hand-picked against WCAG (now measured, file 07 §3), motion written directly | — | acceptable per owner; a frontend-design pass, if wanted, is a Phase 03 critique input alongside impeccable |
+| DD-11 | 24/11/2026 | Serif face loads only on document routes | serif everywhere | protects entry-page LCP (RR-14, F-24) |

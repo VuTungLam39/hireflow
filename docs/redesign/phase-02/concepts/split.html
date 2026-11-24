@@ -1,0 +1,27 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="a.css"><title>Concept A — Chi tiết hồ sơ</title><style>
+.split{display:grid;grid-template-columns:minmax(0,3fr) minmax(280px,2fr);gap:16px}
+.hdr{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cv{font-size:16px;line-height:1.7;max-width:72ch}.cv h2.sec{font-family:"Be Vietnam Pro",sans-serif;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:16px 0 4px}
+.crit{list-style:none;margin:0;padding:0}.crit li{border-bottom:1px solid var(--rule);padding:10px 0}
+.crit .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#F3EEE3;font-weight:600;font-size:12px;margin-right:6px}
+.q{font-family:"Source Serif 4",serif;font-style:italic;margin:4px 0 0 28px}
+@media (max-width:900px){.split{grid-template-columns:1fr}.side{order:-1}}
+</style></head><body>
+<div class="concept">CONCEPT — Hướng A "Hồ sơ có căn cứ" · tài liệu khám phá, không phải trạng thái sản phẩm</div>
+<div class="app"><nav class="rail" aria-label="Điều hướng chính"><b>HireFlow</b><a href="dashboard.html">◷ <span>Hôm nay</span></a><a href="#">▤ <span>Tin tuyển dụng</span></a><a href="ledger.html" class="on">☰ <span>Hồ sơ</span></a><a href="#">◎ <span>Kho ứng viên</span></a><a href="#">◫ <span>Phỏng vấn</span></a><a href="#">⌂ <span>Công ty</span></a></nav>
+<main>
+<div class="hdr"><div><h1>Nguyễn Thị Hồng Nhung — Kỹ sư Backend (NestJS)</h1><span class="muted">Hồ sơ ứng tuyển · nộp 18/11/2026 · </span><span class="badge warn">Phỏng vấn</span></div>
+<div><span class="num" style="font-size:24px;font-weight:600">82</span> <span class="badge ok">Phù hợp cao</span> <button class="btn">Chuyển trạng thái ▾</button></div></div>
+<div class="split"><article class="card cv serif" aria-label="CV">
+<h2 class="sec">Kinh nghiệm</h2><p><b>Công ty Cổ phần Thanh toán Việt</b> · 2021 – nay<br>Phát triển dịch vụ đối soát cho ví điện tử, <mark>5 năm làm việc với NestJS và PostgreSQL trên môi trường sản xuất</mark>, xử lý hơn hai triệu giao dịch mỗi ngày.</p>
+<p>Thiết kế lại quy trình triển khai: <mark>đóng gói toàn bộ dịch vụ bằng Docker và dựng CI/CD trên GitLab</mark>, rút thời gian phát hành từ một tuần xuống một ngày.</p>
+<h2 class="sec">Học vấn</h2><p>Đại học Bách khoa Hà Nội — Kỹ thuật phần mềm, 2019. Ưu tú: ỡ ặ ẫ ợ ữ ỹ Ẩ Ỗ Ự Ỳ.</p>
+<h2 class="sec">Kỹ năng</h2><p>Tiếng Anh giao tiếp (IELTS 7.0), đàm phán với đối tác ngân hàng, hướng dẫn thực tập sinh.</p></article>
+<aside class="side card"><h2>Tiêu chí</h2><ul class="crit">
+<li><span class="n">1</span>NestJS ≥ 3 năm <span class="badge ok">Khớp</span><span class="muted"> · Bắt buộc · trọng số 3</span><p class="q">“5 năm làm việc với NestJS và PostgreSQL trên môi trường sản xuất”</p></li>
+<li><span class="n">2</span>Docker, CI/CD <span class="badge ok">Khớp</span><span class="muted"> · Nên có</span><p class="q">“đóng gói toàn bộ dịch vụ bằng Docker và dựng CI/CD trên GitLab”</p></li>
+<li><span class="n">3</span>AWS <span class="badge">Không thấy trong CV</span><span class="muted"> · Nên có</span></li>
+<li><span class="n">4</span>Kafka ≥ 2 năm <span class="badge warn">Khớp một phần</span></li></ul>
+<p class="muted" style="margin-top:12px">Có căn cứ bị loại (1) ▸ · Phiếu đánh giá (2) · Ghi chú · Lịch sử</p></aside></div></main></div></body></html>

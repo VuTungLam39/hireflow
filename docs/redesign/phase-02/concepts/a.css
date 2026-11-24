@@ -1,0 +1,24 @@
+/* CONCEPT ONLY — Direction A "Hồ sơ có căn cứ". Throwaway exploration, not product code. */
+:root{--paper:#FAF8F4;--surface:#fff;--ink:#1C1B19;--muted:#5F5B54;--rule:#E4DFD6;--marker:#F2C94C;--marker-ink:#8A6A00;--action:#1F4E79;--ok:#2E7D4F;--warn:#9A5B00;--bad:#B3261E}
+*{box-sizing:border-box}html,body{margin:0}
+body{font:14px/1.5 "Be Vietnam Pro",system-ui,sans-serif;color:var(--ink);background:var(--paper)}
+.concept{background:#1C1B19;color:#fff;font-size:12px;padding:4px 12px;text-align:center}
+.app{display:grid;grid-template-columns:200px 1fr;min-height:100vh}
+.rail{border-right:1px solid var(--rule);padding:16px 8px;background:var(--surface)}
+.rail b{display:block;padding:4px 8px 16px;font-size:16px}
+.rail a{display:flex;gap:8px;padding:8px;border-radius:6px;color:var(--ink);text-decoration:none;min-height:36px}
+.rail a.on{background:#F3EEE3;font-weight:600}
+main{min-width:0;padding:20px 24px}
+h1{font-size:20px;margin:0 0 12px}h2{font-size:16px;margin:0 0 8px}
+.muted{color:var(--muted)}
+.btn{background:var(--action);color:#fff;border:0;border-radius:6px;padding:8px 14px;font:inherit;font-weight:600;min-height:36px}
+.badge{display:inline-block;border:1px solid currentColor;border-radius:999px;padding:0 8px;font-size:12px;font-weight:500}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.serif{font-family:"Source Serif 4",Georgia,serif}
+mark{background:var(--marker);color:var(--ink);padding:0 2px;border-radius:2px}
+.num{font-variant-numeric:tabular-nums}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:16px}
+@media (max-width:1100px){.app{grid-template-columns:56px 1fr}.rail b,.rail a span{display:none}}
+@media (max-width:600px){.app{grid-template-columns:1fr}.rail{display:flex;overflow-x:auto;border-right:0;border-bottom:1px solid var(--rule);padding:4px}.rail a{white-space:nowrap;min-height:44px;align-items:center}.rail a span{display:inline}main{padding:16px}}
+a{color:var(--action)}.rail a{color:var(--ink)}
+.row .badge{align-self:flex-start;flex:none}

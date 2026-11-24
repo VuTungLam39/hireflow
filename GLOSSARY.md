@@ -85,3 +85,54 @@ _Avoid_: bằng chứng AI, lý do, giải thích
 **Xếp hạng (Ranking)**:
 The ordering of a job's applications by fit score under the current weights.
 _Avoid_: bảng điểm, leaderboard
+
+## Thuật ngữ giao diện (UI terminology table, Phase 02 [D-09])
+
+The labels every screen uses verbatim. Scope: **public** = guest/candidate pages and messages to candidates; **internal** = signed-in company screens; **both**.
+
+### Trạng thái hồ sơ (`ApplicationStatus`)
+| Code | Internal label | Public label (tracking page) | Scope |
+|---|---|---|---|
+| NEW | Mới | Đã nhận hồ sơ | both (different labels) |
+| SCREENING | Sàng lọc | Đang xem xét | both |
+| INTERVIEW | Phỏng vấn | Mời phỏng vấn | both |
+| OFFER | Offer | Đã có kết quả | both — public never reveals Offer |
+| HIRED | Đã nhận việc | Đã có kết quả | both |
+| REJECTED | Từ chối | Đã có kết quả | both |
+| WITHDRAWN | Ứng viên rút | Bạn đã rút hồ sơ | both |
+_Avoid_: Đề nghị (OFFER), Đã nhận (HIRED), bước/giai đoạn as labels.
+
+### Offer (`OfferStatus`, internal)
+Bản nháp · Chờ duyệt · Đã duyệt · Đã gửi ứng viên · Ứng viên đã nhận · Ứng viên từ chối · Đã rút · Hết hạn trả lời. Actions: Tạo Offer · Gửi duyệt · Duyệt · Trả lại · Gửi Offer · Rút Offer. "Offer" always capitalised (F-16).
+
+### Chấm điểm (internal)
+| Code / value | Label |
+|---|---|
+| score 0–100 | Mức phù hợp |
+| ≥70 | Phù hợp cao |
+| 40–69 | Phù hợp một phần |
+| <40 | Phù hợp thấp |
+| match 1 / 0.5 / 0 | Khớp / Khớp một phần / Không thấy trong CV |
+| MISSING_MUST | Thiếu tiêu chí bắt buộc |
+| UNVERIFIED_EVIDENCE | Có căn cứ bị loại |
+| AiStatus PENDING / PROCESSING / DONE / FAILED | Chờ đọc CV / Đang đọc CV / Đã chấm / Không đọc được CV |
+| criterion MUST / NICE | Bắt buộc / Nên có |
+| ranking page | Xếp hạng hồ sơ |
+_Avoid_: điểm AI, bằng chứng, "Xếp hạng ứng viên".
+
+### Tin tuyển dụng (`JobStatus`)
+| Code | Internal | Public |
+|---|---|---|
+| DRAFT | Nháp | — (not shown) |
+| OPEN | Đang tuyển | (listed) |
+| CLOSED / expired | Đã đóng | Đã hết hạn (detail page ≤30 days, DL-17) |
+Counting: internal "tin", public "vị trí" (DL-11).
+
+### Shared screen states
+| State | Copy | Scope |
+|---|---|---|
+| not found (never existed or out of scope, ADR-0002) | Không tìm thấy … (hồ sơ / tin tuyển dụng / ứng viên) | internal |
+| public unknown URL / expired >30 days | Không tìm thấy trang này | public |
+| missing action permission (in scope) | Bạn không có quyền thực hiện thao tác này | internal |
+| expired job (≤30 days) | Việc làm này đã hết hạn | public |
+| stale data | Dữ liệu lúc {giờ} · Tải lại | both |
