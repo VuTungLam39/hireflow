@@ -31,6 +31,8 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
   - [ ] candidates/CandidateSections — "bằng chứng" (slice 12)
   - [ ] dashboard/FunnelReport — "Đã nhận" (slice 12)
   - [ ] jobs/JobsPage, ranking/RankingTable — "Xếp hạng ứng viên" (slice 6/9)
-  - [ ] public-jobs/PrivacyPolicyPage — "bằng chứng", "nhận xét phỏng vấn" (slice 4; văn bản pháp lý → hỏi chủ dự án trước khi đổi)
+  - [x] public-jobs/PrivacyPolicyPage — "bằng chứng", "nhận xét phỏng vấn": **miễn trừ** (quyết định chủ dự án 24/11/2026, bên dưới); giữ nguyên câu chữ, mục baseline gỡ khi slice 1 thu hẹp phạm vi quét
+- **Quyết định chủ dự án (24/11/2026):** văn bản pháp lý/chính sách nằm **ngoài phạm vi** guard thuật ngữ; guard chỉ áp cho UI copy và thuật ngữ tính năng. Hai chỗ trong trang chính sách bảo mật ("bằng chứng", "nhận xét phỏng vấn") được chấp nhận là ngôn ngữ pháp lý thông thường; không sửa câu chữ chính sách.
+- **Xếp hàng cho Slice 1:** (1) thu hẹp phạm vi quét của `check:terms` về UI copy (loại văn bản pháp lý/chính sách, gỡ 2 mục PrivacyPolicyPage khỏi baseline); (2) thêm file giấy phép OFL cho font tự host; (3) gỡ 6 token trùng tên.
 - **PR:** #112 — CI xanh (FE lint/typecheck/test/build gồm check:tokens + check:terms; BE lint/unit/build; BE e2e; Vercel preview deploy). Preview trả 302 (Vercel Deployment Protection) → chưa so giao diện 1440/1024/768/390 và chưa đo LCP; cần chủ dự án mở preview khi đã đăng nhập Vercel, hoặc kiểm sau merge. **Trạng thái: awaiting merge.**
 - **Merge hash / production smoke:** chưa có.
