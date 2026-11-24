@@ -165,4 +165,4 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
   - [ ] `applications/pages/ApplicationsPage` (vùng khoá) → `FilterTabs` — slice 7.
   - [ ] DetailDialog → Radix Tabs (tab có panel) — slice 5; ApplicationDetailPage → Radix Tabs — slice 8. Khi đó `Tabs` chỉ còn nghĩa tab-có-panel.
   - [ ] **Đo bundle RichSelect** ở slice đầu tiên gắn nó vào trang thật (hiện bị tree-shake, chưa đo — Entry 5).
-- **PR:** _(điền sau khi mở)_ — **trạng thái: awaiting merge.**
+- **PR:** #124 — **trạng thái: awaiting merge.**
