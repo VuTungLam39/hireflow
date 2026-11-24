@@ -146,4 +146,4 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
   - Tabs `segmented` (thay SegmentedControl) chưa làm.
   - Tooltip: prop vẫn là `label` (contract ghi `content`) để không phải sửa call site vùng khoá.
 - **`package.json`:** thêm 3 dependency Radix (runtime).
-- **PR:** _(điền sau khi mở)_ — **trạng thái: awaiting merge.**
+- **PR:** #123 — **trạng thái: awaiting merge.**
