@@ -1,0 +1,39 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>P5 — Phiếu đánh giá (prototype)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="proto.css"><script src="proto.js"></script>
+<style>
+.grid2{display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}}
+.rate{display:flex;gap:4px;flex-wrap:wrap}.rate label{font-weight:400;border:1px solid var(--color-border-strong);border-radius:6px;padding:6px 10px;cursor:pointer;min-height:36px}
+.rate label{position:relative}.rate input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}.rate input:checked+span{font-weight:600}.rate label:has(input:checked){background:var(--color-surface-sunken);border-color:var(--color-primary)}
+.rate label:has(input:focus-visible){outline:2px solid var(--color-focus-ring);outline-offset:2px}
+fieldset{border:0;padding:0;margin:0 0 16px}legend{font-weight:500;margin-bottom:6px}
+</style></head><body>
+<div class="proto-bar">PROTOTYPE P5 — Phiếu đánh giá · internally validated only · không phải sản phẩm</div>
+<a class="skip" href="#main">Bỏ qua tới nội dung</a>
+<div class="rail-menu"><b>HireFlow</b><button class="btn ghost" aria-label="Mở điều hướng">☰</button></div>
+<div class="app"><nav class="rail" aria-label="Điều hướng chính"><span class="brand">HireFlow</span><a href="#" aria-current="page">◫ <span>Phỏng vấn</span></a></nav>
+<main id="main" tabindex="-1">
+<div data-state="notfound" class="card state-panel"><h1>Không tìm thấy buổi phỏng vấn này</h1><p class="muted">Buổi phỏng vấn không tồn tại hoặc không được giao cho bạn.</p><a class="btn" href="#">Về danh sách phỏng vấn</a></div>
+<div data-state="loading" aria-busy="true"><h1 class="sr">Đang tải Phiếu đánh giá</h1><div class="skel" style="width:40%;height:24px"></div><div class="skel"></div><div class="skel"></div></div>
+<div data-state="ready submitted saveerror">
+<p class="small"><a href="#">Phỏng vấn</a> › 14:00 hôm nay</p>
+<h1>Phiếu đánh giá — Lê Minh Đức</h1><p class="muted">Kỹ sư Backend (NestJS) · Vòng kỹ thuật · 24/11/2026 14:00 · Phòng 3</p>
+<div class="grid2">
+<form class="card" id="ef" novalidate data-state="ready saveerror">
+<fieldset><legend>NestJS ≥ 3 năm (bắt buộc)</legend><div class="rate" role="radiogroup">
+<label><input type="radio" name="c1" value="1"><span>Chưa đạt</span></label><label><input type="radio" name="c1" value="2"><span>Đạt</span></label><label><input type="radio" name="c1" value="3"><span>Vượt kỳ vọng</span></label></div><span class="err" id="e-c1" hidden>Chọn mức đánh giá cho tiêu chí này.</span></fieldset>
+<fieldset><legend>Docker, CI/CD (nên có)</legend><div class="rate"><label><input type="radio" name="c2" value="1"><span>Chưa đạt</span></label><label><input type="radio" name="c2" value="2"><span>Đạt</span></label><label><input type="radio" name="c2" value="3"><span>Vượt kỳ vọng</span></label><label><input type="radio" name="c2" value="0"><span>Không đánh giá</span></label></div></fieldset>
+<div class="field"><label for="note">Nhận xét</label><textarea id="note" rows="4" placeholder="Điểm mạnh, điểm cần lưu ý, ví dụ cụ thể…"></textarea></div>
+<fieldset><legend>Đề xuất của bạn (bắt buộc)</legend><div class="rate"><label><input type="radio" name="rec" value="hire"><span>Nên tuyển</span></label><label><input type="radio" name="rec" value="maybe"><span>Cân nhắc</span></label><label><input type="radio" name="rec" value="no"><span>Không nên tuyển</span></label></div><span class="err" id="e-rec" hidden>Chọn đề xuất của bạn.</span></fieldset>
+<div class="alert b-bad" id="saveErr" hidden role="alert">Chưa gửi được Phiếu đánh giá · nội dung vẫn được giữ. <button type="button" class="btn" onclick="$('#saveErr').hidden=true;$('#send').click()">Thử lại</button></div>
+<button class="btn primary" id="send">Gửi Phiếu đánh giá</button> <span class="muted small">Sau khi gửi, bạn không sửa được phiếu.</span></form>
+<div class="card" data-state="submitted" role="status"><h2>Đã gửi Phiếu đánh giá</h2><p>NestJS ≥ 3 năm: <b>Đạt</b> · Docker, CI/CD: <b>Vượt kỳ vọng</b></p><p>Đề xuất: <b>Nên tuyển</b></p><p class="muted small">Hiring Manager phụ trách sẽ thấy phiếu này trong chi tiết hồ sơ.</p></div>
+<aside class="card"><h2>Hồ sơ</h2><p><span class="num" style="font-size:20px;font-weight:600">74</span> <span class="badge b-ok">Phù hợp cao</span></p><ul class="small"><li>NestJS — <span class="badge b-ok">Khớp</span></li><li>Docker, CI/CD — <span class="badge b-warn">Khớp một phần</span></li></ul><a href="p1-cv-review.html">Xem CV và căn cứ</a></aside>
+</div></div></main></div>
+<script>
+stateSwitcher(['ready','loading','notfound','submitted','saveerror']);
+$('#send')&&($('#send').onclick=e=>{e.preventDefault();let first=null;for(const n of ['c1','rec']){const ok=!!$(`input[name=${n}]:checked`);$('#e-'+n).hidden=ok;if(!ok&&!first)first=$(`input[name=${n}]`);}
+ if(first){first.focus();return;}if(state==='saveerror'){$('#saveErr').hidden=false;return;}mark('submitted');params.set('state','submitted');location.search=params.toString();});
+</script></body></html>

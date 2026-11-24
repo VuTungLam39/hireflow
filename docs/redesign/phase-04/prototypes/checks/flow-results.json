@@ -1,0 +1,444 @@
+[
+ {
+  "name": "P1 evidence+decision (T2 proxy)",
+  "w": 1440,
+  "ok": true,
+  "actions": 2,
+  "systemMs": 1274,
+  "steps": [
+   [
+    "focus criterion 1 → evidence in CV",
+    119
+   ],
+   [
+    "open Chuyển trạng thái",
+    99
+   ]
+  ]
+ },
+ {
+  "name": "P1 full reject with reason",
+  "w": 1440,
+  "ok": true,
+  "actions": 5,
+  "systemMs": 2091,
+  "steps": [
+   [
+    "open Chuyển trạng thái",
+    88
+   ],
+   [
+    "submit without status (error recovery)",
+    38
+   ],
+   [
+    "choose Từ chối",
+    18
+   ],
+   [
+    "choose reason",
+    7
+   ],
+   [
+    "confirm",
+    864
+   ]
+  ]
+ },
+ {
+  "name": "P2 ranked list → one hồ sơ evidence",
+  "w": 1440,
+  "ok": true,
+  "actions": 1,
+  "systemMs": 1072,
+  "steps": [
+   [
+    "expand row 1 evidence",
+    102
+   ]
+  ]
+ },
+ {
+  "name": "P2 change weight → order updates",
+  "w": 1440,
+  "ok": true,
+  "actions": 1,
+  "systemMs": 1013,
+  "steps": [
+   [
+    "set AWS weight 3",
+    8
+   ]
+  ]
+ },
+ {
+  "name": "P3 list → open hồ sơ (T1)",
+  "w": 1440,
+  "ok": true,
+  "actions": 2,
+  "systemMs": 1817,
+  "steps": [
+   [
+    "open quick view",
+    164
+   ],
+   [
+    "Mở chi tiết",
+    502
+   ]
+  ]
+ },
+ {
+  "name": "P3 search + filter + bulk",
+  "w": 1440,
+  "ok": true,
+  "actions": 6,
+  "systemMs": 1407,
+  "steps": [
+   [
+    "type search",
+    73
+   ],
+   [
+    "open Bộ lọc",
+    71
+   ],
+   [
+    "tick Mới",
+    56
+   ],
+   [
+    "Áp dụng",
+    60
+   ],
+   [
+    "select first row",
+    60
+   ],
+   [
+    "bulk Sàng lọc",
+    41
+   ]
+  ]
+ },
+ {
+  "name": "P4 browse → company (T3)",
+  "w": 1440,
+  "ok": true,
+  "actions": 3,
+  "systemMs": 1209,
+  "steps": [
+   [
+    "open Bộ lọc",
+    90
+   ],
+   [
+    "Áp dụng",
+    65
+   ],
+   [
+    "open company page",
+    84
+   ]
+  ]
+ },
+ {
+  "name": "P4 apply (proxy)",
+  "w": 1440,
+  "ok": true,
+  "actions": 7,
+  "systemMs": 1335,
+  "steps": [
+   [
+    "Ứng tuyển",
+    112
+   ],
+   [
+    "submit empty (error recovery)",
+    81
+   ],
+   [
+    "fill name",
+    10
+   ],
+   [
+    "fill email",
+    10
+   ],
+   [
+    "attach CV",
+    11
+   ],
+   [
+    "consent",
+    48
+   ],
+   [
+    "Gửi hồ sơ",
+    70
+   ]
+  ]
+ },
+ {
+  "name": "P4 expired job (DL-17)",
+  "w": 1440,
+  "ok": true,
+  "actions": 0,
+  "systemMs": 946,
+  "steps": []
+ },
+ {
+  "name": "P5 Phiếu đánh giá (proxy)",
+  "w": 1440,
+  "ok": true,
+  "actions": 5,
+  "systemMs": 1299,
+  "steps": [
+   [
+    "submit empty (error recovery)",
+    86
+   ],
+   [
+    "rate NestJS",
+    34
+   ],
+   [
+    "rate Docker",
+    37
+   ],
+   [
+    "recommendation",
+    52
+   ],
+   [
+    "Gửi Phiếu đánh giá",
+    138
+   ]
+  ]
+ },
+ {
+  "name": "P1 evidence+decision (T2 proxy)",
+  "w": 390,
+  "ok": true,
+  "actions": 2,
+  "systemMs": 1275,
+  "steps": [
+   [
+    "focus criterion 1 → evidence in CV",
+    101
+   ],
+   [
+    "open Chuyển trạng thái",
+    81
+   ]
+  ]
+ },
+ {
+  "name": "P1 full reject with reason",
+  "w": 390,
+  "ok": true,
+  "actions": 5,
+  "systemMs": 2140,
+  "steps": [
+   [
+    "open Chuyển trạng thái",
+    95
+   ],
+   [
+    "submit without status (error recovery)",
+    68
+   ],
+   [
+    "choose Từ chối",
+    22
+   ],
+   [
+    "choose reason",
+    9
+   ],
+   [
+    "confirm",
+    869
+   ]
+  ]
+ },
+ {
+  "name": "P2 ranked list → one hồ sơ evidence",
+  "w": 390,
+  "ok": true,
+  "actions": 1,
+  "systemMs": 1128,
+  "steps": [
+   [
+    "expand row 1 evidence",
+    95
+   ]
+  ]
+ },
+ {
+  "name": "P2 change weight → order updates",
+  "w": 390,
+  "ok": true,
+  "actions": 1,
+  "systemMs": 1449,
+  "steps": [
+   [
+    "set AWS weight 3",
+    14
+   ]
+  ]
+ },
+ {
+  "name": "P3 list → open hồ sơ (T1)",
+  "w": 390,
+  "ok": true,
+  "actions": 2,
+  "systemMs": 1554,
+  "steps": [
+   [
+    "open quick view",
+    159
+   ],
+   [
+    "Mở chi tiết",
+    350
+   ]
+  ]
+ },
+ {
+  "name": "P3 search + filter + bulk",
+  "w": 390,
+  "ok": true,
+  "actions": 6,
+  "systemMs": 1389,
+  "steps": [
+   [
+    "type search",
+    65
+   ],
+   [
+    "open Bộ lọc",
+    74
+   ],
+   [
+    "tick Mới",
+    69
+   ],
+   [
+    "Áp dụng",
+    55
+   ],
+   [
+    "select first row",
+    61
+   ],
+   [
+    "bulk Sàng lọc",
+    51
+   ]
+  ]
+ },
+ {
+  "name": "P4 browse → company (T3)",
+  "w": 390,
+  "ok": true,
+  "actions": 3,
+  "systemMs": 1113,
+  "steps": [
+   [
+    "open Bộ lọc",
+    81
+   ],
+   [
+    "Áp dụng",
+    57
+   ],
+   [
+    "open company page",
+    68
+   ]
+  ]
+ },
+ {
+  "name": "P4 apply (proxy)",
+  "w": 390,
+  "ok": true,
+  "actions": 7,
+  "systemMs": 1279,
+  "steps": [
+   [
+    "Ứng tuyển",
+    107
+   ],
+   [
+    "submit empty (error recovery)",
+    74
+   ],
+   [
+    "fill name",
+    11
+   ],
+   [
+    "fill email",
+    12
+   ],
+   [
+    "attach CV",
+    11
+   ],
+   [
+    "consent",
+    46
+   ],
+   [
+    "Gửi hồ sơ",
+    70
+   ]
+  ]
+ },
+ {
+  "name": "P4 expired job (DL-17)",
+  "w": 390,
+  "ok": true,
+  "actions": 0,
+  "systemMs": 975,
+  "steps": []
+ },
+ {
+  "name": "P5 Phiếu đánh giá (proxy)",
+  "w": 390,
+  "ok": true,
+  "actions": 5,
+  "systemMs": 1338,
+  "steps": [
+   [
+    "submit empty (error recovery)",
+    74
+   ],
+   [
+    "rate NestJS",
+    33
+   ],
+   [
+    "rate Docker",
+    39
+   ],
+   [
+    "recommendation",
+    52
+   ],
+   [
+    "Gửi Phiếu đánh giá",
+    149
+   ]
+  ]
+ },
+ {
+  "name": "keyboard",
+  "ranking_jx_expand": true,
+  "tabs_home": "true",
+  "evidence_focus": "m1",
+  "evidence_escape_back": "c",
+  "dialog_focus_return": "decide"
+ }
+]

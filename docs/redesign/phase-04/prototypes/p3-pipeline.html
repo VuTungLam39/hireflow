@@ -1,0 +1,64 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>P3 — Hồ sơ ứng tuyển (prototype)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="proto.css"><script src="proto.js"></script>
+<style>
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}.tools input[type=search]{flex:1 1 200px;min-width:0}
+.wrap{max-height:62vh}
+.bulk{position:sticky;bottom:0;background:var(--color-foreground);color:#fff;padding:8px 12px;border-radius:8px;margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bulk .btn{background:#fff}
+@media (max-width:1519px){.p4{display:none}}
+@media (max-width:1100px){.p3,.p2{display:none}.sub{display:block}td:nth-child(2){white-space:normal;line-height:1.3;padding:4px 12px}}
+@media (max-width:600px){table,tbody,tr{display:block}thead{display:none}tr{border-bottom:1px solid var(--color-border);padding:8px 12px;position:relative}td{display:inline-block;height:auto;border:0;padding:2px 8px 2px 0}td:first-child{position:absolute;right:8px;left:auto;top:8px;width:44px;height:44px;padding:0;display:grid;place-items:center;box-shadow:none;background:none}td:nth-child(2){padding-right:52px}td:nth-child(2){display:block}.wrap{max-height:none}}
+</style></head><body>
+<div class="proto-bar">PROTOTYPE P3 — Pipeline hồ sơ · internally validated only · không phải sản phẩm</div>
+<a class="skip" href="#main">Bỏ qua tới nội dung</a>
+<div class="rail-menu"><b>HireFlow</b><button class="btn ghost" aria-label="Mở điều hướng">☰</button></div>
+<div class="app"><nav class="rail" aria-label="Điều hướng chính"><span class="brand">HireFlow</span><a href="#">◷ <span>Hôm nay</span></a><a href="#">▤ <span>Tin tuyển dụng</span></a><a href="#" aria-current="page">☰ <span>Hồ sơ</span></a></nav>
+<main id="main" tabindex="-1"><h1>Hồ sơ ứng tuyển <span class="muted num" style="font-weight:400;font-size:16px" id="cnt"></span></h1>
+<div data-state="stale" class="notice" role="status">Dữ liệu lúc 09:12 · <a href="?state=ready">Tải lại</a></div>
+<div class="tools"><label class="small" for="q" style="position:absolute;left:-999px">Tìm hồ sơ</label><input id="q" type="search" placeholder="Tìm theo tên, email…" oninput="mark('search');render()">
+<button class="btn" data-open="filters" id="fbtn">Bộ lọc (<span id="fc">0</span>)</button><span class="muted small">View: Tất cả</span></div>
+<div data-state="loading"><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+<div data-state="error" class="card state-panel" role="alert"><h2>Chưa tải được danh sách hồ sơ</h2><p class="muted">Kết nối tới máy chủ bị gián đoạn.</p><a class="btn primary" href="?state=ready">Thử lại</a></div>
+<div data-state="ready stale"><div class="wrap"><table><thead><tr><th><input type="checkbox" aria-label="Chọn tất cả" id="all"></th><th>Ứng viên</th><th>Mức phù hợp</th><th>Trạng thái</th><th class="p2">Tin tuyển dụng</th><th class="p3">Nguồn</th><th class="p4">Ngày nộp</th></tr></thead><tbody id="tb"></tbody></table></div>
+<div id="empty" class="card state-panel" hidden><h2>Không có hồ sơ khớp bộ lọc</h2><p class="muted">Thử bỏ bớt điều kiện lọc.</p><button class="btn" onclick="clearF()">Xoá lọc</button></div>
+<div class="bulk" id="bulk" hidden><span id="selc"></span><button class="btn" onclick="bulk('Sàng lọc')">Chuyển sang Sàng lọc</button><button class="btn" onclick="bulk('Phỏng vấn')">Chuyển sang Phỏng vấn</button><button class="btn" data-open="bulkReject">Từ chối…</button></div>
+<p class="small muted">J/K di chuyển · Enter xem nhanh · Space chọn</p></div>
+</main></div>
+<dialog id="filters" aria-labelledby="ft"><div class="d-body"><h2 id="ft">Bộ lọc</h2>
+<fieldset style="border:0;padding:0"><legend class="small">Trạng thái</legend><label style="font-weight:400"><input type="checkbox" value="Mới" class="f"> Mới</label><br><label style="font-weight:400"><input type="checkbox" value="Sàng lọc" class="f"> Sàng lọc</label><br><label style="font-weight:400"><input type="checkbox" value="Phỏng vấn" class="f"> Phỏng vấn</label></fieldset>
+<div class="field" style="margin-top:12px"><label for="band">Mức phù hợp</label><select id="band"><option value="">Tất cả</option><option value="70">Phù hợp cao</option><option value="40">Từ Phù hợp một phần</option></select></div></div>
+<div class="d-foot"><button class="btn" onclick="clearF()">Xoá lọc</button><button class="btn primary" data-close onclick="mark('filter');setTimeout(render)">Áp dụng</button></div></dialog>
+<dialog id="qv" class="sheet" aria-labelledby="qvt"><div class="d-body"><p class="small muted">Xem nhanh</p><h2 id="qvt"></h2><p id="qvm" class="muted"></p>
+<h3>Căn cứ nổi bật</h3><ul class="serif" style="font-style:italic"><li>“5 năm làm việc với NestJS và PostgreSQL”</li><li>“đóng gói dịch vụ bằng Docker”</li></ul>
+<p class="small muted">Để chuyển trạng thái, mở chi tiết hồ sơ.</p></div>
+<div class="d-foot"><button class="btn" id="prev">‹ Trước</button><button class="btn" id="next">Sau ›</button><a class="btn primary" href="p1-cv-review.html" onclick="mark('open detail')">Mở chi tiết</a></div></dialog>
+<dialog id="bulkReject" aria-labelledby="brt"><div class="d-body"><h2 id="brt">Từ chối hồ sơ đã chọn</h2><div class="field"><label for="br">Lý do (bắt buộc, dùng chung cho cả lô)</label><select id="br"><option value="">— Chọn lý do —</option><option>Thiếu kỹ năng bắt buộc</option><option>Chưa đủ kinh nghiệm</option></select></div></div>
+<div class="d-foot"><button class="btn" data-close>Huỷ</button><button class="btn danger" onclick="if($('#br').value){this.closest('dialog').close();bulk('Từ chối')}">Xác nhận từ chối</button></div></dialog>
+<div id="toast" role="status" aria-live="polite" style="position:fixed;bottom:16px;right:16px;max-width:360px"></div>
+<script>
+stateSwitcher(['ready','loading','error','stale']);
+const ho=["Nguyễn","Trần","Lê","Phạm","Hoàng","Huỳnh","Võ","Đặng"],dem=["Thị Hồng","Quốc","Minh","Thu","Ngọc","Văn"],ten=["Nhung","Bảo","Đức","Hà","Trường","Phượng","Khoa","Yến"],ST=["Mới","Sàng lọc","Phỏng vấn","Offer","Từ chối"],J=["Kỹ sư Backend (NestJS)","Chuyên viên Kinh doanh B2B","Lập trình viên Mobile"],SRC=["Trang tuyển dụng","HR tải hộ","Mời từ hồ sơ cũ"];
+const D=Array.from({length:64},(_,i)=>({id:i,n:ho[i%8]+" "+dem[i%6]+" "+ten[(i*3)%8],s:Math.round(97-i*1.4),st:ST[i%5],j:J[i%3],src:SRC[i%3],d:(1+i%28)+"/11"}));
+let rows=[],sel=new Set(),cur=0;
+function render(){const q=$('#q').value.toLowerCase(),fs=$$('.f:checked').map(x=>x.value),b=+$('#band').value||0;$('#fc').textContent=fs.length+(b?1:0);
+ rows=D.filter(r=>r.n.toLowerCase().includes(q)&&(!fs.length||fs.includes(r.st))&&r.s>=b);
+ $('#cnt').textContent='· '+rows.length+' hồ sơ';$('#empty').hidden=rows.length>0;
+ $('#tb').innerHTML=rows.map((r,i)=>{const band=r.s>=70?['Phù hợp cao','b-ok']:r.s>=40?['Phù hợp một phần','b-warn']:['Phù hợp thấp','b-neutral'],tone={"Phỏng vấn":"b-warn","Offer":"b-ok","Từ chối":"b-bad"}[r.st]||"b-neutral";
+ return `<tr data-i="${i}" tabindex="-1"><td><input type="checkbox" aria-label="Chọn ${r.n}" ${sel.has(r.id)?'checked':''} data-id="${r.id}"></td><td><a href="#" data-qv="${i}"><b>${r.n}</b></a><div class="sub">${r.j} · ${r.src}</div></td><td class="num"><b>${r.s}</b> <span class="badge ${band[1]}">${band[0]}</span></td><td><span class="badge ${tone}">${r.st}</span></td><td class="p2">${r.j}</td><td class="p3">${r.src}</td><td class="p4 num">${r.d}/2026</td></tr>`}).join('');
+ $$('[data-qv]').forEach(a=>a.onclick=e=>{e.preventDefault();qv(+a.dataset.qv,a)});
+ $$('#tb input').forEach(c=>c.onchange=()=>{c.checked?sel.add(+c.dataset.id):sel.delete(+c.dataset.id);bar()});}
+function qv(i,t){cur=i;const r=rows[i];mark('open quick view');$('#qvt').textContent=r.n;$('#qvm').textContent=r.j+' · Mức phù hợp '+r.s+' · '+r.st;if(!$('#qv').open)openDialog('qv',t);}
+$('#prev').onclick=()=>qv(Math.max(cur-1,0));$('#next').onclick=()=>qv(Math.min(cur+1,rows.length-1));
+function bar(){$('#bulk').hidden=!sel.size;$('#selc').textContent=sel.size+' hồ sơ đã chọn';}
+$('#all').onchange=e=>{rows.forEach(r=>e.target.checked?sel.add(r.id):sel.delete(r.id));render();bar();};
+function bulk(to){let ok=0,same=0,fail=0;sel.forEach(id=>{const r=D[id];if(r.st===to)same++;else if(r.st==='Offer'){fail++}else{r.st=to;ok++}});
+ sel.clear();render();bar();$('#toast').innerHTML=`<div class="card"><b>Đã chuyển ${ok} hồ sơ sang ${to}</b><br><span class="small">${same} không đổi · ${fail} lỗi (hồ sơ ở bước Offer không chuyển theo lô)</span></div>`;setTimeout(()=>$('#toast').innerHTML='',6000);}
+function clearF(){$$('.f').forEach(x=>x.checked=false);$('#band').value='';render();}
+document.addEventListener('keydown',e=>{if(e.target.matches('input,select')||$('dialog[open]'))return;const tr=$$('#tb tr');
+ if(e.key==='j'){cur=Math.min(cur+1,tr.length-1);tr[cur].focus();tr.forEach((x,k)=>x.classList.toggle('focus',k===cur))}
+ if(e.key==='k'){cur=Math.max(cur-1,0);tr[cur].focus();tr.forEach((x,k)=>x.classList.toggle('focus',k===cur))}
+ if(e.key==='Enter'&&e.target.tagName==='TR')qv(cur,e.target);if(e.key===' '&&e.target.tagName==='TR'){e.preventDefault();e.target.querySelector('input').click();}});
+render();
+</script></body></html>

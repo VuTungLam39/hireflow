@@ -1,0 +1,70 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>P4 — Việc làm (prototype)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="proto.css"><script src="proto.js"></script>
+<style>
+body{font-size:16px}
+header.pub{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 24px;background:var(--color-surface);border-bottom:1px solid var(--color-border)}
+header.pub nav{display:flex;gap:16px;align-items:center}.menu-btn{display:none}
+@media (max-width:430px){header.pub nav{display:none}.menu-btn{display:inline-block}header.pub{padding:8px 16px}}
+.wrapc{max-width:960px;margin:0 auto;padding:20px 16px}
+.job{display:block;text-decoration:none;color:inherit;margin-bottom:12px}.job:hover{border-color:var(--color-border-strong)}
+.hero-q{background:var(--color-surface);border-left:4px solid var(--color-marker-ink);padding:8px 12px;margin:8px 0 16px}
+.view{display:none}.view.on{display:block}
+.steps{display:flex;gap:8px;flex-wrap:wrap;list-style:none;padding:0}.steps li{border:1px solid var(--color-border);border-radius:9999px;padding:2px 10px;font-size:14px}.steps li[aria-current]{border-color:var(--color-primary);color:var(--color-primary);font-weight:600}
+</style></head><body>
+<div class="proto-bar">PROTOTYPE P4 — Việc làm → Ứng tuyển → Theo dõi · internally validated only · không phải sản phẩm</div>
+<a class="skip" href="#main">Bỏ qua tới nội dung</a>
+<header class="pub"><a href="#list" style="font-weight:600;text-decoration:none;color:inherit">HireFlow</a>
+<nav aria-label="Điều hướng"><a href="#list">Việc làm</a><a href="#">Công ty</a><a href="#">Nhà tuyển dụng</a><a class="btn" href="#">Đăng nhập</a></nav>
+<button class="btn menu-btn" data-open="menu" aria-label="Mở menu">☰ Menu</button></header>
+<main id="main" class="wrapc" tabindex="-1">
+
+<section class="view" id="v-list"><h1>Việc làm đang tuyển</h1>
+<p class="hero-q small">Mỗi hồ sơ được đối chiếu với tiêu chí của công ty bằng chính câu chữ trong CV của bạn — và người thật đưa ra quyết định.</p>
+<div data-state="stale" class="notice" role="status">Dữ liệu lúc 09:12 · <a href="?state=ready#list">Tải lại</a></div>
+<div class="row" style="margin-bottom:12px"><label for="kw" style="position:absolute;left:-999px">Tìm việc làm</label><input id="kw" type="search" placeholder="Tìm vị trí, kỹ năng…" style="flex:1 1 200px;min-width:0"><button class="btn" data-open="flt">Bộ lọc (1)</button></div>
+<p class="muted small">1–3 trong 13 vị trí</p>
+<a class="job card" href="#job" onclick="mark('open job')"><h2 style="font-size:18px">Kỹ sư Backend (NestJS)</h2><p class="muted small">Công ty Cổ phần Thanh toán Việt · Hà Nội · Hạn nộp 30/11/2026</p></a><p class="small" style="margin:-8px 0 12px 16px"><a href="#company" id="colink">Xem trang Công ty Cổ phần Thanh toán Việt</a></p>
+<a class="job card" href="#expired"><h2 style="font-size:18px">Chuyên viên Kinh doanh B2B</h2><p class="muted small">Công ty TNHH Vi Mây · TP. Hồ Chí Minh · Hạn nộp 20/11/2026</p></a>
+<a class="job card" href="#job"><h2 style="font-size:18px">Lập trình viên Mobile</h2><p class="muted small">Công ty Cổ phần Thanh toán Việt · Hà Nội · Hạn nộp 05/12/2026</p></a></section>
+
+<section class="view" id="v-job"><p class="small"><a href="#list">Việc làm</a> › Kỹ sư Backend (NestJS)</p><h1>Kỹ sư Backend (NestJS)</h1>
+<p class="muted">Công ty Cổ phần Thanh toán Việt · Hà Nội · Toàn thời gian · Hạn nộp 30/11/2026</p>
+<div class="card"><h2>Yêu cầu</h2><ul><li>NestJS từ 3 năm (bắt buộc)</li><li>Docker, CI/CD (nên có)</li><li>Kafka (nên có)</li></ul></div>
+<p><a class="btn primary" href="#apply" onclick="mark('start apply')">Ứng tuyển</a></p></section>
+
+<section class="view" id="v-expired"><p class="small"><a href="#list">Việc làm</a> › Chuyên viên Kinh doanh B2B</p><h1>Chuyên viên Kinh doanh B2B</h1>
+<div class="alert b-warn" role="status"><b>Việc làm này đã hết hạn</b> (20/11/2026). Công ty không nhận thêm hồ sơ.</div>
+<p><button class="btn primary" disabled aria-disabled="true">Ứng tuyển</button></p><h2>Việc làm khác của Công ty TNHH Vi Mây</h2><a class="job card" href="#job"><b>Trưởng nhóm Chăm sóc khách hàng</b></a></section>
+
+<section class="view" id="v-apply"><h1>Ứng tuyển: Kỹ sư Backend (NestJS)</h1><ol class="steps"><li aria-current="step">1. Thông tin</li><li>2. Xong</li></ol>
+<form class="card" id="af" novalidate>
+<div class="field"><label for="nm">Họ và tên (bắt buộc)</label><input id="nm" autocomplete="name"><span class="err" id="e-nm" hidden>Vui lòng nhập họ và tên.</span></div>
+<div class="field"><label for="em">Email (bắt buộc)</label><input id="em" type="email" autocomplete="email"><span class="muted small">Link theo dõi hồ sơ sẽ gửi về email này.</span><span class="err" id="e-em" hidden>Email chưa đúng định dạng.</span></div>
+<div class="field"><label for="cv">CV (PDF hoặc DOCX, tối đa 5MB, bắt buộc)</label><input id="cv" type="file" accept=".pdf,.docx"><span class="err" id="e-cv" hidden>Chỉ nhận file PDF hoặc DOCX dưới 5MB.</span></div>
+<label style="font-weight:400"><input type="checkbox" id="ok"> Tôi đồng ý với <a href="#">chính sách dữ liệu</a> (bắt buộc)</label><span class="err" id="e-ok" hidden> Vui lòng đồng ý để tiếp tục.</span>
+<p><button class="btn primary" id="send">Gửi hồ sơ</button></p></form></section>
+
+<section class="view" id="v-done"><h1>Đã gửi hồ sơ</h1><div class="card"><p>Công ty Cổ phần Thanh toán Việt đã nhận hồ sơ của bạn cho vị trí <b>Kỹ sư Backend (NestJS)</b>.</p><p>Chúng tôi đã gửi <b>link theo dõi</b> tới email của bạn. Dùng link đó để xem hồ sơ đang ở bước nào hoặc rút hồ sơ.</p><a class="btn" href="#track">Mở trang theo dõi (minh hoạ)</a></div></section>
+
+<section class="view" id="v-track"><h1>Theo dõi hồ sơ</h1><div class="card"><p class="muted">Kỹ sư Backend (NestJS) · Công ty Cổ phần Thanh toán Việt · nộp 24/11/2026</p>
+<ol class="steps"><li>Đã nhận hồ sơ</li><li aria-current="step">Đang xem xét</li><li>Mời phỏng vấn</li><li>Đã có kết quả</li></ol>
+<p>Công ty đang xem xét hồ sơ của bạn.</p><button class="btn" data-open="wd">Rút hồ sơ</button></div></section>
+
+<section class="view" id="v-company"><p class="small"><a href="#">Công ty</a> › Công ty Cổ phần Thanh toán Việt</p><h1>Công ty Cổ phần Thanh toán Việt</h1><div class="card"><p class="muted">Fintech · Hà Nội · 200–500 nhân sự</p><p>Hạ tầng thanh toán cho ví điện tử và ngân hàng.</p></div><h2>2 vị trí đang tuyển</h2><a class="job card" href="#job"><b>Kỹ sư Backend (NestJS)</b></a><a class="job card" href="#job"><b>Lập trình viên Mobile</b></a></section>
+<section class="view" id="v-withdrawn"><h1>Bạn đã rút hồ sơ</h1><p class="muted">Công ty sẽ không xét hồ sơ này nữa.</p><a class="btn" href="#list">Xem việc làm khác</a></section>
+<section class="view" id="v-badtoken"><h1>Link theo dõi không hợp lệ hoặc đã hết hạn</h1><p class="muted">Kiểm tra lại email ứng tuyển, hoặc tìm việc làm mới.</p><a class="btn" href="#list">Xem việc làm</a></section>
+<section class="view" id="v-404"><h1>Không tìm thấy trang này</h1><p class="muted">Trang có thể đã bị gỡ hoặc việc làm đã hết hạn quá 30 ngày.</p><a class="btn" href="#list">Xem việc làm đang tuyển</a></section>
+</main>
+<dialog id="wd" aria-labelledby="wdt"><div class="d-body"><h2 id="wdt">Rút hồ sơ này?</h2><p>Công ty sẽ không xét hồ sơ của bạn cho vị trí Kỹ sư Backend (NestJS) nữa. Bạn không thể hoàn tác.</p></div><div class="d-foot"><button class="btn" data-close>Giữ hồ sơ</button><button class="btn danger" data-close onclick="location.hash='withdrawn'">Rút hồ sơ</button></div></dialog>
+<dialog id="menu" class="sheet" aria-label="Menu"><div class="d-body"><nav><p><a href="#list">Việc làm</a></p><p><a href="#">Công ty</a></p><p><a href="#">Nhà tuyển dụng</a></p><p><a href="#">Đăng nhập</a></p></nav></div><div class="d-foot"><button class="btn" data-close>Đóng</button></div></dialog>
+<dialog id="flt" aria-labelledby="flt-t"><div class="d-body"><h2 id="flt-t">Bộ lọc</h2><div class="field"><label for="city">Địa điểm</label><select id="city"><option>Tất cả</option><option selected>Hà Nội</option><option>TP. Hồ Chí Minh</option></select></div><div class="field"><label for="co">Công ty</label><input id="co" placeholder="Gõ tên công ty…"></div></div><div class="d-foot"><button class="btn">Xoá lọc</button><button class="btn primary" data-close>Áp dụng</button></div></dialog>
+<script>
+stateSwitcher(['ready','stale']);
+function show(){const v=(location.hash||'#list').slice(1);$$('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));if(!$('.view.on'))$('#v-404').classList.add('on');$('#main').focus();}
+addEventListener('hashchange',show);show();
+$('#send').onclick=e=>{e.preventDefault();let bad=null;const chk=(id,cond)=>{$('#e-'+id).hidden=cond;$('#'+id).setAttribute('aria-invalid',!cond);if(!cond&&!bad)bad=id};
+ chk('nm',$('#nm').value.trim());chk('em',/^[^@\s]+@[^@\s]+\.\w+$/.test($('#em').value));const f=$('#cv').files[0];chk('cv',f&&/\.(pdf|docx)$/i.test(f.name)&&f.size<=5e6);chk('ok',$('#ok').checked);
+ if(bad){$('#'+bad).focus();return;}mark('submitted');location.hash='done';};
+</script></body></html>

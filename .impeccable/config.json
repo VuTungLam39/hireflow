@@ -1,0 +1,113 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "arial",
+        "createdAt": "2026-11-17T16:59:32.079Z",
+        "reason": "Claude: email HTML (be/src/modules/email/email.templates.ts) cần font hệ thống vì client email không tải web font"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-02/concepts/split.html"
+        ],
+        "createdAt": "2026-11-24T06:37:30.528Z",
+        "reason": "user confirmed: owner approved Direction A paper/ink/marker palette (Phase 02 DD-01); warm paper is the direction's core concept"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-02/concepts/dashboard.html"
+        ],
+        "createdAt": "2026-11-24T06:37:30.656Z",
+        "reason": "user confirmed: owner approved Direction A paper/ink/marker palette (Phase 02 DD-01); warm paper is the direction's core concept"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-02/concepts/ledger.html"
+        ],
+        "createdAt": "2026-11-24T06:37:30.773Z",
+        "reason": "user confirmed: owner approved Direction A paper/ink/marker palette (Phase 02 DD-01); warm paper is the direction's core concept"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-02/concepts/ledger.html"
+        ],
+        "createdAt": "2026-11-24T06:45:39.147Z",
+        "reason": "Claude: flagged element is .wrap, the data-table card; text inset comes from th/td padding 12px (card mode: tr padding 12px); edge-to-edge rows intended for ledger table (DD-01)"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-04/prototypes/p1-cv-review.html"
+        ],
+        "createdAt": "2026-11-24T08:41:41.187Z",
+        "reason": "user confirmed: owner approved Direction A paper/ink/marker palette (DD-01); background is DESIGN.md token colors.background; validation prototype, not product"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-04/prototypes/p2-ranking.html"
+        ],
+        "createdAt": "2026-11-24T08:41:41.334Z",
+        "reason": "user confirmed: owner approved Direction A paper/ink/marker palette (DD-01); background is DESIGN.md token colors.background; validation prototype, not product"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-04/prototypes/p3-pipeline.html"
+        ],
+        "createdAt": "2026-11-24T08:41:41.487Z",
+        "reason": "user confirmed: owner approved Direction A paper/ink/marker palette (DD-01); background is DESIGN.md token colors.background; validation prototype, not product"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-04/prototypes/p4-public.html"
+        ],
+        "createdAt": "2026-11-24T08:41:41.729Z",
+        "reason": "user confirmed: owner approved Direction A paper/ink/marker palette (DD-01); background is DESIGN.md token colors.background; validation prototype, not product"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-04/prototypes/p5-evaluation.html"
+        ],
+        "createdAt": "2026-11-24T08:41:41.984Z",
+        "reason": "user confirmed: owner approved Direction A paper/ink/marker palette (DD-01); background is DESIGN.md token colors.background; validation prototype, not product"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-04/prototypes/p2-ranking.html"
+        ],
+        "createdAt": "2026-11-24T08:41:42.207Z",
+        "reason": "Claude: flagged .wrap is the DataTable card; cell padding 12px provides the inset (same false positive as phase-02 ledger)"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "docs/redesign/phase-04/prototypes/p3-pipeline.html"
+        ],
+        "createdAt": "2026-11-24T08:41:42.378Z",
+        "reason": "Claude: flagged .wrap is the DataTable card; cell padding 12px provides the inset (same false positive as phase-02 ledger)"
+      }
+    ]
+  }
+}
