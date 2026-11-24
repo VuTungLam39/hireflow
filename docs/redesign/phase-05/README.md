@@ -81,7 +81,8 @@ Quy tắc: lật cả trang trong slice dựng lại trang đó bằng `data-the
 ### `<button>` thô còn lại ngoài vùng khoá (slice sở hữu)
 layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/SidePanel/RowMenu (5) → slice 2 · DataTable/FilterBar/DateRangeFilter (7) → slice 4/6 · FileUploader (2) → slice 4 · public GalleryLightbox/CareersPage (3) → slice 4 · LoginPage (1) → slice 5 · jobs JobsPage (3) → slice 6, JobFormPage menu (3) → slice 2 (Dropdown Menu), InterviewStagesEditor chip (1) → giữ (chip là toggle, không phải Button) · candidates CvSearchResults (1), ai-chat (3), notifications (2) → slice 12/5.
 
-- **PR:** #116 — **trạng thái: awaiting merge.**
+- **PR:** #116 — CI xanh (FE, BE, BE e2e, Vercel). **Merged:** `e77fe50`.
+- **Production smoke (Playwright, 24/11/2026, `/jobs` `/companies` `/login` + 1 trang chi tiết việc làm × 1440/1024/768/390):** 16/16 không tràn ngang, không khối chữ bị bóp hẹp; `--ui-primary` = `#1e5b4f` (màu cũ) và `--color-v2-primary` = `#1f4e79` có mặt → cơ chế lật sẵn sàng, chưa trang nào lật; nút chính ("Đăng nhập", "Nộp hồ sơ") nền `rgb(30, 91, 79)` = màu cũ, không đổi hình. Header 390 chồng chữ = F-01 có từ trước (slice 4). Chưa kiểm trang sau đăng nhập (nơi có 2 nút link đã chuyển: tạo/sửa tin, tổng quan tin).
 
 ## Entry 3 — Slice 2: Overlay layer — slice Radix đầu tiên (🟢)
 - **Spec + tickets:** issue #118. Base `feat/phase05-slice2-overlays` từ `main @ e77fe50`.
