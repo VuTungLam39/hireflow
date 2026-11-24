@@ -17,7 +17,7 @@
     "prerender": "node scripts/prerender.mjs",
     "build:profile": "vite build --mode profiling --outDir dist-profile",
     "check:design": "node scripts/check-design.mjs --strict",
-    "tokens": "designmd export --format css-tailwind DESIGN.md > src/styles/tokens.generated.css && prettier --write src/styles/tokens.generated.css",
+    "tokens": "designmd export --format css-tailwind DESIGN.md > src/styles/tokens.generated.css && node scripts/tokens-namespace.mjs && prettier --write src/styles/tokens.generated.css",
     "check:tokens": "designmd lint DESIGN.md && npm run tokens && git diff --exit-code -- src/styles/tokens.generated.css",
     "check:terms": "node scripts/check-terms.mjs"
   },
