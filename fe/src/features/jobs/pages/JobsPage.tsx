@@ -24,7 +24,14 @@ import {
   type ActiveFilter,
   type Column,
 } from '@/components/shared'
-import { AlertDialog, Button, buttonVariants, menuItemClass, Popover, Tabs } from '@/components/ui'
+import {
+  AlertDialog,
+  Button,
+  buttonVariants,
+  menuItemClass,
+  Popover,
+  FilterTabs,
+} from '@/components/ui'
 import { useDepartmentOptions } from '@/features/departments'
 import { useAuthStore } from '@/stores/auth.store'
 import { Role } from '@/types/user'
@@ -198,7 +205,7 @@ export default function JobsPage() {
         }
       />
 
-      <Tabs
+      <FilterTabs
         label="Lọc theo trạng thái tin"
         tabs={TABS.filter((t) => !isInterviewer || t.id === 'all' || t.id === 'OPEN').map((t) => ({
           id: t.id,

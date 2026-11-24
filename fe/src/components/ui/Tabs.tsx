@@ -41,6 +41,8 @@ interface TabsProps<T extends string> {
   className?: string
   label?: string
   idPrefix?: string
+  /** 'filter' = thanh lọc không có panel → radiogroup/radio thay vì tablist/tab */
+  semantics?: 'tabs' | 'filter'
 }
 
 export function Tabs<T extends string>({
@@ -50,7 +52,9 @@ export function Tabs<T extends string>({
   className,
   label,
   idPrefix,
+  semantics = 'tabs',
 }: TabsProps<T>) {
+  const filter = semantics === 'filter'
   const autoId = useId()
   const prefix = idPrefix ?? autoId
   const listRef = useRef<HTMLDivElement>(null)
@@ -58,7 +62,7 @@ export function Tabs<T extends string>({
 
   useEffect(() => {
     const list = listRef.current
-    const active = list?.querySelector<HTMLElement>('[aria-selected="true"]')
+    const active = list?.querySelector<HTMLElement>('[data-active]')
     if (!list || !active) return
     const left = active.offsetLeft - list.offsetLeft
     if (left < list.scrollLeft || left + active.offsetWidth > list.scrollLeft + list.clientWidth)
@@ -82,7 +86,7 @@ export function Tabs<T extends string>({
     <div className={cn('relative', className)}>
       <div
         ref={listRef}
-        role="tablist"
+        role={filter ? 'radiogroup' : 'tablist'}
         aria-label={label}
         className="border-line -mb-px flex gap-5 overflow-x-auto scroll-smooth border-b"
       >
@@ -93,8 +97,10 @@ export function Tabs<T extends string>({
               key={tab.id}
               id={tabId(prefix, tab.id)}
               type="button"
-              role="tab"
-              aria-selected={active}
+              role={filter ? 'radio' : 'tab'}
+              aria-selected={filter ? undefined : active}
+              aria-checked={filter ? active : undefined}
+              data-active={active || undefined}
               tabIndex={active ? 0 : -1}
               onClick={() => onChange(tab.id)}
               onKeyDown={(e) => {
@@ -157,4 +163,9 @@ function EdgeArrow({ side, onClick }: { side: 'start' | 'end'; onClick: () => vo
       <Icon className="size-4" />
     </button>
   )
+}
+
+/** Thanh lọc trạng thái (không có panel) – quyết định Phase 05 về Tabs, xem log */
+export function FilterTabs<T extends string>(props: Omit<TabsProps<T>, 'semantics' | 'idPrefix'>) {
+  return <Tabs {...props} semantics="filter" />
 }

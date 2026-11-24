@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { Button } from './Button'
 import { Popover } from './Popover'
 import { RichSelect } from './RichSelect'
-import { Tabs } from './Tabs'
+import { FilterTabs, Tabs } from './Tabs'
 import { Tooltip } from './Tooltip'
 
 const axeClean = async () => {
@@ -42,6 +42,38 @@ describe('Tabs (F-18)', () => {
     await waitFor(() => expect(screen.getByRole('tab', { name: 'Tất cả' })).toHaveFocus())
     await user.keyboard('{End}{Home}')
     await waitFor(() => expect(screen.getByRole('tab', { name: 'Tất cả' })).toHaveFocus())
+    await axeClean()
+  })
+})
+
+describe('FilterTabs (thanh lọc không có panel)', () => {
+  it('radiogroup/radio + aria-checked, không có role tab; mũi tên/End chọn và chuyển focus', async () => {
+    const user = userEvent.setup()
+    function Demo() {
+      const [v, setV] = useState('all')
+      return (
+        <FilterTabs
+          label="Lọc theo trạng thái tin"
+          value={v}
+          onChange={setV}
+          tabs={[
+            { id: 'all', label: 'Tất cả' },
+            { id: 'open', label: 'Đang tuyển', count: 3 },
+          ]}
+        />
+      )
+    }
+    render(<Demo />)
+    expect(screen.queryByRole('tablist')).toBeNull()
+    expect(screen.queryByRole('tab')).toBeNull()
+    expect(screen.getByRole('radiogroup', { name: 'Lọc theo trạng thái tin' })).toBeInTheDocument()
+    const all = screen.getByRole('radio', { name: 'Tất cả' })
+    expect(all).toHaveAttribute('aria-checked', 'true')
+    all.focus()
+    await user.keyboard('{End}')
+    const open = screen.getByRole('radio', { name: /Đang tuyển/ })
+    await waitFor(() => expect(open).toHaveFocus())
+    expect(open).toHaveAttribute('aria-checked', 'true')
     await axeClean()
   })
 })
