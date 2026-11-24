@@ -1,4 +1,7 @@
-import { Link, NavLink, Outlet } from 'react-router'
+import { Menu } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router'
+import { Button, DropdownMenu } from '@/components/ui'
 import { useFocusMainOnNavigate } from '@/hooks/use-focus-main'
 import { SurfaceProvider } from '@/lib/surface-provider'
 import { cn } from '@/lib/utils'
@@ -12,8 +15,9 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'text-ink' : 'text-ink-muted hover:text-ink',
   )
 
-export function PublicLayout() {
+export function PublicLayout({ children }: { children?: ReactNode }) {
   useFocusMainOnNavigate()
+  const navigate = useNavigate()
   return (
     <div className="bg-surface text-ink-2 flex min-h-dvh flex-col">
       <a
@@ -40,7 +44,21 @@ export function PublicLayout() {
               </NavLink>
             </nav>
           </div>
-          <div className="flex shrink-0 items-center">
+          {/* F-01: ≤640 px gom vào Menu để không chồng chữ */}
+          <DropdownMenu
+            align="end"
+            trigger={
+              <Button variant="ghost" size="sm" aria-label="Mở menu" className="sm:hidden">
+                <Menu />
+                Menu
+              </Button>
+            }
+            items={[
+              { label: 'Nhà tuyển dụng', onSelect: () => navigate(paths.employerRegister) },
+              { label: 'Đăng nhập', onSelect: () => navigate(paths.login) },
+            ]}
+          />
+          <div className="hidden shrink-0 items-center sm:flex">
             {/* MVP 3 · US-19 */}
             <NavLink to={paths.employerRegister} className={navClass}>
               Nhà tuyển dụng
@@ -60,9 +78,7 @@ export function PublicLayout() {
         className="mx-auto w-full max-w-[960px] flex-1 px-4 pt-10 pb-16 outline-none sm:pt-14"
       >
         <DemoNotice className="mb-8" />
-        <SurfaceProvider value="public">
-          <Outlet />
-        </SurfaceProvider>
+        <SurfaceProvider value="public">{children ?? <Outlet />}</SurfaceProvider>
       </main>
       <footer className="border-line type-caption border-t">
         <div className="mx-auto flex max-w-[960px] flex-wrap items-center justify-between gap-2 px-4 py-6">

@@ -261,7 +261,7 @@ export const routes: RouteObject[] = [
                   lazy: page(() => import('@/features/platform/pages/PlatformQueuesPage')),
                 },
               ]),
-              { path: '*', element: <NotFoundPage /> },
+              { path: '*', element: <NotFoundPage />, handle: { notFound: true } },
             ],
           },
         ],

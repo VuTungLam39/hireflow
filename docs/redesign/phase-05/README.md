@@ -10,6 +10,7 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
 | P5-D02 | 24/11/2026 | (a) Giữ nhìn cũ, lật token theo trang bằng `data-theme="v2"`; (b) cấm sửa file vùng khoá ở slice không khoá, kể cả call site; (c) VF-10 dựng primitive ở slice 1, gắn ở slice 10 | luật strangler (Phase 03 file 09), [D-02] | lật cơ học + sổ lật theme; primitive tương thích ngược; checklist bàn giao (Entry 2) |
 | P5-D03 | 24/11/2026 | PR giảm bundle route vào trước slice 3 | primitives decision — điều kiện dừng 40 KB | route vào 321.35 → 288.44 KB; Radix vẫn ở `vendor` (Entry 4) |
 | P5-D04 | 24/11/2026 | **Tabs giữ engine tự viết, không Radix** | **Phase 03 file 04 — primitives decision Option 1 (Tabs: Radix inside)**; contract Tabs (file 05) | Tabs trong sản phẩm là **thanh lọc không có panel**; Radix Tabs sinh `aria-controls` tới panel không tồn tại. Điều kiện: (1) ghi vào decision log, đối chiếu primitives decision ✔; (2) bản tự viết phải đúng ngữ nghĩa thanh lọc → `FilterTabs` = radiogroup/radio + `aria-checked` (Entry 6); (3) trang đầu tiên có tab-có-panel thật → chuyển Radix Tabs ở slice đó và tách tên: **Tabs** = tab có panel, **FilterTabs** = thanh lọc. Điểm kích hoạt đã có sẵn: DetailDialog (slice 5), ApplicationDetailPage (slice 8) |
+| P5-D05 | 24/11/2026 | Slice 4 chia **2 PR**: 4a chức năng (nhìn cũ), 4b lật toàn bộ trang công khai sang v2 một lần; Combobox công ty dùng **cmdk** | [D-10] (1 slice = 1 PR); contract Combobox ("decided in its slice") | header/footer dùng chung → mọi trang công khai phải lật cùng lúc (strangler); tách chức năng khỏi đổi giao diện để review/so ảnh/hoàn tác riêng |
 
 ## Entry 0 — Planning record merged into main (pre-Slice 0)
 - **Decision:** owner, 24/11/2026 — option (a): merge planning branch into main before Slice 0, via PR, with verification gate.
@@ -165,4 +166,22 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
   - [ ] `applications/pages/ApplicationsPage` (vùng khoá) → `FilterTabs` — slice 7.
   - [ ] DetailDialog → Radix Tabs (tab có panel) — slice 5; ApplicationDetailPage → Radix Tabs — slice 8. Khi đó `Tabs` chỉ còn nghĩa tab-có-panel.
   - [ ] **Đo bundle RichSelect** ở slice đầu tiên gắn nó vào trang thật (hiện bị tree-shake, chưa đo — Entry 5).
-- **PR:** #124 — **trạng thái: awaiting merge.**
+- **PR:** #124 — CI xanh. **Merged:** `475e94d`.
+
+## Entry 7 — Slice 4a: Public shell — chức năng (🟢)
+- **Spec + tickets:** issue #125 (4a + 4b). Base `feat/phase05-slice4-public` từ `main @ 475e94d`. Quyết định P5-D05.
+- **Phụ thuộc mới:** `cmdk` 1.1.1 (pin chính xác).
+- **Đã làm:**
+  - **F-01:** header công khai dưới 640 px gom "Nhà tuyển dụng"/"Đăng nhập" vào nút "Menu" (DropdownMenu, nhãn theo prototype P4). Kiểm bbox trên bản build (vite preview): 320/360/390/430/640/1024 → **0 chồng lấn**, mọi đích bấm ≥24 px, không tràn ngang.
+  - **F-10 / RR-11:** route `*` nội bộ gắn `handle.notFound`; `ProtectedRoute` gặp khách ở URL không có thật → render `PublicLayout` + `PublicNotFoundPage` ("Không tìm thấy trang này", copy theo prototype), **không** đẩy về /login; URL giữ nguyên. Đường dẫn nội bộ có thật vẫn chuyển khách về /login như cũ; nhân viên đã đăng nhập vẫn thấy 404 nội bộ. (Đụng guard điều hướng — sửa lỗi phạm vi khách, giữ nguyên hành vi cho nhân viên.)
+  - **RR-05:** `CompanyCombobox` (cmdk) thay ChipGroup công ty trên /jobs — tìm phía server theo chữ gõ (trước đây chỉ tải 48 công ty đầu), giữ nhãn công ty đã chọn khi nó ngoài trang kết quả; màn hình hẹp gom Công ty/Cấp bậc/Hình thức/Làm việc vào nút **"Bộ lọc (n)"** mở Dialog ("Xoá lọc" / "Áp dụng" theo prototype). Bộ lọc phòng ban (chỉ khi đã chọn công ty) giữ nguyên.
+  - **RR-10 / F-02:** `StaleNotice` dùng chung ("Dữ liệu lúc {giờ} · Tải lại", đúng GLOSSARY) trên /jobs, /companies, chi tiết việc làm, trang công ty khi làm mới thất bại mà đang hiện dữ liệu cũ.
+  - Guard thuật ngữ: thêm `pages/Public*` vào phạm vi công khai (bắt được "Việc làm" trên trang 404 công khai bị coi là nội bộ).
+  - Test setup: stub `ResizeObserver` (cmdk, Radix Popper).
+- **SurfaceContext (DL-11):** prerender đi qua `routes` → `PublicLayout` → đã có `SurfaceProvider` (nợ từ Entry 1 tự đóng). Trang chỉ-công-khai dùng danh từ công khai trực tiếp; `useJobNoun` dành cho component dùng chung hai bề mặt (Job Summary — 4b).
+- **Bundle (route vào, gzip):** 290.95 → **295.47 KB (+4.52, cmdk)**; so mốc trước Radix (291.21) +4.26 KB. Chunk /jobs 2.14 → 2.99 KB.
+- **Kiểm:** test mới — F-10 (khách URL lạ → 404 công khai, URL giữ; nhân viên → 404 nội bộ), RR-05 (60 công ty, gõ "số 57" → tìm server → chọn), "Bộ lọc (2)" + Xoá lọc, F-02 StaleNotice sau refetch lỗi · toàn bộ test xanh · format, lint, check:design, check:terms, typecheck, build xanh. Vùng khoá: 0 file. F-10 không kiểm được trên bản build cục bộ (không có backend → loader phiên báo "Chưa kết nối được máy chủ") → kiểm trên production sau merge.
+- **VF-06:** "Rút hồ sơ" đã là AlertDialog từ slice 2 (test TrackApplicationPage chờ `alertdialog`).
+- **Vấn đề hợp đồng API — DL-17/RR-10 (ghi nhận, không sửa trong slice, §05.2):** `findPublicOne` chỉ trả tin `status = OPEN`; tin quá deadline vẫn trả **vô thời hạn** với `expired: true` (không có mốc 30 ngày → 404); tin `CLOSED` trả 404 **ngay** (không có cửa sổ 30 ngày "Đã hết hạn"). FE hiện hiển thị đúng những gì API trả (banner hết hạn + tắt Ứng tuyển + việc khác). **Đề xuất riêng cho chủ dự án:** backend thêm cửa sổ 30 ngày cho cả tin quá deadline và tin CLOSED (cần mốc thời điểm đóng). Không làm workaround phía FE.
+- **`package.json`:** thêm `cmdk` (runtime).
+- **PR:** _(điền sau khi mở)_ — **trạng thái: awaiting merge.**

@@ -30,6 +30,7 @@ function renderAt(path: string) {
             element: <PermissionRoute permission={Permission.UserManage} />,
             children: [{ path: '/users', element: <p>users page</p> }],
           },
+          { path: '*', element: <p>internal 404</p>, handle: { notFound: true } },
         ],
       },
     ],
@@ -45,6 +46,19 @@ describe('route guards', () => {
   it('redirects guests to login', () => {
     renderAt('/')
     expect(screen.getByText('login page')).toBeInTheDocument()
+  })
+
+  it('F-10: guests on an unknown URL get the public 404, never the login page', () => {
+    const router = renderAt('/khong-co-trang-nay')
+    expect(screen.getByRole('heading', { name: 'Không tìm thấy trang này' })).toBeInTheDocument()
+    expect(screen.queryByText('login page')).not.toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/khong-co-trang-nay')
+  })
+
+  it('signed-in users on an unknown URL keep the internal 404', () => {
+    useAuthStore.getState().setSession(user, tokens)
+    renderAt('/khong-co-trang-nay')
+    expect(screen.getByText('internal 404')).toBeInTheDocument()
   })
 
   it('redirects logged-in users away from login', () => {

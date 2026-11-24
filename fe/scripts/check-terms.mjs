@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 // GLOSSARY "Thuật ngữ giao diện" – danh sách Avoid (Phase 03 file 09, DL-08, DL-11)
 const VI = 'À-ỹ'
 const uiWord = (w) => new RegExp(`[${VI}]\\S*\\s+${w}\\b|\\b${w}\\s+[^\\s'"\`]*[${VI}]`)
-const PUBLIC = /^(features[\\/]public-jobs|prerender)[\\/]|^app[\\/]layouts[\\/]Public/
+const PUBLIC = /^(features[\\/]public-jobs|prerender)[\\/]|^(app[\\/]layouts|pages)[\\/]Public/
 // Văn bản pháp lý/chính sách ngoài phạm vi guard (quyết định chủ dự án 24/11/2026)
 const LEGAL = /PrivacyPolicyPage\.tsx$/
 
