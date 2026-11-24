@@ -2,8 +2,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router'
-import { ConfirmDialog, Timeline } from '@/components/shared'
-import { Button, FormField, Input } from '@/components/ui'
+import { Timeline } from '@/components/shared'
+import { AlertDialog, Button, FormField, Input } from '@/components/ui'
 import { APPLICATION_SOURCE, ScoreBadge, StatusPill } from '@/features/applications'
 import { useDetailLink } from '@/hooks/use-detail'
 import { usePermission } from '@/hooks/use-permission'
@@ -153,7 +153,7 @@ export function DangerZone({ candidate }: { candidate: CandidateDetail }) {
           Ẩn danh ứng viên
         </Button>
       </div>
-      <ConfirmDialog
+      <AlertDialog
         open={open}
         onClose={() => setOpen(false)}
         title={`Ẩn danh ${candidate.fullName}?`}
@@ -164,7 +164,7 @@ export function DangerZone({ candidate }: { candidate: CandidateDetail }) {
           </>
         }
         confirmLabel="Ẩn danh vĩnh viễn"
-        tone="danger"
+        confirmVariant="danger"
         loading={anonymize.isPending}
         onConfirm={() => anonymize.mutate(undefined, { onSettled: () => setOpen(false) })}
       />

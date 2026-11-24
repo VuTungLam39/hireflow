@@ -2,8 +2,8 @@ import { CircleX } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
-import { ConfirmDialog, ErrorState } from '@/components/shared'
-import { Button, buttonVariants, Spinner } from '@/components/ui'
+import { ErrorState } from '@/components/shared'
+import { AlertDialog, Button, buttonVariants, Spinner } from '@/components/ui'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { getErrorCode, getErrorMessage } from '@/lib/errors'
 import { cn, formatDate } from '@/lib/utils'
@@ -96,13 +96,13 @@ export default function TrackApplicationPage() {
         </div>
       )}
 
-      <ConfirmDialog
+      <AlertDialog
         open={confirming}
         onClose={() => setConfirming(false)}
         title="Rút hồ sơ?"
         description={`Công ty sẽ không xét hồ sơ của bạn cho vị trí "${jobTitle}" nữa.`}
         confirmLabel="Rút hồ sơ"
-        tone="danger"
+        confirmVariant="danger"
         loading={withdraw.isPending}
         onConfirm={() =>
           withdraw.mutate(undefined, {

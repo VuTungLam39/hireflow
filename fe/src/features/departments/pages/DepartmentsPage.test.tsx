@@ -39,17 +39,22 @@ describe('DepartmentsPage', () => {
       { timeout: 4000 },
     )
     expect(screen.queryByRole('button', { name: 'Xoá' })).not.toBeInTheDocument()
-    fireEvent.click(busyMenu)
+    fireEvent.keyDown(busyMenu, { key: 'Enter' })
     const menu = screen.getByRole('menu', { name: `Thao tác với ${busy.name}` })
-    expect(within(menu).getByRole('menuitem', { name: /Xoá phòng ban/ })).toBeDisabled()
+    expect(within(menu).getByRole('menuitem', { name: /Xoá phòng ban/ })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
     expect(within(menu).getByText(/chưa xoá được/)).toBeInTheDocument()
     fireEvent.keyDown(document, { key: 'Escape' })
 
     const empty = db.departments.find((d) => !inUse(d.id))
     if (!empty) return
     const [emptyMenu] = screen.getAllByRole('button', { name: `Thao tác với ${empty.name}` })
-    fireEvent.click(emptyMenu)
+    fireEvent.keyDown(emptyMenu, { key: 'Enter' })
     const emptyItems = screen.getByRole('menu', { name: `Thao tác với ${empty.name}` })
-    expect(within(emptyItems).getByRole('menuitem', { name: /Xoá phòng ban/ })).toBeEnabled()
+    expect(within(emptyItems).getByRole('menuitem', { name: /Xoá phòng ban/ })).not.toHaveAttribute(
+      'aria-disabled',
+    )
   })
 })

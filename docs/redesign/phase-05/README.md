@@ -83,3 +83,28 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 
 - **PR:** #116 — CI xanh (FE, BE, BE e2e, Vercel). **Merged:** `e77fe50`.
 - **Production smoke (Playwright, 24/11/2026, `/jobs` `/companies` `/login` + 1 trang chi tiết việc làm × 1440/1024/768/390):** 16/16 không tràn ngang, không khối chữ bị bóp hẹp; `--ui-primary` = `#1e5b4f` (màu cũ) và `--color-v2-primary` = `#1f4e79` có mặt → cơ chế lật sẵn sàng, chưa trang nào lật; nút chính ("Đăng nhập", "Nộp hồ sơ") nền `rgb(30, 91, 79)` = màu cũ, không đổi hình. Header 390 chồng chữ = F-01 có từ trước (slice 4). Chưa kiểm trang sau đăng nhập (nơi có 2 nút link đã chuyển: tạo/sửa tin, tổng quan tin).
+
+## Entry 3 — Slice 2: Overlay layer — slice Radix đầu tiên (🟢)
+- **Spec + tickets:** issue #118. Base `feat/phase05-slice2-overlays` từ `main @ e77fe50`.
+- **Phụ thuộc mới:** `@radix-ui/react-dialog` 1.3.1, `@radix-ui/react-alert-dialog` 1.2.1, `@radix-ui/react-dropdown-menu` 2.2.1 (pin chính xác; Radix nằm sau house API, không call site nào thấy prop Radix).
+- **Đã làm:**
+  - **Dialog** dựng lại trên Radix, giữ props cũ (`onClose`) + `onOpenChange`; <600 px toàn màn hình; `useReturnFocus` trả focus về phần tử mở dialog (Radix chỉ tự trả về `<Trigger>` của nó — mọi call site hiện có mở bằng nút ngoài, test đã bắt lỗi này).
+  - **AlertDialog** mới: `role=alertdialog`, focus đầu vào "Huỷ" (ít phá huỷ nhất), mã lý do không chọn sẵn (VF-01), `confirmLabel` do nơi gọi truyền theo hành động (VF-02), `onConfirm` trả promise → tự loading, lỗi → giữ nội dung + thông báo + nút **"Thử lại"** (OP-1), đóng khi thành công.
+  - **Sheet** mới (quick view): 480 px, toàn màn hình <600 px, prev/next với nhãn do nơi gọi truyền, `detailHref` bắt buộc, chỉ "Mở chi tiết" — **không có chỗ đặt hành động đổi trạng thái** (DL-16). Chưa có call site (quick view là slice 7).
+  - **DropdownMenu** mới (items theo contract); **RowMenu** (Users, Departments, Jobs) và menu "Thao tác khác" của JobFormPage chạy trên nó (3 `<button>` thô của JobFormPage đã gỡ).
+  - Call site ConfirmDialog ngoài vùng khoá → **AlertDialog**: candidates/CandidateSections, company/BrandImages, departments/DepartmentsPage, jobs/JobSections, jobs/JobFormPage, jobs/JobsPage, operations/AiQueuePage, platform/PlatformCompanyDetailPage, public-jobs/TrackApplicationPage (**Rút hồ sơ** giờ là alertdialog — VF-06 phần primitive), users/UsersPage (2).
+  - **ConfirmDialog bản cũ giữ nguyên** (trên Dialog Radix, `role=dialog`) — chỉ còn call site vùng khoá.
+  - Test sửa theo (ngoài vùng khoá): Users/Departments mở menu bằng bàn phím + `aria-disabled` (Radix không dùng thuộc tính `disabled` cho menuitem); Company/AiQueue/Track/Platform chờ `alertdialog`.
+- **Đo bundle (vite build, gzip mức 9, tổng JS+CSS mà `index.html` tải/preload = route vào):** trước **291.21 KB** → sau **321.35 KB** = **+30.14 KB** (vendor 101.35 → 130.44; ui 6.62 → 10.07). **< 40 KB → điều kiện dừng không kích hoạt, tiếp tục dùng Radix.** Lưu ý cho chủ dự án: chunk `vendor` gom mọi `node_modules` nên Radix tải ở mọi route kể cả trang công khai; còn ~9.9 KB dư địa trước ngưỡng cho slice 3 (Tabs/Popover/Tooltip/rich Select — Popover/Tooltip kéo theo floating-ui). Phương án giảm nếu cần: tách nhóm chunk Radix/overlay để chỉ tải khi mở overlay — chưa làm (cần quyết định).
+- **Kiểm:** 5 test overlay mới (Dialog: focus vào trong, bẫy Tab, khoá cuộn, Escape, trả focus; AlertDialog: focus "Huỷ", không chọn sẵn, OP-1 giữ nội dung + "Thử lại"; Sheet: chỉ "Mở chi tiết" + điều hướng, Escape; DropdownMenu: mũi tên/Home/End/typeahead/Escape trả focus) + axe 0 · toàn bộ test xanh · format, lint, check:design, check:terms, typecheck, build xanh. Vùng khoá: 0 file thay đổi (test vùng khoá ApplicationDetailPage + flow bulk-status vẫn xanh nhờ ConfirmDialog bản cũ).
+- **Lệch / ghi nợ:**
+  - Overlay bỏ animation mở (Design Spec cấm `animate-fade-in`; dialog cũ cũng không có).
+  - DetailDialog (native `<dialog>`, modal thứ 5) chưa chuyển: dùng bởi DetailHost/JobWorkspace/JobCreate (slice 5) và ApplicationDialog/CompareDialog (vùng khoá) → slice 5 + 7/8.
+  - SidePanel chưa chuyển sang Sheet: call site QuickView/ApplicationDetail/Ranking thuộc vùng khoá (slice 7/8/9); ChatPage dùng SidePanel làm khung trích dẫn (không phải quick view) → slice 12.
+- **`package.json`:** thêm 3 dependency Radix (runtime). Lockfile đổi theo.
+
+### Bàn giao thêm cho slice khoá
+- [ ] ConfirmDialog → AlertDialog: `applications/components/OfferPanel` (slice 11), `applications/components/StatusActions` (slice 8), `applications/pages/ApplicationsPage` (slice 7), `interviews/components/InterviewPanel` (slice 10). Khi call site cuối chuyển → xoá `components/shared/ConfirmDialog.tsx`.
+- [ ] SidePanel → Sheet (DL-16, URL `?xem=`): QuickView + ApplicationDetailPage (slice 7/8), JobRankingPage (slice 9).
+
+- **PR:** #119 — **trạng thái: awaiting merge.**

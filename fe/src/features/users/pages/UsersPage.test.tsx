@@ -29,10 +29,14 @@ describe('UsersPage', () => {
     expect(screen.queryByRole('button', { name: 'Xoá' })).not.toBeInTheDocument()
 
     const [menu] = screen.getAllByRole('button', { name: `Thao tác với ${other.fullName}` })
-    fireEvent.click(menu)
+    fireEvent.keyDown(menu, { key: 'Enter' })
     const items = screen.getByRole('menu', { name: `Thao tác với ${other.fullName}` })
-    expect(within(items).getByRole('menuitem', { name: /Khoá tài khoản/ })).toBeEnabled()
-    expect(within(items).getByRole('menuitem', { name: /Xoá người dùng/ })).toBeEnabled()
+    expect(within(items).getByRole('menuitem', { name: /Khoá tài khoản/ })).not.toHaveAttribute(
+      'aria-disabled',
+    )
+    expect(within(items).getByRole('menuitem', { name: /Xoá người dùng/ })).not.toHaveAttribute(
+      'aria-disabled',
+    )
   })
 
   it('cannot lock or delete your own account (BR-ACC-05)', async () => {
@@ -42,10 +46,16 @@ describe('UsersPage', () => {
       { name: `Thao tác với ${me.fullName}` },
       { timeout: 4000 },
     )
-    fireEvent.click(menu)
+    fireEvent.keyDown(menu, { key: 'Enter' })
     const items = screen.getByRole('menu', { name: `Thao tác với ${me.fullName}` })
-    expect(within(items).getByRole('menuitem', { name: /Khoá tài khoản/ })).toBeDisabled()
-    expect(within(items).getByRole('menuitem', { name: /Xoá người dùng/ })).toBeDisabled()
+    expect(within(items).getByRole('menuitem', { name: /Khoá tài khoản/ })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
+    expect(within(items).getByRole('menuitem', { name: /Xoá người dùng/ })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
     expect(within(items).getByText(/không thể tự khoá hoặc xoá/)).toBeInTheDocument()
   })
 })

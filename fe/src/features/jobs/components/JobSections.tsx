@@ -2,8 +2,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Copy, Trash2, Upload } from 'lucide-react'
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import { ConfirmDialog } from '@/components/shared'
-import { Button, FormField, Input, Select, Textarea } from '@/components/ui'
+
+import { AlertDialog, Button, FormField, Input, Select, Textarea } from '@/components/ui'
 import { useDepartmentOptions } from '@/features/departments'
 import { usePermission } from '@/hooks/use-permission'
 import { applyServerErrors, getErrorMessage } from '@/lib/errors'
@@ -497,13 +497,13 @@ export function JobActionBar({
         </Button>
       )}
 
-      <ConfirmDialog
+      <AlertDialog
         open={!!confirm}
         onClose={() => setConfirm(null)}
         title={confirm ? JOB_CONFIRM[confirm].title : ''}
         description={confirm ? JOB_CONFIRM[confirm].description : undefined}
         confirmLabel={confirm ? JOB_CONFIRM[confirm].label : undefined}
-        tone={confirm === 'publish' ? 'primary' : 'danger'}
+        confirmVariant={confirm === 'publish' ? 'primary' : 'danger'}
         loading={action.isPending}
         onConfirm={() =>
           action.mutate(job.id, {

@@ -1,8 +1,8 @@
 import { ArrowLeft, Ban, Check, LockOpen, X, type LucideIcon } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
-import { ConfirmDialog, ErrorState, PageHeader, Summary } from '@/components/shared'
-import { Button, Skeleton } from '@/components/ui'
+import { ErrorState, PageHeader, Summary } from '@/components/shared'
+import { AlertDialog, Button, Skeleton } from '@/components/ui'
 import { useCrumb } from '@/hooks/use-crumb'
 import { formatDate } from '@/lib/utils'
 import { paths } from '@/routes/paths'
@@ -183,13 +183,13 @@ export default function PlatformCompanyDetailPage() {
 
       <AiQuotaSection org={org} />
 
-      <ConfirmDialog
+      <AlertDialog
         open={!!acting}
         onClose={() => setActing(null)}
         title={acting?.title ?? ''}
         description={acting?.description}
         confirmLabel={acting?.label}
-        tone={acting && acting.variant !== 'primary' ? 'danger' : 'primary'}
+        confirmVariant={acting && acting.variant !== 'primary' ? 'danger' : 'primary'}
         loading={transition.isPending}
         requireReason={
           acting?.reason
