@@ -127,4 +127,4 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - **Kết quả:** route vào **321.35 → 288.44 KB (−32.91 KB)**, thấp hơn mốc trước Radix 2.77 KB → dư địa so với ngưỡng 40 KB trở lại ~42.8 KB cho slice 3. **Không đạt mục tiêu ban đầu "Radix chỉ tải ở route có overlay":** Radix vẫn nằm trong `vendor` tải mọi route — tách được thì phải bỏ barrel `@/components/ui` ở route vào hoặc nạp overlay lazy; để lại, đo lại ở slice 3.
 - **Hành vi:** lần đầu vào khu nội bộ tải thêm chunk `MainLayout` (route lazy; React Router giữ màn hình cũ tới khi tải xong). Đây là thay đổi tải ở AppShell — giữ nguyên hành vi, được coi là PR chuẩn bị theo [D-10]; slice 5 xem lại.
 - **Kiểm:** format, lint, check:design, check:terms, typecheck, toàn bộ test, build (gồm prerender) xanh. `package.json` không đổi. Vùng khoá: 0 file (chỉ đổi đường import từ router).
-- **PR:** _(điền sau khi mở)_ — **trạng thái: awaiting merge.**
+- **PR:** #121 — **trạng thái: awaiting merge.**
