@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { EmptyState, ErrorState, SearchInput } from '@/components/shared'
+import { EmptyState, ErrorState, SearchInput, StaleNotice } from '@/components/shared'
 import { Pagination, Skeleton } from '@/components/ui'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useListParams } from '@/hooks/use-list-params'
@@ -12,7 +12,7 @@ import { companiesListSchema } from '../schemas'
 // MVP 3 · F-PUB-10, US-23: danh bạ công ty ACTIVE có trang công ty
 export default function CompaniesPage() {
   const [params, setParams] = useListParams(companiesListSchema)
-  const { data, isPending, isError, error, refetch } = usePublicCompanies(params)
+  const { data, isPending, isError, error, refetch, dataUpdatedAt } = usePublicCompanies(params)
   useDocumentTitle(`Công ty đang tuyển – ${SITE_NAME}`)
   const items = data?.items ?? []
 
@@ -20,6 +20,9 @@ export default function CompaniesPage() {
     <div className="space-y-10">
       <header className="max-w-2xl space-y-5">
         <h1 className="type-display">Công ty trên HireFlow</h1>
+        {isError && data && (
+          <StaleNotice updatedAt={dataUpdatedAt} onRetry={() => void refetch()} />
+        )}
         <p className="type-read-lg">Tìm hiểu nơi bạn sẽ làm việc trước khi gửi hồ sơ.</p>
         <SearchInput
           size="lg"

@@ -1,7 +1,7 @@
 import { ArrowLeft, Check } from 'lucide-react'
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { Link, useParams } from 'react-router'
-import { EmptyState, ErrorState } from '@/components/shared'
+import { EmptyState, ErrorState, StaleNotice } from '@/components/shared'
 import { Skeleton, buttonVariants } from '@/components/ui'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { getErrorCode } from '@/lib/errors'
@@ -18,7 +18,7 @@ import { usePublicJob } from '../hooks/use-public-jobs'
 // F-PUB-02, F-PUB-03 · BR-APP-07 · Design Spec 6.11
 export default function PublicJobDetailPage() {
   const { id = '' } = useParams()
-  const { data: job, isPending, isError, error, refetch } = usePublicJob(id)
+  const { data: job, isPending, isError, error, refetch, dataUpdatedAt } = usePublicJob(id)
   const [submitted, setSubmitted] = useState(false)
   const formRef = useRef<HTMLElement>(null)
   const formInView = useInView(formRef)
@@ -65,6 +65,9 @@ export default function PublicJobDetailPage() {
         <article className="min-w-0 space-y-8">
           <header className="space-y-3">
             <h1 className="type-display">{job.title}</h1>
+            {isError && job && (
+              <StaleNotice updatedAt={dataUpdatedAt} onRetry={() => void refetch()} />
+            )}
             <p className="text-ink-2 text-[15px] leading-6">
               <Link
                 to={links.publicCompany(job.company.slug)}

@@ -1,7 +1,7 @@
 import { ArrowUpRight, MapPin } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
-import { EmptyState, ErrorState, Timeline } from '@/components/shared'
+import { EmptyState, ErrorState, Timeline, StaleNotice } from '@/components/shared'
 import { Skeleton, buttonVariants } from '@/components/ui'
 import { COMPANY_SIZE, mediaSrc, type CompanyMedia } from '@/features/company'
 import { useDocumentTitle } from '@/hooks/use-document-title'
@@ -24,7 +24,14 @@ const SOCIAL_LABEL = {
 // F-PUB-06, F-PUB-10 · BR-ORG-01 · MVP 3 · US-23: trang công ty theo slug
 export default function CareersPage() {
   const { slug = '' } = useParams()
-  const { data: company, isPending, isError, error, refetch } = usePublicCompany(slug)
+  const {
+    data: company,
+    isPending,
+    isError,
+    error,
+    refetch,
+    dataUpdatedAt,
+  } = usePublicCompany(slug)
   useDocumentTitle(company ? `${company.name} – ${SITE_NAME}` : undefined)
 
   if (isPending)
@@ -67,6 +74,7 @@ export default function CareersPage() {
   return (
     <div className="space-y-14">
       <Hero company={company} />
+      {isError && <StaleNotice updatedAt={dataUpdatedAt} onRetry={() => void refetch()} />}
       {company.about && (
         <Section id="gioi-thieu" title="Giới thiệu">
           <div className="max-w-[680px] space-y-4">

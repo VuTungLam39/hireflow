@@ -1,4 +1,7 @@
 import { fireEvent, screen, within } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
+import userEvent from '@testing-library/user-event'
+import { api, includesFolded, ok, paginate, searchParams } from '@/test/msw/http'
 import { setupServer } from 'msw/node'
 import { paths } from '@/routes/paths'
 import { foldText } from '@/test/msw/http'
@@ -13,7 +16,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
 afterAll(() => server.close())
 
 function renderPage(entry: string = paths.publicJobs) {
-  renderRoutes([{ path: paths.publicJobs, element: <PublicJobsPage /> }], entry)
+  return renderRoutes([{ path: paths.publicJobs, element: <PublicJobsPage /> }], entry)
 }
 
 // F-PUB-01
@@ -91,5 +94,61 @@ describe('PublicJobsPage', () => {
     const card = screen.getByText(hanoi[0].title).closest('a')!
     expect(card).toHaveTextContent(companyState.profile.name)
     expect(card).toHaveTextContent(hanoi[0].location)
+  })
+})
+
+// Phase 05 slice 4a — RR-05, F-02
+describe('PublicJobsPage — bộ lọc công ty và trạng thái dữ liệu', () => {
+  it('RR-05: Combobox công ty tìm phía server, chọn được công ty ngoài 20 kết quả đầu (60 công ty)', async () => {
+    const many = Array.from({ length: 60 }, (_, i) => ({
+      slug: `cong-ty-${i + 1}`,
+      name: `Công ty Mẫu số ${i + 1}`,
+      logoUrl: null,
+      tagline: null,
+      industries: [],
+      openJobs: 1,
+    }))
+    server.use(
+      http.get(api('/public/companies'), ({ request }) => {
+        const params = searchParams(request)
+        const rows = many.filter((c) => includesFolded(c.name, params.get('search')))
+        const { items, meta } = paginate(rows, params)
+        return ok(items, { meta })
+      }),
+    )
+    const user = userEvent.setup()
+    renderPage()
+    const [trigger] = await screen.findAllByRole('button', { name: /Mọi công ty/ })
+    await user.click(trigger)
+    const input = await screen.findByRole('combobox')
+    await user.type(input, 'số 57')
+    const option = await screen.findByRole(
+      'option',
+      { name: /Công ty Mẫu số 57/ },
+      { timeout: 3000 },
+    )
+    await user.click(option)
+    expect(await screen.findAllByRole('button', { name: /Công ty Mẫu số 57/ })).not.toHaveLength(0)
+  })
+
+  it('màn hình hẹp: nút "Bộ lọc" đếm bộ lọc đang bật, "Xoá lọc" gỡ hết', async () => {
+    const user = userEvent.setup()
+    renderPage(`${paths.publicJobs}?level=SENIOR&workMode=REMOTE`)
+    const sheetButton = await screen.findByRole('button', { name: 'Bộ lọc (2)' })
+    await user.click(sheetButton)
+    const dialog = await screen.findByRole('dialog', { name: 'Bộ lọc' })
+    await user.click(within(dialog).getByRole('button', { name: 'Xoá lọc' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Áp dụng' }))
+    expect(await screen.findByRole('button', { name: 'Bộ lọc' })).toBeInTheDocument()
+  })
+
+  it('F-02: làm mới thất bại trên dữ liệu đang hiện thì báo "Dữ liệu lúc … · Tải lại"', async () => {
+    const { queryClient } = renderPage()
+    await screen.findByText(/vị trí đang tuyển/)
+    server.use(http.get(api('/public/jobs'), () => HttpResponse.json({}, { status: 500 })))
+    await queryClient.refetchQueries({ queryKey: ['public-jobs'] }).catch(() => {})
+    await queryClient.refetchQueries().catch(() => {})
+    expect(await screen.findByText(/Dữ liệu lúc/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tải lại' })).toBeInTheDocument()
   })
 })

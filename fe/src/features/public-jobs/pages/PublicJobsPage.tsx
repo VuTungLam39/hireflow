@@ -1,8 +1,9 @@
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, SlidersHorizontal } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router'
-import { EmptyState, ErrorState, FilterMenu, SearchInput } from '@/components/shared'
+import { EmptyState, ErrorState, FilterMenu, SearchInput, StaleNotice } from '@/components/shared'
 import { EMPLOYMENT_TYPE, JOB_LEVEL, WORK_MODE, deadlineState, formatSalary } from '@/features/jobs'
-import { ChipGroup, Pagination, Skeleton } from '@/components/ui'
+import { Button, ChipGroup, Dialog, DialogFooter, Pagination, Skeleton } from '@/components/ui'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { useListParams } from '@/hooks/use-list-params'
@@ -10,7 +11,8 @@ import { formatDate, formatDaysAgo } from '@/lib/utils'
 import { SITE_NAME } from '@/prerender/shared'
 import { links } from '@/routes/paths'
 import { CompanyLogo } from '../components/CompanyLogo'
-import { usePublicCompanies, usePublicDepartments, usePublicJobs } from '../hooks/use-public-jobs'
+import { CompanyCombobox } from '../components/CompanyCombobox'
+import { usePublicDepartments, usePublicJobs } from '../hooks/use-public-jobs'
 import { publicJobsListSchema } from '../schemas'
 import type { PublicJobSummary } from '../types'
 
@@ -37,16 +39,11 @@ function JobCardFacts({ job, hydrated }: { job: PublicJobSummary; hydrated: bool
 // F-PUB-01, F-PUB-04 · Design Spec 6.11
 export default function PublicJobsPage() {
   const [params, setParams] = useListParams(publicJobsListSchema)
-  const { data, isPending, isError, error, refetch } = usePublicJobs(params)
+  const { data, isPending, isError, error, refetch, dataUpdatedAt } = usePublicJobs(params)
   const hydrated = useHydrated()
   useDocumentTitle(`Việc làm đang tuyển – ${SITE_NAME}`)
 
-  // US-22: chip công ty lấy từ danh bạ; phòng ban chỉ có nghĩa trong một công ty
-  const companies = usePublicCompanies({ page: 1, limit: 48 })
-  const companyOptions = (companies.data?.items ?? [])
-    .filter((c) => c.openJobs > 0)
-    .map((c) => ({ value: c.slug, label: c.name, count: c.openJobs }))
-  const company = companies.data?.items.find((c) => c.slug === params.company)
+  const [sheet, setSheet] = useState(false)
   const facets = usePublicDepartments(params.search, params.company)
   const departments = (facets.data ?? []).map((d) => ({
     value: d.id,
@@ -56,10 +53,55 @@ export default function PublicJobsPage() {
   const dept = facets.data?.find((d) => d.id === params.departmentId)
   const items = data?.items ?? []
 
+  const active = [
+    params.company,
+    params.departmentId,
+    params.level,
+    params.employmentType,
+    params.workMode,
+  ].filter(Boolean).length
+  const clearFilters = () =>
+    setParams({
+      company: null,
+      departmentId: null,
+      level: null,
+      employmentType: null,
+      workMode: null,
+    })
+  const filters = (
+    <>
+      <CompanyCombobox
+        value={params.company}
+        onChange={(slug) => setParams({ company: slug ?? null, departmentId: null })}
+      />
+      <FilterMenu
+        label="Cấp bậc"
+        value={params.level}
+        options={options(JOB_LEVEL)}
+        onChange={(level) => setParams({ level: level ?? null })}
+      />
+      <FilterMenu
+        label="Hình thức"
+        value={params.employmentType}
+        options={options(EMPLOYMENT_TYPE)}
+        onChange={(employmentType) => setParams({ employmentType: employmentType ?? null })}
+      />
+      <FilterMenu
+        label="Làm việc"
+        value={params.workMode}
+        options={options(WORK_MODE)}
+        onChange={(workMode) => setParams({ workMode: workMode ?? null })}
+      />
+    </>
+  )
+
   return (
     <div className="space-y-10">
       <header className="max-w-2xl space-y-5">
         <h1 className="type-display">Việc làm trên HireFlow</h1>
+        {isError && data && (
+          <StaleNotice updatedAt={dataUpdatedAt} onRetry={() => void refetch()} />
+        )}
         <p className="type-read-lg">
           Vị trí đang tuyển của các công ty trên sàn. Nộp CV chỉ mất khoảng một phút.
         </p>
@@ -81,17 +123,23 @@ export default function PublicJobsPage() {
             className="sm:flex-[2]"
           />
         </div>
-        {companyOptions.length > 1 && (
-          <ChipGroup
-            label="Lọc theo công ty"
-            allLabel="Mọi công ty"
-            options={companyOptions}
-            limit={5}
-            moreLabel={(n) => `+${n} công ty khác`}
-            value={params.company}
-            onChange={(slug) => setParams({ company: slug ?? null, departmentId: null })}
-          />
-        )}
+        <div className="hidden flex-wrap gap-2 sm:flex" role="group" aria-label="Lọc thêm">
+          {filters}
+        </div>
+        {/* RR-05: màn hình hẹp gom bộ lọc phụ vào một nút có đếm */}
+        <Button variant="secondary" className="sm:hidden" onClick={() => setSheet(true)}>
+          <SlidersHorizontal />
+          Bộ lọc{active > 0 && ` (${active})`}
+        </Button>
+        <Dialog open={sheet} onClose={() => setSheet(false)} title="Bộ lọc">
+          <div className="flex flex-col items-start gap-3">{filters}</div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={clearFilters}>
+              Xoá lọc
+            </Button>
+            <Button onClick={() => setSheet(false)}>Áp dụng</Button>
+          </DialogFooter>
+        </Dialog>
         {params.company && departments.length > 1 && (
           <ChipGroup
             label="Lọc theo phòng ban"
@@ -104,26 +152,6 @@ export default function PublicJobsPage() {
             onChange={(departmentId) => setParams({ departmentId: departmentId ?? null })}
           />
         )}
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Lọc thêm">
-          <FilterMenu
-            label="Cấp bậc"
-            value={params.level}
-            options={options(JOB_LEVEL)}
-            onChange={(level) => setParams({ level: level ?? null })}
-          />
-          <FilterMenu
-            label="Hình thức"
-            value={params.employmentType}
-            options={options(EMPLOYMENT_TYPE)}
-            onChange={(employmentType) => setParams({ employmentType: employmentType ?? null })}
-          />
-          <FilterMenu
-            label="Làm việc"
-            value={params.workMode}
-            options={options(WORK_MODE)}
-            onChange={(workMode) => setParams({ workMode: workMode ?? null })}
-          />
-        </div>
       </header>
 
       {isPending ? (
@@ -150,7 +178,7 @@ export default function PublicJobsPage() {
         <>
           <p className="type-caption">
             {data.meta.totalItems.toLocaleString('vi-VN')} vị trí đang tuyển
-            {company && ` tại ${company.name}`}
+            {params.company && items[0] && ` tại ${items[0].company.name}`}
             {dept && ` · ${dept.name}`}
           </p>
           <ul className="border-line divide-line-soft -mt-6 divide-y border-y">

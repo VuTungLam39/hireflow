@@ -1,4 +1,6 @@
-import { Navigate, Outlet, useLocation } from 'react-router'
+import { Navigate, Outlet, useLocation, useMatches } from 'react-router'
+import { PublicLayout } from '@/app/layouts/PublicLayout'
+import PublicNotFoundPage from '@/pages/PublicNotFoundPage'
 import { usePermission } from '@/hooks/use-permission'
 import type { Permission } from '@/lib/permissions'
 import ForbiddenPage from '@/pages/ForbiddenPage'
@@ -11,7 +13,18 @@ export function ProtectedRoute() {
   const signedOut = useAuthStore((s) => s.signedOut)
   const location = useLocation()
 
+  const unknownPath = useMatches().some(
+    (m) => (m.handle as { notFound?: boolean } | undefined)?.notFound,
+  )
+
   if (!isAuthenticated) {
+    // F-10: URL không có thật → 404 công khai, không đẩy khách về trang đăng nhập
+    if (unknownPath)
+      return (
+        <PublicLayout>
+          <PublicNotFoundPage />
+        </PublicLayout>
+      )
     const from = signedOut ? undefined : { from: location.pathname + location.search }
     return <Navigate to={paths.login} replace state={from} />
   }

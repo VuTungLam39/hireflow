@@ -9,7 +9,12 @@ HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
   this.removeAttribute('open')
 }
 
-// jsdom thiếu API mà Radix Select dùng
+// jsdom thiếu API mà Radix Select/Popper và cmdk dùng
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
 Element.prototype.scrollIntoView ??= function () {}
 Element.prototype.hasPointerCapture ??= () => false
 Element.prototype.releasePointerCapture ??= function () {}
