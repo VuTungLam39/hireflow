@@ -106,4 +106,4 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - [ ] ConfirmDialog → AlertDialog: `applications/components/OfferPanel` (slice 11), `applications/components/StatusActions` (slice 8), `applications/pages/ApplicationsPage` (slice 7), `interviews/components/InterviewPanel` (slice 10). Khi call site cuối chuyển → xoá `components/shared/ConfirmDialog.tsx`.
 - [ ] SidePanel → Sheet (DL-16, URL `?xem=`): QuickView + ApplicationDetailPage (slice 7/8), JobRankingPage (slice 9).
 
-- **PR:** _(điền sau khi mở)_ — **trạng thái: awaiting merge.**
+- **PR:** #119 — **trạng thái: awaiting merge.**
