@@ -42,3 +42,43 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
 - **Production smoke sau hotfix (Playwright, 24/11/2026, `/jobs` `/companies` `/login` × 1440/1024/768/390):** 12/12 không tràn ngang; không còn khối chữ bị bóp hẹp (<40 px); `/login` panel trái hiển thị đúng; Be Vietnam Pro tải từ `/fonts/` (8–9 file/trang), không còn request Google cho Be Vietnam Pro; LCP lần tải đầu `/jobs` 1316 ms, `/companies` 404 ms, `/login` 708 ms (các lần sau 116–192 ms do cache). Không có số đo trước slice 0 → AC "LCP không tệ hơn" vẫn **chưa chứng minh** bằng so sánh.
 - **Ghi nhận có từ trước (không do slice 0):** header công khai chồng chữ ở 390 px ("Công ty"/"Nhà tuyển dụng") = F-01 → slice 4; `/login` có 2 `h1` → slice 5 (AC "one h1").
 - **Chưa kiểm:** các trang sau đăng nhập (nhãn DL-08 mới) — không đăng nhập trong smoke.
+
+## Entry 2 — Slice 1: Buttons & form primitives (🟢)
+- **Spec + tickets:** issue #115. Base `feat/phase05-slice1-primitives` từ `main @ f08ea85`.
+- **Quyết định chủ dự án (24/11/2026):** (1) giữ nhìn cũ, lật token theo trang — cơ học, có sổ; (2) cấm sửa file vùng khoá ở slice 1, kể cả call site; (3) VF-10 dựng primitive ở slice 1, gắn ở slice 10.
+- **Đã làm:**
+  - Token: mọi token sinh từ DESIGN.md sang namespace `-v2-` (`--color-v2-*`, `--font-v2-*`, `--text-v2-*`, `--radius-v2-*`, `--space-v2-*`…) → **6 tên trùng của slice 0 đã gỡ**, không còn quy ước "token cũ thắng". `fe/src/styles/ui-theme.css`: lớp ngữ nghĩa `--ui-*` (utility `bg-ui-primary`, `rounded-ui`…), `:root` = màu cũ, `[data-theme='v2']` = DESIGN.md. Focus ring toàn cục + `accent-color` đi qua `--ui-*`.
+  - Primitive: Button (primary/secondary/ghost/danger/link + alias `quiet`/`inverse`/`danger-quiet`, `leadingIcon`, loading thay icon) · IconButton mới · FormField (`description`, `required` → "(bắt buộc)", tự nối `aria-describedby`/`aria-invalid` vào control; giữ `hint`/`optional`) · Input `size` · Textarea `autoGrow` · Checkbox (token) · RadioGroup mới · Switch mới · RatingScale mới (VF-10).
+  - Chuyển `<button>` thô dạng link → `Button variant="link"`: `jobs/components/RequirementEditor` ("Giữ nguyên"), `jobs/components/JobOverview` ("Xem N hồ sơ").
+  - Guard thuật ngữ miễn `PrivacyPolicyPage.tsx` (văn bản pháp lý); baseline 15 → 13. File OFL: `fe/public/fonts/OFL-BeVietnamPro.txt`, `OFL-SourceSerif4.txt`.
+- **Kiểm:** 7 test primitive mới (loading, alias, IconButton tên + tooltip khi focus bàn phím, FormField nối mô tả/lỗi + "(bắt buộc)", Switch Space, RadioGroup fieldset/legend, RatingScale radio trong label + mũi tên) + axe 0 vi phạm trên Switch/RadioGroup/RatingScale/FormField (tắt color-contrast vì jsdom) · toàn bộ 287 test xanh · format, lint, check:design, check:terms, check:tokens, typecheck, build xanh. **Không đổi hình ở theme v1:** so từng rule utility trong CSS build `main` vs nhánh sau khi resolve `var(--ui-*)` → chỉ khác `rounded-full` (9999px ↔ mặc định Tailwind, nhìn như nhau) và fallback hex của `hover:bg-ui-danger/90` (trình duyệt hiện đại dùng `color-mix` giống hệt). Vùng khoá: 0 file thay đổi.
+- **VF-08:** đạt sẵn — input file của FileUploader và ImagePicker là `sr-only` (dropzone hiển thị), GallerySection `block w-full`; không đổi code.
+- **Lệch so với contract (ghi nợ):**
+  - Disabled giữ kiểu cũ (nền sunken + chữ muted) thay vì `opacity .5` — đổi kiểu disabled sẽ đổi hình cả trang khoá chưa dựng lại; áp contract khi trang lật v2.
+  - `asChild` chưa có (cần Slot) → slice 2 cùng Radix; link dạng nút tạm dùng `buttonVariants()`.
+  - DESIGN.md chưa có `danger-soft`/`focus-soft` → v2 trộn bằng `color-mix` (`shortcut:` trong `ui-theme.css`); thêm token khi trang đầu tiên lật.
+  - FormField hiện gợi ý cả khi có lỗi (trước đây lỗi thay gợi ý) — theo contract mô tả luôn nối vào control.
+- **`package.json`:** không đổi.
+
+### Sổ lật theme (data-theme="v2")
+| Trang / route | Slice | Trạng thái |
+|---|---|---|
+| (chưa trang nào) | — | mọi trang đang v1 |
+Quy tắc: lật cả trang trong slice dựng lại trang đó bằng `data-theme="v2"` trên gốc trang/layout; không lật từng component.
+
+### Bàn giao cho slice khoá (không sửa ở slice 1)
+- [ ] `applications/components/JobApplicationHighlights.tsx:84` — slice 8
+- [ ] `applications/components/RequirementList.tsx:81` — slice 8
+- [ ] `applications/components/StatusActions.tsx:83` — slice 8
+- [ ] `applications/pages/ApplicationDetailPage.tsx:251`, `:276` — slice 8
+- [ ] `applications/pages/ApplicationsPage.tsx:562` — slice 7
+- [ ] `ranking/pages/JobRankingPage.tsx:262` — slice 9
+- [ ] `interviews/components/FeedbackDialog.tsx:33`, `:149` — slice 10
+- [ ] `interviews/components/QuestionSuggestions.tsx:51` — slice 10
+- [ ] **VF-10:** `RatingScale` đã sẵn (`components/ui/RatingScale.tsx`, có test) — **chờ gắn** vào Phiếu đánh giá ở slice 10; slice 10 được chỉnh primitive nếu cần.
+- Alias variant `quiet`/`inverse`/`danger-quiet` và prop `hint`/`optional` của FormField gỡ khi call site cuối (phần lớn trong vùng khoá) chuyển.
+
+### `<button>` thô còn lại ngoài vùng khoá (slice sở hữu)
+layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/SidePanel/RowMenu (5) → slice 2 · DataTable/FilterBar/DateRangeFilter (7) → slice 4/6 · FileUploader (2) → slice 4 · public GalleryLightbox/CareersPage (3) → slice 4 · LoginPage (1) → slice 5 · jobs JobsPage (3) → slice 6, JobFormPage menu (3) → slice 2 (Dropdown Menu), InterviewStagesEditor chip (1) → giữ (chip là toggle, không phải Button) · candidates CvSearchResults (1), ai-chat (3), notifications (2) → slice 12/5.
+
+- **PR:** _(điền sau khi mở)_ — **trạng thái: awaiting merge.**

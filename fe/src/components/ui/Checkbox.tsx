@@ -21,7 +21,7 @@ export function Checkbox({
         if (el) el.indeterminate = !!indeterminate
       }}
       className={cn(
-        'accent-brand size-4 shrink-0 cursor-pointer disabled:cursor-not-allowed',
+        'accent-ui-primary size-4 shrink-0 cursor-pointer disabled:cursor-not-allowed',
         // WCAG 2.5.8: ô 16px cần khoảng trống để vùng chạm đạt 24px
         !label && cn('m-1', className),
       )}

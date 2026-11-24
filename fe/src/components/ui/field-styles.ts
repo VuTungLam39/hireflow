@@ -1,9 +1,10 @@
 import { cn } from '@/lib/utils'
 
 export const fieldBase =
-  'w-full rounded-sm border border-line-strong bg-surface text-sm text-ink transition-[border-color,box-shadow] duration-150 placeholder:text-ink-muted hover:border-ink-faint focus:border-brand focus:ring-3 focus:ring-brand-soft focus:outline-none disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-muted disabled:hover:border-line-strong'
+  'w-full rounded-ui border border-ui-border-strong bg-ui-surface text-sm text-ui-fg transition-[border-color,box-shadow] duration-150 placeholder:text-ui-muted hover:border-ui-border-hover focus:border-ui-primary focus:ring-3 focus:ring-ui-focus-soft focus:outline-none disabled:cursor-not-allowed disabled:bg-ui-sunken disabled:text-ui-muted disabled:hover:border-ui-border-strong'
 
-export const fieldInvalid = 'border-bad hover:border-bad focus:border-bad focus:ring-bad-soft'
+export const fieldInvalid =
+  'border-ui-danger hover:border-ui-danger focus:border-ui-danger focus:ring-ui-danger-soft'
 
 export const chipClass = (active: boolean) =>
   cn(

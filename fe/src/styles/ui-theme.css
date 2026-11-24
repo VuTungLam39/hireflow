@@ -1,0 +1,69 @@
+/* Token ngữ nghĩa cho primitive (Phase 05 slice 1).
+   Mặc định = bộ màu cũ; trang đã dựng lại bọc data-theme="v2" thì lật cả trang sang DESIGN.md.
+   Sổ theo dõi trang đã lật: docs/redesign/phase-05/README.md */
+@theme inline {
+  --color-ui-primary: var(--ui-primary);
+  --color-ui-primary-hover: var(--ui-primary-hover);
+  --color-ui-on-primary: var(--ui-on-primary);
+  --color-ui-danger: var(--ui-danger);
+  --color-ui-on-danger: var(--ui-on-danger);
+  --color-ui-danger-soft: var(--ui-danger-soft);
+  --color-ui-surface: var(--ui-surface);
+  --color-ui-surface-hover: var(--ui-surface-hover);
+  --color-ui-sunken: var(--ui-sunken);
+  --color-ui-fg: var(--ui-fg);
+  --color-ui-fg-2: var(--ui-fg-2);
+  --color-ui-muted: var(--ui-muted);
+  --color-ui-border: var(--ui-border);
+  --color-ui-border-strong: var(--ui-border-strong);
+  --color-ui-border-hover: var(--ui-border-hover);
+  --color-ui-focus: var(--ui-focus);
+  --color-ui-focus-soft: var(--ui-focus-soft);
+  --radius-ui: var(--ui-radius);
+}
+
+:root {
+  --ui-primary: var(--color-brand);
+  --ui-primary-hover: var(--color-brand-hover);
+  --ui-on-primary: #ffffff;
+  --ui-danger: var(--color-bad);
+  --ui-on-danger: #ffffff;
+  --ui-danger-soft: var(--color-bad-soft);
+  --ui-surface: var(--color-surface);
+  --ui-surface-hover: var(--color-canvas);
+  --ui-sunken: var(--color-sunken);
+  --ui-fg: var(--color-ink);
+  --ui-fg-2: var(--color-ink-2);
+  --ui-muted: var(--color-ink-muted);
+  --ui-border: var(--color-line);
+  --ui-border-strong: var(--color-line-strong);
+  --ui-border-hover: var(--color-ink-faint);
+  --ui-focus: var(--color-brand);
+  --ui-focus-soft: var(--color-brand-soft);
+  --ui-radius: var(--radius-sm);
+}
+
+[data-theme='v2'] {
+  --ui-primary: var(--color-v2-primary);
+  --ui-primary-hover: var(--color-v2-primary-hover);
+  --ui-on-primary: var(--color-v2-on-primary);
+  --ui-danger: var(--color-v2-danger);
+  --ui-on-danger: var(--color-v2-on-danger);
+  /* shortcut: DESIGN.md chưa có danger-soft/focus-soft, trộn từ màu gốc; thêm token khi slice trang đầu tiên lật */
+  --ui-danger-soft: color-mix(in srgb, var(--color-v2-danger) 10%, var(--color-v2-surface));
+  --ui-surface: var(--color-v2-surface);
+  --ui-surface-hover: var(--color-v2-surface-sunken);
+  --ui-sunken: var(--color-v2-surface-sunken);
+  --ui-fg: var(--color-v2-foreground);
+  --ui-fg-2: var(--color-v2-foreground);
+  --ui-muted: var(--color-v2-muted-foreground);
+  --ui-border: var(--color-v2-border);
+  --ui-border-strong: var(--color-v2-border-strong);
+  --ui-border-hover: var(--color-v2-border-strong);
+  --ui-focus: var(--color-v2-focus-ring);
+  --ui-focus-soft: color-mix(in srgb, var(--color-v2-primary) 18%, var(--color-v2-surface));
+  --ui-radius: var(--radius-v2-md);
+  background-color: var(--color-v2-background);
+  color: var(--color-v2-foreground);
+  font-family: var(--font-v2-body-md), ui-sans-serif, system-ui, sans-serif;
+}

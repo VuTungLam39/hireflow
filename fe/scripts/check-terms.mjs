@@ -7,6 +7,8 @@ import assert from 'node:assert/strict'
 const VI = 'À-ỹ'
 const uiWord = (w) => new RegExp(`[${VI}]\\S*\\s+${w}\\b|\\b${w}\\s+[^\\s'"\`]*[${VI}]`)
 const PUBLIC = /^(features[\\/]public-jobs|prerender)[\\/]|^app[\\/]layouts[\\/]Public/
+// Văn bản pháp lý/chính sách ngoài phạm vi guard (quyết định chủ dự án 24/11/2026)
+const LEGAL = /PrivacyPolicyPage\.tsx$/
 
 export const rules = [
   { name: 'Đề nghị (OFFER)', re: /Đề nghị/ },
@@ -70,7 +72,8 @@ const main = () => {
       if (statSync(p).isDirectory()) walk(p)
       else if (
         /\.tsx?$/.test(name) &&
-        !/\.test\.|[\\/](test|mocks)[\\/]|lib[\\/]terms\.ts$/.test(p)
+        !/\.test\.|[\\/](test|mocks)[\\/]|lib[\\/]terms\.ts$/.test(p) &&
+        !LEGAL.test(p)
       )
         files.push(p)
     }

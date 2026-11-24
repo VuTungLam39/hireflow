@@ -1,7 +1,8 @@
 @import 'tailwindcss';
 @import './styles/fonts.css';
-/* DESIGN.md – token mới; @theme cũ bên dưới thắng khi trùng tên (alias) */
+/* DESIGN.md – namespace -v2-, không trùng token cũ */
 @import './styles/tokens.generated.css';
+@import './styles/ui-theme.css';
 
 /* Design Spec v1.0 – mục 3 */
 @theme {
@@ -157,7 +158,7 @@
 
   html {
     -webkit-text-size-adjust: 100%;
-    accent-color: var(--color-brand);
+    accent-color: var(--ui-primary);
   }
 
   /* Ẩn mọi thanh cuộn (trang, vùng cuộn, textarea); vẫn cuộn được bằng chuột, cảm ứng, bàn phím */
@@ -197,7 +198,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-brand);
+    outline: 2px solid var(--ui-focus);
     outline-offset: 2px;
   }
 
