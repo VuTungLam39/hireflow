@@ -158,3 +158,31 @@ describe('DropdownMenu', () => {
     await waitFor(() => expect(trigger).toHaveFocus())
   })
 })
+
+describe('DropdownMenu → Dialog', () => {
+  it('đóng hộp thoại mở từ mục menu thì focus về nút mở menu', async () => {
+    const user = userEvent.setup()
+    function Demo() {
+      const [open, setOpen] = useState(false)
+      return (
+        <>
+          <DropdownMenu
+            trigger={<Button aria-label="Thao tác với A">…</Button>}
+            items={[{ label: 'Sửa', onSelect: () => setOpen(true) }]}
+          />
+          <Dialog open={open} onClose={() => setOpen(false)} title="Sửa người dùng">
+            <Input aria-label="Họ tên" />
+          </Dialog>
+        </>
+      )
+    }
+    render(<Demo />)
+    const trigger = screen.getByRole('button', { name: 'Thao tác với A' })
+    trigger.focus()
+    await user.keyboard('{Enter}')
+    await user.click(await screen.findByRole('menuitem', { name: 'Sửa' }))
+    await screen.findByRole('dialog', { name: 'Sửa người dùng' })
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(trigger).toHaveFocus())
+  })
+})
