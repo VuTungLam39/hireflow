@@ -198,4 +198,7 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - **LCP:** chưa so — máy chủ preview cục bộ không so được với production; đo trên production trước/sau merge.
 - **Chưa làm trong 4b (ghi nợ):** Job Summary theo SurfaceContext — chưa có component tóm tắt việc làm dùng chung hai bề mặt (JobRows chỉ công khai); làm khi slice 6/12 dựng component dùng chung. Bố cục chi tiết theo prototype P4 (thẻ "Yêu cầu", bước "1. Thông tin / 2. Xong") không đổi — 4b chỉ lật token theo P5-D05.
 - **Kiểm:** format, lint, check:design, check:terms, check:tokens, typecheck, toàn bộ test, build xanh. `package.json` không đổi. Vùng khoá: 0 file.
-- **PR:** #127 — **trạng thái: awaiting merge.**
+- **PR:** #127 — CI xanh. **Merged.**
+- **Production sau merge (Playwright, 24/11/2026):** `/jobs`, chi tiết việc làm, `/companies`, trang công ty × 390/1440 → 8/8 `data-theme=v2`, 0 phần tử màu cũ, không tràn ngang; ảnh 390 trang công ty duyệt mắt ✔.
+- **LCP production (3 lần tải lạnh/trang, context mới, trung vị):** 390 — `/jobs` 288 ms, chi tiết 304, `/companies` 268, trang công ty 432 · 1440 — 260, 400, 272, 320 ms. **Không có số đo v1 cùng phương pháp để so** (số ở Entry 1 là 1 lần tải, phương pháp khác: 1316/404/708 ms) → AC "LCP không tệ hơn" ghi nhận là *không thấy dấu hiệu xấu đi*, chưa chứng minh bằng so sánh cùng điều kiện.
+- **Font trên trang công khai:** chỉ tải Be Vietnam Pro tự host; **Bricolage không còn bị tải** (chỉ còn request stylesheet `css2` của Google, bất đồng bộ — gỡ khi trang nội bộ lật). Ghi nhận: vẫn tải weight **700** (code cũ còn `font-bold`), DESIGN.md chỉ 400/500/600 → dọn khi lật trang nội bộ.
