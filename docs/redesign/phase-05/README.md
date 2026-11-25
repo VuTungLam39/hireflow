@@ -301,6 +301,11 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
   - Xem CV trên màn hẹp: `SidePanel` → `Dialog` (Sheet là quick view có "Mở chi tiết" nên không hợp ở trang chi tiết). Menu "Thao tác khác" → `DropdownMenu`. Nút `<button>` thô ở RequirementList/JobApplicationHighlights → `Button variant="link"`. Thuật ngữ "Bằng chứng" → "Căn cứ" (CvSheet, CvTextDialog; baseline 10 → 8). Trang lật v2.
 - **Bundle:** route vào không đổi (index 13.61 KB gzip); `vendor` +0.71 KB gzip (Radix Tabs).
 - **Kiểm:** 330 test FE xanh — mới: hộp quyết định (không chọn sẵn, nhãn theo lựa chọn, lý do khi Từ chối; lỗi lưu giữ lựa chọn + Thử lại; 403 → banner), không tìm thấy (ADR-0002), "Có căn cứ bị loại (1)" + chú thích văn bản trích xuất; Tabs có `aria-controls` ↔ panel. Sửa theo hành vi mới: DetailDialog roving focus, mở lại → `alertdialog` + nút "Chuyển trạng thái". Typecheck, build, format, lint, check:design, check:terms xanh.
-- **Chưa kiểm trên trình duyệt thật:** bố cục 2 cột/1 cột, hộp quyết định ở 390, axe → production smoke sau merge (không bấm Xác nhận trên production).
+- **Production smoke (25/11, `main @ db2423d` gồm #146 + #148, Admin hireflow-demo, Playwright):**
+  - `/applications` (kiểm lại #146): 390 thẻ; 768/1024/1440 bảng **tràn trong khung 0** (trước #146: +34/+29) → F-03/T4 đạt.
+  - `/applications/:id` × 390/1024/1440: trang không tràn; 1 h1; `data-theme="v2"`; 3 tab Radix đều có `aria-controls` → panel, panel có `aria-labelledby`; ≥1024 khung CV ghi "Nội dung CV đã trích xuất…"; 390 "Xem CV" mở Dialog toàn màn (390×844), có chú thích trích xuất, không tràn; **axe 0** (trang, hộp quyết định, Dialog CV).
+  - Hộp quyết định (mở rồi Escape, **không bấm Xác nhận**): tên "Chuyển trạng thái hồ sơ", ô chọn `""` (không chọn sẵn), lựa chọn Phỏng vấn / Từ chối / Ứng viên rút hồ sơ (không có Offer), focus vào "Huỷ", vừa màn ở 390, Escape đóng.
+  - Không tìm thấy: `/applications/<uuid không tồn tại>` → h1 "Không tìm thấy hồ sơ này" + "Về danh sách hồ sơ".
+  - **Chưa thấy trên production:** mục "Có căn cứ bị loại" (hồ sơ được mở không có câu trích bị loại — chỉ có test); lưu thật/lỗi lưu/403 (không ghi dữ liệu production — chỉ có test).
 - **Bàn giao còn lại:** ConfirmDialog ở OfferPanel (11), InterviewPanel (10); SidePanel ở JobRankingPage (9), ChatPage (12).
 
