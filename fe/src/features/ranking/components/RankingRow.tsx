@@ -56,6 +56,16 @@ export const RankingRow = memo(function RankingRow({
       aria-selected={onSelect ? !!selected : undefined}
       onClick={() => onSelect?.(item.applicationId)}
       onKeyDown={(e) => {
+        const step =
+          e.key === 'j' || e.key === 'ArrowDown' ? 1 : e.key === 'k' || e.key === 'ArrowUp' ? -1 : 0
+        if (step) {
+          e.preventDefault()
+          const row = e.currentTarget
+          ;(
+            (step > 0 ? row.nextElementSibling : row.previousElementSibling) as HTMLElement | null
+          )?.focus()
+          return
+        }
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
           onSelect?.(item.applicationId)

@@ -7,6 +7,8 @@ export interface RankingItem {
   status: ApplicationStatus
   aiStatus: AiStatus
   flags: ScoreFlag[]
+  /** P5-D12b: khác job.jdVersion = đang chấm lại theo tiêu chí mới */
+  scoredJdVersion: number | null
   /** Mức khớp từng tiêu chí – đủ để FE tự tính lại điểm khi đổi trọng số */
   matches: { requirementId: string; match: MatchLevel }[]
 }

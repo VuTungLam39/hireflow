@@ -34,7 +34,7 @@ export const RankingTable = memo(function RankingTable({
     <Profiler id="ranking-table" onRender={onProfilerRender}>
       <div className="border-line bg-surface -mx-4 border-y md:mx-0 md:rounded-md md:border">
         <table className="w-full border-separate border-spacing-0 text-left text-sm">
-          <caption className="sr-only">Xếp hạng ứng viên theo mức phù hợp</caption>
+          <caption className="sr-only">Xếp hạng hồ sơ theo mức phù hợp</caption>
           <thead>
             <tr>
               <th scope="col" className={`${th} w-24 pr-2 pl-4 md:rounded-tl-md`}>

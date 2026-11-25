@@ -416,6 +416,7 @@ describe('Jobs (e2e)', () => {
             status: ApplicationStatus.Interview,
             aiStatus: AiStatus.Done,
             score: 100,
+            scoredJdVersion: 3,
             scoreBreakdown: [
               {
                 requirementId: reqNest.id,
@@ -433,6 +434,7 @@ describe('Jobs (e2e)', () => {
             aiStatus: AiStatus.Done,
             score: 0,
             scoreBreakdown: [],
+            scoredJdVersion: 2,
           },
         ]),
       );
@@ -486,6 +488,19 @@ describe('Jobs (e2e)', () => {
         matches: [{ requirementId: reqs[0].id, match: 1 }],
       });
       expect(items.find((i: { status: string }) => i.status === 'NEW').matches).toEqual([]);
+      // P5-D12b: phiên bản tiêu chí mỗi hồ sơ được chấm theo
+      expect(
+        items.map((i: { status: string; scoredJdVersion: number | null }) => [
+          i.status,
+          i.scoredJdVersion,
+        ]),
+      ).toEqual(
+        expect.arrayContaining([
+          ['INTERVIEW', 3],
+          ['REJECTED', 2],
+          ['NEW', null],
+        ]),
+      );
     });
   });
 
