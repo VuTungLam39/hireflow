@@ -1,15 +1,17 @@
 import { CircleSlash, Flag } from 'lucide-react'
-import { Spinner } from '@/components/ui'
+import { Spinner, TONE_DOT } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { scoreTone } from '../lib/score-tone'
 import {
   AI_STATUS,
   APPLICATION_STATUS,
+  OFFER_STATUS,
   SCORE_FLAGS,
   type AiStatus,
   type ApplicationStatus,
   type ScoreFlag,
 } from '../constants'
+import type { OfferStatus } from '../types'
 
 export function ProgressDot({ step, className }: { step: number; className?: string }) {
   const r = 5.25
@@ -152,6 +154,17 @@ export function ScoreBadge({
           cũ
         </span>
       )}
+    </span>
+  )
+}
+
+// Slice 11 · Phase 03 file 05: OfferStatusBadge
+export function OfferStatusBadge({ status }: { status: OfferStatus }) {
+  const { label, tone } = OFFER_STATUS[status]
+  return (
+    <span className="text-ink inline-flex items-center gap-1.5 text-[13px] leading-5 font-medium whitespace-nowrap">
+      <span aria-hidden className={cn('size-2 rounded-full', TONE_DOT[tone])} />
+      {label}
     </span>
   )
 }

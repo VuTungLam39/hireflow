@@ -114,12 +114,12 @@ export const APPLICATION_VIEWS = [
 
 // MVP 3.1 · BR-OFFER-02
 export const OFFER_STATUS = {
-  DRAFT: { label: 'Bản nháp', closed: false },
-  PENDING_APPROVAL: { label: 'Chờ duyệt', closed: false },
-  APPROVED: { label: 'Đã duyệt', closed: false },
-  SENT: { label: 'Đã gửi ứng viên', closed: false },
-  ACCEPTED: { label: 'Ứng viên đã nhận', closed: true },
-  DECLINED: { label: 'Ứng viên từ chối', closed: true },
-  WITHDRAWN: { label: 'Đã rút', closed: true },
-  EXPIRED: { label: 'Hết hạn trả lời', closed: true },
-} as const
+  DRAFT: { label: 'Bản nháp', closed: false, tone: 'neutral' },
+  PENDING_APPROVAL: { label: 'Chờ duyệt', closed: false, tone: 'warning' },
+  APPROVED: { label: 'Đã duyệt', closed: false, tone: 'info' },
+  SENT: { label: 'Đã gửi ứng viên', closed: false, tone: 'info' },
+  ACCEPTED: { label: 'Ứng viên đã nhận', closed: true, tone: 'success' },
+  DECLINED: { label: 'Ứng viên từ chối', closed: true, tone: 'danger' },
+  WITHDRAWN: { label: 'Đã rút', closed: true, tone: 'neutral' },
+  EXPIRED: { label: 'Hết hạn trả lời', closed: true, tone: 'neutral' },
+} as const satisfies Record<string, { label: string; closed: boolean; tone: BadgeTone }>

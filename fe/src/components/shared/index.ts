@@ -1,6 +1,5 @@
 export * from './Can'
 export * from './CommandPalette'
-export * from './ConfirmDialog'
 export * from './DataTable'
 export * from './DateRangeFilter'
 export * from './DetailDialog'
