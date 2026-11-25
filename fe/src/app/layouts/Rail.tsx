@@ -1,47 +1,24 @@
-import { useQuery } from '@tanstack/react-query'
 import { ArrowUpRight, X } from 'lucide-react'
-import { Link, NavLink } from 'react-router'
+import { Link } from 'react-router'
 import { Tooltip } from '@/components/ui'
-import { applicationQueries } from '@/features/applications'
 import { useMediaQuery } from '@/hooks/use-media-query'
-import { usePermission } from '@/hooks/use-permission'
-import { hasPermission, Permission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import { paths } from '@/routes/paths'
 import { useAuthStore } from '@/stores/auth.store'
 import { useUiStore } from '@/stores/ui.store'
 import { BrandMark } from './BrandMark'
-import { navGroups } from './nav-config'
+import type { RailGroup } from './use-nav-groups'
 
-function usePendingCount() {
-  const allowed = usePermission(Permission.ApplicationRead)
-  const query = useQuery({
-    ...applicationQueries.list({
-      page: 1,
-      limit: 1,
-      status: 'NEW',
-      sortBy: 'createdAt',
-      order: 'DESC',
-    }),
-    enabled: allowed,
-    staleTime: 60_000,
-  })
-  return query.data?.meta?.totalItems
+interface RailProps {
+  groups: RailGroup[]
+  activeId?: string
 }
 
-export function Sidebar() {
+export function Rail({ groups, activeId }: RailProps) {
   const user = useAuthStore((s) => s.user)
   const open = useUiStore((s) => s.sidebarOpen)
   const setOpen = useUiStore((s) => s.setSidebarOpen)
-  const pending = usePendingCount()
   const railOnly = useMediaQuery('(min-width: 48rem) and (max-width: 63.99rem)')
-
-  const groups = navGroups
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) => hasPermission(user, item.permission)),
-    }))
-    .filter((group) => group.items.length > 0)
 
   return (
     <>
@@ -83,49 +60,43 @@ export function Sidebar() {
                 {group.title}
               </p>
               <ul className="space-y-0.5">
-                {group.items.map(({ to, label, icon: Icon, end, badge }) => {
-                  const count = badge === 'pending' ? pending : undefined
+                {group.items.map(({ id, href, label, icon: Icon, badgeCount: count }) => {
+                  const isActive = id === activeId
                   return (
-                    <li key={to}>
+                    <li key={id}>
                       <Tooltip label={label} side="right" className="flex" disabled={!railOnly}>
-                        <NavLink
-                          to={to}
-                          end={end}
+                        <Link
+                          to={href}
                           onClick={() => setOpen(false)}
+                          aria-current={isActive ? 'page' : undefined}
                           aria-label={count ? `${label}, ${count} hồ sơ chờ xem` : undefined}
-                          className={({ isActive }) =>
-                            cn(
-                              'focus-visible:outline-marker relative flex h-9 w-full items-center gap-3 rounded-sm px-2.5 text-sm transition-colors duration-150',
-                              'md:justify-center md:px-0 lg:justify-start lg:px-2.5',
-                              isActive
-                                ? 'bg-rail-hover font-semibold text-white'
-                                : 'text-rail-text hover:bg-rail-hover/70 font-normal hover:text-white',
-                            )
-                          }
-                        >
-                          {({ isActive }) => (
-                            <>
-                              {isActive && (
-                                <span
-                                  aria-hidden
-                                  className="bg-marker absolute top-1.5 bottom-1.5 left-0 w-[3px] rounded-r-xs"
-                                />
-                              )}
-                              <Icon
-                                className={cn(
-                                  'size-[18px] shrink-0',
-                                  isActive ? 'text-white' : 'text-rail-muted',
-                                )}
-                              />
-                              <span className="truncate md:max-lg:sr-only">{label}</span>
-                              {count != null && count > 0 && (
-                                <span className="num text-rail-muted ml-auto text-xs md:absolute md:top-0.5 md:right-1 md:ml-0 lg:static lg:ml-auto">
-                                  {count > 999 ? '999+' : count.toLocaleString('vi-VN')}
-                                </span>
-                              )}
-                            </>
+                          className={cn(
+                            'focus-visible:outline-marker relative flex h-9 w-full items-center gap-3 rounded-sm px-2.5 text-sm transition-colors duration-150',
+                            'md:justify-center md:px-0 lg:justify-start lg:px-2.5',
+                            isActive
+                              ? 'bg-rail-hover font-semibold text-white'
+                              : 'text-rail-text hover:bg-rail-hover/70 font-normal hover:text-white',
                           )}
-                        </NavLink>
+                        >
+                          {isActive && (
+                            <span
+                              aria-hidden
+                              className="bg-marker absolute top-1.5 bottom-1.5 left-0 w-[3px] rounded-r-xs"
+                            />
+                          )}
+                          <Icon
+                            className={cn(
+                              'size-[18px] shrink-0',
+                              isActive ? 'text-white' : 'text-rail-muted',
+                            )}
+                          />
+                          <span className="truncate md:max-lg:sr-only">{label}</span>
+                          {count != null && count > 0 && (
+                            <span className="num text-rail-muted ml-auto text-xs md:absolute md:top-0.5 md:right-1 md:ml-0 lg:static lg:ml-auto">
+                              {count > 999 ? '999+' : count.toLocaleString('vi-VN')}
+                            </span>
+                          )}
+                        </Link>
                       </Tooltip>
                     </li>
                   )
