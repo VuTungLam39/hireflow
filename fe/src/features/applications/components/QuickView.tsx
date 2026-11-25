@@ -1,10 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight } from 'lucide-react'
-import { Link } from 'react-router'
-import { ErrorState, SidePanel } from '@/components/shared'
-import { Skeleton, buttonVariants } from '@/components/ui'
-import { InterviewPanel } from '@/features/interviews'
-import { formatDate } from '@/lib/utils'
+import { ErrorState } from '@/components/shared'
+import { Sheet, Skeleton } from '@/components/ui'
+import { INTERVIEW_STATUS, useApplicationInterviews } from '@/features/interviews'
+import { formatDate, formatDateTime } from '@/lib/utils'
 import { links } from '@/routes/paths'
 import { APPLICATION_SOURCE, type MatchLevel } from '../constants'
 import { applicationQueries } from '../hooks/use-applications'
@@ -17,30 +15,24 @@ interface QuickViewProps {
   listQuery: string
   hideScore?: boolean
   onClose: () => void
+  onPrev?: () => void
+  onNext?: () => void
 }
 
-export function QuickView({ id, listQuery, hideScore, onClose }: QuickViewProps) {
+// DL-16 · P5-D10b: xem nhanh chỉ đọc cho mọi vai
+export function QuickView({ id, listQuery, hideScore, onClose, onPrev, onNext }: QuickViewProps) {
   const query = useQuery({ ...applicationQueries.detail(id ?? ''), enabled: !!id })
   const app = query.data
 
   return (
-    <SidePanel
+    <Sheet
       open={!!id}
-      onClose={onClose}
+      onOpenChange={(open) => !open && onClose()}
       title={app?.candidate.fullName ?? 'Hồ sơ'}
-      subtitle={app && `${app.job.title} · nộp ${formatDate(app.createdAt)}`}
-      footer={
-        id && (
-          <Link
-            to={links.applicationDetail(id)}
-            state={{ listQuery } satisfies ReviewState}
-            className={buttonVariants({ variant: hideScore ? 'secondary' : undefined })}
-          >
-            Mở bàn duyệt CV
-            <ArrowRight />
-          </Link>
-        )
-      }
+      detailHref={id ? links.applicationDetail(id) : ''}
+      detailState={{ listQuery } satisfies ReviewState}
+      prev={onPrev && { label: 'Hồ sơ trước', onSelect: onPrev }}
+      next={onNext && { label: 'Hồ sơ sau', onSelect: onNext }}
     >
       {query.isPending ? (
         <div className="space-y-3">
@@ -55,6 +47,9 @@ export function QuickView({ id, listQuery, hideScore, onClose }: QuickViewProps)
       ) : (
         app && (
           <div className="space-y-5">
+            <p className="type-caption">
+              {app.job.title} · nộp {formatDate(app.createdAt)}
+            </p>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <StatusPill status={app.status} />
               <AiStatusBadge status={app.aiStatus} />
@@ -67,17 +62,7 @@ export function QuickView({ id, listQuery, hideScore, onClose }: QuickViewProps)
               {app.candidate.phone && ` · ${app.candidate.phone}`}
             </p>
 
-            {hideScore && (
-              <section>
-                <h3 className="type-heading mb-2">Phỏng vấn</h3>
-                <InterviewPanel
-                  applicationId={app.id}
-                  applicationStatus={app.status}
-                  requirements={app.requirements}
-                  jobId={app.job.id}
-                />
-              </section>
-            )}
+            {hideScore && <InterviewSummary applicationId={app.id} />}
 
             {!hideScore && app.aiStatus === 'DONE' && app.score !== null && (
               <section>
@@ -115,9 +100,37 @@ export function QuickView({ id, listQuery, hideScore, onClose }: QuickViewProps)
                 </ul>
               </section>
             )}
+            <p className="type-caption">Để chuyển trạng thái, mở chi tiết hồ sơ.</p>
           </div>
         )
       )}
-    </SidePanel>
+    </Sheet>
+  )
+}
+
+function InterviewSummary({ applicationId }: { applicationId: string }) {
+  const interviews = useApplicationInterviews(applicationId)
+  return (
+    <section>
+      <h3 className="type-heading mb-2">Phỏng vấn</h3>
+      {interviews.isPending ? (
+        <Skeleton className="h-12 w-full" />
+      ) : !interviews.data?.length ? (
+        <p className="type-caption">Chưa có lịch phỏng vấn.</p>
+      ) : (
+        <ul className="divide-line-soft divide-y">
+          {interviews.data.map((i) => (
+            <li key={i.id} className="py-2">
+              <p className="type-subheading">
+                {i.stage?.name ?? `Vòng ${i.round}`} · {INTERVIEW_STATUS[i.status].label}
+              </p>
+              <p className="type-caption">
+                {formatDateTime(i.scheduledAt)} · {i.location}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   )
 }

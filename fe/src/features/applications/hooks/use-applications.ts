@@ -217,10 +217,17 @@ export function useBulkChangeStatus() {
         status === 'REJECTED'
           ? `Đã từ chối ${succeeded.length} hồ sơ`
           : `Đã chuyển ${succeeded.length} hồ sơ sang “${label}”`
+      const skipped = (code: string) => failed.filter((f) => f.code === code).length
+      const invalid = skipped('INVALID_STATUS_TRANSITION')
+      const gone = skipped('NOT_FOUND')
+      const other = failed.length - invalid - gone
+      // P5-D10a: tóm tắt kết quả có lý do bỏ qua; hồ sơ bỏ qua vẫn được chọn
       const extra = [
-        unchanged.length && `${unchanged.length} hồ sơ đã ở bước này`,
-        failed.length &&
-          `${failed.length} hồ sơ bỏ qua vì vừa được người khác đổi hoặc đang ở bước Đề nghị – vẫn được chọn để bạn xem lại`,
+        unchanged.length && `${unchanged.length} không đổi (đã ở bước này)`,
+        invalid &&
+          `${invalid} bỏ qua (không chuyển được từ bước hiện tại, ví dụ Offer hoặc đã kết thúc)`,
+        gone && `${gone} bỏ qua (không còn trong phạm vi của bạn)`,
+        other && `${other} bỏ qua (vừa được người khác đổi)`,
       ].filter(Boolean)
       const show = failed.length ? toast.warning : toast.success
       show(done, extra.length ? { description: extra.join(' · ') } : undefined)

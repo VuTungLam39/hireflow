@@ -76,8 +76,8 @@ describe('bulk status change', () => {
     }
     expect(chosen).toHaveLength(3)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Từ chối 3 hồ sơ' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Từ chối 3 hồ sơ?' })
+    fireEvent.click(screen.getByRole('button', { name: 'Từ chối…' }))
+    const dialog = await screen.findByRole('alertdialog', { name: 'Từ chối 3 hồ sơ đã chọn?' })
     // BR-STS-03: phải chọn mã lý do
     fireEvent.click(within(dialog).getByRole('button', { name: 'Từ chối 3 hồ sơ' }))
     expect(within(dialog).getByRole('alert')).toHaveTextContent('Chọn một lý do để tiếp tục')
@@ -126,11 +126,11 @@ describe('bulk status change', () => {
     await pick(label(a))
     await pick(label(b))
 
-    fireEvent.click(screen.getByRole('button', { name: 'Chuyển 2 hồ sơ sang Phỏng vấn' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Chuyển sang Phỏng vấn' }))
 
     await waitFor(() =>
       expect(warning).toHaveBeenCalledWith('Đã chuyển 1 hồ sơ sang “Phỏng vấn”', {
-        description: expect.stringContaining('1 hồ sơ bỏ qua'),
+        description: expect.stringContaining('1 bỏ qua (không chuyển được từ bước hiện tại'),
       }),
     )
     const bar = await screen.findByRole('region', { name: 'Thao tác hàng loạt' })
@@ -143,10 +143,11 @@ describe('saved view tabs', () => {
   it('keeps the saved view selected when another filter narrows it further', async () => {
     signIn('hr@hireflow.dev')
     open('?status=NEW&scoreMin=70&sortBy=score&order=DESC')
-    expect(await screen.findByRole('tab', { name: /Chờ xem/ })).toHaveAttribute(
-      'aria-selected',
+    // P5-D04: thanh lọc là radiogroup
+    expect(await screen.findByRole('radio', { name: /Chờ xem/ })).toHaveAttribute(
+      'aria-checked',
       'true',
     )
-    expect(screen.getByRole('tab', { name: 'Tất cả' })).toHaveAttribute('aria-selected', 'false')
+    expect(screen.getByRole('radio', { name: 'Tất cả' })).toHaveAttribute('aria-checked', 'false')
   })
 })
