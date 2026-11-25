@@ -1,5 +1,5 @@
 /* Token ngữ nghĩa cho primitive (Phase 05 slice 1).
-   Mặc định = bộ màu cũ; trang đã dựng lại bọc data-theme="v2" thì lật cả trang sang DESIGN.md.
+   Mặc định = bộ màu cũ (chỉ còn /login); AppShell/PublicLayout đặt data-theme="v2" lên <html> (P5-D14c).
    Sổ theo dõi trang đã lật: docs/redesign/phase-05/README.md */
 @theme inline {
   --color-ui-primary: var(--ui-primary);

@@ -1,7 +1,8 @@
 import { Menu } from 'lucide-react'
-import { useEffect, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { Button, DropdownMenu } from '@/components/ui'
+import { useDocumentTheme } from '@/hooks/use-document-theme'
 import { useFocusMainOnNavigate } from '@/hooks/use-focus-main'
 import { SurfaceProvider } from '@/lib/surface-provider'
 import { cn } from '@/lib/utils'
@@ -18,13 +19,8 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
 export function PublicLayout({ children }: { children?: ReactNode }) {
   useFocusMainOnNavigate()
   const navigate = useNavigate()
-  // P5-D02: trang công khai đã lật v2 (slice 4b); <html> để overlay qua Portal cũng lật
-  useEffect(() => {
-    document.documentElement.dataset.theme = 'v2'
-    return () => {
-      delete document.documentElement.dataset.theme
-    }
-  }, [])
+  // P5-D02
+  useDocumentTheme('v2')
   return (
     <div data-theme="v2" className="bg-surface text-ink-2 flex min-h-dvh flex-col">
       <a
