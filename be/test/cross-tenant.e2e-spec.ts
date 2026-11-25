@@ -1,5 +1,9 @@
-import { INestApplication, RequestMethod, Type } from '@nestjs/common';
-import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants.js';
+import { INestApplication, NotFoundException, RequestMethod, Type } from '@nestjs/common';
+import { METHOD_METADATA, PATH_METADATA, ROUTE_ARGS_METADATA } from '@nestjs/common/constants.js';
+import { RouteParamtypes } from '@nestjs/common/enums/route-paramtypes.enum.js';
+// @ts-expect-error — class-transformer không xuất type cho storage nội bộ
+import { defaultMetadataStorage } from 'class-transformer/cjs/storage.js';
+import { getMetadataStorage } from 'class-validator';
 import { DiscoveryModule, DiscoveryService, Reflector } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import bcrypt from 'bcryptjs';
@@ -10,6 +14,7 @@ import { AppModule } from '../src/app.module.js';
 import { IS_PUBLIC_KEY } from '../src/common/constants/index.js';
 import { ApplicationStatus } from '../src/common/enums/application-status.enum.js';
 import { Role } from '../src/common/enums/role.enum.js';
+import { ApplicationsService } from '../src/modules/applications/applications.service.js';
 import { Application } from '../src/modules/applications/entities/application.entity.js';
 import {
   AuditAction,
@@ -26,6 +31,7 @@ import {
   JobRequirement,
   RequirementType,
 } from '../src/modules/jobs/entities/job-requirement.entity.js';
+import { JobInterviewStage } from '../src/modules/jobs/entities/job-interview-stage.entity.js';
 import { Job, JobStatus } from '../src/modules/jobs/entities/job.entity.js';
 import { Offer } from '../src/modules/offers/entities/offer.entity.js';
 import { Notification } from '../src/modules/notifications/entities/notification.entity.js';
@@ -64,6 +70,10 @@ describe('Cross-tenant isolation (e2e)', () => {
     media: '',
     notification: '',
     offer: '',
+    hm: '',
+    stage: '',
+    criterion: '',
+    requirement: '',
     hrEmail: `x-hr-${run}@example.com`,
     candidateEmail: `x-cand-${run}@example.com`,
   };
@@ -72,6 +82,22 @@ describe('Cross-tenant isolation (e2e)', () => {
   const inA = <T>(value: T): T => withOrg(value, orgA);
   const adminB = `x-admin-b-${run}@example.com`;
   let tokenB = '';
+  let tokenIvB = '';
+  const b = {
+    admin: '',
+    dept: '',
+    hm: '',
+    interviewer: '',
+    job: '',
+    emptyJob: '',
+    app: '',
+    bulkApp: '',
+    stage: '',
+    criterion: '',
+    requirement: '',
+    pastInterview: '',
+    futureInterview: '',
+  };
 
   const server = () => app.getHttpServer();
   const asB = (req: request.Test) => req.set('Authorization', `Bearer ${tokenB}`);
@@ -122,7 +148,7 @@ describe('Cross-tenant isolation (e2e)', () => {
         publishedAt: new Date(),
       }),
     );
-    await ds.getRepository(JobRequirement).save({
+    const requirementA = await ds.getRepository(JobRequirement).save({
       jobId: job.id,
       jdVersion: 1,
       position: 0,
@@ -224,7 +250,27 @@ describe('Cross-tenant isolation (e2e)', () => {
         createdBy: hr.id,
       }),
     );
+    const hmA = await ds.getRepository(User).save(
+      inA({
+        email: `x-hm-${run}@example.com`,
+        fullName: 'Cross HM A',
+        role: Role.HiringManager,
+        departmentId: dept.id,
+        passwordHash,
+      }),
+    );
+    const criterionA = randomUUID();
+    const stageA = await ds.getRepository(JobInterviewStage).save({
+      jobId: job.id,
+      position: 1,
+      name: 'Vòng A',
+      criteria: [{ id: criterionA, label: 'Tiêu chí A' }],
+    });
     Object.assign(a, {
+      hm: hmA.id,
+      stage: stageA.id,
+      criterion: criterionA,
+      requirement: requirementA.id,
       offer: offer.id,
       dept: dept.id,
       hr: hr.id,
@@ -245,19 +291,138 @@ describe('Cross-tenant isolation (e2e)', () => {
       slug: `cross-b-${run}`,
       status: OrganizationStatus.Active,
     });
-    await ds.getRepository(User).save({
-      organizationId: orgB,
-      email: adminB,
-      fullName: 'Admin B',
-      role: Role.Admin,
-      passwordHash,
-      emailVerifiedAt: new Date(),
+    const inB = <T>(value: T): T => withOrg(value, orgB);
+    const deptB = await ds
+      .getRepository(Department)
+      .save(inB({ name: `Cross B ${run}`, code: `XB_${run}`.toUpperCase() }));
+    const [adminUserB, hmB, ivB] = await ds.getRepository(User).save(
+      inB<Partial<User>[]>([
+        {
+          email: adminB,
+          fullName: 'Admin B',
+          role: Role.Admin,
+          passwordHash,
+          emailVerifiedAt: new Date(),
+        },
+        {
+          email: `x-hm-b-${run}@example.com`,
+          fullName: 'HM B',
+          role: Role.HiringManager,
+          departmentId: deptB.id,
+          passwordHash,
+        },
+        {
+          email: `x-iv-b-${run}@example.com`,
+          fullName: 'IV B',
+          role: Role.Interviewer,
+          passwordHash,
+          emailVerifiedAt: new Date(),
+        },
+      ]),
+    );
+    const jobB = await ds.getRepository(Job).save(
+      inB({
+        title: `Cross job B ${run}`,
+        departmentId: deptB.id,
+        status: JobStatus.Open,
+        location: 'HCM',
+        jdText: 'JD',
+        createdBy: adminUserB.id,
+        publishedAt: new Date(),
+      }),
+    );
+    // tin chưa có hồ sơ: phòng ban còn đổi được (đối chứng PATCH /jobs/:id)
+    const emptyJobB = await ds.getRepository(Job).save(
+      inB({
+        title: `Cross empty job B ${run}`,
+        departmentId: deptB.id,
+        status: JobStatus.Draft,
+        location: 'HCM',
+        jdText: 'JD',
+        createdBy: adminUserB.id,
+      }),
+    );
+    const requirementB = await ds.getRepository(JobRequirement).save({
+      jobId: jobB.id,
+      jdVersion: 1,
+      position: 0,
+      label: 'API',
+      type: RequirementType.Must,
+      weight: 2,
+      keywords: ['api'],
     });
-    const res = await request(server())
-      .post('/api/v1/auth/login')
-      .send({ email: adminB, password })
-      .expect(200);
-    tokenB = res.body.data.tokens.accessToken;
+    const criterionB = randomUUID();
+    const stageB = await ds.getRepository(JobInterviewStage).save({
+      jobId: jobB.id,
+      position: 1,
+      name: 'Vòng 1',
+      criteria: [{ id: criterionB, label: 'API' }],
+    });
+    const candB = await ds.getRepository(Candidate).save(
+      inB({
+        fullName: 'Cand B',
+        email: `x-cand-b-${run}@example.com`,
+        consentAt: new Date(),
+        consentVersion: 'v2',
+      }),
+    );
+    const appB = await ds
+      .getRepository(Application)
+      .save(inB({ jobId: jobB.id, candidateId: candB.id, status: ApplicationStatus.Interview }));
+    const candB2 = await ds.getRepository(Candidate).save(
+      inB({
+        fullName: 'Cand B2',
+        email: `x-cand-b2-${run}@example.com`,
+        consentAt: new Date(),
+        consentVersion: 'v2',
+      }),
+    );
+    const bulkAppB = await ds
+      .getRepository(Application)
+      .save(inB({ jobId: jobB.id, candidateId: candB2.id, status: ApplicationStatus.New }));
+    const [pastIv, futureIv] = await ds.getRepository(Interview).save(
+      inB<Partial<Interview>[]>([
+        {
+          applicationId: appB.id,
+          round: 1,
+          scheduledAt: new Date(Date.now() - 3_600_000),
+          durationMinutes: 30,
+          location: 'B',
+          createdBy: adminUserB.id,
+        },
+        {
+          applicationId: appB.id,
+          round: 2,
+          scheduledAt: new Date(Date.now() + 10 * 86_400_000),
+          durationMinutes: 30,
+          location: 'B',
+          createdBy: adminUserB.id,
+        },
+      ]),
+    );
+    await ds.getRepository(InterviewAssignee).save([
+      { interviewId: pastIv.id, userId: ivB.id },
+      { interviewId: futureIv.id, userId: ivB.id },
+    ]);
+    Object.assign(b, {
+      admin: adminUserB.id,
+      dept: deptB.id,
+      hm: hmB.id,
+      interviewer: ivB.id,
+      job: jobB.id,
+      emptyJob: emptyJobB.id,
+      app: appB.id,
+      bulkApp: bulkAppB.id,
+      stage: stageB.id,
+      criterion: criterionB,
+      requirement: requirementB.id,
+      pastInterview: pastIv.id,
+      futureInterview: futureIv.id,
+    });
+    const login = (email: string) =>
+      request(server()).post('/api/v1/auth/login').send({ email, password }).expect(200);
+    tokenB = (await login(adminB)).body.data.tokens.accessToken;
+    tokenIvB = (await login(`x-iv-b-${run}@example.com`)).body.data.tokens.accessToken;
   });
 
   afterAll(async () => {
@@ -297,6 +462,23 @@ describe('Cross-tenant isolation (e2e)', () => {
       .getRepository(Department)
       .delete({ id: a.dept })
       .catch(() => undefined);
+    // dữ liệu công ty B (bước quét SG-01) — xoá theo thứ tự khoá ngoại
+    for (const table of [
+      'interviews',
+      'applications',
+      'candidates',
+      'jobs',
+      'users',
+      'departments',
+    ]) {
+      await ds
+        .query(`DELETE FROM ${table} WHERE organization_id = $1`, [orgB])
+        .catch(() => undefined);
+    }
+    await ds
+      .getRepository(User)
+      .delete({ email: `x-hm-${run}@example.com` })
+      .catch(() => undefined);
     await app.close();
   });
 
@@ -328,6 +510,197 @@ describe('Cross-tenant isolation (e2e)', () => {
     }
     return out;
   };
+
+  // SG-01 · R1: trường id trong body (đệ quy qua DTO lồng nhau)
+  const bodyIdFields = (dto: Type | undefined, prefix = '', seen = new Set<Type>()): string[] => {
+    if (!dto || seen.has(dto)) return [];
+    seen.add(dto);
+    const out: string[] = [];
+    const metas = getMetadataStorage().getTargetValidationMetadatas(dto, '', true, false);
+    for (const prop of new Set(metas.map((m) => m.propertyName))) {
+      if (/^ids?$|Ids?$/.test(prop)) out.push(prefix + prop);
+      const nested = defaultMetadataStorage.findTypeMetadata(dto, prop)?.typeFunction() as
+        Type | undefined;
+      if (nested) out.push(...bodyIdFields(nested, `${prefix}${prop}[].`, seen));
+    }
+    return out;
+  };
+
+  const bodyRoutes = () => {
+    const out: { key: string; fields: string[] }[] = [];
+    for (const { metatype } of app.get(DiscoveryService).getControllers()) {
+      if (!metatype) continue;
+      const controller = metatype as Type;
+      const proto = controller.prototype as Record<string, unknown>;
+      for (const route of routes().filter((r) => r.controller === controller.name)) {
+        if (route.verb === 'get') continue;
+        const types = Reflect.getMetadata('design:paramtypes', proto, route.handler) as Type[];
+        const args = (Reflect.getMetadata(ROUTE_ARGS_METADATA, controller, route.handler) ??
+          {}) as Record<string, { index: number }>;
+        const body = Object.entries(args).find(
+          ([k]) => Number(k.split(':')[0]) === RouteParamtypes.BODY,
+        );
+        const fields = body ? bodyIdFields(types?.[body[1].index]) : [];
+        if (fields.length) out.push({ key: `${route.verb.toUpperCase()} ${route.path}`, fields });
+      }
+    }
+    return out;
+  };
+
+  // SG-01 · R1 — quét chung: mọi route ghi nhận id trong body. Mỗi ca chạy 2 lần trên tài nguyên của B:
+  // id của A → bị từ chối; id của chính B (đối chứng) → thành công, chứng minh body hợp lệ ở mọi chỗ khác.
+  interface BodyCase {
+    url: () => string;
+    body: (ids: Ids) => object;
+    as?: () => string;
+    /** bulk-status trả 200 kèm danh sách lỗi theo từng id */
+    rejected?: (res: request.Response) => boolean;
+  }
+  type Ids = Record<
+    'dept' | 'hm' | 'interviewer' | 'app' | 'stage' | 'criterion' | 'requirement',
+    string
+  >;
+  const idsA = (): Ids => ({
+    dept: a.dept,
+    hm: a.hm,
+    interviewer: a.interviewer,
+    app: a.app,
+    stage: a.stage,
+    criterion: a.criterion,
+    requirement: a.requirement,
+  });
+  const idsB = (): Ids => ({
+    dept: b.dept,
+    hm: b.hm,
+    interviewer: b.interviewer,
+    app: b.bulkApp,
+    stage: b.stage,
+    criterion: b.criterion,
+    requirement: b.requirement,
+  });
+  const soon = () =>
+    new Date(Date.now() + 3 * 86_400_000 + Math.random() * 86_400_000).toISOString();
+  const bodyCases: Record<string, BodyCase> = {
+    'POST /jobs': {
+      url: () => '/jobs',
+      body: (ids) => ({
+        title: `Sweep ${run}`,
+        departmentId: ids.dept,
+        location: 'HN',
+        jdText: 'Mô tả công việc cho bước quét SG-01, đủ dài để qua kiểm tra độ dài tối thiểu.',
+      }),
+    },
+    'PATCH /jobs/:id': {
+      url: () => `/jobs/${b.emptyJob}`,
+      body: (ids) => ({ departmentId: ids.dept }),
+    },
+    'PATCH /jobs/:id/hiring-manager': {
+      url: () => `/jobs/${b.job}/hiring-manager`,
+      body: (ids) => ({ userId: ids.hm }),
+    },
+    'PUT /jobs/:id/interview-stages': {
+      url: () => `/jobs/${b.job}/interview-stages`,
+      body: (ids) => ({
+        stages: [
+          { id: ids.stage, name: 'Vòng 1', criteria: [{ id: ids.criterion, label: 'API' }] },
+        ],
+      }),
+    },
+    'POST /applications/bulk-status': {
+      url: () => '/applications/bulk-status',
+      body: (ids) => ({
+        ids: [ids.app],
+        status: 'REJECTED',
+        reasonCode: 'SKILL_GAP',
+        reason: 'quét',
+      }),
+      rejected: (res) => res.body.data.succeeded.length === 0,
+    },
+    'POST /users': {
+      url: () => '/users',
+      body: (ids) => ({
+        email: `sweep-${randomUUID().slice(0, 8)}@example.com`,
+        password,
+        fullName: 'Sweep HM',
+        role: Role.HiringManager,
+        departmentId: ids.dept,
+      }),
+    },
+    'PATCH /users/:id': {
+      url: () => `/users/${b.hm}`,
+      body: (ids) => ({ departmentId: ids.dept }),
+    },
+    'PATCH /interviews/:id': {
+      url: () => `/interviews/${b.futureInterview}`,
+      body: (ids) => ({ interviewerIds: [ids.interviewer], scheduledAt: soon() }),
+    },
+    'PUT /interviews/:id/feedback': {
+      url: () => `/interviews/${b.pastInterview}/feedback`,
+      as: () => tokenIvB,
+      body: (ids) => ({
+        overall: 4,
+        recommendation: 'YES',
+        ratings: [{ requirementId: ids.requirement, score: 4 }],
+      }),
+    },
+    'POST /applications/:applicationId/interviews': {
+      url: () => `/applications/${b.app}/interviews`,
+      body: (ids) => ({
+        scheduledAt: soon(),
+        durationMinutes: 30,
+        location: 'Phòng B',
+        interviewerIds: [ids.interviewer],
+        stageId: ids.stage,
+      }),
+    },
+  };
+
+  it('every route taking ids in the body refuses ids of another organization (SG-01 sweep)', async () => {
+    const found = bodyRoutes();
+    const uncovered = found.map((r) => r.key).filter((k) => !bodyCases[k]);
+    const leaks: string[] = [];
+    const brokenControls: string[] = [];
+    for (const { key } of found) {
+      const c = bodyCases[key];
+      if (!c) continue;
+      const verb = key.split(' ')[0].toLowerCase() as 'post' | 'put' | 'patch';
+      const send = (ids: Ids) =>
+        request(server())
+          [verb](`/api/v1${c.url()}`)
+          .set('Authorization', `Bearer ${c.as?.() ?? tokenB}`)
+          .send(c.body(ids));
+      const attack = await send(idsA());
+      const refused = c.rejected
+        ? attack.status === 200 && c.rejected(attack)
+        : [400, 403, 404].includes(attack.status);
+      if (!refused)
+        leaks.push(`${key} → ${attack.status} ${JSON.stringify(attack.body).slice(0, 160)}`);
+      const control = await send(idsB());
+      const ok = control.status < 300 && (!c.rejected || !c.rejected(control));
+      if (!ok)
+        brokenControls.push(
+          `${key} → ${control.status} ${JSON.stringify(control.body).slice(0, 160)}`,
+        );
+    }
+    expect(found.length).toBeGreaterThanOrEqual(10);
+    expect(uncovered).toEqual([]);
+    expect(leaks).toEqual([]);
+    expect(brokenControls).toEqual([]);
+  });
+
+  // SG-01 · R1 — chốt chặn cuối: transition() không khoá được hồ sơ công ty khác dù nơi gọi bỏ sót lọc
+  it('transition() cannot move an application of another organization even if called directly', async () => {
+    const service = app.get(ApplicationsService) as unknown as {
+      transition: (id: string, to: ApplicationStatus, why: object, user: object) => Promise<void>;
+    };
+    const userB = { id: b.admin, role: Role.Admin, departmentId: null, organizationId: orgB };
+    await expect(
+      service.transition(a.app2, ApplicationStatus.Screening, {}, userB),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect((await ds.getRepository(Application).findOneByOrFail({ id: a.app2 })).status).toBe(
+      ApplicationStatus.Interview,
+    );
+  });
 
   // BR-TEN-02
   const idFor = (route: Route, param: string): string | undefined => {
@@ -417,6 +790,33 @@ describe('Cross-tenant isolation (e2e)', () => {
     }
     expect(lists.length).toBeGreaterThan(15);
     expect(leaks).toEqual([]);
+  });
+
+  // SG-01 · R1 — ID trong body: hồ sơ công ty khác như không tồn tại (ADR-0002), không ghi gì
+  it('bulk-status treats ids of another organization as not found and writes nothing', async () => {
+    const res = await asB(request(server()).post('/api/v1/applications/bulk-status'))
+      .send({ ids: [a.app, a.app2], status: 'REJECTED', reasonCode: 'SKILL_GAP', reason: 'x' })
+      .expect(200);
+    const missing = randomUUID();
+    const ghost = await asB(request(server()).post('/api/v1/applications/bulk-status'))
+      .send({ ids: [missing], status: 'REJECTED', reasonCode: 'SKILL_GAP', reason: 'x' })
+      .expect(200);
+    expect(res.body.data.succeeded).toEqual([]);
+    expect(res.body.data.failed).toEqual(
+      [a.app, a.app2].sort().map((id) => ({ id, code: 'NOT_FOUND' })),
+    );
+    expect(ghost.body.data.failed).toEqual([{ id: missing, code: 'NOT_FOUND' }]);
+    const apps = await ds.getRepository(Application).findBy({ id: In([a.app, a.app2]) });
+    expect(apps.map((x) => x.status)).toEqual([
+      ApplicationStatus.Interview,
+      ApplicationStatus.Interview,
+    ]);
+    expect(
+      await ds.getRepository(AuditLog).countBy({
+        action: AuditAction.ApplicationStatusChanged,
+        entityId: In([a.app, a.app2]),
+      }),
+    ).toBe(0);
   });
 
   it('the data of organization A is untouched after every call of organization B', async () => {

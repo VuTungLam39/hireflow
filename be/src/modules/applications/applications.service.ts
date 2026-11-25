@@ -551,6 +551,8 @@ export class ApplicationsService {
       .innerJoin('app.job', 'job')
       .select(['app.id', 'app.status', 'job.id', 'job.departmentId', 'job.hiringManagerId'])
       .where('app.id IN (:...ids)', { ids: dto.ids })
+      // SG-01 · BR-TEN-02: hồ sơ công ty khác không được nạp → NOT_FOUND như id không tồn tại (ADR-0002)
+      .andWhere('app.organizationId = :orgId', { orgId: orgIdOf(user) })
       .getMany();
     const byId = new Map(rows.map((a) => [a.id, a]));
     const bulkId = randomUUID();
@@ -963,8 +965,9 @@ export class ApplicationsService {
           HttpStatus.CONFLICT,
         );
       }
+      // SG-01: chốt chặn cuối — chỉ khoá được hồ sơ trong công ty của người thao tác
       const app = await manager.findOne(Application, {
-        where: { id },
+        where: { id, organizationId: orgIdOf(user) },
         lock: { mode: 'pessimistic_write' },
       });
       if (!app) throw new NotFoundException('Application not found');
