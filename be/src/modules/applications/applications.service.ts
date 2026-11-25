@@ -965,7 +965,7 @@ export class ApplicationsService {
           HttpStatus.CONFLICT,
         );
       }
-      // SG-01: chốt chặn cuối — chỉ khoá được hồ sơ trong công ty của người thao tác
+      // SG-01 · BR-TEN-02
       const app = await manager.findOne(Application, {
         where: { id, organizationId: orgIdOf(user) },
         lock: { mode: 'pessimistic_write' },

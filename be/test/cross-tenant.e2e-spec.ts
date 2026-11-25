@@ -331,7 +331,7 @@ describe('Cross-tenant isolation (e2e)', () => {
         publishedAt: new Date(),
       }),
     );
-    // tin chưa có hồ sơ: phòng ban còn đổi được (đối chứng PATCH /jobs/:id)
+    // SG-01 · R1
     const emptyJobB = await ds.getRepository(Job).save(
       inB({
         title: `Cross empty job B ${run}`,
@@ -462,7 +462,7 @@ describe('Cross-tenant isolation (e2e)', () => {
       .getRepository(Department)
       .delete({ id: a.dept })
       .catch(() => undefined);
-    // dữ liệu công ty B (bước quét SG-01) — xoá theo thứ tự khoá ngoại
+    // SG-01 · R1
     for (const table of [
       'interviews',
       'applications',
@@ -511,7 +511,7 @@ describe('Cross-tenant isolation (e2e)', () => {
     return out;
   };
 
-  // SG-01 · R1: trường id trong body (đệ quy qua DTO lồng nhau)
+  // SG-01 · R1
   const bodyIdFields = (dto: Type | undefined, prefix = '', seen = new Set<Type>()): string[] => {
     if (!dto || seen.has(dto)) return [];
     seen.add(dto);
@@ -547,13 +547,11 @@ describe('Cross-tenant isolation (e2e)', () => {
     return out;
   };
 
-  // SG-01 · R1 — quét chung: mọi route ghi nhận id trong body. Mỗi ca chạy 2 lần trên tài nguyên của B:
-  // id của A → bị từ chối; id của chính B (đối chứng) → thành công, chứng minh body hợp lệ ở mọi chỗ khác.
+  // SG-01 · R1
   interface BodyCase {
     url: () => string;
     body: (ids: Ids) => object;
     as?: () => string;
-    /** bulk-status trả 200 kèm danh sách lỗi theo từng id */
     rejected?: (res: request.Response) => boolean;
   }
   type Ids = Record<
@@ -655,12 +653,18 @@ describe('Cross-tenant isolation (e2e)', () => {
     },
   };
 
+  const onIdField = (res: request.Response, fields: string[]) => {
+    const names = fields.map((f) => f.split('[].')[0]);
+    const errors = (res.body as { errors?: { field?: string }[] }).errors ?? [];
+    return errors.some((e) => names.some((n) => e.field?.split('.')[0] === n));
+  };
+
   it('every route taking ids in the body refuses ids of another organization (SG-01 sweep)', async () => {
     const found = bodyRoutes();
     const uncovered = found.map((r) => r.key).filter((k) => !bodyCases[k]);
     const leaks: string[] = [];
     const brokenControls: string[] = [];
-    for (const { key } of found) {
+    for (const { key, fields } of found) {
       const c = bodyCases[key];
       if (!c) continue;
       const verb = key.split(' ')[0].toLowerCase() as 'post' | 'put' | 'patch';
@@ -672,7 +676,8 @@ describe('Cross-tenant isolation (e2e)', () => {
       const attack = await send(idsA());
       const refused = c.rejected
         ? attack.status === 200 && c.rejected(attack)
-        : [400, 403, 404].includes(attack.status);
+        : [403, 404].includes(attack.status) ||
+          (attack.status === 400 && onIdField(attack, fields));
       if (!refused)
         leaks.push(`${key} → ${attack.status} ${JSON.stringify(attack.body).slice(0, 160)}`);
       const control = await send(idsB());
@@ -688,7 +693,7 @@ describe('Cross-tenant isolation (e2e)', () => {
     expect(brokenControls).toEqual([]);
   });
 
-  // SG-01 · R1 — chốt chặn cuối: transition() không khoá được hồ sơ công ty khác dù nơi gọi bỏ sót lọc
+  // SG-01 · R1
   it('transition() cannot move an application of another organization even if called directly', async () => {
     const service = app.get(ApplicationsService) as unknown as {
       transition: (id: string, to: ApplicationStatus, why: object, user: object) => Promise<void>;
@@ -792,7 +797,7 @@ describe('Cross-tenant isolation (e2e)', () => {
     expect(leaks).toEqual([]);
   });
 
-  // SG-01 · R1 — ID trong body: hồ sơ công ty khác như không tồn tại (ADR-0002), không ghi gì
+  // SG-01 · R1, ADR-0002
   it('bulk-status treats ids of another organization as not found and writes nothing', async () => {
     const res = await asB(request(server()).post('/api/v1/applications/bulk-status'))
       .send({ ids: [a.app, a.app2], status: 'REJECTED', reasonCode: 'SKILL_GAP', reason: 'x' })
