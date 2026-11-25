@@ -321,6 +321,10 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
   - **Màn hẹp:** panel Vì sao → `Sheet` (DL-16: "Mở chi tiết" mang ngữ cảnh danh sách theo điểm; Trước/Sau = hạng trên/dưới; "Thêm vào so sánh" giữ — không phải đổi trạng thái); nút "Mở bàn duyệt CV" chỉ còn ở panel bên phải màn rộng. Bảng trọng số trên màn hẹp → `Dialog`. Nút bỏ khỏi khay so sánh → `IconButton`.
   - Bàn phím J/K/↑/↓ giữa các dòng (Enter/Space mở Vì sao như cũ). Caption "Xếp hạng hồ sơ theo mức phù hợp" (baseline thuật ngữ 8 → 7). Route riêng lật v2; bản nhúng trong hộp tin giữ v1.
 - **Kiểm:** BE e2e jobs + query-count 42/42. FE 332 test xanh — mới: chữ trong ô trọng số, thông báo sắp xếp lại (chỉ khi thứ tự đổi), thông báo chấm lại; 2 test trọng số cũ đổi sang tìm ô chọn theo nhãn mới. Typecheck, build, format, lint, check:design, check:terms xanh.
-- **Chưa kiểm trên trình duyệt thật:** bố cục, Sheet ở 390, axe → production smoke sau merge (không lưu trọng số trên production).
+- **Production smoke (25/11, `main @ 876dafe`, Render deploy success, Admin hireflow-demo):**
+  - API: `GET /jobs/:id/ranking` có `scoredJdVersion` ở mọi item (lần gọi đầu khi Render còn `in_progress` chưa có — đã gọi lại sau khi deploy xong); 0 hồ sơ chấm theo phiên bản cũ → thông báo chấm lại **không hiện** (đúng; chỉ có test cho trạng thái hiện).
+  - `/manage/jobs/:id/ranking` (tin 4 hồ sơ đã chấm, 5 tiêu chí) × 390/1024/1440: không tràn; 1 h1; `data-theme="v2"`; 0 thanh trượt, ô chọn có chữ "1 · ít quan trọng / 2 · quan trọng / 3 · rất quan trọng"; vùng `role=status` `aria-live=polite` có; caption "Xếp hạng hồ sơ theo mức phù hợp"; phím J chuyển focus sang dòng dưới; **axe 0**.
+  - 390: bấm dòng → Sheet 390×900 "Vì sao … #1", chỉ "Mở chi tiết" + "Hồ sơ hạng dưới" + "Thêm vào so sánh"; nút "Trọng số" → Dialog "Trọng số tiêu chí" 5 ô chọn; axe 0 cả hai. ≥1024: panel bên phải "Vì sao … #1", 5 câu trích, "Mở bàn duyệt CV".
+  - **Không làm trên production:** đổi trọng số để nghe thông báo sắp xếp lại (chỉ có test), lưu trọng số.
 - **Bàn giao còn lại:** SidePanel ở ChatPage (12); ConfirmDialog ở OfferPanel (11), InterviewPanel (10).
 
