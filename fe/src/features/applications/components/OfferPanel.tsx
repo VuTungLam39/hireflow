@@ -1,7 +1,15 @@
 import { FileText, Plus } from 'lucide-react'
 import { useState } from 'react'
-import { ConfirmDialog } from '@/components/shared'
-import { Button, Dialog, DialogFooter, FormField, Input, Select, Textarea } from '@/components/ui'
+import {
+  AlertDialog,
+  Button,
+  Dialog,
+  DialogFooter,
+  FormField,
+  Input,
+  Select,
+  Textarea,
+} from '@/components/ui'
 import { useApplicationInterviews } from '@/features/interviews'
 import { usePermission } from '@/hooks/use-permission'
 import { applyServerErrors, getErrorMessage } from '@/lib/errors'
@@ -11,6 +19,7 @@ import { OFFER_STATUS } from '../constants'
 import { useOfferAction, useOffers, useSaveOffer } from '../hooks/use-offers'
 import type { ApplicationStatus } from '../constants'
 import type { Offer, OfferInput } from '../types'
+import { OfferStatusBadge } from './StatusBadges'
 
 const formatMoney = (o: Pick<Offer, 'salaryAmount' | 'salaryCurrency' | 'salaryPeriod'>) =>
   `${o.salaryAmount.toLocaleString('vi-VN')} ${o.salaryCurrency}/${o.salaryPeriod === 'MONTH' ? 'tháng' : 'năm'}`
@@ -18,6 +27,7 @@ const formatMoney = (o: Pick<Offer, 'salaryAmount' | 'salaryCurrency' | 'salaryP
 const todayIso = () => new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10)
 
 // MVP 3.1 · F-OFFER-01, BR-OFFER-01 → 05: Interviewer không thấy panel (BR-OFFER-04)
+// Slice 11 · Phase 03 file 08 (Offer Summary)
 export function OfferPanel({
   applicationId,
   status,
@@ -37,49 +47,52 @@ export function OfferPanel({
   const open = current && !OFFER_STATUS[current.status].closed ? current : undefined
   if (!list.length && !(status === 'INTERVIEW' && canUpdate)) return null
 
-  const run = (action: string, body?: object) =>
-    open && act.mutate({ id: open.id, action, body }, { onSuccess: () => setReasonFor(null) })
+  const run = (action: string, body?: object) => open && act.mutate({ id: open.id, action, body })
 
   return (
-    <section aria-labelledby="offer-title" className="border-line space-y-3 rounded-md border p-4">
+    <section aria-labelledby="offer-title" className="border-line space-y-4 rounded-md border p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="offer-title" className="type-heading">
-          Offer
-        </h2>
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 id="offer-title" className="type-heading">
+            Offer
+          </h2>
+          {current && <OfferStatusBadge status={current.status} />}
+        </div>
         {!open && status === 'INTERVIEW' && canUpdate && (
           <Button size="sm" onClick={() => setEditing('new')}>
             <Plus />
-            Soạn offer
+            Soạn Offer
           </Button>
         )}
       </div>
 
       {current && (
-        <div className="space-y-2">
-          <p className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="bg-sunken text-ink rounded-full px-2 py-0.5 font-medium">
-              {OFFER_STATUS[current.status].label}
-            </span>
-            <span className="text-ink num font-semibold">{formatMoney(current)}</span>
-            <span className="text-ink-2">
-              · bắt đầu {formatDate(current.startDate)} · trả lời trước{' '}
-              {formatDate(current.respondBy)}
-            </span>
-          </p>
+        <>
+          <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+            <div>
+              <dt className="type-caption">Mức lương</dt>
+              <dd className="text-ink num font-semibold">{formatMoney(current)}</dd>
+            </div>
+            <div>
+              <dt className="type-caption">Ngày bắt đầu</dt>
+              <dd className="text-ink-2 num">{formatDate(current.startDate)}</dd>
+            </div>
+            <div>
+              <dt className="type-caption">Hạn trả lời</dt>
+              <dd className="text-ink-2 num">{formatDate(current.respondBy)}</dd>
+            </div>
+          </dl>
+          {current.note && <p className="text-ink-2 text-sm whitespace-pre-line">{current.note}</p>}
           {current.statusReason && (
             <p className="text-ink-2 text-sm">Lý do: {current.statusReason}</p>
           )}
-          {current.approvedBy && (
-            <p className="type-caption">
-              Duyệt bởi {current.approvedBy.fullName} lúc {formatDateTime(current.approvedAt!)}
-            </p>
-          )}
+          <ApprovalTrail offer={current} />
           {current.status === 'PENDING_APPROVAL' && !current.canApprove && (
             <p className="type-caption">
               Đang chờ Hiring Manager phụ trách tin (hoặc Admin) duyệt.
             </p>
           )}
-        </div>
+        </>
       )}
 
       {open && (
@@ -94,10 +107,11 @@ export function OfferPanel({
               </Button>
             </>
           )}
+          {/* BR-OFFER-03 */}
           {open.canApprove && (
             <>
               <Button size="sm" loading={act.isPending} onClick={() => run('approve')}>
-                Duyệt offer
+                Duyệt Offer
               </Button>
               <Button size="sm" variant="secondary" onClick={() => setReasonFor('return')}>
                 Trả lại để sửa
@@ -114,20 +128,20 @@ export function OfferPanel({
               <Button size="sm" loading={act.isPending} onClick={() => run('accept')}>
                 Ứng viên nhận
               </Button>
-              <Button size="sm" variant="danger-quiet" onClick={() => setReasonFor('decline')}>
+              <Button size="sm" variant="ghost" onClick={() => setReasonFor('decline')}>
                 Ứng viên từ chối
               </Button>
             </>
           )}
           {['APPROVED', 'SENT'].includes(open.status) && (
-            <Button size="sm" variant="quiet" onClick={() => setLetter(true)}>
+            <Button size="sm" variant="ghost" onClick={() => setLetter(true)}>
               <FileText />
-              Xem thư offer
+              Xem thư Offer
             </Button>
           )}
           {['DRAFT', 'PENDING_APPROVAL', 'APPROVED'].includes(open.status) && canUpdate && (
-            <Button size="sm" variant="quiet" onClick={() => setReasonFor('withdraw')}>
-              Rút offer
+            <Button size="sm" variant="ghost" onClick={() => setReasonFor('withdraw')}>
+              Rút Offer
             </Button>
           )}
         </div>
@@ -140,32 +154,64 @@ export function OfferPanel({
           onClose={() => setEditing(null)}
         />
       )}
-      <ConfirmDialog
+      <AlertDialog
         open={!!reasonFor}
         onClose={() => setReasonFor(null)}
         title={
           reasonFor === 'return'
-            ? 'Trả lại offer để sửa?'
+            ? 'Trả lại Offer để sửa?'
             : reasonFor === 'withdraw'
-              ? 'Rút offer?'
-              : 'Ghi nhận ứng viên từ chối offer?'
+              ? 'Rút Offer?'
+              : 'Ghi nhận ứng viên từ chối Offer?'
         }
         description={
           reasonFor === 'decline'
-            ? 'Hồ sơ chuyển sang "Từ chối" với lý do "Ứng viên từ chối".'
-            : undefined
+            ? 'Hồ sơ chuyển sang "Từ chối" với lý do "Ứng viên từ chối". Không hoàn tác được.'
+            : reasonFor === 'withdraw'
+              ? 'Offer bị đóng; muốn tiếp tục phải soạn Offer mới.'
+              : undefined
         }
-        tone={reasonFor === 'return' ? 'primary' : 'danger'}
-        loading={act.isPending}
+        confirmLabel={
+          reasonFor === 'return'
+            ? 'Trả lại'
+            : reasonFor === 'withdraw'
+              ? 'Rút Offer'
+              : 'Ghi nhận từ chối'
+        }
+        confirmVariant={reasonFor === 'return' ? 'primary' : 'danger'}
         requireReason={
           reasonFor === 'decline'
             ? undefined
             : { label: 'Lý do', placeholder: 'Ví dụ: lương vượt khung phòng ban' }
         }
-        onConfirm={(reason) => run(reasonFor!, reason ? { reason } : {})}
+        onConfirm={(reason) =>
+          open &&
+          act.mutateAsync({ id: open.id, action: reasonFor!, body: reason ? { reason } : {} })
+        }
       />
       {letter && open && <OfferLetter offer={open} onClose={() => setLetter(false)} />}
     </section>
+  )
+}
+
+// Phase 03 file 08
+function ApprovalTrail({ offer }: { offer: Offer }) {
+  const steps = [
+    { label: `Soạn bởi ${offer.createdBy.fullName}`, at: offer.createdAt },
+    offer.approvedBy && offer.approvedAt
+      ? { label: `Duyệt bởi ${offer.approvedBy.fullName}`, at: offer.approvedAt }
+      : null,
+    offer.sentAt ? { label: 'Đã gửi ứng viên', at: offer.sentAt } : null,
+    offer.decidedAt ? { label: OFFER_STATUS[offer.status].label, at: offer.decidedAt } : null,
+  ].filter((s): s is { label: string; at: string } => !!s)
+  return (
+    <ol aria-label="Lịch sử duyệt Offer" className="border-line-soft space-y-1 border-l pl-3">
+      {steps.map((s) => (
+        <li key={s.label + s.at} className="type-caption">
+          {s.label} · <span className="num">{formatDateTime(s.at)}</span>
+        </li>
+      ))}
+    </ol>
   )
 }
 
@@ -219,7 +265,7 @@ function OfferDialog({
   }
 
   return (
-    <Dialog open onClose={onClose} title={offer ? 'Sửa offer nháp' : 'Soạn offer'} size="lg">
+    <Dialog open onClose={onClose} title={offer ? 'Sửa Offer nháp' : 'Soạn Offer'} size="lg">
       <div className="space-y-4">
         {/* Q1, BR-STS-01 */}
         {!offer && noFeedback && (
@@ -302,7 +348,7 @@ function OfferDialog({
             Huỷ
           </Button>
           <Button loading={save.isPending} onClick={submit}>
-            {offer ? 'Lưu' : 'Tạo offer nháp'}
+            {offer ? 'Lưu' : 'Tạo Offer nháp'}
           </Button>
         </DialogFooter>
       </div>
@@ -314,7 +360,7 @@ function OfferDialog({
 function OfferLetter({ offer, onClose }: { offer: Offer; onClose: () => void }) {
   const { candidateName, jobTitle, companyName } = offer.letter
   return (
-    <Dialog open onClose={onClose} title="Thư offer" size="lg">
+    <Dialog open onClose={onClose} title="Thư Offer" size="lg">
       <article className="type-read space-y-3 print:text-black">
         <p className="type-caption">Đây là bản demo HireFlow, không dùng cho tuyển dụng thật.</p>
         <p>Kính gửi {candidateName},</p>

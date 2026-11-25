@@ -307,8 +307,8 @@ describe('interviews', () => {
     await screen.findByRole('heading', { name: 'Offer' })
     expect(screen.queryByRole('button', { name: /Chuyển sang Đề nghị/ })).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Soạn offer' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Soạn offer' })
+    fireEvent.click(screen.getByRole('button', { name: 'Soạn Offer' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Soạn Offer' })
     expect(await within(dialog).findByRole('note')).toHaveTextContent(
       'Hồ sơ chưa có phiếu đánh giá phỏng vấn nào.',
     )
@@ -319,17 +319,22 @@ describe('interviews', () => {
     fireEvent.change(within(dialog).getByLabelText('Ngày bắt đầu'), {
       target: { value: '2099-01-01' },
     })
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Tạo offer nháp' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tạo Offer nháp' }))
     expect(
       within(dialog).getByText('Ngày bắt đầu không được trước hạn trả lời'),
     ).toBeInTheDocument()
     fireEvent.change(within(dialog).getByLabelText('Ngày bắt đầu'), {
       target: { value: '2099-02-01' },
     })
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Tạo offer nháp' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tạo Offer nháp' }))
 
     expect(await screen.findByRole('button', { name: 'Gửi duyệt' })).toBeInTheDocument()
     expect(screen.getByText('25.000.000 VND/tháng')).toBeInTheDocument()
+    // Slice 11: OfferStatusBadge + lịch sử duyệt
+    expect(screen.getByText('Bản nháp')).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: 'Lịch sử duyệt Offer' })).toHaveTextContent(
+      /^Soạn bởi /,
+    )
     expect(db.offers.find((o) => o.applicationId === app.id)).toMatchObject({ status: 'DRAFT' })
   })
 
@@ -355,12 +360,13 @@ describe('interviews', () => {
     })
     renderAt('hr@hireflow.dev', links.applicationDetail(app.id))
     expect(await screen.findByText(/Đang chờ Hiring Manager phụ trách tin/)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Duyệt offer' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Duyệt Offer' })).not.toBeInTheDocument()
     cleanup()
 
     renderAt('admin@hireflow.dev', links.applicationDetail(app.id))
-    fireEvent.click(await screen.findByRole('button', { name: 'Duyệt offer' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Duyệt Offer' }))
     expect(await screen.findByRole('button', { name: 'Đánh dấu đã gửi' })).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: 'Lịch sử duyệt Offer' })).toHaveTextContent('Duyệt bởi')
     cleanup()
 
     renderAt('hr@hireflow.dev', links.applicationDetail(app.id))
@@ -434,5 +440,55 @@ describe('Phiếu đánh giá save error', () => {
     } finally {
       iv.feedbacks = before
     }
+  })
+})
+
+// Slice 11 · OP-1
+describe('Offer withdraw dialog', () => {
+  it('keeps the reason and offers "Thử lại" when the save fails, then closes on success', async () => {
+    const app = db.applications.find(
+      (a) => a.status === 'INTERVIEW' && !db.offers.some((o) => o.applicationId === a.id),
+    )!
+    db.offers.push({
+      id: 'offer-withdraw',
+      applicationId: app.id,
+      status: 'DRAFT',
+      salaryAmount: 20_000_000,
+      salaryCurrency: 'VND',
+      salaryPeriod: 'MONTH',
+      startDate: '2099-02-01',
+      respondBy: '2099-01-15',
+      note: null,
+      statusReason: null,
+      createdById: 'u-hr',
+      approvedById: null,
+      approvedAt: null,
+      createdAt: new Date().toISOString(),
+    })
+    let fail = true
+    server.use(
+      http.patch(api('/offers/:id/withdraw'), () =>
+        fail
+          ? HttpResponse.json(
+              { success: false, statusCode: 500, code: 'INTERNAL_ERROR', message: 'Lỗi máy chủ' },
+              { status: 500 },
+            )
+          : undefined,
+      ),
+    )
+    renderAt('hr@hireflow.dev', links.applicationDetail(app.id))
+    fireEvent.click(await screen.findByRole('button', { name: 'Rút Offer' }))
+    const dialog = await screen.findByRole('alertdialog', { name: 'Rút Offer?' })
+    fireEvent.change(within(dialog).getByLabelText('Lý do'), {
+      target: { value: 'Ứng viên nhận nơi khác' },
+    })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Rút Offer' }))
+    expect(await within(dialog).findByRole('button', { name: 'Thử lại' })).toBeInTheDocument()
+    expect(within(dialog).getByLabelText('Lý do')).toHaveValue('Ứng viên nhận nơi khác')
+
+    fail = false
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Thử lại' }))
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+    expect(db.offers.find((o) => o.id === 'offer-withdraw')?.status).toBe('WITHDRAWN')
   })
 })

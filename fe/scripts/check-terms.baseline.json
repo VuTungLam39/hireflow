@@ -1,9 +1,4 @@
 {
-  "features/applications/components/OfferPanel.tsx :: offer viết thường": 10,
-  "features/applications/hooks/use-offers.ts :: offer viết thường": 6,
-  "features/audit/audit-format.ts :: offer viết thường": 8,
   "features/candidates/components/CandidateSections.tsx :: bằng chứng": 2,
-  "features/dashboard/components/FunnelReport.tsx :: Đã nhận (HIRED)": 1,
-  "features/dashboard/pages/DashboardPage.tsx :: offer viết thường": 1,
-  "lib/error-codes.ts :: offer viết thường": 3
+  "features/dashboard/components/FunnelReport.tsx :: Đã nhận (HIRED)": 1
 }

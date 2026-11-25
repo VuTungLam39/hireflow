@@ -126,7 +126,7 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - **`package.json`:** thêm 3 dependency Radix (runtime). Lockfile đổi theo.
 
 ### Bàn giao thêm cho slice khoá
-- [ ] ConfirmDialog → AlertDialog: `applications/components/OfferPanel` (slice 11), `applications/components/StatusActions` (slice 8), `applications/pages/ApplicationsPage` (slice 7), `interviews/components/InterviewPanel` (slice 10). Khi call site cuối chuyển → xoá `components/shared/ConfirmDialog.tsx`.
+- [x] ConfirmDialog → AlertDialog: `applications/components/OfferPanel` (slice 11), `applications/components/StatusActions` (slice 8), `applications/pages/ApplicationsPage` (slice 7), `interviews/components/InterviewPanel` (slice 10). Khi call site cuối chuyển → xoá `components/shared/ConfirmDialog.tsx`.
 - [ ] SidePanel → Sheet (DL-16, URL `?xem=`): QuickView + ApplicationDetailPage (slice 7/8), JobRankingPage (slice 9).
 
 - **PR:** #119 — CI xanh. **Merged:** `e9f029b`.
@@ -347,3 +347,15 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
   - **Phiếu đánh giá (tài khoản Interviewer do chủ dự án cấp, hồ sơ có buổi đã qua chưa có phiếu; bấm gửi khi để trống — không gửi, API xác nhận vẫn 0 phiếu)** × 390/1024/1440: trang chi tiết không tràn, Mức phù hợp ẩn; hộp "Phiếu đánh giá" 390×900 (toàn màn) / 640×868; 7 nhóm fieldset (5 tiêu chí, Đánh giá chung, Đề xuất tuyển), **34 radio native, 0 `button[role=radio]`** (VF-10), nhãn "1 · Rất yếu … 5 · Rất tốt"; dòng "Bạn sửa được trong 24 giờ sau khi gửi; sau đó phiếu bị khoá…" (P5-D13a); gửi khi trống → 3 loại lỗi theo nhóm, nhóm lỗi có `aria-describedby`, **focus vào radio của nhóm "NestJS" (nhóm đầu)**; Escape đóng; **axe 0**.
   - **Chưa kiểm trên production:** hộp Huỷ buổi (production không có buổi sắp tới; tạo buổi = ghi dữ liệu thật). Hai phần này chỉ có test.
 - **Bàn giao còn lại:** ConfirmDialog chỉ còn ở OfferPanel (slice 11) → xoá `ConfirmDialog.tsx` khi xong slice 11; SidePanel ở ChatPage (12).
+
+## Entry 17 — Slice 11: Offer (🟢 sau gate)
+- **Spec + tickets:** issue #158. Base `feat/phase05-slice11-offer` từ `main @ 7ccbcc0`. Không cần quyết định mới của chủ dự án (spec đủ rõ, không đổi nghiệp vụ/BE).
+- **Đã làm:**
+  - **OfferStatusBadge** (Phase 03 file 05): chấm màu + nhãn theo `OFFER_STATUS` (thêm `tone`: Bản nháp neutral, Chờ duyệt warning, Đã duyệt / Đã gửi ứng viên info, Ứng viên đã nhận success, Ứng viên từ chối danger, Đã rút / Hết hạn neutral).
+  - **Offer Summary** (Phase 03 file 08): tiêu đề "Offer" + badge; điều khoản dạng `dl` (Mức lương, Ngày bắt đầu, Hạn trả lời) + điều kiện kèm theo; **lịch sử duyệt** `ol` "Lịch sử duyệt Offer" (Soạn bởi … · Duyệt bởi … · Đã gửi ứng viên · kết quả, kèm thời điểm — dữ liệu sẵn có, không đổi BE); thao tác theo vai giữ nguyên (Duyệt/Trả lại chỉ khi `canApprove` — HM phụ trách tin hoặc Admin do BE tính, BR-OFFER-03).
+  - **Rút / Trả lại / Ứng viên từ chối:** ConfirmDialog → AlertDialog (nhãn xác nhận theo hành động, lý do bắt buộc trừ "Ứng viên từ chối", mô tả hệ quả, lỗi giữ lý do + "Thử lại" qua `mutateAsync`). **`components/shared/ConfirmDialog.tsx` đã xoá** (call site cuối).
+  - **"Offer" viết hoa** ở mọi chuỗi giao diện: OfferPanel, use-offers (toast), audit-format, error-codes, DashboardPage → baseline `check:terms` 7 → 2 (còn CandidateSections "bằng chứng", FunnelReport "Đã nhận" — slice 12).
+- **Kiểm:** 337 test FE xanh — mới: Rút Offer lỗi giữ lý do + "Thử lại", thành công thì đóng và Offer `WITHDRAWN`; luồng soạn/duyệt có thêm kiểm badge "Bản nháp" + lịch sử duyệt "Soạn bởi"/"Duyệt bởi". Sửa theo nhãn viết hoa: 2 test luồng Offer. Typecheck, build, format, lint, check:design, check:terms xanh.
+- **Chưa kiểm trên trình duyệt thật:** khối Offer ở 390/1024/1440, axe → production smoke sau merge (không soạn/duyệt/rút Offer trên production).
+- **Bàn giao còn lại:** SidePanel ở ChatPage; thuật ngữ CandidateSections, FunnelReport — slice 12.
+

@@ -24,7 +24,7 @@ export function useSaveOffer(applicationId: string) {
         ? applicationsApi.updateOffer(id, input)
         : applicationsApi.createOffer(applicationId, input),
     onSuccess: () => {
-      toast.success('Đã lưu offer nháp')
+      toast.success('Đã lưu Offer nháp')
       return queryClient.invalidateQueries({ queryKey: offerKeys(applicationId) })
     },
   })
@@ -32,12 +32,12 @@ export function useSaveOffer(applicationId: string) {
 
 const DONE: Record<string, string> = {
   submit: 'Đã gửi duyệt',
-  approve: 'Đã duyệt offer',
+  approve: 'Đã duyệt Offer',
   return: 'Đã trả lại để sửa',
-  send: 'Đã đánh dấu gửi offer',
-  accept: 'Ứng viên đã nhận offer',
+  send: 'Đã đánh dấu gửi Offer',
+  accept: 'Ứng viên đã nhận Offer',
   decline: 'Đã ghi nhận ứng viên từ chối',
-  withdraw: 'Đã rút offer',
+  withdraw: 'Đã rút Offer',
 }
 
 export function useOfferAction() {
@@ -46,7 +46,7 @@ export function useOfferAction() {
     mutationFn: ({ id, action, body }: { id: string; action: string; body?: object }) =>
       applicationsApi.offerAction(id, action, body),
     onSuccess: (_d, { action }) => {
-      toast.success(DONE[action] ?? 'Đã cập nhật offer')
+      toast.success(DONE[action] ?? 'Đã cập nhật Offer')
       void queryClient.invalidateQueries({ queryKey: applicationKeys.all })
     },
     onError: (error) => toast.error(getErrorMessage(error)),
