@@ -292,7 +292,7 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - **Bàn giao còn lại:** ConfirmDialog còn ở OfferPanel (11), StatusActions (8), InterviewPanel (10); SidePanel còn ở ApplicationDetailPage (8), JobRankingPage (9).
 
 ## Entry 14 — Slice 8: CV Review / chi tiết hồ sơ (🟢 sau gate)
-- **Spec + tickets:** issue (slice 8). Base `feat/phase05-slice8-cv-review` từ `main @ 8918ddf` (PR #146 sửa cột slice 7 chưa merge — không chạm file của slice 8).
+- **Spec + tickets:** issue #147. Base `feat/phase05-slice8-cv-review` từ `main @ 8918ddf` (PR #146 sửa cột slice 7 chưa merge — không chạm file của slice 8).
 - **Đã làm:**
   - **Hộp quyết định (P5-D11a):** `StatusActions` = một nút "Chuyển trạng thái" → `AlertDialog` "Chuyển trạng thái hồ sơ" (tên + trạng thái hiện tại), ô chọn không chọn sẵn (VF-01, lỗi "Chọn trạng thái mới."), lý do mã + ghi chú chỉ khi Từ chối, nút "Xác nhận"/"Xác nhận từ chối" đổi kiểu theo lựa chọn (VF-02), gợi ý "Offer chỉ tạo trong mục Offer của hồ sơ." ở bước Phỏng vấn; lỗi lưu giữ lựa chọn + "Thử lại" (OP-1); 403 → đóng hộp + banner "Bạn không có quyền thực hiện thao tác này…". Mở lại hồ sơ → `AlertDialog`.
   - **Radix Tabs (P5-D11b):** `Tabs` dựng lại trên `@radix-ui/react-tabs` (giữ đếm số, mũi tên cuộn tràn, kiểu chữ); thêm `onClick` trên Trigger vì Radix đổi tab ở mousedown (trình đọc màn hình có thể chỉ gửi click). DetailDialog dùng `TabsPanel` (bỏ `tab-id.ts`, `panelId`); tab Hoạt động của trang chi tiết có `TabsPanel` thật → nối tab ↔ panel hai chiều. Roving focus của Radix: `tablist` tabIndex 0, các tab -1 (Tab vào danh sách → tới tab đang chọn).
