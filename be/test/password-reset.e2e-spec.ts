@@ -131,7 +131,7 @@ describe('Password reset (e2e)', { timeout: 30_000 }, () => {
     await ds
       .getRepository(AuthToken)
       .update(
-        { userId: user.id, kind: AuthTokenKind.ResetPassword, usedAt: undefined },
+        { userId: user.id, kind: AuthTokenKind.ResetPassword },
         { expiresAt: new Date(Date.now() - 1000) },
       );
     expect(
