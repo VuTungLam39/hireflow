@@ -122,4 +122,4 @@ export const OFFER_STATUS = {
   DECLINED: { label: 'Ứng viên từ chối', closed: true, tone: 'danger' },
   WITHDRAWN: { label: 'Đã rút', closed: true, tone: 'neutral' },
   EXPIRED: { label: 'Hết hạn trả lời', closed: true, tone: 'neutral' },
-} as const satisfies Record<string, { label: string; closed: boolean; tone: BadgeTone }>
+} as const
