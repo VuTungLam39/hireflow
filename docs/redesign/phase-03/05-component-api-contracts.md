@@ -120,7 +120,7 @@ Breadcrumbs: `<nav aria-label="Đường dẫn">`, last item `aria-current`. Pag
 Row and user menus. Items: `{label, icon?, onSelect, variant?: 'danger', disabled?}`; danger items open AlertDialog. Keyboard: arrows, Home/End, typeahead, Escape.
 
 ### Command Menu
-Ctrl/Cmd+K; groups "Đi tới", "Tìm hồ sơ", "Tìm tin tuyển dụng"; results respect permissions and scope; implementation chosen in its slice. Never executes state changes directly — navigates.
+Ctrl/Cmd+K; groups "Đi tới", **"Tìm ứng viên" (roles with `candidate:read` — HR, HM; results are people, opening the candidate view that gathers all their hồ sơ) or "Tìm hồ sơ" (Interviewer)**, "Tìm tin tuyển dụng" (P5-D07, 25/11/2026); results respect permissions and scope; implementation chosen in its slice. Never executes state changes directly — navigates.
 
 ---
 
