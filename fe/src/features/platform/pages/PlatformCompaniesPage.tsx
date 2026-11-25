@@ -36,6 +36,8 @@ export default function PlatformCompaniesPage() {
     {
       key: 'name',
       header: 'Công ty',
+      priority: 1,
+      sticky: 'start',
       cell: (o) => (
         <div className="min-w-0">
           <Link
@@ -51,11 +53,13 @@ export default function PlatformCompaniesPage() {
     {
       key: 'admin',
       header: 'Email Admin',
+      priority: 3,
       cell: (o) => <span className="text-ink-2 break-all">{o.adminEmail ?? '—'}</span>,
     },
     {
       key: 'website',
       header: 'Website',
+      priority: 4,
       cell: (o) =>
         o.website ? (
           <a
@@ -73,11 +77,17 @@ export default function PlatformCompaniesPage() {
     {
       key: 'createdAt',
       header: 'Đăng ký',
+      priority: 3,
       cell: (o) => (
         <span className="type-caption whitespace-nowrap">{formatDate(o.createdAt)}</span>
       ),
     },
-    { key: 'status', header: 'Trạng thái', cell: (o) => <OrgStatusBadge status={o.status} /> },
+    {
+      key: 'status',
+      header: 'Trạng thái',
+      priority: 1,
+      cell: (o) => <OrgStatusBadge status={o.status} />,
+    },
   ]
 
   return (
@@ -115,6 +125,8 @@ export default function PlatformCompaniesPage() {
         onRowClick={(o) => navigate(links.platformCompany(o.id))}
         isPending={query.isPending}
         isError={query.isError}
+        dataUpdatedAt={query.dataUpdatedAt}
+        layout="container"
         error={query.error}
         onRetry={query.refetch}
         isFetching={query.isFetching && !query.isPending}

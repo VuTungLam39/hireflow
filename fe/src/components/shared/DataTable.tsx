@@ -6,6 +6,7 @@ import type { Density } from '@/stores/ui.store'
 import type { PaginationMeta, SortOrder } from '@/types/api'
 import { EmptyState } from './EmptyState'
 import { ErrorState } from './ErrorState'
+import { StaleNotice } from './StaleNotice'
 
 export interface Column<T> {
   key: string
@@ -16,6 +17,10 @@ export interface Column<T> {
   align?: 'left' | 'right'
   isAction?: boolean
   hideOnMobile?: boolean
+  /** T1–T3: 1 không bao giờ ẩn · 2 dời xuống dòng phụ <720 · 3 ẩn <840 · 4 ẩn <1024 (bề rộng container) */
+  priority?: 1 | 2 | 3 | 4
+  /** cột định danh dính khi cuộn ngang trong container */
+  sticky?: 'start'
 }
 
 interface SortState {
@@ -54,6 +59,10 @@ interface DataTableProps<T> {
   rowActions?: (row: T) => ReactNode
   mobileRow?: (row: T) => ReactNode
   caption?: string
+  /** P5-D08 opt-in: thẻ theo container <600, ô chọn 44 px (VF-05), Space = chọn dòng */
+  layout?: 'container'
+  /** mốc dữ liệu đang hiện – StaleNotice khi làm mới thất bại */
+  dataUpdatedAt?: number
 }
 
 export function DataTable<T>({
@@ -81,7 +90,10 @@ export function DataTable<T>({
   rowActions,
   mobileRow,
   caption,
+  layout,
+  dataUpdatedAt,
 }: DataTableProps<T>) {
+  const container = layout === 'container'
   if (isPending) return <TableSkeleton columns={columns.length} density={density} />
   if (isError && !data) return <ErrorState error={error} onRetry={onRetry} />
   if (!data?.length)
@@ -116,9 +128,23 @@ export function DataTable<T>({
     selection.onChange(next)
   }
 
-  const onRowKey = (e: KeyboardEvent, row: T) => {
+  const onRowKey = (e: KeyboardEvent<HTMLTableRowElement>, row: T) => {
     if (e.target !== e.currentTarget) return
+    const step =
+      e.key === 'j' || e.key === 'ArrowDown' ? 1 : e.key === 'k' || e.key === 'ArrowUp' ? -1 : 0
+    if (step) {
+      e.preventDefault()
+      const sibling =
+        step > 0 ? e.currentTarget.nextElementSibling : e.currentTarget.previousElementSibling
+      ;(sibling as HTMLElement | null)?.focus()
+      return
+    }
     if (e.key === 'Enter') (onRowOpen ?? onRowClick)?.(row)
+    if (e.key === ' ' && container && selection) {
+      e.preventDefault()
+      toggleRow(rowKey(row))
+      return
+    }
     if (e.key === ' ' && onRowClick) {
       e.preventDefault()
       onRowClick(row)
@@ -128,9 +154,14 @@ export function DataTable<T>({
   const rowH = density === 'compact' ? 'h-10' : 'h-[52px]'
   const dataCols = columns.filter((c) => !c.isAction)
   const actionCols = columns.filter((c) => c.isAction)
+  const cardCols = dataCols.filter((c) => !c.hideOnMobile)
+  const identityKey = (columns.find((c) => c.sticky) ?? dataCols[0])?.key
+  const secondary = columns.filter((c) => c.priority === 2)
+  const stale = isError && !!dataUpdatedAt && onRetry
 
   return (
-    <div className="space-y-4">
+    <div className="@container space-y-4">
+      {stale && <StaleNotice updatedAt={dataUpdatedAt} onRetry={onRetry} />}
       <div
         aria-busy={isFetching || undefined}
         className={cn('relative', isFetching && 'opacity-70 transition-opacity')}
@@ -139,7 +170,14 @@ export function DataTable<T>({
           <Spinner className="text-brand absolute -top-6 right-0 size-3.5" label="Đang cập nhật" />
         )}
 
-        <div className="border-line bg-surface -mx-4 hidden border-y md:mx-0 md:block md:rounded-md md:border md:max-lg:overflow-x-auto">
+        <div
+          className={cn(
+            'border-line bg-surface -mx-4 hidden border-y',
+            container
+              ? '@min-[600px]:mx-0 @min-[600px]:block @min-[600px]:overflow-x-auto @min-[600px]:rounded-md @min-[600px]:border'
+              : 'md:mx-0 md:block md:rounded-md md:border md:max-lg:overflow-x-auto',
+          )}
+        >
           <table className="w-full border-separate border-spacing-0 text-left text-sm">
             {caption && <caption className="sr-only">{caption}</caption>}
             <thead>
@@ -167,6 +205,8 @@ export function DataTable<T>({
                         thClass,
                         col.align === 'right' && 'text-right',
                         'first:rounded-tl-md last:rounded-tr-md',
+                        priorityClass[col.priority ?? 1],
+                        col.sticky && 'left-0 z-20',
                         col.className,
                       )}
                     >
@@ -243,10 +283,19 @@ export function DataTable<T>({
                           tdClass,
                           rowH,
                           col.align === 'right' && 'num text-right',
+                          priorityClass[col.priority ?? 1],
+                          col.sticky && stickyCellClass,
                           col.className,
                         )}
                       >
                         {col.cell(row)}
+                        {col.key === identityKey && secondary.length > 0 && (
+                          <div className="type-caption mt-0.5 hidden flex-wrap gap-x-3 @max-[719.98px]:flex">
+                            {secondary.map((c) => (
+                              <span key={c.key}>{c.cell(row)}</span>
+                            ))}
+                          </div>
+                        )}
                       </td>
                     ))}
                     {rowActions && (
@@ -261,7 +310,12 @@ export function DataTable<T>({
           </table>
         </div>
 
-        <ul className="border-line bg-surface divide-line-soft -mx-4 divide-y border-y md:hidden">
+        <ul
+          className={cn(
+            'border-line bg-surface divide-line-soft -mx-4 divide-y border-y',
+            container ? '@min-[600px]:hidden' : 'md:hidden',
+          )}
+        >
           {data.map((row) => {
             const key = rowKey(row)
             const checked = selection?.selected.has(key) ?? false
@@ -270,10 +324,21 @@ export function DataTable<T>({
                 key={key}
                 className={cn(
                   'flex gap-3 px-4 py-3',
+                  container && selection && 'relative pr-14',
                   (checked || key === activeRowKey) && 'bg-brand-soft/50',
                 )}
               >
-                {selection && (
+                {selection && container && (
+                  // VF-05: ô 44 px góc trên phải, không phủ lên tên
+                  <label className="absolute top-0 right-0 flex size-11 cursor-pointer items-center justify-center">
+                    <Checkbox
+                      aria-label={`Chọn ${rowLabel?.(row) ?? 'dòng'}`}
+                      checked={checked}
+                      onChange={() => toggleRow(key)}
+                    />
+                  </label>
+                )}
+                {selection && !container && (
                   <span className="pt-0.5">
                     <Checkbox
                       aria-label={`Chọn ${rowLabel?.(row) ?? 'dòng'}`}
@@ -289,20 +354,19 @@ export function DataTable<T>({
                   {mobileRow ? (
                     mobileRow(row)
                   ) : (
-                    <dl className="space-y-1.5">
-                      {dataCols
-                        .filter((c) => !c.hideOnMobile)
-                        .map((col, i) =>
-                          i === 0 ? (
-                            <div key={col.key}>{col.cell(row)}</div>
-                          ) : (
+                    <div className="space-y-1.5">
+                      {cardCols[0] && <div>{cardCols[0].cell(row)}</div>}
+                      {cardCols.length > 1 && (
+                        <dl className="space-y-1.5">
+                          {cardCols.slice(1).map((col) => (
                             <div key={col.key} className="flex items-center justify-between gap-4">
                               <dt className="type-caption shrink-0">{col.header}</dt>
                               <dd className="min-w-0 text-right">{col.cell(row)}</dd>
                             </div>
-                          ),
-                        )}
-                    </dl>
+                          ))}
+                        </dl>
+                      )}
+                    </div>
                   )}
                 </div>
                 {(actionCols.length > 0 || rowActions) && (
@@ -338,6 +402,13 @@ export function DataTable<T>({
 
 const thClass =
   'border-line bg-surface type-overline sticky top-[var(--sticky-top,3.5rem)] z-10 h-10 border-b px-4 whitespace-nowrap first:rounded-tl-md first:pl-5 last:rounded-tr-md'
+const priorityClass = {
+  1: '',
+  2: '@max-[719.98px]:hidden',
+  3: '@max-[839.98px]:hidden',
+  4: '@max-[1023.98px]:hidden',
+} as const
+const stickyCellClass = 'bg-surface group-hover/row:bg-canvas sticky left-0 z-[1]'
 const tdClass =
   'border-line-soft border-b px-4 align-middle first:pl-5 [tr:last-child_&]:border-b-0'
 

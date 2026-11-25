@@ -29,6 +29,8 @@ export default function AiQueuePage() {
     {
       key: 'candidate',
       header: 'Ứng viên',
+      priority: 1,
+      sticky: 'start',
       cell: (i) => (
         <div className="min-w-0">
           <Link
@@ -44,6 +46,7 @@ export default function AiQueuePage() {
     {
       key: 'status',
       header: 'Tình trạng',
+      priority: 1,
       cell: (i) => (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
           <AiStatusBadge status={i.aiStatus} />
@@ -54,6 +57,7 @@ export default function AiQueuePage() {
     {
       key: 'reason',
       header: 'Lý do',
+      priority: 2,
       cell: (i) => (
         <span className="text-ink-2">
           {i.aiError ?? (i.stuck ? 'Chưa vào được hàng đợi xử lý' : '—')}
@@ -63,6 +67,7 @@ export default function AiQueuePage() {
     {
       key: 'updatedAt',
       header: 'Cập nhật',
+      priority: 3,
       align: 'right',
       cell: (i) => (
         <span className="type-caption whitespace-nowrap">{formatDateTime(i.updatedAt)}</span>
@@ -112,6 +117,8 @@ export default function AiQueuePage() {
           onRowClick={(i) => openDetail('application', i.id)}
           isPending={issues.isPending}
           isError={issues.isError}
+          dataUpdatedAt={issues.dataUpdatedAt}
+          layout="container"
           error={issues.error}
           onRetry={issues.refetch}
           isFetching={issues.isFetching && !issues.isPending}

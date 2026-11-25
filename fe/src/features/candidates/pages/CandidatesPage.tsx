@@ -24,6 +24,8 @@ const columns: Column<CandidateListItem>[] = [
   {
     key: 'candidate',
     header: 'Ứng viên',
+    priority: 1,
+    sticky: 'start',
     cell: (c) => (
       <div className="flex items-center gap-3">
         <Avatar name={c.fullName} size="sm" />
@@ -39,17 +41,20 @@ const columns: Column<CandidateListItem>[] = [
   {
     key: 'lastJob',
     header: 'Tin nộp gần nhất',
+    priority: 2,
     cell: (c) => <LastJob candidate={c} />,
   },
   {
     key: 'phone',
     header: 'Điện thoại',
+    priority: 4,
     hideOnMobile: true,
     cell: (c) => <span className="text-ink-2 num">{c.phone ?? '—'}</span>,
   },
   {
     key: 'lastAppliedAt',
     header: 'Nộp gần nhất',
+    priority: 3,
     align: 'right',
     cell: (c) => (
       <span className="type-caption whitespace-nowrap">{formatDate(c.lastAppliedAt)}</span>
@@ -179,6 +184,8 @@ export default function CandidatesPage() {
             density={density}
             isPending={query.isPending}
             isError={query.isError}
+            dataUpdatedAt={query.dataUpdatedAt}
+            layout="container"
             error={query.error}
             onRetry={query.refetch}
             isFetching={query.isFetching && !query.isPending && !query.isFetchingNextPage}

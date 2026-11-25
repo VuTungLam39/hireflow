@@ -124,6 +124,8 @@ export default function JobsPage() {
     {
       key: 'title',
       header: 'Tin',
+      priority: 1,
+      sticky: 'start',
       sortKey: 'title',
       cell: (job) => (
         <div className="min-w-0">
@@ -142,6 +144,7 @@ export default function JobsPage() {
     {
       key: 'status',
       header: 'Trạng thái',
+      priority: 2,
       hideOnMobile: true,
       cell: (job) => (
         <div className="flex flex-col items-start gap-0.5">
@@ -153,6 +156,7 @@ export default function JobsPage() {
     {
       key: 'pipeline',
       header: 'Hồ sơ',
+      priority: 1,
       align: 'right',
       className: 'w-60',
       cell: (job) =>
@@ -167,6 +171,7 @@ export default function JobsPage() {
     {
       key: 'publishedAt',
       header: 'Đã đăng',
+      priority: 4,
       sortKey: 'publishedAt',
       align: 'right',
       cell: (job) =>
@@ -245,6 +250,8 @@ export default function JobsPage() {
         mobileRow={(job) => <JobMobileRow job={job} />}
         isPending={query.isPending}
         isError={query.isError}
+        dataUpdatedAt={query.dataUpdatedAt}
+        layout="container"
         error={query.error}
         onRetry={query.refetch}
         isFetching={query.isFetching && !query.isPending}
@@ -379,7 +386,7 @@ function RowMenu({ job, onAction }: { job: JobSummary; onAction: (a: PendingActi
               onClick={go}
             >
               <ListOrdered />
-              Xếp hạng ứng viên
+              Xếp hạng hồ sơ
             </Link>
           )}
           {canInvite && (

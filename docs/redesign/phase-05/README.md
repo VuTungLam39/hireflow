@@ -13,6 +13,7 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
 | P5-D05 | 24/11/2026 | Slice 4 chia **2 PR**: 4a chức năng (nhìn cũ), 4b lật toàn bộ trang công khai sang v2 một lần; Combobox công ty dùng **cmdk** | [D-10] (1 slice = 1 PR); contract Combobox ("decided in its slice") | header/footer dùng chung → mọi trang công khai phải lật cùng lúc (strangler); tách chức năng khỏi đổi giao diện để review/so ảnh/hoàn tác riêng |
 | P5-D06 | 25/11/2026 | Slice 5: (a) §05.5 = **PR chuẩn bị (5a) + PR thật (5b)**, không feature flag; (b) khung nội bộ **giữ v1**, lật nội bộ khi trang bên trong dựng lại; (c) Command Menu = **cmdk** trong Dialog, nhóm theo contract; (d) Rail compact = **NavSheet** riêng, Sheet quick view giữ DL-16 | [D-10] §05.5; contract Command Menu ("chosen in its slice"), Sheet (DL-16) | khung bao mọi trang nội bộ kể cả vùng khoá → tách đổi cấu trúc khỏi đổi hành vi; tránh khung v2 bọc trang v1 |
 | P5-D07 | 25/11/2026 | (a) DetailDialog **giữ Tabs tự viết**, sửa `aria-controls` ↔ `id` panel; Radix Tabs xét ở slice 8 (hợp nhất engine). (b) Tab có panel: **kích hoạt tự động** cho panel nhẹ/đã nạp, thủ công cho panel nặng/tải lười (quy tắc file 05) — **sửa dòng Tabs ở Phase 03 file 06** cho khớp. (c) Contract Command Menu sửa theo thực tế phân vai: **"Tìm ứng viên"** (vai có `candidate:read`: HR, HM — kết quả là người) / **"Tìm hồ sơ"** (Interviewer); code giữ nguyên | P5-D04 điều kiện 3; Phase 03 file 05 (Tabs, Command Menu), file 06 (Tabs); DL-09; §05.2 | kiểm APG: bàn phím đạt trọn, chỉ thiếu nối một chiều (2 thuộc tính) → không thay engine; mâu thuẫn chế độ kích hoạt là giữa hai contract, không phải lỗi code; đổi nhãn sẽ phá luồng tìm theo người hợp lệ của HR (Entry 11) |
+| P5-D08 | 25/11/2026 | Slice 6: (a) hành vi DataTable có xung đột là **opt-in** `layout="container"` (thẻ <600 container, ô chọn 44 px VF-05, Space = chọn dòng) — ApplicationsPage (vùng khoá) giữ nguyên, slice 7 bật; phần thuần cộng (J/K, StaleNotice, `priority`, `sticky`) áp mọi nơi. (b) Ngưỡng cột **cố định bằng container query**: ưu tiên 4 ẩn <1024, 3 ẩn <840, 2 dời xuống dòng phụ <720, 1 không ẩn | [D-02], P5-D02b; Phase 03 file 05 (DataTable), file 07 T1–T5 | không đổi hành vi trang chủ lực của HR trước khi slice của nó kiểm chứng; CSS thuần, không đo JS → không nhảy bố cục |
 
 ## Entry 0 — Planning record merged into main (pre-Slice 0)
 - **Decision:** owner, 24/11/2026 — option (a): merge planning branch into main before Slice 0, via PR, with verification gate.
@@ -244,4 +245,22 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
   - Test chạy **đỏ trước sửa** (thiếu `aria-controls`), **xanh sau sửa**.
 - **Command Menu (P5-D07c):** đối chiếu code — HR/HM tìm qua `candidatesApi` (mỗi kết quả là một người, mở popup ứng viên gom mọi hồ sơ), Interviewer tìm qua `applicationsApi`. Rơi đúng ngoại lệ chủ dự án nêu → sửa contract Phase 03 file 05 (nhóm "Tìm ứng viên" / "Tìm hồ sơ" theo vai), code giữ nguyên. Đóng mục "lệch" ở Entry 10.
 - **Kiểm:** toàn bộ test, format, lint, check:design, check:terms, typecheck, build xanh. `package.json` không đổi. Vùng khoá: 0 file.
+
+## Entry 12 — Slice 6: DataTable system (🟢)
+- **Spec + tickets:** issue #135. Base `feat/phase05-slice6-datatable` từ `main @ 1d7ac64`. Quyết định P5-D08.
+- **Đã làm (`components/shared/DataTable.tsx`):**
+  - `Column.priority` 1–4 (T1–T3) theo **bề rộng container** (`@container` trên khung bảng): 4 ẩn <1024, 3 ẩn <840, 2 ẩn <720 và **hiện lại ở dòng phụ dưới cột định danh**, 1 không ẩn. Không truyền `priority` = 1 → nơi gọi cũ không đổi.
+  - `Column.sticky: 'start'` — cột định danh dính trái khi bảng cuộn ngang trong container.
+  - Opt-in `layout="container"`: thẻ khi container <600 (T5) thay cho viewport <768; bảng cuộn trong container thay vì trang; **VF-05** ô chọn nằm trong ô 44 px góc trên phải thẻ, bấm tên thì mở (không chọn); **Space = chọn dòng** khi có selection.
+  - Bàn phím (mọi nơi): **J/K và ↑/↓** chuyển focus dòng, Enter mở.
+  - **StaleNotice** ("Dữ liệu lúc … · Tải lại") phía trên bảng khi làm mới thất bại mà đang hiện dữ liệu (prop `dataUpdatedAt`).
+  - Sửa kèm (axe bắt được, có từ trước): thẻ mặc định đặt cột định danh trong `<dl>` không có `dt/dd` → đưa ra ngoài `<dl>`.
+- **Bật cho 6 trang ngoài vùng khoá** (`layout="container"`, `dataUpdatedAt`, priority/sticky từng cột): Kho ứng viên, Tin tuyển dụng, Người dùng, Phòng ban, Xử lý CV, Công ty (Quản trị sàn).
+- **Thuật ngữ:** menu dòng ở Tin tuyển dụng "Xếp hạng ứng viên" → **"Xếp hạng hồ sơ"** (GLOSSARY); gỡ mục baseline (13 → 12). RankingTable (vùng khoá, slice 9) giữ.
+- **Không làm ở slice 6 (bàn giao):**
+  - [ ] ApplicationsPage bật `layout="container"` + priority, kiểm **F-03/T4** (vừa khung ở 1024) và VF-05 — slice 7.
+  - [ ] BulkActionBar, Search, Sort, Pagination: giữ bản đang có (đã đạt contract cơ bản: sort header là nút + `aria-sort`, phân trang có nhãn). `expandable`, `views`, `virtualize`, biến thể `ranking`/`compare` — slice 7/9 khi có call site.
+- **Bundle (route vào, gzip):** 296.03 → **296.61 KB** (+0.58).
+- **Kiểm:** 7 test mới (J/K/↑/↓ + Enter; Space chọn ở opt-in; Space cũ giữ ở nơi không opt-in; class priority/sticky + dòng phụ ưu tiên 2; VF-05 ô 44 px, bấm tên mở không chọn; StaleNotice + Tải lại; axe 0) · 323 test xanh (gồm test vùng khoá ApplicationsPage, bulk-status) · format, lint, check:design, check:terms, typecheck, build xanh. `package.json` không đổi. Vùng khoá: 0 file.
+- **Chưa kiểm trên trình duyệt thật:** ẩn cột theo container ở 390/768/1024/1280/1440 và không tràn trên 6 trang (jsdom không có container query — test chỉ kiểm class) → production smoke sau merge (cần phiên đăng nhập).
 

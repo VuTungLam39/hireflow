@@ -47,6 +47,8 @@ export default function UsersPage() {
     {
       key: 'name',
       header: 'Người dùng',
+      priority: 1,
+      sticky: 'start',
       cell: (u) => (
         <div className="flex items-center gap-3">
           <Avatar name={u.fullName} size="sm" />
@@ -63,22 +65,26 @@ export default function UsersPage() {
     {
       key: 'role',
       header: 'Vai trò',
+      priority: 2,
       cell: (u) => <span className="text-ink-2">{ROLE_LABELS[u.role]}</span>,
     },
     {
       key: 'dept',
       header: 'Phòng ban',
+      priority: 3,
       hideOnMobile: true,
       cell: (u) => <span className="text-ink-2">{u.department?.name ?? '—'}</span>,
     },
     {
       key: 'status',
       header: 'Trạng thái',
+      priority: 2,
       cell: (u) => <UserStatus user={u} />,
     },
     {
       key: 'lastLogin',
       header: 'Đăng nhập gần nhất',
+      priority: 4,
       align: 'right',
       cell: (u) => (
         <span className="type-caption whitespace-nowrap">{formatDateTime(u.lastLoginAt)}</span>
@@ -147,6 +153,8 @@ export default function UsersPage() {
         onRowClick={(u) => setEditing(u)}
         isPending={query.isPending}
         isError={query.isError}
+        dataUpdatedAt={query.dataUpdatedAt}
+        layout="container"
         error={query.error}
         onRetry={query.refetch}
         isFetching={query.isFetching && !query.isPending}
