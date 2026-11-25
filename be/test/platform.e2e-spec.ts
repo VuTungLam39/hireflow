@@ -216,11 +216,14 @@ describe('Platform admin (e2e)', { timeout: 30_000 }, () => {
 
   it('suspend cuts open sessions on the next request; reactivate lets them back (BR-ORG-04)', async () => {
     await as('p', request(server()).get('/api/v1/users')).expect(200);
+    const session = (await signIn(emails.p).expect(200)).headers['set-cookie'];
     await as('platform', request(server()).patch(`/api/v1/platform/organizations/${orgP}/suspend`))
       .send({ reason: 'Vi phạm điều khoản sàn' })
       .expect(200);
     const blocked = await as('p', request(server()).get('/api/v1/users')).expect(403);
     expect(blocked.body.code).toBe('ORG_DISABLED');
+    // W4
+    await request(server()).post('/api/v1/auth/refresh').set('Cookie', session).expect(401);
     await mailTo(emails.p, 'tạm khoá');
 
     await as('platform', request(server()).patch(`/api/v1/platform/organizations/${orgP}/suspend`))
