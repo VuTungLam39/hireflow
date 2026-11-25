@@ -1,7 +1,10 @@
 import { X } from 'lucide-react'
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { Tabs, tabId } from '@/components/ui'
+import { Tabs, TabsPanel } from '@/components/ui'
 import { cn } from '@/lib/utils'
+
+const bodyClass =
+  'min-h-0 flex-1 overflow-y-auto px-5 py-5 [--sticky-top:0px] focus-visible:outline-none sm:px-6'
 
 interface DetailTab<T extends string> {
   id: T
@@ -45,7 +48,6 @@ export function DetailDialog<T extends string>({
 }: DetailDialogProps<T>) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
-  const tabsId = useId()
   const bodyRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLHeadingElement>(null)
   const [replacing] = useState(() => shownDialogs > 0)
@@ -140,29 +142,26 @@ export function DetailDialog<T extends string>({
                 <X className="size-[18px]" />
               </button>
             </div>
-            {tabs && tab && onTab ? (
-              <Tabs
-                tabs={tabs}
-                value={tab}
-                onChange={onTab}
-                label={label}
-                idPrefix={tabsId}
-                panelId={`${tabsId}-panel`}
-                className="mt-4"
-              />
-            ) : (
-              <div className="border-line mt-4 border-b" />
-            )}
+            {!(tabs && tab && onTab) && <div className="border-line mt-4 border-b" />}
           </header>
-          <div
-            ref={bodyRef}
-            id={tabs ? `${tabsId}-panel` : undefined}
-            role={tabs ? 'tabpanel' : undefined}
-            aria-labelledby={tabs && tab ? tabId(tabsId, tab) : undefined}
-            className="min-h-0 flex-1 overflow-y-auto px-5 py-5 [--sticky-top:0px] sm:px-6"
-          >
-            {children}
-          </div>
+          {tabs && tab && onTab ? (
+            <Tabs
+              tabs={tabs}
+              value={tab}
+              onChange={onTab}
+              label={label}
+              className="flex min-h-0 flex-1 flex-col"
+              listClassName="mt-4 px-5 sm:px-6"
+            >
+              <TabsPanel ref={bodyRef} value={tab} className={bodyClass}>
+                {children}
+              </TabsPanel>
+            </Tabs>
+          ) : (
+            <div ref={bodyRef} className={bodyClass}>
+              {children}
+            </div>
+          )}
           {footer && (
             <footer className="border-line flex flex-wrap items-center justify-between gap-2 border-t px-5 py-3 sm:px-6">
               {footer}

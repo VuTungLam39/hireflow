@@ -111,6 +111,7 @@ export function ScorePanel({
               onSelect={onSelect}
             />
           </div>
+          <RejectedEvidence app={app} />
         </>
       )}
     </div>
@@ -159,8 +160,10 @@ export function CvPanel({
       className={className}
       header={
         <p className="type-caption mb-6 flex flex-wrap items-center justify-between gap-2">
+          {/* VF-12 · R3: hiện đúng lớp văn bản hệ thống dùng để kiểm căn cứ */}
           <span>
-            Tờ CV · {app.cv.fileName}
+            Nội dung CV đã trích xuất · đây là văn bản hệ thống dùng để kiểm căn cứ ·{' '}
+            {app.cv.fileName}
             {app.cv.textEnteredAt && ' · Nội dung nhập tay'}
           </span>
           {marks.length > 0 && (
@@ -171,5 +174,32 @@ export function CvPanel({
         </p>
       }
     />
+  )
+}
+
+// P1: căn cứ bị loại gom vào một mục mở rộng, không xen giữa các tiêu chí
+function RejectedEvidence({ app }: { app: ApplicationDetail }) {
+  const rejected = app.requirements.flatMap((r) => {
+    const quote = app.breakdown.find((b) => b.requirementId === r.id)?.rejectedEvidence
+    return quote ? [{ id: r.id, label: r.label, quote }] : []
+  })
+  if (!rejected.length) return null
+  return (
+    <details className="border-line-soft mt-4 border-t pt-3">
+      <summary className="type-subheading cursor-pointer">
+        Có căn cứ bị loại ({rejected.length})
+      </summary>
+      <ul className="mt-2 space-y-2">
+        {rejected.map((r) => (
+          <li key={r.id} className="bg-bad-soft rounded-xs px-2.5 py-2">
+            <p className="type-caption">{r.label}</p>
+            <p className="text-ink-2">“{r.quote}”</p>
+            <p className="text-bad mt-0.5 text-[13px]">
+              Không tìm thấy nguyên văn trong CV nên không được tính.
+            </p>
+          </li>
+        ))}
+      </ul>
+    </details>
   )
 }

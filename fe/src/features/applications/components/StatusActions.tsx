@@ -1,8 +1,8 @@
-import { ArrowRight, Check, MoreHorizontal, RotateCcw } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
 import { useState } from 'react'
-import { ConfirmDialog } from '@/components/shared'
-import { Button, Popover, menuItemClass } from '@/components/ui'
+import { AlertDialog, Button, FormField, Select } from '@/components/ui'
 import { usePermission } from '@/hooks/use-permission'
+import { getErrorCode } from '@/lib/errors'
 import { Permission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import {
@@ -18,26 +18,31 @@ import { useChangeStatus, useReopen } from '../hooks/use-applications'
 
 interface StatusActionsProps {
   applicationId: string
+  candidateName: string
   status: ApplicationStatus
   className?: string
+  /** 403 khi lưu: vai không có quyền với hồ sơ trong phạm vi (ADR-0002) */
+  onDenied?: () => void
 }
 
-const label = (next: ApplicationStatus) =>
-  next === 'REJECTED'
-    ? 'Từ chối hồ sơ'
-    : next === 'WITHDRAWN'
-      ? 'Ghi nhận ứng viên rút'
-      : `Chuyển sang ${APPLICATION_STATUS[next].label}`
+const optionLabel = (next: ApplicationStatus) =>
+  next === 'WITHDRAWN' ? 'Ứng viên rút hồ sơ' : APPLICATION_STATUS[next].label
 
-// BR-STS-01 → 05
-export function StatusActions({ applicationId, status, className }: StatusActionsProps) {
+// BR-STS-01 → 05 · P1 · P5-D11a: một nút mở hộp quyết định, không chọn sẵn (VF-01)
+export function StatusActions({
+  applicationId,
+  candidateName,
+  status,
+  className,
+  onDenied,
+}: StatusActionsProps) {
   const canUpdate = usePermission(Permission.ApplicationUpdateStatus)
   const changeStatus = useChangeStatus(applicationId)
-  const [target, setTarget] = useState<ApplicationStatus | null>(null)
-  const [menu, setMenu] = useState(false)
+  const [open, setOpen] = useState(false)
+  const [target, setTarget] = useState<ApplicationStatus | ''>('')
+  const [missing, setMissing] = useState(false)
   // MVP 3.1 · BR-STS-05: OFFER, HIRED đi qua khối Offer
-  const allowed = (next: ApplicationStatus) => canUpdate && next !== 'OFFER' && next !== 'HIRED'
-  const options = NEXT_STATUS[status].filter(allowed)
+  const options = NEXT_STATUS[status].filter((s) => s !== 'OFFER' && s !== 'HIRED')
 
   if (APPLICATION_STATUS[status].terminal) {
     return (
@@ -47,108 +52,67 @@ export function StatusActions({ applicationId, status, className }: StatusAction
       </div>
     )
   }
-  if (!options.length) return null
+  if (!canUpdate || !options.length) return null
 
-  const forward = options.filter((s) => s !== 'REJECTED' && s !== 'WITHDRAWN')
-  const needReason = !!target && REASON_REQUIRED.includes(target)
-  const secondary = [
-    ...forward.slice(1),
-    ...options.filter((s) => s === 'WITHDRAWN' || s === 'REJECTED'),
-  ]
+  const reject = target === 'REJECTED'
+  const close = () => {
+    setOpen(false)
+    setTarget('')
+    setMissing(false)
+  }
 
   return (
-    <>
-      <div className={cn('flex flex-wrap items-center gap-2', className)}>
-        {secondary.length > 0 && (
-          <span className="lg:hidden">
-            <Popover
-              open={menu}
-              onOpenChange={setMenu}
-              side="top"
-              role="menu"
-              label="Thao tác khác với hồ sơ"
-              className="w-60"
-              trigger={(props) => (
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  aria-label="Thao tác khác với hồ sơ"
-                  {...props}
-                >
-                  <MoreHorizontal />
-                </Button>
-              )}
-            >
-              {secondary.map((next) => (
-                <button
-                  key={next}
-                  type="button"
-                  role="menuitem"
-                  className={cn(menuItemClass, next === 'REJECTED' && 'text-bad hover:text-bad')}
-                  onClick={() => {
-                    setMenu(false)
-                    setTarget(next)
-                  }}
-                >
-                  {label(next)}
-                </button>
-              ))}
-            </Popover>
-          </span>
-        )}
-        {options.includes('WITHDRAWN') && (
-          <Button variant="quiet" className="max-lg:hidden" onClick={() => setTarget('WITHDRAWN')}>
-            {label('WITHDRAWN')}
-          </Button>
-        )}
-        {options.includes('REJECTED') && (
-          <Button
-            variant="danger-quiet"
-            className="max-lg:hidden"
-            onClick={() => setTarget('REJECTED')}
-          >
-            {label('REJECTED')}
-          </Button>
-        )}
-        {forward.map((next, i) => (
-          <Button
-            key={next}
-            className={cn(i === 0 ? 'max-lg:flex-1' : 'max-lg:hidden')}
-            onClick={() => setTarget(next)}
-          >
-            {next === 'HIRED' && <Check />}
-            {label(next)}
-            {next !== 'HIRED' && <ArrowRight />}
-          </Button>
-        ))}
-      </div>
-
-      <ConfirmDialog
-        open={!!target}
-        onClose={() => setTarget(null)}
-        title={target ? `${label(target)}?` : ''}
-        description={
-          target && APPLICATION_STATUS[target].terminal
-            ? 'Đây là trạng thái kết thúc. Muốn xét lại sau này, bạn có thể mở lại hồ sơ.'
-            : target
-              ? `Hồ sơ sẽ chuyển sang “${APPLICATION_STATUS[target].label}” và được ghi vào lịch sử.`
-              : undefined
-        }
-        confirmLabel={target ? label(target) : 'Xác nhận'}
-        tone={target === 'REJECTED' ? 'danger' : 'primary'}
-        requireReason={needReason ? REJECT_REASON_INPUT : undefined}
-        loading={changeStatus.isPending}
+    <div className={cn('flex items-center', className)}>
+      <Button className="max-lg:flex-1" onClick={() => setOpen(true)}>
+        Chuyển trạng thái
+      </Button>
+      <AlertDialog
+        open={open}
+        onClose={close}
+        title="Chuyển trạng thái hồ sơ"
+        description={`${candidateName} · hiện tại: ${APPLICATION_STATUS[status].label}`}
+        // VF-02: nhãn và kiểu nút theo trạng thái đã chọn
+        confirmLabel={reject ? 'Xác nhận từ chối' : 'Xác nhận'}
+        confirmVariant={reject ? 'danger' : 'primary'}
+        requireReason={target && REASON_REQUIRED.includes(target) ? REJECT_REASON_INPUT : undefined}
         onConfirm={(reason, code) => {
-          if (!target) return
-          changeStatus.mutate({
-            status: target,
-            reason,
-            reasonCode: code as RejectReasonCode | undefined,
-          })
-          setTarget(null)
+          if (!target) {
+            setMissing(true)
+            return
+          }
+          return changeStatus
+            .mutateAsync({ status: target, reason, reasonCode: code as RejectReasonCode })
+            .then(close)
+            .catch((error: unknown) => {
+              if (getErrorCode(error) !== 'FORBIDDEN') throw error
+              close()
+              onDenied?.()
+            })
         }}
-      />
-    </>
+      >
+        <FormField
+          label="Trạng thái mới"
+          htmlFor="decision-status"
+          error={missing && !target ? 'Chọn trạng thái mới.' : undefined}
+          hint={status === 'INTERVIEW' ? 'Offer chỉ tạo trong mục Offer của hồ sơ.' : undefined}
+        >
+          <Select
+            id="decision-status"
+            className="w-full"
+            value={target}
+            aria-invalid={missing && !target}
+            onChange={(e) => setTarget(e.target.value as ApplicationStatus | '')}
+          >
+            <option value="">— Chọn trạng thái —</option>
+            {options.map((s) => (
+              <option key={s} value={s}>
+                {optionLabel(s)}
+              </option>
+            ))}
+          </Select>
+        </FormField>
+      </AlertDialog>
+    </div>
   )
 }
 
@@ -163,7 +127,7 @@ function ReopenAction({ applicationId }: { applicationId: string }) {
         <RotateCcw />
         Mở lại hồ sơ
       </Button>
-      <ConfirmDialog
+      <AlertDialog
         open={open}
         onClose={() => setOpen(false)}
         title="Mở lại hồ sơ?"
@@ -173,8 +137,7 @@ function ReopenAction({ applicationId }: { applicationId: string }) {
           label: 'Lý do',
           placeholder: 'Ví dụ: ứng viên liên hệ lại, muốn xét tiếp',
         }}
-        loading={reopen.isPending}
-        onConfirm={(reason) => reopen.mutate(reason ?? '', { onSuccess: () => setOpen(false) })}
+        onConfirm={(reason) => reopen.mutateAsync(reason ?? '')}
       />
     </>
   )

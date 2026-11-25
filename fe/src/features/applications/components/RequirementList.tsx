@@ -1,6 +1,7 @@
 import { ArrowDownRight } from 'lucide-react'
 import type { Requirement } from '@/features/jobs'
 import { REQUIREMENT_TYPE } from '@/features/jobs'
+import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import type { MatchLevel } from '../constants'
 import type { BreakdownItem } from '../types'
@@ -68,33 +69,21 @@ export function RequirementList({
               </blockquote>
             )}
 
-            {item?.rejectedEvidence && (
-              <div className="bg-bad-soft mt-2 rounded-xs px-2.5 py-2">
-                <p className="text-ink-2 decoration-bad/60 line-through">{item.rejectedEvidence}</p>
-                <p className="text-bad mt-0.5 text-[13px]">
-                  Câu trích không có trong CV nên đã bị loại khỏi điểm.
-                </p>
-              </div>
-            )}
-
-            {item?.evidence && (
-              <button
-                type="button"
-                onClick={() => onSelect(req.id)}
-                aria-pressed={active}
-                disabled={!canLocate}
-                className="text-brand disabled:text-ink-muted mt-1.5 inline-flex items-center gap-1 text-[13px] font-medium hover:underline disabled:no-underline"
-              >
-                {canLocate ? (
-                  <>
-                    Xem trong CV
-                    <ArrowDownRight className="size-3.5" />
-                  </>
-                ) : (
-                  'Không định vị được đoạn này trong CV'
-                )}
-              </button>
-            )}
+            {item?.evidence &&
+              (canLocate ? (
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="mt-1.5"
+                  onClick={() => onSelect(req.id)}
+                  aria-pressed={active}
+                >
+                  Xem trong CV
+                  <ArrowDownRight />
+                </Button>
+              ) : (
+                <p className="type-caption mt-1.5">Không định vị được đoạn này trong CV</p>
+              ))}
           </li>
         )
       })}

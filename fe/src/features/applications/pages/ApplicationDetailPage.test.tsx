@@ -1,7 +1,9 @@
 import { fireEvent, screen, within } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { links, paths } from '@/routes/paths'
 import { db } from '@/test/msw/data'
+import { api } from '@/test/msw/http'
 import { applicationHandlers } from '@/test/msw/handlers/applications'
 import { authHandlers } from '@/test/msw/handlers/auth'
 import { renderRouteAs } from '@/test/render'
@@ -29,7 +31,7 @@ describe('reopen a closed application', () => {
     renderAs('hr@hireflow.dev', app.id)
 
     fireEvent.click(await screen.findByRole('button', { name: 'Mở lại hồ sơ' }))
-    const dialog = await screen.findByRole('dialog')
+    const dialog = await screen.findByRole('alertdialog')
     fireEvent.click(within(dialog).getByRole('button', { name: 'Mở lại' }))
     expect(await within(dialog).findByText('Nhập lý do để tiếp tục')).toBeInTheDocument()
 
@@ -38,7 +40,7 @@ describe('reopen a closed application', () => {
     })
     fireEvent.click(within(dialog).getByRole('button', { name: 'Mở lại' }))
 
-    expect(await screen.findByRole('button', { name: /Phỏng vấn/ })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Chuyển trạng thái' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Mở lại hồ sơ' })).not.toBeInTheDocument()
     expect(app.status).toBe('SCREENING')
   })
@@ -99,5 +101,111 @@ describe('enter CV text by hand', () => {
     renderAs(hm.email, app.id)
     expect(await screen.findByText('Không đọc được CV')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Nhập nội dung CV' })).not.toBeInTheDocument()
+  })
+})
+
+// P1 · P5-D11a: một nút "Chuyển trạng thái" mở hộp quyết định
+describe('decision dialog', () => {
+  afterEach(() => server.resetHandlers())
+  const screening = () => db.applications.find((a) => a.status === 'SCREENING' && visible(a))!
+
+  const openDecision = async () => {
+    fireEvent.click(await screen.findByRole('button', { name: 'Chuyển trạng thái' }))
+    return screen.findByRole('alertdialog', { name: 'Chuyển trạng thái hồ sơ' })
+  }
+
+  it('VF-01/VF-02: nothing preselected; label follows the choice; reject needs a reason', async () => {
+    renderAs('hr@hireflow.dev', screening().id)
+    const dialog = await openDecision()
+    const select = within(dialog).getByLabelText('Trạng thái mới')
+    expect(select).toHaveValue('')
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Xác nhận' }))
+    expect(await within(dialog).findByText('Chọn trạng thái mới.')).toBeInTheDocument()
+
+    fireEvent.change(select, { target: { value: 'REJECTED' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Xác nhận từ chối' }))
+    expect(await within(dialog).findByText('Chọn một lý do để tiếp tục')).toBeInTheDocument()
+
+    fireEvent.change(select, { target: { value: 'INTERVIEW' } })
+    expect(within(dialog).queryByText('Lý do từ chối')).toBeNull()
+    expect(within(dialog).getByRole('button', { name: 'Xác nhận' })).toBeInTheDocument()
+  })
+
+  it('OP-1: a failed save keeps the choice and offers "Thử lại"', async () => {
+    const app = screening()
+    renderAs('hr@hireflow.dev', app.id)
+    server.use(
+      http.patch(api('/applications/:id/status'), () =>
+        HttpResponse.json(
+          { success: false, statusCode: 500, code: 'INTERNAL_ERROR', message: 'down' },
+          { status: 500 },
+        ),
+      ),
+    )
+    const dialog = await openDecision()
+    fireEvent.change(within(dialog).getByLabelText('Trạng thái mới'), {
+      target: { value: 'INTERVIEW' },
+    })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Xác nhận' }))
+    expect(await within(dialog).findByRole('button', { name: 'Thử lại' })).toBeInTheDocument()
+    expect(within(dialog).getByLabelText('Trạng thái mới')).toHaveValue('INTERVIEW')
+    expect(app.status).toBe('SCREENING')
+  })
+
+  it('a 403 on save closes the dialog and explains the permission', async () => {
+    renderAs('hr@hireflow.dev', screening().id)
+    server.use(
+      http.patch(api('/applications/:id/status'), () =>
+        HttpResponse.json(
+          { success: false, statusCode: 403, code: 'FORBIDDEN', message: 'no' },
+          { status: 403 },
+        ),
+      ),
+    )
+    const dialog = await openDecision()
+    fireEvent.change(within(dialog).getByLabelText('Trạng thái mới'), {
+      target: { value: 'INTERVIEW' },
+    })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Xác nhận' }))
+    expect(await screen.findByText(/Bạn không có quyền thực hiện thao tác này/)).toBeInTheDocument()
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+  })
+})
+
+describe('review page states', () => {
+  afterEach(() => server.resetHandlers())
+
+  it('ADR-0002: not-found and out-of-scope share one design', async () => {
+    server.use(
+      http.get(api('/applications/:id'), () =>
+        HttpResponse.json(
+          { success: false, statusCode: 404, code: 'NOT_FOUND', message: 'Application not found' },
+          { status: 404 },
+        ),
+      ),
+    )
+    renderAs('hr@hireflow.dev', db.applications[0].id)
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Không tìm thấy hồ sơ này' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Về danh sách hồ sơ' })).toBeInTheDocument()
+  })
+
+  it('P1: rejected quotes sit in one disclosure; the CV pane says it is the extracted text (VF-12)', async () => {
+    const app = db.applications.find(
+      (a) => visible(a) && a.aiStatus === 'DONE' && a.breakdown.length > 1,
+    )!
+    const saved = app.breakdown
+    app.breakdown = saved.map((b, i) =>
+      i === 0 ? { ...b, match: 0, evidence: null, rejectedEvidence: 'Thành thạo Kubernetes' } : b,
+    )
+    renderAs('hr@hireflow.dev', app.id)
+    const disclosure = await screen.findByText('Có căn cứ bị loại (1)')
+    expect(disclosure.closest('details')).toHaveTextContent('“Thành thạo Kubernetes”')
+    app.breakdown = saved
+    expect(
+      (await screen.findAllByText(/Nội dung CV đã trích xuất · đây là văn bản hệ thống/)).length,
+    ).toBeGreaterThan(0)
   })
 })
