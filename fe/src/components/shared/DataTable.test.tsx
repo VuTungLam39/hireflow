@@ -160,3 +160,32 @@ describe('DataTable — slice 6', () => {
     expect(r.violations.map((v) => v.id)).toEqual([])
   })
 })
+
+// Header sticky đè dòng đầu (production 25/11): khung có overflow thì top phải về 0
+describe('DataTable sticky header inside a scroll box', () => {
+  it.each([undefined, 'container'] as const)(
+    'layout=%s: every breakpoint that scrolls the table box resets --sticky-top',
+    (layout) => {
+      const { container } = render(
+        <MemoryRouter>
+          <DataTable
+            columns={columns}
+            data={[{ id: '1', name: 'Nguyễn An' }]}
+            rowKey={(r) => r.id}
+            isPending={false}
+            isError={false}
+            layout={layout}
+          />
+        </MemoryRouter>,
+      )
+      const box = container.querySelector('table')!.parentElement!
+      const classes = [...box.classList]
+      const scrolling = classes.filter((c) => c.endsWith('overflow-x-auto'))
+      expect(scrolling.length).toBeGreaterThan(0)
+      for (const c of scrolling) {
+        const prefix = c.slice(0, -'overflow-x-auto'.length)
+        expect(classes).toContain(`${prefix}[--sticky-top:0px]`)
+      }
+    },
+  )
+})

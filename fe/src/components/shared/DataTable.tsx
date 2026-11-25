@@ -174,8 +174,8 @@ export function DataTable<T>({
           className={cn(
             'border-line bg-surface -mx-4 hidden border-y',
             container
-              ? '@min-[600px]:mx-0 @min-[600px]:block @min-[600px]:overflow-x-auto @min-[600px]:rounded-md @min-[600px]:border'
-              : 'md:mx-0 md:block md:rounded-md md:border md:max-lg:overflow-x-auto',
+              ? '@min-[600px]:mx-0 @min-[600px]:block @min-[600px]:overflow-x-auto @min-[600px]:rounded-md @min-[600px]:border @min-[600px]:[--sticky-top:0px]'
+              : 'md:mx-0 md:block md:rounded-md md:border md:max-lg:overflow-x-auto md:max-lg:[--sticky-top:0px]',
           )}
         >
           <table className="w-full border-separate border-spacing-0 text-left text-sm">
