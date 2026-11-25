@@ -195,7 +195,7 @@ export default function ApplicationsPage() {
       cell: (a) => (
         <div className="flex items-center gap-3">
           <Avatar name={a.candidate.fullName} size="sm" />
-          <div className="max-w-64 min-w-0">
+          <div className="max-w-48 min-w-0">
             <p className="text-ink truncate font-medium">{a.candidate.fullName}</p>
             <p className="type-caption truncate">{a.candidate.email}</p>
           </div>

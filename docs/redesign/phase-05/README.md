@@ -286,6 +286,6 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
   - Thuật ngữ: bỏ "Đề nghị" ở ApplicationsPage + use-applications (baseline `check:terms` 12 → 10).
   - Trang lật v2 (`data-theme="v2"` ở gốc trang).
 - **Kiểm:** 325 test FE xanh (3 test bulk/saved view sửa theo hành vi mới: tên nút, `alertdialog`, radiogroup; 2 test mới `quick-view.test.tsx`: ?nhanh=, chỉ đọc, Trước/Sau, đóng; Interviewer không có InterviewPanel) · typecheck, build, format, lint, check:design, check:terms xanh.
-- **Chưa kiểm trên trình duyệt thật:** không tràn ở 390/768/1024/1280/1440, F-03/T4 vừa khung 1024, VF-05 trên thẻ, axe → production smoke sau merge.
+- **Production smoke (25/11, `main @ 8918ddf`, Admin hireflow-demo, Playwright, `/applications` × 390/768/1024/1280/1440):** trang không tràn ngang ở cả 5; 390 = thẻ (20 thẻ, ô chọn **44×44** VF-05); 768 hiện Ứng viên/Trạng thái/Mức phù hợp (Tin, Nộp lúc ẩn theo container 646 px); ≥1024 đủ 5 cột; `data-theme="v2"` có; **axe 0** cả 5. **Lỗi F-03/T4:** bảng cuộn ngang trong khung ở 768 (+34 px) và 1024 (+29 px) — cột Ứng viên giữ 328 px vì khối tên/email `max-w-64` (bảng auto layout cấp đủ max-width). Sửa: `max-w-48` (PR sửa sau slice 7); thử trên production bằng cách áp `12rem` vào DOM → tràn 0 ở 768/1024/1280.
 - **Bàn giao còn lại:** ConfirmDialog còn ở OfferPanel (11), StatusActions (8), InterviewPanel (10); SidePanel còn ở ApplicationDetailPage (8), JobRankingPage (9).
 
