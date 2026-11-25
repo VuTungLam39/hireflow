@@ -53,3 +53,5 @@ New: `docs/redesign/security-gate/*` (9 files), `docs/ket-qua/2026-11-24-securit
 - Master plan copied to canonical path `docs/redesign/master-plan-v1.2.md`.
 
 STOP — R1 not started (scheduling only).
+
+**Update 25/11/2026:** R1 implemented (PR #139) — see file 07 "R1 record". Gate verdict unchanged until the re-check after R1–R3.
