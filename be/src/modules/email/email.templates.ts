@@ -66,6 +66,20 @@ export function renderEmail<T extends EmailTemplate>(
         },
         note: 'Link dùng được một lần và hết hạn sau 24 giờ. Nếu bạn không đăng ký, hãy bỏ qua email này.',
       });
+    // SG-06 · R6
+    case EmailTemplate.ResetPassword:
+      return compose({
+        subject: 'Đặt lại mật khẩu HireFlow',
+        lines: [
+          `Chào ${p.fullName},`,
+          'Có yêu cầu đặt lại mật khẩu cho tài khoản HireFlow của bạn. Bấm nút dưới đây để đặt mật khẩu mới.',
+        ],
+        action: {
+          label: 'Đặt lại mật khẩu',
+          url: `${appUrl}/reset-password#t=${encodeURIComponent(p.token ?? '')}`,
+        },
+        note: 'Link dùng được một lần và hết hạn sau 30 phút. Nếu bạn không yêu cầu, hãy bỏ qua email này — mật khẩu hiện tại vẫn giữ nguyên.',
+      });
     case EmailTemplate.AccountExists:
       return compose({
         subject: 'Email này đã có tài khoản HireFlow',

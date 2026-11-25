@@ -22,4 +22,13 @@ export const authApi = {
   changePassword: async (input: ChangePasswordInput) => {
     await api.patch('/auth/password', input)
   },
+
+  // SG-06 · R6
+  forgotPassword: async (email: string) => {
+    await api.post('/auth/forgot-password', { email })
+  },
+
+  resetPassword: async (input: { token: string; password: string }) => {
+    await api.post('/auth/reset-password', input)
+  },
 }

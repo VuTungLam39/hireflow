@@ -28,6 +28,8 @@ export const paths = {
 
   // Khách
   login: '/login',
+  forgotPassword: '/forgot-password',
+  resetPassword: '/reset-password',
 
   // Công khai cho ứng viên (FE Architecture mục 8.2)
   publicJobs: '/jobs',

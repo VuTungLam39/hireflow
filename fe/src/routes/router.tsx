@@ -45,6 +45,8 @@ async function applicationsLoader({ request }: LoaderFunctionArgs) {
 
 const GUEST_PAGES = [
   paths.login,
+  paths.forgotPassword,
+  paths.resetPassword,
   paths.publicJobs,
   paths.careers,
   paths.publicCompanies,
@@ -134,6 +136,15 @@ export const routes: RouteObject[] = [
             element: <AuthLayout />,
             children: [
               { path: paths.login, lazy: page(() => import('@/features/auth/pages/LoginPage')) },
+              // SG-06 · R6
+              {
+                path: paths.forgotPassword,
+                lazy: page(() => import('@/features/auth/pages/ForgotPasswordPage')),
+              },
+              {
+                path: paths.resetPassword,
+                lazy: page(() => import('@/features/auth/pages/ResetPasswordPage')),
+              },
             ],
           },
         ],

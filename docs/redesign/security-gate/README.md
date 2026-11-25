@@ -58,3 +58,4 @@ STOP — R1 not started (scheduling only).
 
 **Re-check 25/11/2026:** R1–R3 merged. W1–W7 pass locally (file 08 "Gate re-check run"). W7 real-provider `ai:eval` PASS (adversarial 2/2, injection 0/2) and W8 production probes PASS (other-company job → 404 identical to random UUID). W9 PASS (bucket private, anonymous access 403). **Gate re-check verdict: PASSED (25/11/2026)** — real data onboarding and Phase 05 slices touching tenant boundaries, CV pipeline or scoring are unblocked. Open non-blocking: R4 (SG-04), R5 (SG-05); R6 (SG-06) before real companies onboard.
 
+**Update 25/11/2026 (R6):** forgot/reset password implemented (file 07 "R6 record"). SG-06 closes once production smoke passes.

@@ -11,11 +11,13 @@ export enum EmailTemplate {
   OrgSuspended = 'ORG_SUSPENDED',
   OrgReactivated = 'ORG_REACTIVATED',
   ApplicationReceived = 'APPLICATION_RECEIVED',
+  ResetPassword = 'RESET_PASSWORD',
 }
 
 export interface EmailPayloads {
   [EmailTemplate.VerifyEmail]: { fullName: string; companyName: string; token: string };
   [EmailTemplate.AccountExists]: Record<string, never>;
+  [EmailTemplate.ResetPassword]: { fullName: string; token: string };
   [EmailTemplate.OrgApproved]: { companyName: string };
   [EmailTemplate.OrgRejected]: { companyName: string; reason: string };
   [EmailTemplate.OrgSuspended]: { companyName: string; reason: string };

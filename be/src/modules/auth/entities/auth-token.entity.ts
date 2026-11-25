@@ -14,13 +14,15 @@ import { User } from '../../users/entities/user.entity.js';
 export enum AuthTokenKind {
   VerifyEmail = 'VERIFY_EMAIL',
   TrackApplication = 'TRACK_APPLICATION',
+  // SG-06 · R6
+  ResetPassword = 'RESET_PASSWORD',
 }
 
 // BR-ACC-09, BR-APP-14
 @Entity('auth_tokens')
 @Check(
   'CK_auth_tokens_target',
-  `("kind" = 'VERIFY_EMAIL' AND "user_id" IS NOT NULL) OR ("kind" = 'TRACK_APPLICATION' AND "application_id" IS NOT NULL)`,
+  `("kind"::text IN ('VERIFY_EMAIL', 'RESET_PASSWORD') AND "user_id" IS NOT NULL) OR ("kind"::text = 'TRACK_APPLICATION' AND "application_id" IS NOT NULL)`,
 )
 export class AuthToken {
   @PrimaryGeneratedColumn('uuid')

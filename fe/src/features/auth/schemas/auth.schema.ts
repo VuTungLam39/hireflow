@@ -40,3 +40,15 @@ export const changePasswordSchema = z
 export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>
 /** Dữ liệu gửi lên API (không có confirmPassword) */
 export type ChangePasswordInput = Omit<ChangePasswordFormValues, 'confirmPassword'>
+
+// SG-06 · R6
+export const forgotPasswordSchema = z.object({ email: emailSchema })
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
+
+export const resetPasswordSchema = z
+  .object({ password: passwordSchema, confirmPassword: z.string() })
+  .refine((data) => data.password === data.confirmPassword, {
+    path: ['confirmPassword'],
+    message: 'Mật khẩu xác nhận không khớp',
+  })
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>
