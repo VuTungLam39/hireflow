@@ -576,8 +576,8 @@ describe('Cross-tenant isolation (e2e)', () => {
     criterion: b.criterion,
     requirement: b.requirement,
   });
-  const soon = () =>
-    new Date(Date.now() + 3 * 86_400_000 + Math.random() * 86_400_000).toISOString();
+  // mỗi case một ngày riêng: cùng người phỏng vấn, giờ ngẫu nhiên trùng nhau → 409 INTERVIEW_CONFLICT
+  const soon = (day: number) => new Date(Date.now() + day * 86_400_000).toISOString();
   const bodyCases: Record<string, BodyCase> = {
     'POST /jobs': {
       url: () => '/jobs',
@@ -630,7 +630,7 @@ describe('Cross-tenant isolation (e2e)', () => {
     },
     'PATCH /interviews/:id': {
       url: () => `/interviews/${b.futureInterview}`,
-      body: (ids) => ({ interviewerIds: [ids.interviewer], scheduledAt: soon() }),
+      body: (ids) => ({ interviewerIds: [ids.interviewer], scheduledAt: soon(3) }),
     },
     'PUT /interviews/:id/feedback': {
       url: () => `/interviews/${b.pastInterview}/feedback`,
@@ -644,7 +644,7 @@ describe('Cross-tenant isolation (e2e)', () => {
     'POST /applications/:applicationId/interviews': {
       url: () => `/applications/${b.app}/interviews`,
       body: (ids) => ({
-        scheduledAt: soon(),
+        scheduledAt: soon(5),
         durationMinutes: 30,
         location: 'Phòng B',
         interviewerIds: [ids.interviewer],
