@@ -41,7 +41,7 @@ function RailNav({ groups, activeId, iconMode }: RailProps & { iconMode: boolean
                         to={href}
                         onClick={() => setOpen(false)}
                         aria-current={isActive ? 'page' : undefined}
-                        aria-label={count ? `${text}, ${count} hồ sơ chờ xem` : undefined}
+                        aria-label={count ? `${text}, ${count} hồ sơ mới chờ xem` : undefined}
                         className={cn(
                           'focus-visible:outline-marker relative flex h-9 w-full items-center gap-3 rounded-sm px-2.5 text-sm transition-colors duration-150',
                           'min-[600px]:max-[1099.98px]:justify-center min-[600px]:max-[1099.98px]:px-0',

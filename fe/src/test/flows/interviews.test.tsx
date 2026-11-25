@@ -323,6 +323,8 @@ describe('interviews', () => {
     expect(
       within(dialog).getByText('Ngày bắt đầu không được trước hạn trả lời'),
     ).toBeInTheDocument()
+    // P5 · slice 12a: focus vào ô sai đầu tiên
+    expect(within(dialog).getByLabelText('Ngày bắt đầu')).toHaveFocus()
     fireEvent.change(within(dialog).getByLabelText('Ngày bắt đầu'), {
       target: { value: '2099-02-01' },
     })
