@@ -29,6 +29,8 @@ import type { SessionMeta } from '../refresh-tokens/refresh-tokens.service.js';
 import { AuthService, type AuthTokens } from './auth.service.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { LoginDto } from './dto/login.dto.js';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto.js';
+import { PasswordResetService } from './password-reset.service.js';
 import {
   clearRefreshCookie,
   REFRESH_COOKIE,
@@ -55,6 +57,7 @@ export class AuthController {
 
   constructor(
     private readonly authService: AuthService,
+    private readonly passwordReset: PasswordResetService,
     config: ConfigService,
     @Inject(jwtConfig.KEY) jwt: ConfigType<typeof jwtConfig>,
   ) {
@@ -130,6 +133,27 @@ export class AuthController {
     @Req() req: Request,
   ) {
     return this.authService.changePassword(userId, dto, refreshTokenOf(req));
+  }
+
+  // SG-06 · R6 · BR-ACC-09
+  @Public()
+  @Throttle({ default: { limit: 3, ttl: 3_600_000 } })
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({ summary: 'Gửi link đặt lại mật khẩu (một lần, 30 phút); luôn 202' })
+  @ResponseMessage('Check your email')
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.passwordReset.request(dto.email);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Đặt mật khẩu mới bằng token; thu hồi mọi phiên' })
+  @ResponseMessage('Password reset')
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.passwordReset.reset(dto.token, dto.password);
   }
 
   private withCookie(res: Response, { refreshToken, ...rest }: AuthTokens): AccessTokenResponse {

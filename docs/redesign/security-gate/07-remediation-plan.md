@@ -9,7 +9,7 @@ Each slice is one mattpocock loop: issue → test first → smallest fix → PR.
 | R3 | **Evidence visibility + years check**: detect evidence that exists only in invisible text (PDF text render attributes) → flag, no credit; derive/cap `years` from quoted span or experience dates; add adversarial CVs (hidden text, injected instruction) to `ai/eval` with a pass threshold | SG-03 | M (spike first on PDF visibility detection) | **Phase 05 CV-pipeline/scoring slices; real data** | **Implemented 25/11** — PR (R3 branch `fix/sg03-r3-evidence-visibility`); see R3 record |
 | R4 | Drop demo-fill constant from production builds | SG-04 | XS | — | Non-blocking, ride-along |
 | R5 | Tracking token out of the query string (fragment or one-time exchange); stop echoing query in error `path` | SG-05 | S | — | Non-blocking, ride-along |
-| R6 | Forgot/reset password (or documented platform recovery procedure) | SG-06 | M | before real companies onboard | Before real companies onboard |
+| R6 | Forgot/reset password (or documented platform recovery procedure) | SG-06 | M | before real companies onboard | **Implemented 25/11** — PR (branch `feat/r6-password-reset`); see R6 record |
 | — | SG-07 | accept as informational (900 s window, per-request revalidation) | — | — | Accepted informational (owner 24/11) |
 
 Pre-Phase-05 set: **R1, R2, R3**. R1 must land before any real company data, regardless of Phase 05 timing.
@@ -47,4 +47,16 @@ Carry-forward (not security, logged so it is not lost): code still contains "Đ�
 - **Verified:** BE unit 468/468, e2e 352/352 (one run had a flaky failure in the SG-01 sweep; passed alone and on full rerun), lint/typecheck clean.
 - **Known limits (shortcut, in code):** CTM scale, transparency (ExtGState `ca`), text same colour as a non-white background, text covered by shapes, and DOCX hidden runs (`w:vanish`, white font) are not detected. Already-parsed CV text in the DB keeps hidden text until re-parsed — no real data yet, so no backfill.
 - **Next:** gate re-check (file 08 checks + new e2e + real-provider `ai:eval`).
+
+## R6 record (25/11/2026)
+- **Branch:** `feat/r6-password-reset` off `main @ 7119264`.
+- **Owner decisions (25/11):** link single-use, **30 min** TTL, a new link cancels the previous one, **3 emails/hour per account + 3 requests/hour per IP**, same 202 answer whether or not the email exists (BR-ACC-09); after reset **revoke every session** and send the user to `/login` (no auto sign-in).
+- **BE:**
+  - `POST /auth/forgot-password` (public, 202 always, `@Throttle` 3/h/IP): unknown or inactive account → no email; otherwise invalidates unused reset tokens, issues `randomBytes(32)` token stored as SHA-256 hash (`auth_tokens`, kind `RESET_PASSWORD`), enqueues email; per-account cap 3/h counted from `auth_tokens`.
+  - `POST /auth/reset-password` (public, 10/min): password rule = BR-ACC-06; token consumed and password updated **in one transaction** (`used_at IS NULL AND expires_at > now()`, active user only) → `TOKEN_INVALID` otherwise (no reason given); then `revokeAllForUser`. Log line with hashed user id only.
+  - Email link puts the token in the **URL fragment** (`/reset-password#t=…`) so it never reaches server/proxy logs or `Referer` (R5 direction).
+  - Migration `1792600000031-AddPasswordReset`: enum value `RESET_PASSWORD`; `CK_auth_tokens_target` rewritten with `kind::text` so the new value is usable inside the migration transaction.
+- **FE:** "Quên mật khẩu?" on `/login`; `/forgot-password` (generic confirmation, 30-minute note); `/reset-password` reads `#t=`, **removes the fragment from the address bar/history immediately**, new password + confirm, success → `/login` with notice; invalid/used/expired → one "Link không còn hiệu lực" screen with "Gửi lại link".
+- **Tests:** BE e2e `password-reset.e2e-spec.ts` — unknown/inactive email: 202, same message, no email; link in fragment; weak password 400; reset → old password 401, new 200, old refresh session 401; token reuse `TOKEN_INVALID`; new link cancels old; expired refused; per-account cap 3 emails for 4 requests; 4th request from one IP 429. BE unit: template link in fragment, not query. FE: 4 tests (login link + generic answer, fragment read + stripped + reset → login notice, used token, missing token). BE unit 470, FE 344, lint/typecheck/build exit 0. **BE e2e not run locally** (Docker/Postgres not running on this machine) — CI runs `migration:run` + e2e.
+- **Not done:** production smoke (needs a real mailbox to receive the link; Mailjet in prod) — owner to decide which account to test with.
 

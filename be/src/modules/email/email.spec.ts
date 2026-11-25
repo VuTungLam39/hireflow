@@ -36,6 +36,20 @@ describe('renderEmail', () => {
     }
   });
 
+  // SG-06 · R6
+  it('puts the reset token in the URL fragment, never in the query string', () => {
+    const mail = renderEmail(
+      EmailTemplate.ResetPassword,
+      { fullName: 'An', token: 'tok_456' },
+      config.appPublicUrl,
+    );
+    for (const body of [mail.html, mail.text]) {
+      expect(body).toContain('https://hireflow.test/reset-password#t=tok_456');
+      expect(body).not.toContain('?t=tok_456');
+    }
+    expect(mail.text).toContain('30 phút');
+  });
+
   it('escapes what a company typed so it cannot inject HTML', () => {
     const mail = renderEmail(
       EmailTemplate.OrgRejected,

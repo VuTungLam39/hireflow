@@ -2,7 +2,7 @@ import { Eye, EyeOff, FlaskConical } from 'lucide-react'
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { Button, FormField, Input } from '@/components/ui'
 import { env } from '@/config/env'
 import { applyServerErrors, getErrorCode, getErrorMessage } from '@/lib/errors'
@@ -25,6 +25,7 @@ export default function LoginPage() {
   const login = useLogin()
   const [showPassword, setShowPassword] = useState(false)
   const [unverified, setUnverified] = useState<string | null>(null)
+  const notice = (useLocation().state as { notice?: string } | null)?.notice
   const {
     register,
     handleSubmit,
@@ -53,6 +54,11 @@ export default function LoginPage() {
       <p className="type-body text-ink-muted mt-1.5 mb-8">
         Dùng email công việc và mật khẩu của bạn.
       </p>
+      {notice && (
+        <p role="status" className="bg-good-soft text-ink-2 mb-6 rounded-sm px-4 py-3">
+          {notice}
+        </p>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <FormField label="Email" htmlFor="email" error={errors.email?.message}>
@@ -87,6 +93,12 @@ export default function LoginPage() {
           </div>
         </FormField>
 
+        {/* SG-06 · R6 */}
+        <p className="-mt-1 text-right">
+          <Link to={paths.forgotPassword} className="text-ink type-caption underline">
+            Quên mật khẩu?
+          </Link>
+        </p>
         <Button type="submit" size="lg" className="w-full" loading={login.isPending}>
           Đăng nhập
         </Button>

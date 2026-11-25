@@ -17,7 +17,30 @@ import {
  * Giả lập cookie refresh token bằng sessionStorage: tải lại trang vẫn giữ phiên,
  * đóng tab thì mất (giống cookie phiên). Access token là "mock.<userId>".
  */
+/** SG-06 · R6: token giả dùng được một lần */
+export const MOCK_RESET_TOKEN = 'mock-reset-token-0123456789'
+const usedResetTokens = new Set<string>()
+
 export const authHandlers = [
+  http.post(api('/auth/forgot-password'), async () => {
+    await latency(150)
+    return ok(null, { status: 202, message: 'Check your email' })
+  }),
+  http.post(api('/auth/reset-password'), async ({ request }) => {
+    await latency(150)
+    const { token, password } = (await request.json()) as { token?: string; password?: unknown }
+    if (!isStrongPassword(password))
+      return fail(400, 'VALIDATION_FAILED', 'Validation failed', [
+        {
+          field: 'password',
+          messages: ['Mật khẩu ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số'],
+        },
+      ])
+    if (token !== MOCK_RESET_TOKEN || usedResetTokens.has(token))
+      return fail(400, 'TOKEN_INVALID', 'Token is invalid or expired')
+    usedResetTokens.add(token)
+    return ok(null, { message: 'Password reset' })
+  }),
   http.post(api('/auth/login'), async ({ request }) => {
     await delay()
     const { email, password } = (await request.json()) as { email: string; password: string }
