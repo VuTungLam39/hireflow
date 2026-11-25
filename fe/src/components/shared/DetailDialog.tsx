@@ -147,6 +147,7 @@ export function DetailDialog<T extends string>({
                 onChange={onTab}
                 label={label}
                 idPrefix={tabsId}
+                panelId={`${tabsId}-panel`}
                 className="mt-4"
               />
             ) : (
@@ -155,6 +156,7 @@ export function DetailDialog<T extends string>({
           </header>
           <div
             ref={bodyRef}
+            id={tabs ? `${tabsId}-panel` : undefined}
             role={tabs ? 'tabpanel' : undefined}
             aria-labelledby={tabs && tab ? tabId(tabsId, tab) : undefined}
             className="min-h-0 flex-1 overflow-y-auto px-5 py-5 [--sticky-top:0px] sm:px-6"

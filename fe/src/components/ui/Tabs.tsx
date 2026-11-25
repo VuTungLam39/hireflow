@@ -43,6 +43,8 @@ interface TabsProps<T extends string> {
   idPrefix?: string
   /** 'filter' = thanh lọc không có panel → radiogroup/radio thay vì tablist/tab */
   semantics?: 'tabs' | 'filter'
+  /** id của tabpanel (tab có panel thật) → aria-controls — P5-D07 */
+  panelId?: string
 }
 
 export function Tabs<T extends string>({
@@ -53,6 +55,7 @@ export function Tabs<T extends string>({
   label,
   idPrefix,
   semantics = 'tabs',
+  panelId,
 }: TabsProps<T>) {
   const filter = semantics === 'filter'
   const autoId = useId()
@@ -100,6 +103,7 @@ export function Tabs<T extends string>({
               role={filter ? 'radio' : 'tab'}
               aria-selected={filter ? undefined : active}
               aria-checked={filter ? active : undefined}
+              aria-controls={filter ? undefined : panelId}
               data-active={active || undefined}
               tabIndex={active ? 0 : -1}
               onClick={() => onChange(tab.id)}

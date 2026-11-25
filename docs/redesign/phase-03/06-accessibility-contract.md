@@ -6,7 +6,7 @@ Target: WCAG 2.2 AA. Baseline to protect: axe 0 violations on 27 page×actor che
 | Component | Keys |
 |---|---|
 | Global | Tab/Shift+Tab; skip link first; Ctrl/Cmd+K Command Menu; Escape closes topmost layer |
-| Tabs | ←/→ move, **Home/End** first/last, Enter/Space activate (manual mode) |
+| Tabs | ←/→ move, **Home/End** first/last; **automatic activation** for light/preloaded panels, **manual** (Enter/Space) for heavy/lazy-loaded panels — rule of file 05 (P5-D07, 25/11/2026) |
 | Rich Select / Listbox | ↑/↓ move, **Home/End**, typeahead, Enter/Space select, Escape close |
 | Combobox | type to filter, ↓ open/move, Enter select, Backspace remove chip, Escape close |
 | Dropdown Menu | ↑/↓, Home/End, typeahead, Enter, Escape |
