@@ -209,4 +209,21 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - **Đã làm:** `MainLayout` → `AppShell` (router lazy import đổi tên); `Sidebar` → `Rail` nhận `groups` (đã lọc quyền) + `activeId` theo contract, mục active xác định bằng `findNavItem` (khớp dài nhất — giống breadcrumb) thay cho `NavLink` isActive, `aria-current="page"` gắn tay; lọc quyền + đếm "chờ xem" chuyển sang hook `useNavGroups`. Giao diện, breakpoint, drawer di động giữ nguyên.
 - **Test khoá hành vi** (`AppShell.test.tsx`, 6 ca): skip link là phần tử bấm được đầu tiên, trỏ `#main`; Rail lọc theo quyền (Admin, HR, Interviewer); route lồng `/applications/abc` → đúng một mục `aria-current`; Ctrl+K mở tìm nhanh. **Cùng bộ test chạy xanh trên `MainLayout`/`Sidebar` của `main`** → hành vi trước/sau giống nhau.
 - **Kiểm:** format, lint (1 cảnh báo có từ trước ở Dialog.tsx), check:design, check:terms, typecheck, toàn bộ test, build xanh. `package.json` không đổi. Vùng khoá: 0 file.
+- **PR:** #131 — **Merged:** `0c5a2c7`. **Production smoke:** Vercel deploy success; `/jobs`, `/login`, `/companies` HTTP 200. Khu nội bộ chưa mở trên trình duyệt (cần phiên đăng nhập) — gộp vào smoke sau 5b.
+
+## Entry 10 — Slice 5b: AppShell, Rail, Topbar, Command Menu (🟢)
+- **Base:** `feat/phase05-slice5b-appshell` từ `main @ 0c5a2c7`. Issue #130 (5b), quyết định P5-D06.
+- **Đã làm:**
+  - **Rail 3 chế độ** theo bề rộng: full ≥1100 (icon + nhãn) · icon 600–1100 (Tooltip nhãn) · compact <600 (nút "Mở menu" ở Topbar → **NavSheet**). Breakpoint cũ 768/1024 → 600/1100 theo contract. AppShell luôn rộng bằng viewport nên dùng media query bề rộng viewport thay cho container query (cùng kết quả, không thêm cơ chế).
+  - **NavSheet** mới (`components/ui/NavSheet.tsx`, engine Radix Dialog): trượt từ trái, bẫy focus, Escape, khoá cuộn, trả focus về nút mở; chọn mục thì đóng. Bỏ drawer tự viết cũ (overlay `div` không bẫy focus). Thêm keyframe `slide-in-left` (giảm chuyển động → fade như các overlay khác).
+  - **Topbar:** breadcrumb đổi tên landmark "Vị trí hiện tại" → **"Đường dẫn"** (contract), mục cuối `aria-current`.
+  - **Command Menu = cmdk** trong Radix Dialog (thay `<dialog>` tự viết), giữ API `CommandPalette`. Nhóm: **"Tìm ứng viên"/"Tìm hồ sơ"** (theo quyền, như cũ) · **"Tìm tin tuyển dụng"** (mới, `job:read`, mở chi tiết tin `?xem=job:…`) · **"Đi tới"**. Chỉ điều hướng/mở chi tiết, không đổi trạng thái.
+  - **F-17:** `AuthLayout` bỏ h1 ở panel giới thiệu (→ `p`, giữ kiểu chữ) → `/login` còn 1 h1. Rà các trang `features/*/pages`: mỗi trang đúng một h1 cho mỗi trạng thái (VerifyEmailPage, TrackApplicationPage có 2 h1 ở hai nhánh trạng thái loại trừ nhau — đúng).
+- **Lệch so với contract / spec (ghi nợ):**
+  - Nhóm tìm người: HR/HM vẫn tìm **ứng viên** (nhãn "Tìm ứng viên"), Interviewer tìm **hồ sơ** — giữ hành vi đã có test, contract ghi "Tìm hồ sơ". Đổi nếu chủ dự án muốn.
+  - **P5-D04 điều kiện 3 (DetailDialog → Radix Tabs) chưa làm:** DetailDialog đã dùng `Tabs` ngữ nghĩa `tabs` với `tabpanel` + `aria-labelledby` đúng (Entry 6); chuyển Radix cần thêm `@radix-ui/react-tabs` và dựng lại phần cuộn tràn/đếm số mà không đổi gì cho người dùng. **Cần chủ dự án quyết:** giữ bản tự viết cho tab-có-panel, hoặc chuyển ở slice 8 cùng ApplicationDetailPage.
+  - `MainLayout` lazy (Entry 4) giữ nguyên — route công khai không tải khung nội bộ; mất cú bấm trước hydrate (Entry 7) là chuyện trang công khai prerender, không thuộc AppShell → để slice 12.
+- **Bundle (route vào, gzip):** **296.03 KB** (sau 4a ghi 295.47; cmdk đã có trong `vendor` từ 4a). Chunk `AppShell` 8.77 KB.
+- **Kiểm:** test mới — NavSheet (<600: không có nav khi đóng, mở bằng "Mở menu", Escape đóng + trả focus; chọn mục → điều hướng + đóng), breadcrumb "Đường dẫn" + `aria-current`, AuthLayout một h1, Command Menu nhóm "Tìm tin tuyển dụng" → `?xem=job:…`; test cũ quick-search (Interviewer/HR) xanh trên cmdk · 314 test xanh · format, lint, check:design, check:terms, typecheck, build xanh. `package.json` không đổi. Vùng khoá: 0 file.
+- **Chưa kiểm trên trình duyệt thật:** 3 chế độ Rail ở 320/390/600/768/1024/1100/1280/1440 và axe trang nội bộ — cần phiên đăng nhập (production smoke sau merge).
 

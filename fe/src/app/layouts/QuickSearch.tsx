@@ -5,9 +5,10 @@ import { Avatar } from '@/components/ui'
 import { CommandPalette, type CommandGroup } from '@/components/shared'
 import { applicationQueries, StatusPill } from '@/features/applications'
 import { useCandidateSearch } from '@/features/candidates'
+import { jobsApi } from '@/features/jobs'
 import { useOpenDetail } from '@/hooks/use-detail'
 import { useHotkeys } from '@/hooks/use-hotkeys'
-import { hasPermission } from '@/lib/permissions'
+import { hasPermission, Permission } from '@/lib/permissions'
 import { formatDate } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
 import { useUiStore } from '@/stores/ui.store'
@@ -36,6 +37,14 @@ export function QuickSearch() {
       order: 'DESC',
     }),
     enabled: scope === 'applications' && open && q.length >= 2,
+    placeholderData: keepPreviousData,
+  })
+
+  const canJobs = hasPermission(user, Permission.JobRead)
+  const jobs = useQuery({
+    queryKey: ['quick-search', 'jobs', q],
+    queryFn: () => jobsApi.list({ search: q, page: 1, limit: 5 }),
+    enabled: canJobs && open && q.length >= 2,
     placeholderData: keepPreviousData,
   })
 
@@ -85,11 +94,21 @@ export function QuickSearch() {
                 onSelect: () => openDetail('application', a.id),
               }))
             : []
+    const foundJobs =
+      q.length < 2 || !canJobs
+        ? []
+        : (jobs.data?.items ?? []).map((j) => ({
+            id: `job-${j.id}`,
+            label: <span className="text-ink font-medium">{j.title}</span>,
+            hint: j.department.name,
+            onSelect: () => openDetail('job', j.id),
+          }))
     return [
-      { label: scope === 'applications' ? 'Hồ sơ' : 'Ứng viên', items: found },
+      { label: QUICK_SEARCH_LABEL[scope], items: found },
+      { label: 'Tìm tin tuyển dụng', items: foundJobs },
       { label: 'Đi tới', items: pages },
     ]
-  }, [q, scope, people.data, apps.data, user, navigate, openDetail])
+  }, [q, scope, people.data, apps.data, jobs.data, canJobs, user, navigate, openDetail])
 
   const noun = scope === 'applications' ? 'hồ sơ' : 'ứng viên'
 
@@ -103,11 +122,11 @@ export function QuickSearch() {
       query={query}
       onQueryChange={setQuery}
       groups={groups}
-      loading={scope === 'candidates' ? people.isFetching : apps.isFetching}
+      loading={(scope === 'candidates' ? people.isFetching : apps.isFetching) || jobs.isFetching}
       placeholder={
         scope === 'pages'
           ? 'Tìm trang…'
-          : `${QUICK_SEARCH_LABEL[scope]} theo tên ứng viên, email hoặc tìm trang…`
+          : `${QUICK_SEARCH_LABEL[scope]} theo tên ứng viên, email; tìm tin tuyển dụng hoặc trang…`
       }
       emptyText={
         scope === 'pages'

@@ -21,21 +21,21 @@ export function Topbar() {
 
   return (
     <header className="bg-canvas sticky top-0 z-20">
-      <div className="flex h-14 items-center gap-3 px-4 md:px-6 lg:px-8">
+      <div className="flex h-14 items-center gap-3 px-4 min-[600px]:px-6 lg:px-8">
         <button
           type="button"
           aria-label="Mở menu"
-          className="text-ink-2 hover:bg-sunken -ml-1.5 rounded-sm p-2 md:hidden"
+          className="text-ink-2 hover:bg-sunken -ml-1.5 rounded-sm p-2 min-[600px]:hidden"
           onClick={() => setSidebarOpen(true)}
         >
           <Menu className="size-5" />
         </button>
-        <Link to="/" className="md:hidden" aria-label="HireFlow – Hôm nay">
+        <Link to="/" className="min-[600px]:hidden" aria-label="HireFlow – Hôm nay">
           <BrandMark size="sm" />
         </Link>
 
         {current && (
-          <nav aria-label="Vị trí hiện tại" className="hidden min-w-0 md:block">
+          <nav aria-label="Đường dẫn" className="hidden min-w-0 min-[600px]:block">
             <ol className="type-caption flex items-center gap-1.5">
               <li>{current.group}</li>
               <li aria-hidden className="text-ink-faint">

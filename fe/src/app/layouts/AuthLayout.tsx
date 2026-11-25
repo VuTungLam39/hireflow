@@ -54,7 +54,7 @@ export function AuthLayout() {
         <BrandMark onDark tagline />
         <div className="my-auto max-w-[520px] space-y-10 py-12">
           <div className="space-y-4">
-            <h1 className="type-display text-white">Mỗi quyết định tuyển dụng đều có căn cứ.</h1>
+            <p className="type-display text-white">Mỗi quyết định tuyển dụng đều có căn cứ.</p>
             <p className="text-rail-text max-w-md text-[15px] leading-[26px]">
               HireFlow đánh dấu đúng dòng trong CV chứng minh ứng viên khớp từng tiêu chí của tin,
               để bạn duyệt nhanh mà vẫn là người quyết định.
