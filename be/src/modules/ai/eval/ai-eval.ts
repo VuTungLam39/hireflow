@@ -31,6 +31,11 @@ async function main() {
     `Tiêu chí đúng ${s.cells.correct}/${s.cells.total} · điểm trùng ${s.pairs.exactScore}/${s.pairs.total} · bằng chứng thật ${s.evidence.verified}/${s.evidence.total} · injection ${s.injection.followed}/${s.injection.cases} · p95 ${s.latencyMs.p95}ms`,
   );
   console.log(`Báo cáo: ${base}.md`);
+  // SG-03
+  if (s.adversarial.passed < s.adversarial.cases) {
+    console.error(`CV đối kháng bị thổi điểm: ${s.adversarial.passed}/${s.adversarial.cases} đạt`);
+    process.exitCode = 1;
+  }
 }
 
 main().catch((error: unknown) => {

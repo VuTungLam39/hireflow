@@ -5,7 +5,7 @@ import { extractProfile } from '../cv-extract.js';
 import { extractCvText } from '../cv-parser.js';
 import { maskPii } from '../cv-text.js';
 import { computeScore, scoreApplication, type ExtractedSkill } from '../scoring.js';
-import { makeDocx } from '../testing/cv-fixtures.js';
+import { makeDocx, makePdf } from '../testing/cv-fixtures.js';
 import { EVAL_CVS, EVAL_JOBS, type EvalCv, type EvalJob, type Match } from './dataset.js';
 
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -48,6 +48,7 @@ export interface CvRun {
   evidenceTotal: number;
   evidenceVerified: number;
   injectionFollowed: string[] | null;
+  adversarialPassed: boolean | null;
   pairs: PairResult[];
 }
 
@@ -65,6 +66,7 @@ export interface EvalSummary {
     displayed: number;
   };
   injection: { cases: number; followed: number };
+  adversarial: { cases: number; passed: number };
   latencyMs: { p50: number; p95: number; max: number };
   tokens: { inputAvg: number; outputAvg: number };
 }
@@ -93,7 +95,9 @@ const mentions = (skill: ExtractedSkill, keyword: string) =>
   ` ${foldText(skill.name).replace(/[^a-z0-9.]+/g, ' ')} `.includes(` ${foldText(keyword)} `);
 
 async function textOf(cv: EvalCv): Promise<string> {
-  return extractCvText(await makeDocx(cv.lines), DOCX);
+  return cv.pdf
+    ? extractCvText(makePdf(cv.pdf), 'application/pdf')
+    : extractCvText(await makeDocx(cv.lines), DOCX);
 }
 
 function scorePairs(cv: EvalCv, skills: ExtractedSkill[], text: string): PairResult[] {
@@ -143,6 +147,7 @@ export async function runEvaluation(
       const profile = await extractProfile(llm, text);
       const latencyMs = Date.now() - started;
       const masked = normalizeText(maskPii(text));
+      const pairs = scorePairs(cv, profile.data.skills, text);
       const evidences = [
         ...profile.data.skills,
         ...profile.data.experiences,
@@ -167,7 +172,10 @@ export async function runEvaluation(
               .filter((s) => cv.forbiddenSkills!.some((k) => mentions(s, k)))
               .map((s) => s.name)
           : null,
-        pairs: scorePairs(cv, profile.data.skills, text),
+        pairs,
+        adversarialPassed: cv.adversarial
+          ? pairs.every((p) => p.predictedScore <= p.expectedScore)
+          : null,
       });
       options.log?.(`${cv.key}: ${profile.data.skills.length} kỹ năng, ${latencyMs}ms`);
     } catch (error) {
@@ -186,6 +194,7 @@ export async function runEvaluation(
         evidenceTotal: 0,
         evidenceVerified: 0,
         injectionFollowed: null,
+        adversarialPassed: cv.adversarial ? false : null,
         pairs: scorePairs(cv, [], text),
       });
       options.log?.(`${cv.key}: LỖI ${(error as Error).message}`);
@@ -240,6 +249,10 @@ export function summarize(runs: CvRun[]): EvalSummary {
     injection: {
       cases: runs.filter((r) => r.injectionFollowed !== null).length,
       followed: runs.filter((r) => r.injectionFollowed?.length).length,
+    },
+    adversarial: {
+      cases: runs.filter((r) => r.adversarialPassed !== null).length,
+      passed: runs.filter((r) => r.adversarialPassed).length,
     },
     latencyMs: {
       p50: percentile(

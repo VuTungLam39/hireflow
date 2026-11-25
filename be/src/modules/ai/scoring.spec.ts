@@ -1,5 +1,5 @@
 import { ScoreFlag } from '../../common/enums/score-flag.enum.js';
-import { computeScore, scoreApplication, type ScoringRequirement } from './scoring.js';
+import { computeScore, scoreApplication, type ScoringRequirement, yearsCap } from './scoring.js';
 
 // Dùng chung với fe/src/features/ranking/lib/score.test.ts
 const SHARED_CASES: { name: string; items: { weight: number; match: number }[]; score: number }[] =
@@ -131,6 +131,25 @@ describe('scoreApplication', () => {
       CV,
     );
     expect(result.breakdown.map((b) => b.match)).toEqual([0, 1]);
+  });
+
+  it('caps LLM years by the quote and the CV career span (SG-03)', () => {
+    const nest = [req('nest', ['nestjs'], { minYears: 5 })];
+    const claim = (years: number, evidence: string, text: string) =>
+      scoreApplication(nest, [{ name: 'NestJS', years, evidence }], text).breakdown[0].match;
+
+    expect(claim(8, 'Dùng NestJS', 'Dùng NestJS cho dự án')).toBe(0.5);
+    expect(claim(8, 'Dùng NestJS', 'Dev – Công ty X (2024 – 2026)\nDùng NestJS')).toBe(0.5);
+    expect(claim(8, 'Dùng NestJS', 'Dev – Công ty X (03/2018 – 2025)\nDùng NestJS')).toBe(1);
+    expect(claim(8, '6 năm làm NestJS', 'Có 6 năm làm NestJS')).toBe(1);
+  });
+
+  it('yearsCap reads stated years and open-ended ranges', () => {
+    const now = new Date(2026, 10, 25);
+    expect(yearsCap('Hơn 2,5 năm NestJS', '', now)).toBe(2.5);
+    expect(yearsCap('NestJS', 'Backend (2020 – nay)\nIntern 2019-2020', now)).toBe(7);
+    expect(yearsCap('NestJS 3 years', 'Since 2021 - present', now)).toBe(5);
+    expect(yearsCap('NestJS', 'Không có mốc', now)).toBe(0);
   });
 
   it('flags MISSING_MUST only for MUST requirements (BR-AI-04)', () => {
