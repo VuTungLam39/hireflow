@@ -1,9 +1,11 @@
-import { act, fireEvent, screen, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { setupServer } from 'msw/node'
 import { AppShell } from '@/app/layouts/AppShell'
+import { AuthLayout } from '@/app/layouts/AuthLayout'
+import { RAIL_COMPACT } from '@/app/layouts/Rail'
 import { useUiStore } from '@/stores/ui.store'
 import { allHandlers } from '@/test/msw/handlers'
-import { renderRouteAs } from '@/test/render'
+import { renderRouteAs, renderRoutes } from '@/test/render'
 
 vi.mock('@/features/notifications/lib/realtime-connection', () => ({
   connectRealtime: () => () => {},
@@ -62,5 +64,64 @@ describe('AppShell', () => {
     renderRouteAs('hr@hireflow.dev', routes, '/')
     fireEvent.keyDown(document, { key: 'k', ctrlKey: true })
     expect(useUiStore.getState().commandOpen).toBe(true)
+  })
+
+  describe('compact rail (<600 px)', () => {
+    const original = window.matchMedia
+    beforeEach(() => {
+      window.matchMedia = ((query: string) => ({
+        matches: query === RAIL_COMPACT,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      })) as unknown as typeof window.matchMedia
+    })
+    afterEach(() => {
+      window.matchMedia = original
+      act(() => useUiStore.getState().setSidebarOpen(false))
+    })
+
+    it('hides the rail behind the menu button and opens it in a NavSheet that returns focus', async () => {
+      renderRouteAs('hr@hireflow.dev', routes, '/')
+      expect(screen.queryByRole('navigation', { name: 'Điều hướng chính' })).toBeNull()
+      const menu = screen.getByRole('button', { name: 'Mở menu' })
+      menu.focus()
+      fireEvent.click(menu)
+
+      const sheet = await screen.findByRole('dialog', { name: 'Menu' })
+      expect(
+        within(sheet).getByRole('navigation', { name: 'Điều hướng chính' }),
+      ).toBeInTheDocument()
+      fireEvent.keyDown(sheet, { key: 'Escape' })
+      expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull()
+      await waitFor(() => expect(menu).toHaveFocus())
+    })
+
+    it('closes the NavSheet after choosing a destination', async () => {
+      const { router } = renderRouteAs('hr@hireflow.dev', routes, '/')
+      fireEvent.click(screen.getByRole('button', { name: 'Mở menu' }))
+      const sheet = await screen.findByRole('dialog', { name: 'Menu' })
+      fireEvent.click(within(sheet).getByRole('link', { name: 'Hồ sơ ứng tuyển' }))
+      expect(router.state.location.pathname).toBe('/applications')
+      expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull()
+    })
+  })
+
+  it('labels breadcrumbs as "Đường dẫn" with the last item as the current page', () => {
+    renderRouteAs('hr@hireflow.dev', routes, '/applications')
+    const crumbs = screen.getByRole('navigation', { name: 'Đường dẫn' })
+    expect(within(crumbs).getByText('Hồ sơ ứng tuyển')).toHaveAttribute('aria-current', 'page')
+  })
+})
+
+// F-17
+describe('AuthLayout', () => {
+  it('leaves the only h1 to the page', () => {
+    renderRoutes(
+      [{ Component: AuthLayout, children: [{ path: '/', element: <h1>Đăng nhập</h1> }] }],
+      '/',
+    )
+    expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual([
+      'Đăng nhập',
+    ])
   })
 })

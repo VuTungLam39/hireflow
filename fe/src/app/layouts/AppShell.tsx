@@ -24,7 +24,7 @@ export function AppShell() {
   const pending = useAuthStore((s) => s.user?.organization?.status === 'PENDING')
 
   return (
-    <div className="bg-canvas min-h-dvh md:flex">
+    <div className="bg-canvas min-h-dvh min-[600px]:flex">
       <a
         href="#main"
         className="bg-ink sr-only z-[70] rounded-sm px-3 py-2 text-white focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
@@ -34,12 +34,12 @@ export function AppShell() {
       <Rail groups={groups} activeId={activeId} />
       <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
         <Topbar />
-        <div className="bg-surface md:border-line md:rounded-sheet flex-1 md:mr-2 md:mb-2 md:border">
+        <div className="bg-surface min-[600px]:border-line min-[600px]:rounded-sheet flex-1 min-[600px]:mr-2 min-[600px]:mb-2 min-[600px]:border">
           <main
             id="main"
             tabIndex={-1}
             className={cn(
-              'mx-auto px-4 pt-6 pb-24 outline-none md:px-6 md:pt-8 lg:px-8',
+              'mx-auto px-4 pt-6 pb-24 outline-none min-[600px]:px-6 min-[600px]:pt-8 lg:px-8',
               fullWidth ? 'max-w-none' : 'max-w-[1264px]',
             )}
           >

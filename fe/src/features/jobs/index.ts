@@ -42,3 +42,4 @@ export type {
   Requirement,
   RequirementInput,
 } from './types'
+export { jobsApi } from './api/jobs.api'

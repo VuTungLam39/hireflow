@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { setupServer } from 'msw/node'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { QuickSearch } from '@/app/layouts/QuickSearch'
@@ -76,5 +76,25 @@ describe('quick search', () => {
       ),
     )
     expect(router.state.location.search).toContain(`xem=candidate%3A${candidate.id}`)
+  })
+
+  it('finds a job in the "Tìm tin tuyển dụng" group and opens its detail', async () => {
+    cleanup()
+    const job = db.jobs[0]
+    const router = openAs('hr@hireflow.dev')
+
+    const input = await screen.findByPlaceholderText(/^Tìm ứng viên theo tên ứng viên/)
+    fireEvent.change(input, { target: { value: job.title } })
+    const group = await screen.findByRole(
+      'group',
+      { name: 'Tìm tin tuyển dụng' },
+      { timeout: 4000 },
+    )
+    fireEvent.click(
+      await within(group).findByRole('option', {
+        name: (name) => name.includes(job.title),
+      }),
+    )
+    expect(router.state.location.search).toContain(`xem=job%3A${job.id}`)
   })
 })

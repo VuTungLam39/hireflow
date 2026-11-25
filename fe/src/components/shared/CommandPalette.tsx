@@ -1,7 +1,9 @@
+import * as RD from '@radix-ui/react-dialog'
+import { Command } from 'cmdk'
 import { CornerDownLeft, Search } from 'lucide-react'
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Kbd, Spinner } from '@/components/ui'
-import { cn } from '@/lib/utils'
+import { overlayClass, useReturnFocus } from '@/components/ui/Dialog'
 
 export interface CommandItem {
   id: string
@@ -27,6 +29,7 @@ interface CommandPaletteProps {
   emptyText?: ReactNode
 }
 
+// Contract Command Menu (P5-D06: cmdk) — chỉ điều hướng/mở chi tiết, không đổi trạng thái
 export function CommandPalette({
   open,
   onClose,
@@ -37,115 +40,64 @@ export function CommandPalette({
   placeholder = 'Tìm ứng viên hoặc trang…',
   emptyText = 'Không thấy kết quả.',
 }: CommandPaletteProps) {
-  const ref = useRef<HTMLDialogElement>(null)
-  const listId = useId()
-  const [active, setActive] = useState(0)
-  const flat = useMemo(() => groups.flatMap((g) => g.items), [groups])
-  const [prevFlat, setPrevFlat] = useState(flat)
-  if (flat !== prevFlat) {
-    setPrevFlat(flat)
-    setActive(0)
-  }
-
-  useEffect(() => {
-    const dialog = ref.current
-    if (!dialog) return
-    if (open && !dialog.open) dialog.showModal()
-    if (!open && dialog.open) dialog.close()
-  }, [open])
-
-  useEffect(() => {
-    document.getElementById(`${listId}-${active}`)?.scrollIntoView({ block: 'nearest' })
-  }, [active, listId])
-
-  const select = (item: CommandItem | undefined) => {
-    if (!item) return
-    onClose()
-    item.onSelect()
-  }
-
-  let index = -1
+  const focus = useReturnFocus()
+  const empty = groups.every((g) => g.items.length === 0)
 
   return (
-    <dialog
-      ref={ref}
-      onClose={(e) => e.target === e.currentTarget && onClose()}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-      aria-label="Tìm nhanh"
-      className="border-line bg-surface shadow-float backdrop:bg-ink/40 mx-auto mt-[12vh] w-[calc(100%-2rem)] max-w-[600px] rounded-md border p-0"
-    >
-      {open && (
-        <div>
-          <div className="border-line flex items-center gap-3 border-b px-4">
-            <Search className="text-ink-muted size-[18px] shrink-0" />
-            <input
-              autoFocus
-              role="combobox"
-              aria-expanded
-              aria-controls={listId}
-              aria-activedescendant={flat.length ? `${listId}-${active}` : undefined}
-              value={query}
-              placeholder={placeholder}
-              onChange={(e) => onQueryChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'ArrowDown') {
-                  e.preventDefault()
-                  setActive((a) => Math.min(flat.length - 1, a + 1))
-                }
-                if (e.key === 'ArrowUp') {
-                  e.preventDefault()
-                  setActive((a) => Math.max(0, a - 1))
-                }
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  select(flat[active])
-                }
-              }}
-              className="text-ink placeholder:text-ink-muted h-12 min-w-0 flex-1 bg-transparent text-[15px] outline-none"
-            />
-            {loading && <Spinner className="text-ink-muted size-4" />}
-            <Kbd>Esc</Kbd>
-          </div>
-          <div
-            id={listId}
-            role="listbox"
-            className="max-h-[min(420px,60dvh)] overflow-y-auto p-1.5"
-          >
-            {flat.length === 0 ? (
-              <p className="text-ink-muted px-3 py-6">{loading ? 'Đang tìm…' : emptyText}</p>
-            ) : (
-              groups.map((group) =>
+    <RD.Root open={open} onOpenChange={(o) => !o && onClose()}>
+      <RD.Portal>
+        <RD.Overlay className={overlayClass} />
+        <RD.Content
+          aria-describedby={undefined}
+          {...focus}
+          className="border-line bg-surface shadow-float animate-float-in fixed top-[12vh] left-1/2 z-50 w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 rounded-md border focus:outline-none"
+        >
+          <RD.Title className="sr-only">Tìm nhanh</RD.Title>
+          <Command shouldFilter={false} loop label="Tìm nhanh">
+            <div className="border-line flex items-center gap-3 border-b px-4">
+              <Search className="text-ink-muted size-[18px] shrink-0" />
+              <Command.Input
+                autoFocus
+                value={query}
+                onValueChange={onQueryChange}
+                placeholder={placeholder}
+                className="text-ink placeholder:text-ink-muted h-12 min-w-0 flex-1 bg-transparent text-[15px] outline-none"
+              />
+              {loading && <Spinner className="text-ink-muted size-4" />}
+              <Kbd>Esc</Kbd>
+            </div>
+            <Command.List className="max-h-[min(420px,60dvh)] overflow-y-auto p-1.5">
+              {empty && (
+                <p className="text-ink-muted px-3 py-6">{loading ? 'Đang tìm…' : emptyText}</p>
+              )}
+              {groups.map((group) =>
                 group.items.length === 0 ? null : (
-                  <div key={group.label} role="group" aria-label={group.label} className="py-1">
-                    <p className="type-overline px-2.5 pt-1.5 pb-1">{group.label}</p>
-                    {group.items.map((item) => {
-                      index += 1
-                      const i = index
-                      return (
-                        <div
-                          key={item.id}
-                          id={`${listId}-${i}`}
-                          role="option"
-                          aria-selected={i === active}
-                          onPointerMove={() => setActive(i)}
-                          onClick={() => select(item)}
-                          className={cn(
-                            'rounded-inset flex cursor-pointer items-center gap-3 px-2.5 py-2',
-                            i === active ? 'bg-sunken text-ink' : 'text-ink-2',
-                          )}
-                        >
-                          {item.leading}
-                          <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                          {item.hint && <span className="type-caption truncate">{item.hint}</span>}
-                          {i === active && <CornerDownLeft className="text-ink-muted size-3.5" />}
-                        </div>
-                      )
-                    })}
-                  </div>
+                  <Command.Group
+                    key={group.label}
+                    heading={group.label}
+                    className="[&_[cmdk-group-heading]]:type-overline py-1 [&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:pt-1.5 [&_[cmdk-group-heading]]:pb-1"
+                  >
+                    {group.items.map((item) => (
+                      <Command.Item
+                        key={item.id}
+                        value={item.id}
+                        onSelect={() => {
+                          onClose()
+                          item.onSelect()
+                        }}
+                        className="rounded-inset text-ink-2 data-[selected=true]:bg-sunken data-[selected=true]:text-ink group flex cursor-pointer items-center gap-3 px-2.5 py-2"
+                      >
+                        {item.leading}
+                        <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                        {item.hint && <span className="type-caption truncate">{item.hint}</span>}
+                        <CornerDownLeft className="text-ink-muted hidden size-3.5 group-data-[selected=true]:block" />
+                      </Command.Item>
+                    ))}
+                  </Command.Group>
                 ),
-              )
-            )}
-          </div>
+              )}
+            </Command.List>
+          </Command>
           <div className="border-line type-caption flex gap-4 border-t px-4 py-2">
             <span className="flex items-center gap-1.5">
               <Kbd>↑</Kbd>
@@ -155,8 +107,8 @@ export function CommandPalette({
               <Kbd>Enter</Kbd> mở
             </span>
           </div>
-        </div>
-      )}
-    </dialog>
+        </RD.Content>
+      </RD.Portal>
+    </RD.Root>
   )
 }
