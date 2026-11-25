@@ -292,7 +292,10 @@ export function DataTable<T>({
                         {col.key === identityKey && secondary.length > 0 && (
                           <div className="type-caption mt-0.5 hidden flex-wrap gap-x-3 @max-[719.98px]:flex">
                             {secondary.map((c) => (
-                              <span key={c.key}>{c.cell(row)}</span>
+                              <span key={c.key}>
+                                {typeof c.header === 'string' && <>{c.header}: </>}
+                                {c.cell(row)}
+                              </span>
                             ))}
                           </div>
                         )}

@@ -263,4 +263,10 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - **Bundle (route vào, gzip):** 296.03 → **296.61 KB** (+0.58).
 - **Kiểm:** 7 test mới (J/K/↑/↓ + Enter; Space chọn ở opt-in; Space cũ giữ ở nơi không opt-in; class priority/sticky + dòng phụ ưu tiên 2; VF-05 ô 44 px, bấm tên mở không chọn; StaleNotice + Tải lại; axe 0) · 323 test xanh (gồm test vùng khoá ApplicationsPage, bulk-status) · format, lint, check:design, check:terms, typecheck, build xanh. `package.json` không đổi. Vùng khoá: 0 file.
 - **Chưa kiểm trên trình duyệt thật:** ẩn cột theo container ở 390/768/1024/1280/1440 và không tràn trên 6 trang (jsdom không có container query — test chỉ kiểm class) → production smoke sau merge (cần phiên đăng nhập).
+- **PR:** #136 — CI xanh. **Merged:** `56cee5d`.
+- **Production smoke (Chrome, phiên đăng nhập của chủ dự án, iframe cùng origin bề rộng cố định, chỉ đọc, 25/11/2026)** — 5 trang × 1440/1280/1024/768/390 (Công ty — Quản trị sàn — không kiểm được bằng phiên Admin công ty):
+  - **25/25 không tràn trang, không tràn container.** 390 → thẻ ở cả 5 trang.
+  - Cột hiện: Kho ứng viên 1440 đủ 4 cột · 1280/1024 ẩn "Điện thoại" (ưu tiên 4) · 768 chỉ còn "Ứng viên", dòng phụ chứa tin + trạng thái. Tin tuyển dụng 1440 đủ · 1280/1024 ẩn "Đã đăng" · 768 Tin/Hồ sơ. Người dùng 1440 đủ · 1280/1024 ẩn "Đăng nhập gần nhất" · 768 Người dùng + dòng phụ (vai trò, trạng thái). Phòng ban đủ ở 1440–1024. Xử lý CV đủ ở 1440–1024 · 768 dời "Lý do" xuống dòng phụ.
+  - **Ghi nhận:** ở 1280 viewport, container ≈1000 px (<1024) nên cột ưu tiên 4 đã ẩn dù màn hình rộng — ngưỡng thiên về an toàn; chỉnh ngưỡng nếu chủ dự án muốn hiện thêm ở 1280.
+- **Lỗi phát hiện ở smoke:** dòng phụ chỉ hiện giá trị, mất tên cột (Phòng ban 768: "1 1" cho Số người/Số tin). **Hotfix** `fix/phase05-slice6-secondary-labels`: dòng phụ hiện "{tên cột}: {giá trị}"; test cập nhật.
 

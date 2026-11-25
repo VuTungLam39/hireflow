@@ -118,7 +118,7 @@ describe('DataTable — slice 6', () => {
     const identity = within(rows()[0]).getAllByRole('cell')[1]
     expect(identity.className).toContain('sticky')
     expect(identity).toHaveTextContent('Nguyễn An')
-    expect(identity).toHaveTextContent('Kỹ thuật')
+    expect(identity).toHaveTextContent('Phòng ban: Kỹ thuật')
   })
 
   // VF-05
