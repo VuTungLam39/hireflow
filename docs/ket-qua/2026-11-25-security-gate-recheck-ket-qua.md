@@ -4,6 +4,6 @@
 - E2E 353/353, unit 468/468.
 - W7 với LLM thật: CV đối kháng 2/2 đạt, injection 0/2, tiêu chí đúng 98/99.
 - W8 production (467b872): job của 2 công ty khác trả 404 giống id ngẫu nhiên.
-- Còn chờ chủ dự án: W9 (bucket B2 private).
+- W9: bucket B2 Private, truy cập ẩn danh (a/b/c) đều 403, link ký của app vẫn mở được CV.
 - Phát hiện phụ: thêm upload thứ 12 vào `ai-pipeline.e2e` làm hồ sơ cuối kẹt PROCESSING — cần chẩn đoán riêng.
-- Kết luận: W1–W8 PASS; gate chỉ còn chờ W9.
+- Kết luận: W1–W9 PASS → gate PASSED. Còn R4, R5 (không chặn) và R6 (trước khi công ty thật vào).

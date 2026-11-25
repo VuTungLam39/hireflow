@@ -8,12 +8,13 @@
 | W6 | Valid tracking token view + withdraw scope (only that application) | Not executed | e2e: public apply twice (two jobs), use token 1 → only application 1 visible/withdrawable |
 | W7 | Hidden-text CV → score credit (SG-03) | Not executed | craft PDF with white-text skill line; run pipeline with fake LLM returning that quote → score rises; then with real provider (owner-approved quota) for injection behaviour |
 | W8 | Production cross-company GET probes with real test accounts (ADR-0002 on prod) | Not executed — passwords not provided this session (read-only, allowed) | provide passwords in-session; GET public job ID of company B as HR of company A vs random UUID |
-| W9 | B2 bucket is private (no public listing/read) | Not executed — provider setting | owner checks B2 console: bucket type "private"; anonymous GET of an object key → 401/403 |
+| W9 | B2 bucket is private (no public listing/read) | **Re-check 25/11 → PASS** (owner, B2 console) — bucket type Private; anonymous friendly URL, S3 object URL and S3 bucket listing all 403; app presigned URL still opens the CV | owner checks B2 console: bucket type "private"; anonymous GET of an object key → 401/403 |
 
 ## Gate re-check run (25/11/2026)
 - Baseline `main @ 467b872` (R1 #139, R2 #141, R3 #142). Local stack, fake LLM.
 - BE e2e **353/353** (new: W3 case; W4 refresh assertion; W6 isolation assertion). BE unit 468/468.
 - An attempted W7 pipeline e2e in `ai-pipeline.e2e` was dropped: adding any 12th upload to that file leaves the last uploaded application in `PROCESSING` (independent of PDF/R3 — a DOCX upload does the same; first cause seen was the 100 req/min per-user throttle hit by 150 ms HTTP polling). Logged as a follow-up to diagnose; not a security finding.
 - W7 real-provider eval and W8 production probes run later the same day (owner approved quota and supplied the test account in session) → both PASS.
-- **Verdict: W1–W8 PASS; gate stays CONDITIONAL only on W9 (B2 bucket ACL, owner console check).**
+- W9 checked by owner in B2 console → PASS.
+- **Verdict: W1–W9 PASS → gate PASSED (25/11/2026).** SG-04, SG-05, SG-06 remain open as non-blocking ride-alongs (R4–R6); R6 before real companies onboard.
 
