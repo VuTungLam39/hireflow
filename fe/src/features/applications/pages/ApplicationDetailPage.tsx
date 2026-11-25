@@ -33,6 +33,7 @@ import { formatDate } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
 import { Role } from '@/types/user'
 import { APPLICATION_SOURCE } from '../constants'
+import { ApplicationNotFound } from '../components/ApplicationNotFound'
 import { HistoryTimeline } from '../components/HistoryTimeline'
 import { NotesPanel } from '../components/NotesPanel'
 import { OfferPanel } from '../components/OfferPanel'
@@ -76,12 +77,14 @@ export default function ApplicationDetailPage() {
   // ADR-0002: không tồn tại và ngoài phạm vi dùng chung một thiết kế
   if (isError && !app && getErrorCode(error) === 'NOT_FOUND')
     return (
-      <div data-theme="v2" className="border-line bg-surface rounded-md border p-8">
-        <h1 className="type-title">Không tìm thấy hồ sơ này</h1>
-        <p className="type-body mt-1">Hồ sơ không tồn tại hoặc bạn không có quyền xem.</p>
-        <Link to={nav.backTo} className={`${buttonVariants({ variant: 'secondary' })} mt-4`}>
-          Về danh sách hồ sơ
-        </Link>
+      <div data-theme="v2">
+        <ApplicationNotFound
+          action={
+            <Link to={nav.backTo} className={buttonVariants({ variant: 'secondary' })}>
+              Về danh sách hồ sơ
+            </Link>
+          }
+        />
       </div>
     )
   if (isError && !app)

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 interface RatingScaleProps {
@@ -10,6 +10,8 @@ interface RatingScaleProps {
   /** nhãn chữ cho từng mức, vd. ['Chưa đạt', …] */
   labels?: string[]
   invalid?: boolean
+
+  error?: string
   disabled?: boolean
   className?: string
 }
@@ -23,13 +25,25 @@ export function RatingScale({
   onChange,
   labels,
   invalid,
+  error,
   disabled,
   className,
 }: RatingScaleProps) {
+  const errorId = useId()
   return (
-    <fieldset disabled={disabled} aria-invalid={invalid || undefined} className={className}>
+    <fieldset
+      disabled={disabled}
+      aria-invalid={invalid || !!error || undefined}
+      aria-describedby={error ? errorId : undefined}
+      className={className}
+    >
       <legend className="type-label mb-1.5">{legend}</legend>
-      <div className="border-ui-border-strong rounded-ui inline-flex overflow-hidden border">
+      <div
+        className={cn(
+          'rounded-ui inline-flex overflow-hidden border',
+          invalid || error ? 'border-ui-danger' : 'border-ui-border-strong',
+        )}
+      >
         {Array.from({ length: max }, (_, i) => i + 1).map((n) => (
           <label
             key={n}
@@ -54,6 +68,11 @@ export function RatingScale({
           </label>
         ))}
       </div>
+      {error && (
+        <p id={errorId} className="text-ui-danger mt-1 text-[13px]">
+          {error}
+        </p>
+      )}
     </fieldset>
   )
 }

@@ -184,7 +184,7 @@ export function ScheduleInterviewDialog({
               name="interviewerIds"
               render={({ field }) => (
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {interviewers.data.map((u) => {
+                  {interviewers.data.map((u, index) => {
                     const checked = field.value.includes(u.id)
                     return (
                       <label
@@ -192,6 +192,8 @@ export function ScheduleInterviewDialog({
                         className="border-line hover:bg-canvas flex cursor-pointer items-start gap-2 rounded-sm border p-2.5 text-sm"
                       >
                         <input
+                          // P5
+                          ref={index === 0 ? field.ref : undefined}
                           type="checkbox"
                           className="accent-brand mt-0.5 size-4"
                           checked={checked}
@@ -236,7 +238,7 @@ export function ScheduleInterviewDialog({
             Huỷ
           </Button>
           <Button type="submit" loading={pending}>
-            {interview ? 'Lưu thay đổi' : 'Đặt lịch'}
+            {errors.root ? 'Thử lại' : interview ? 'Lưu thay đổi' : 'Đặt lịch'}
           </Button>
         </div>
       </form>

@@ -6,6 +6,7 @@ import { Skeleton, buttonVariants } from '@/components/ui'
 import { InterviewPanel, useApplicationInterviews } from '@/features/interviews'
 import { useDetailLink } from '@/hooks/use-detail'
 import { usePermission } from '@/hooks/use-permission'
+import { getErrorCode } from '@/lib/errors'
 import { Permission } from '@/lib/permissions'
 import { formatDate } from '@/lib/utils'
 import { links } from '@/routes/paths'
@@ -13,6 +14,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import { Role } from '@/types/user'
 import { APPLICATION_SOURCE } from '../constants'
 import { useApplication, useApplicationNotes } from '../hooks/use-applications'
+import { ApplicationNotFound } from './ApplicationNotFound'
 import { HistoryTimeline } from './HistoryTimeline'
 import { NotesPanel } from './NotesPanel'
 import { useEvidenceMarks } from '../hooks/use-evidence-marks'
@@ -107,6 +109,8 @@ export function ApplicationDialog({ id, onClose }: ApplicationDialogProps) {
             <Skeleton key={i} className="h-14 w-full" />
           ))}
         </div>
+      ) : query.isError && !query.data && getErrorCode(query.error) === 'NOT_FOUND' ? (
+        <ApplicationNotFound level={2} />
       ) : query.isError && !query.data ? (
         <ErrorState title="Chưa mở được hồ sơ" error={query.error} onRetry={query.refetch} />
       ) : (

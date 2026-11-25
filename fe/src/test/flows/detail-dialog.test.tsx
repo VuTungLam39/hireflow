@@ -257,6 +257,19 @@ describe('detail dialog', () => {
     expect(router.state.location.pathname).toBe(paths.interviews)
   })
 
+  it('ADR-0002 · slice 10: an interviewer opening an application not assigned to them sees not-found', async () => {
+    const mine = new Set(
+      db.interviews.filter((i) => i.interviewerIds.includes('u-iv1')).map((i) => i.applicationId),
+    )
+    const other = db.applications.find((a) => !mine.has(a.id))!
+    renderAt('interviewer@hireflow.dev', `${paths.interviews}?xem=application:${other.id}`)
+    const dialog = await screen.findByRole('dialog')
+    expect(
+      await within(dialog).findByRole('heading', { name: 'Không tìm thấy hồ sơ này' }),
+    ).toBeInTheDocument()
+    expect(within(dialog).queryByRole('button', { name: 'Thử lại' })).toBeNull()
+  })
+
   it('ignores the dialog for a role that cannot read candidates', async () => {
     renderAt('interviewer@hireflow.dev', `${paths.interviews}?xem=candidate:${db.candidates[0].id}`)
     expect(await screen.findByRole('heading', { name: 'Lịch phỏng vấn' })).toBeInTheDocument()
