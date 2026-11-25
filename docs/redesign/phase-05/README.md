@@ -371,12 +371,13 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 ## Entry 18 — Slice 12a: Dashboard (🟢)
 - **Spec + tickets:** issue #162 (cả slice 12; PR này = 12a theo P5-D14a). Base `feat/phase05-slice12a-dashboard` từ `main @ 97ea407`.
 - **Đã làm:**
-  - **F-12 (một định nghĩa mỗi đơn vị):** tiêu đề "N hồ sơ **mới** chờ bạn xem" = cùng nguồn với badge "Hồ sơ" trên Rail (hồ sơ trạng thái Mới; aria-label badge đổi thành "… hồ sơ mới chờ xem"); số cạnh "Cần làm" ghi rõ đơn vị **"N việc"** (đếm dòng việc, không phải hồ sơ). Ba dòng hồ sơ mới (từ 70 điểm / thiếu tiêu chí bắt buộc / khác) cộng lại đúng bằng số ở tiêu đề (test có sẵn giữ).
+  - **F-12 (một định nghĩa mỗi đơn vị):** tiêu đề "N hồ sơ **mới** chờ bạn xem" = cùng nguồn với badge trên Rail — đặt ở mục **"Hôm nay"** (hồ sơ trạng thái Mới; aria-label badge đổi thành "… hồ sơ mới chờ xem"); số cạnh "Cần làm" ghi rõ đơn vị **"N việc"** (đếm dòng việc, không phải hồ sơ). Ba dòng hồ sơ mới (từ 70 điểm / thiếu tiêu chí bắt buộc / khác) cộng lại đúng bằng số ở tiêu đề (test có sẵn giữ).
   - **F-21 (động từ riêng):** mỗi dòng việc một động từ, không còn "Xem" chung: Theo dõi (Offer chờ ứng viên) · Duyệt hồ sơ · Quyết định · Xem nhanh · Sàng lọc · Đóng tin · Xử lý · Nhập nội dung CV.
   - **Số 0 có giải thích:** `KpiStrip` thêm trường `zero` — giá trị 0 hiện màu nhạt + câu giải thích thay cho dòng so sánh ("Chưa có hồ sơ nộp trong tuần này", "Chưa có hồ sơ ở bước Phỏng vấn", "Chưa có ai nhận việc[ · N đang ở bước Offer]").
   - Thuật ngữ: "đang ở bước đề nghị" → "đang ở bước Offer"; FunnelReport cột "Đã nhận" → "Đã nhận việc" (baseline `check:terms` 2 → 1, còn CandidateSections — 12b).
   - **P5-D14b:** hộp Soạn Offer focus vào ô lỗi đầu tiên (Mức lương → Hạn trả lời → Ngày bắt đầu).
   - Trang Dashboard lật v2.
 - **Kiểm:** 338 test FE xanh — mới: `KpiStrip` (0 → câu giải thích + chữ nhạt, giá trị khác giữ so sánh); Dashboard (đầu mục "N việc", động từ không trùng, không còn "Xem"); Soạn Offer focus "Ngày bắt đầu" khi sai. Sửa: tiêu đề Dashboard "hồ sơ mới chờ bạn xem". Typecheck, build, format, lint, check:design, check:terms đều **exit 0**.
-- **Chưa kiểm trên trình duyệt thật:** Dashboard HR/HM/Admin ở 390/1024/1440, axe → production smoke sau merge.
+- **Production smoke (25/11, `main @ bb7b203`, Admin hireflow-demo) × 390/1024/1440:** không tràn; `data-theme="v2"`; h1 "5 hồ sơ mới chờ bạn xem" = badge Rail "Hôm nay, 5 hồ sơ mới chờ xem" (≥1024; 390 Rail nằm trong NavSheet); đầu mục "Cần làm · 5 việc" (5 dòng việc — trùng số với h1 nhưng khác đơn vị, đã ghi rõ); dòng hồ sơ mới 2 (từ 70) + 3 (khác) = 5 = h1; động từ Duyệt hồ sơ / Quyết định / Sàng lọc / Đóng tin / Xử lý — **không trùng, không còn "Xem"**; KPI "Hồ sơ tuần này 0 · Chưa có hồ sơ nộp trong tuần này"; "Đã nhận việc 4 · 2 đang ở bước Offer"; Funnel cột "Đã nhận việc"; **axe 0**.
+  - **Chưa kiểm:** Dashboard bằng tài khoản HR và HM (F-12 vốn là lỗi riêng của HM) — chưa có tài khoản; HM có thêm dòng "Offer đang chờ ứng viên trả lời" (chỉ có test).
 
