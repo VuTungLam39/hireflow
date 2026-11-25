@@ -1,60 +1,19 @@
 import { useState } from 'react'
-import { Button, chipClass, Dialog, DialogFooter, FormField, Textarea } from '@/components/ui'
+import {
+  Button,
+  chipClass,
+  Dialog,
+  DialogFooter,
+  FormField,
+  RatingScale,
+  Textarea,
+} from '@/components/ui'
 import { getErrorMessage } from '@/lib/errors'
 import { cn, formatTimeOnDate } from '@/lib/utils'
 import { useSubmitFeedback } from '../hooks/use-interviews'
 import { RECOMMENDATION, RECOMMENDATION_ORDER, SCORE_LABEL } from '../lib/constants'
 import type { Interview, InterviewFeedback, Recommendation } from '../types'
 import { QuestionSuggestions } from './QuestionSuggestions'
-
-interface RatingInputProps {
-  label: string
-  value: number | undefined
-  onChange: (score: number) => void
-  invalid?: boolean
-}
-
-export function RatingInput({ label, value, onChange, invalid }: RatingInputProps) {
-  const [hover, setHover] = useState<number | null>(null)
-  const shown = hover ?? value
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <span className="type-body-strong min-w-0 flex-1">{label}</span>
-      <span aria-hidden className="type-caption w-16 text-right">
-        {shown ? SCORE_LABEL[shown] : ''}
-      </span>
-      <div
-        role="radiogroup"
-        aria-label={label}
-        className="flex gap-1"
-        onPointerLeave={() => setHover(null)}
-      >
-        {[1, 2, 3, 4, 5].map((score) => (
-          <button
-            key={score}
-            type="button"
-            role="radio"
-            aria-checked={value === score}
-            aria-label={`${score} – ${SCORE_LABEL[score]}`}
-            title={SCORE_LABEL[score]}
-            onClick={() => onChange(score)}
-            onPointerEnter={() => setHover(score)}
-            className={cn(
-              'num size-9 rounded-sm border text-sm font-semibold transition-colors',
-              value === score
-                ? 'border-brand bg-brand text-white'
-                : invalid
-                  ? 'border-bad text-ink-2 hover:bg-bad-soft'
-                  : 'border-line text-ink-2 hover:bg-canvas',
-            )}
-          >
-            {score}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 interface FeedbackDialogProps {
   interview: Interview
@@ -85,11 +44,24 @@ export function FeedbackDialog({
   const [error, setError] = useState<string | null>(null)
 
   const missing = requirements.filter((r) => !ratings[r.id])
-  const incomplete = missing.length > 0 || !overall || !recommendation
+  const scoreLabels = [1, 2, 3, 4, 5].map((n) => SCORE_LABEL[n])
 
   const save = () => {
     setTouched(true)
-    if (incomplete || comment.length > 2000) return
+    // P5
+    const first = missing[0]
+      ? `fb-${missing[0].id}`
+      : !overall
+        ? 'fb-overall'
+        : !recommendation
+          ? 'fb-recommendation'
+          : null
+    if (first) {
+      document.querySelector<HTMLInputElement>(`input[name="${first}"]`)?.focus()
+      return
+    }
+    if (comment.length > 2000) return
+    setError(null)
     submit.mutate(
       {
         id: interview.id,
@@ -102,6 +74,7 @@ export function FeedbackDialog({
       },
       {
         onSuccess: onClose,
+        // OP-1
         onError: (e) => setError(getErrorMessage(e)),
       },
     )
@@ -111,59 +84,68 @@ export function FeedbackDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      title={existing ? 'Sửa phiếu đánh giá' : 'Phiếu đánh giá'}
-      description={`Vòng ${interview.round}. Chấm 1–5 cho từng tiêu chí của tin. ${existing ? `Sửa được tới ${formatTimeOnDate(existing.editableUntil)}.` : 'Sửa được trong 24 giờ sau khi gửi.'}`}
+      title={existing ? 'Sửa Phiếu đánh giá' : 'Phiếu đánh giá'}
+      description={`Vòng ${interview.round}. Chấm 1–5 cho từng tiêu chí của tin.`}
       size="lg"
     >
       <div className="space-y-5">
         <QuestionSuggestions interviewId={interview.id} />
-        <div className="border-line space-y-3 rounded-md border p-4">
+        <div className="border-line space-y-4 rounded-md border p-4">
           {requirements.map((r) => (
-            <RatingInput
+            <RatingScale
               key={r.id}
-              label={r.label}
+              name={`fb-${r.id}`}
+              legend={r.label}
+              labels={scoreLabels}
               value={ratings[r.id]}
-              invalid={touched && !ratings[r.id]}
+              error={touched && !ratings[r.id] ? 'Chọn mức đánh giá cho tiêu chí này.' : undefined}
               onChange={(score) => setRatings((prev) => ({ ...prev, [r.id]: score }))}
             />
           ))}
-          <div className="border-line-soft border-t pt-3">
-            <RatingInput
-              label="Đánh giá chung"
-              value={overall}
-              invalid={touched && !overall}
-              onChange={setOverall}
-            />
-          </div>
+          <RatingScale
+            name="fb-overall"
+            legend="Đánh giá chung"
+            labels={scoreLabels}
+            value={overall}
+            error={touched && !overall ? 'Chọn mức đánh giá chung.' : undefined}
+            onChange={setOverall}
+            className="border-line-soft border-t pt-4"
+          />
         </div>
-        {/* MVP 3.1 · BR-INT-06 */}
-        <div
-          role="radiogroup"
-          aria-label="Đề xuất tuyển"
-          aria-invalid={touched && !recommendation}
+        {/* MVP 3.1 · BR-INT-06 · VF-10 */}
+        <fieldset
+          aria-invalid={(touched && !recommendation) || undefined}
+          aria-describedby={touched && !recommendation ? 'fb-recommendation-error' : undefined}
           className="space-y-1.5"
         >
-          <p className="text-ink text-sm font-medium">Đề xuất tuyển</p>
+          <legend className="type-label mb-1.5">Đề xuất tuyển</legend>
           <div className="flex flex-wrap gap-1.5">
             {RECOMMENDATION_ORDER.map((r) => (
-              <button
+              <label
                 key={r}
-                type="button"
-                role="radio"
-                aria-checked={recommendation === r}
-                className={chipClass(recommendation === r)}
-                onClick={() => setRecommendation(r)}
+                className={cn(
+                  chipClass(recommendation === r),
+                  'has-focus-visible:outline-ui-focus relative cursor-pointer has-focus-visible:outline-2 has-focus-visible:outline-offset-2',
+                )}
               >
+                <input
+                  type="radio"
+                  name="fb-recommendation"
+                  value={r}
+                  checked={recommendation === r}
+                  onChange={() => setRecommendation(r)}
+                  className="absolute inset-0 cursor-pointer appearance-none focus-visible:outline-none"
+                />
                 {RECOMMENDATION[r].label}
-              </button>
+              </label>
             ))}
           </div>
-        </div>
-        {touched && incomplete && (
-          <p role="alert" className="text-bad text-sm">
-            Chấm đủ mọi tiêu chí, phần đánh giá chung và chọn đề xuất tuyển.
-          </p>
-        )}
+          {touched && !recommendation && (
+            <p id="fb-recommendation-error" className="text-ui-danger text-[13px]">
+              Chọn đề xuất của bạn.
+            </p>
+          )}
+        </fieldset>
         <FormField
           label="Nhận xét (tuỳ chọn)"
           htmlFor="fb-comment"
@@ -180,15 +162,21 @@ export function FeedbackDialog({
         </FormField>
         {error && (
           <p role="alert" className="text-bad text-sm">
-            {error}
+            Chưa gửi được Phiếu đánh giá · nội dung vẫn được giữ. {error}
           </p>
         )}
+        {/* P5-D13a */}
+        <p className="type-caption">
+          {existing
+            ? `Bạn sửa được tới ${formatTimeOnDate(existing.editableUntil)}; sau đó phiếu bị khoá.`
+            : 'Bạn sửa được trong 24 giờ sau khi gửi; sau đó phiếu bị khoá và Hiring Manager thấy bản cuối.'}
+        </p>
         <DialogFooter>
           <Button type="button" variant="secondary" onClick={onClose} disabled={submit.isPending}>
             Huỷ
           </Button>
           <Button type="button" loading={submit.isPending} onClick={save}>
-            {existing ? 'Lưu thay đổi' : 'Gửi phiếu'}
+            {error ? 'Thử lại' : existing ? 'Lưu thay đổi' : 'Gửi Phiếu đánh giá'}
           </Button>
         </DialogFooter>
       </div>

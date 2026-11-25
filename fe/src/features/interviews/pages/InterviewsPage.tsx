@@ -103,7 +103,7 @@ export default function InterviewsPage() {
   const hasList = pending.length > 0 || upcoming.length > 0
 
   return (
-    <div className="space-y-6">
+    <div data-theme="v2" className="space-y-6">
       <PageHeader
         title="Lịch phỏng vấn"
         description={

@@ -48,14 +48,10 @@ export function QuestionSuggestions({
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="type-subheading">Câu hỏi gợi ý</h3>
-        <button
-          type="button"
-          onClick={() => suggest.reset()}
-          className="type-caption hover:text-ink inline-flex items-center gap-1 transition-colors"
-        >
-          <RotateCcw aria-hidden className="size-3.5" />
+        <Button variant="ghost" size="sm" onClick={() => suggest.reset()}>
+          <RotateCcw aria-hidden />
           Ẩn
-        </button>
+        </Button>
       </div>
       <p className="type-caption">
         Soạn từ tiêu chí của tin và nội dung CV, không dựa trên điểm chấm CV. Chỉ để tham khảo,

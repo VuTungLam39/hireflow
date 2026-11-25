@@ -1,7 +1,6 @@
 import { CalendarPlus, Check, Clock, MapPin, Pencil, Star, X } from 'lucide-react'
 import { useState } from 'react'
-import { ConfirmDialog } from '@/components/shared'
-import { Button, Skeleton } from '@/components/ui'
+import { AlertDialog, Button, Skeleton } from '@/components/ui'
 import { usePermission } from '@/hooks/use-permission'
 import { Permission } from '@/lib/permissions'
 import { cn, formatDateTime } from '@/lib/utils'
@@ -257,21 +256,17 @@ export function InterviewPanel({
           onClose={() => setReviewing(null)}
         />
       )}
-      <ConfirmDialog
+      <AlertDialog
         open={!!cancelling}
         onClose={() => setCancelling(null)}
         title={cancelling ? `Huỷ buổi phỏng vấn vòng ${cancelling.round}?` : ''}
         description="Người phỏng vấn nhận thông báo huỷ và không còn thấy hồ sơ (nếu không có buổi khác)."
-        tone="danger"
+        confirmVariant="danger"
         confirmLabel="Huỷ buổi"
+        cancelLabel="Giữ buổi"
         requireReason={{ label: 'Lý do', placeholder: 'Ví dụ: ứng viên xin dời lịch' }}
-        loading={cancel.isPending}
         onConfirm={(reason) =>
-          cancelling &&
-          cancel.mutate(
-            { id: cancelling.id, reason: reason ?? '' },
-            { onSuccess: () => setCancelling(null) },
-          )
+          cancelling && cancel.mutateAsync({ id: cancelling.id, reason: reason ?? '' })
         }
       />
     </div>

@@ -81,22 +81,27 @@ describe('interviews', () => {
     expect(screen.getByText(/Mức phù hợp được ẩn để bạn chấm độc lập/)).toBeInTheDocument()
     const dialog = await screen.findByRole('dialog')
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi phiếu' }))
+    // P5: lỗi theo từng nhóm, focus vào nhóm thiếu đầu tiên
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi Phiếu đánh giá' }))
+    const groups = within(dialog)
+      .getAllByRole('group')
+      .filter((g) => g.querySelector('legend')?.textContent !== 'Đề xuất tuyển')
+    expect(within(groups[0]).getAllByRole('radio')).toContain(document.activeElement)
     expect(
-      await within(dialog).findByText(
-        'Chấm đủ mọi tiêu chí, phần đánh giá chung và chọn đề xuất tuyển.',
-      ),
-    ).toBeInTheDocument()
+      within(dialog).getAllByText('Chọn mức đánh giá cho tiêu chí này.').length,
+    ).toBeGreaterThan(0)
+    expect(within(dialog).getByText('Chọn mức đánh giá chung.')).toBeInTheDocument()
+    expect(within(dialog).getByText('Chọn đề xuất của bạn.')).toBeInTheDocument()
+    expect(within(dialog).getByText(/sửa được trong 24 giờ sau khi gửi/)).toBeInTheDocument()
 
-    for (const group of within(dialog).getAllByRole('radiogroup')) {
-      if (group.getAttribute('aria-label') === 'Đề xuất tuyển') continue
-      fireEvent.click(within(group).getByRole('radio', { name: /^4 –/ }))
+    for (const group of groups) {
+      fireEvent.click(within(group).getByRole('radio', { name: '4 · Tốt' }))
     }
     fireEvent.click(within(dialog).getByRole('radio', { name: 'Nên tuyển' }))
     fireEvent.change(within(dialog).getByLabelText('Nhận xét (tuỳ chọn)'), {
       target: { value: 'Nắm chắc NestJS' },
     })
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi phiếu' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi Phiếu đánh giá' }))
 
     expect(await screen.findByRole('button', { name: 'Sửa phiếu đánh giá' })).toBeInTheDocument()
     expect(screen.getByText('Nắm chắc NestJS')).toBeInTheDocument()
@@ -244,14 +249,14 @@ describe('interviews', () => {
       renderAt('interviewer@hireflow.dev', links.applicationDetail(iv.applicationId))
       fireEvent.click(await screen.findByRole('button', { name: 'Gửi phiếu đánh giá' }))
       const dialog = await screen.findByRole('dialog')
-      const group = within(dialog).getByRole('radiogroup', { name: 'Giao tiếp nhóm' })
-      for (const g of within(dialog).getAllByRole('radiogroup')) {
-        if (g.getAttribute('aria-label') === 'Đề xuất tuyển') continue
-        fireEvent.click(within(g).getByRole('radio', { name: /^4 –/ }))
+      const group = within(dialog).getByRole('group', { name: 'Giao tiếp nhóm' })
+      for (const g of within(dialog).getAllByRole('group')) {
+        if (g.querySelector('legend')?.textContent === 'Đề xuất tuyển') continue
+        fireEvent.click(within(g).getByRole('radio', { name: '4 · Tốt' }))
       }
       fireEvent.click(within(dialog).getByRole('radio', { name: 'Rất nên tuyển' }))
       expect(group).toBeInTheDocument()
-      fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi phiếu' }))
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi Phiếu đánh giá' }))
       expect(await screen.findByRole('button', { name: 'Sửa phiếu đánh giá' })).toBeInTheDocument()
       expect(iv.feedbacks[0].ratings).toEqual([
         { requirementId: 'k3', label: 'Giao tiếp nhóm', score: 4 },
@@ -392,6 +397,42 @@ describe('interviews', () => {
       expect(within(hrSection).getByText(/Chờ phiếu/)).toHaveTextContent('Chờ phiếu 0/1')
     } finally {
       Object.assign(iv, original)
+    }
+  })
+})
+
+// OP-1 · slice 10
+describe('Phiếu đánh giá save error', () => {
+  it('keeps every answer and turns the button into "Thử lại"', async () => {
+    const iv = pastInterview()
+    const before = iv.feedbacks
+    iv.feedbacks = []
+    server.use(
+      http.put(api('/interviews/:id/feedback'), () =>
+        HttpResponse.json(
+          { success: false, statusCode: 500, code: 'INTERNAL_ERROR', message: 'Lỗi máy chủ' },
+          { status: 500 },
+        ),
+      ),
+    )
+    try {
+      renderAt('interviewer@hireflow.dev', links.applicationDetail(iv.applicationId))
+      fireEvent.click(await screen.findByRole('button', { name: 'Gửi phiếu đánh giá' }))
+      const dialog = await screen.findByRole('dialog')
+      for (const g of within(dialog).getAllByRole('group')) {
+        if (g.querySelector('legend')?.textContent === 'Đề xuất tuyển') continue
+        fireEvent.click(within(g).getByRole('radio', { name: '4 · Tốt' }))
+      }
+      fireEvent.click(within(dialog).getByRole('radio', { name: 'Nên tuyển' }))
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi Phiếu đánh giá' }))
+
+      expect(await within(dialog).findByRole('button', { name: 'Thử lại' })).toBeInTheDocument()
+      expect(within(dialog).getByRole('alert')).toHaveTextContent('nội dung vẫn được giữ')
+      expect(within(dialog).getByRole('radio', { name: 'Nên tuyển' })).toBeChecked()
+      expect(within(dialog).getAllByRole('radio', { name: '4 · Tốt' })[0]).toBeChecked()
+      expect(iv.feedbacks).toHaveLength(0)
+    } finally {
+      iv.feedbacks = before
     }
   })
 })

@@ -18,6 +18,7 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
 | P5-D10 | 25/11/2026 | Slice 7: (a) **bulk theo prototype P3** — luôn hiện Chuyển sang Sàng lọc / Phỏng vấn / Từ chối… (lý do chung), backend xử lý từng hồ sơ, tóm tắt có lý do bỏ qua; (b) **xem nhanh chỉ đọc cho mọi vai** — Interviewer thấy lịch phỏng vấn chỉ đọc, điền phiếu ở trang chi tiết; (c) **lật trang Hồ sơ ứng tuyển sang v2**, khung giữ v1 | Phase 04 file 05 dòng 7, `p3-pipeline.html`; DL-16; P5-D06b | bỏ điều kiện "cùng trạng thái" khó hiểu, backend vốn trả kết quả từng hồ sơ; Sheet không chứa thao tác (DL-16), phiếu dựng lại ở slice 10 |
 | P5-D11 | 25/11/2026 | Slice 8: (a) **hộp quyết định theo P1** — một nút "Chuyển trạng thái" mở AlertDialog có ô chọn trạng thái không chọn sẵn, lý do chỉ khi Từ chối, nút xác nhận theo lựa chọn; (b) **tab có panel chuyển Radix Tabs** (`@radix-ui/react-tabs` 1.2.1) cho cả ApplicationDetailPage và DetailDialog; `FilterTabs` giữ radiogroup tự viết | Phase 04 file 05 dòng 8, `p1-cv-review.html`; VF-01, VF-02, OP-1; P5-D04 điều kiện 3, P5-D07a | theo thiết kế đã kiểm chứng P1 (không giữ nút theo bước); hợp nhất engine tab-có-panel — **đóng P5-D04 điều kiện 3** |
 | P5-D12 | 25/11/2026 | Slice 9: (a) **giữ panel "Vì sao"** (không mở rộng dòng theo P2) — màn hẹp SidePanel → Sheet; (b) **thêm `scoredJdVersion` vào `GET /jobs/:id/ranking`** (chỉ cộng thêm) cho thông báo "đang chấm lại" | Phase 04 file 05 dòng 9, `p2-ranking.html`; DL-16; §05.2 (hợp đồng API giữ, chỉ cộng trường) | panel đã đạt 1 thao tác, giữ ảo hóa + hiệu ứng đổi hạng + khay so sánh; FE không có cách khác biết hồ sơ chấm theo tiêu chí cũ |
+| P5-D13 | 25/11/2026 | Slice 10: (a) **giữ cửa sổ sửa Phiếu đánh giá 24 giờ** (không khoá ngay như P5) — thông báo cạnh nút gửi báo trước khi phiếu bị khoá; (b) **giữ thang 1–5 có chữ** (không đổi sang 3 mức của P5) | Phase 04 file 05 dòng 10, ; §05.2 (giữ nghiệp vụ/BE); BR-PROC-01 | P5 lệch quy tắc đang chạy; đổi sẽ là thay đổi nghiệp vụ + BE + dữ liệu; ý "báo trước điều không hoàn tác" vẫn đạt |
 
 ## Entry 0 — Planning record merged into main (pre-Slice 0)
 - **Decision:** owner, 24/11/2026 — option (a): merge planning branch into main before Slice 0, via PR, with verification gate.
@@ -83,6 +84,7 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
 | `/applications` (ApplicationsPage, gồm Sheet xem nhanh) | 7 | **v2** (khung AppShell vẫn v1 – P5-D06b) |
 | `/applications/:id` (ApplicationDetailPage) | 8 | **v2** |
 | `/jobs/:id/ranking` (JobRankingPage, route riêng; bản nhúng trong hộp tin giữ v1) | 9 | **v2** |
+| `/interviews` (InterviewsPage) | 10 | **v2** |
 | AuthLayout (`/login`), các trang nội bộ còn lại | — | v1 |
 Quy tắc: lật cả trang trong slice dựng lại trang đó bằng `data-theme="v2"` trên gốc trang/layout; không lật từng component.
 
@@ -93,9 +95,9 @@ Quy tắc: lật cả trang trong slice dựng lại trang đó bằng `data-the
 - [x] `applications/pages/ApplicationDetailPage.tsx:251`, `:276` — slice 8
 - [ ] `applications/pages/ApplicationsPage.tsx:562` — slice 7
 - [x] `ranking/pages/JobRankingPage.tsx:262` — slice 9
-- [ ] `interviews/components/FeedbackDialog.tsx:33`, `:149` — slice 10
-- [ ] `interviews/components/QuestionSuggestions.tsx:51` — slice 10
-- [ ] **VF-10:** `RatingScale` đã sẵn (`components/ui/RatingScale.tsx`, có test) — **chờ gắn** vào Phiếu đánh giá ở slice 10; slice 10 được chỉnh primitive nếu cần.
+- [x] `interviews/components/FeedbackDialog.tsx:33`, `:149` — slice 10
+- [x] `interviews/components/QuestionSuggestions.tsx:51` — slice 10
+- [x] **VF-10:** `RatingScale` đã sẵn (`components/ui/RatingScale.tsx`, có test) — **chờ gắn** vào Phiếu đánh giá ở slice 10; slice 10 được chỉnh primitive nếu cần.
 - Alias variant `quiet`/`inverse`/`danger-quiet` và prop `hint`/`optional` của FormField gỡ khi call site cuối (phần lớn trong vùng khoá) chuyển.
 
 ### `<button>` thô còn lại ngoài vùng khoá (slice sở hữu)
@@ -327,4 +329,16 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
   - 390: bấm dòng → Sheet 390×900 "Vì sao … #1", chỉ "Mở chi tiết" + "Hồ sơ hạng dưới" + "Thêm vào so sánh"; nút "Trọng số" → Dialog "Trọng số tiêu chí" 5 ô chọn; axe 0 cả hai. ≥1024: panel bên phải "Vì sao … #1", 5 câu trích, "Mở bàn duyệt CV".
   - **Không làm trên production:** đổi trọng số để nghe thông báo sắp xếp lại (chỉ có test), lưu trọng số.
 - **Bàn giao còn lại:** SidePanel ở ChatPage (12); ConfirmDialog ở OfferPanel (11), InterviewPanel (10).
+
+## Entry 16 — Slice 10: Phỏng vấn + Phiếu đánh giá (🟢 sau gate)
+- **Spec + tickets:** issue #154. Base  từ .
+- **Đã làm:**
+  - **Phiếu đánh giá:**  (nút role=radio tự viết) →  (radio native trong label, VF-10) cho từng tiêu chí + Đánh giá chung, mỗi mức có chữ ("4 · Tốt");  thêm prop  (lỗi dưới nhóm, , viền đỏ). Đề xuất tuyển: chip  → radio native trong label. Lỗi bắt buộc theo từng nhóm ("Chọn mức đánh giá cho tiêu chí này." / "Chọn mức đánh giá chung." / "Chọn đề xuất của bạn.") và **focus vào nhóm thiếu đầu tiên** (P5). Lỗi lưu: "Chưa gửi được Phiếu đánh giá · nội dung vẫn được giữ." + nút **"Thử lại"** (OP-1). Nút gửi "Gửi Phiếu đánh giá"; dòng báo trước "Bạn sửa được trong 24 giờ sau khi gửi; sau đó phiếu bị khoá…" / "Bạn sửa được tới …" (P5-D13a).
+  - **Đặt lịch:**  gắn vào ô đầu của nhóm người phỏng vấn → RHF focus khi thiếu; lỗi lưu → nút "Thử lại".
+  - **Huỷ buổi:** ConfirmDialog → AlertDialog ("Giữ buổi"/"Huỷ buổi", lý do bắt buộc, lỗi giữ lý do + Thử lại).
+  - **Không được giao → không tìm thấy (ADR-0002):** tách  dùng chung cho ApplicationDetailPage và ApplicationDialog (hộp hồ sơ mở từ lịch ); trước đây hộp hiện lỗi chung "Chưa mở được hồ sơ" + Thử lại.
+  - Nút "Ẩn" câu hỏi gợi ý → . Trang Phỏng vấn lật v2.
+- **Kiểm:** 336 test FE xanh — mới: lỗi lưu giữ mọi lựa chọn + "Thử lại"; Interviewer mở hồ sơ không được giao → "Không tìm thấy hồ sơ này" (không có Thử lại). Sửa theo hành vi mới: 2 test phiếu (tên nút, lỗi theo nhóm + focus nhóm đầu, dòng báo 24 giờ, radio "4 · Tốt"). Typecheck, build, format, lint, check:design, check:terms xanh.
+- **Chưa kiểm trên trình duyệt thật:** trang Phỏng vấn + hộp phiếu ở 390/1024/1440, axe → production smoke sau merge (không gửi phiếu/đặt lịch/huỷ trên production).
+- **Bàn giao còn lại:** ConfirmDialog chỉ còn ở OfferPanel (slice 11) → xoá  khi xong slice 11; SidePanel ở ChatPage (12).
 
