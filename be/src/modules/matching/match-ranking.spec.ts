@@ -35,16 +35,19 @@ const requirements: MatchRequirement[] = [
   },
 ];
 
+const quote = (name: string, years: number | null) =>
+  years == null ? `kinh nghiệm ${name}` : `${years} năm kinh nghiệm ${name}`;
+
 const row = (
   candidateId: string,
   skills: [string, number | null][],
   daysAgo = 1,
-  text = skills.map(([name]) => `kinh nghiệm ${name}`).join('. '),
+  text = skills.map(([name, years]) => quote(name, years)).join('. '),
 ): MatchPoolRow => ({
   candidateId,
   cvFileId: `cv-${candidateId}`,
   text,
-  skills: skills.map(([name, years]) => ({ name, years, evidence: `kinh nghiệm ${name}` })),
+  skills: skills.map(([name, years]) => ({ name, years, evidence: quote(name, years) })),
   lastAppliedAt: new Date(Date.UTC(2026, 9, 26) - daysAgo * 86_400_000),
 });
 
@@ -71,14 +74,14 @@ describe('rankMatches', () => {
         label: 'NestJS',
         type: RequirementType.Must,
         match: 1,
-        evidence: 'kinh nghiệm NestJS',
+        evidence: '3 năm kinh nghiệm NestJS',
       },
       {
         requirementId: 'r2',
         label: 'PostgreSQL',
         type: RequirementType.Must,
         match: 1,
-        evidence: 'kinh nghiệm PostgreSQL',
+        evidence: '2 năm kinh nghiệm PostgreSQL',
       },
       {
         requirementId: 'r3',

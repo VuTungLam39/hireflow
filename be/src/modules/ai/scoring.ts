@@ -31,6 +31,22 @@ const matchesKeyword = (skillName: string, keywords: string[]) => {
   );
 };
 
+const STATED_YEARS = /(\d+(?:[.,]\d+)?)\s*\+?\s*(?:nam|years?|yrs?)(?![a-z])/g;
+const DATE_RANGE =
+  /(?:\d{1,2}[/.-])?((?:19|20)\d{2})\s*[-–—]\s*(?:(?:\d{1,2}[/.-])?((?:19|20)\d{2})|(nay|hien tai|hien nay|present|now|current))/g;
+
+// SG-03
+export function yearsCap(evidence: string, cvText: string, now = new Date()): number {
+  const stated = [...foldText(evidence).matchAll(STATED_YEARS)].map((m) =>
+    Number(m[1].replace(',', '.')),
+  );
+  const ranges = [...foldText(cvText).matchAll(DATE_RANGE)];
+  const starts = ranges.map((m) => Number(m[1]));
+  const ends = ranges.map((m) => (m[2] ? Number(m[2]) : now.getFullYear()));
+  const span = ranges.length ? Math.max(...ends) - Math.min(...starts) : 0;
+  return Math.max(0, span, ...stated);
+}
+
 // BR-AI-02
 export function computeScore(items: { weight: number; match: number }[]): number {
   const total = items.reduce((sum, i) => sum + i.weight, 0);
@@ -55,9 +71,12 @@ export function scoreApplication(
     }
 
     // BR-AI-03
-    const verified = candidates.filter(
-      (s) => s.evidence.trim() && text.includes(normalizeText(s.evidence)),
-    );
+    const verified = candidates
+      .filter((s) => s.evidence.trim() && text.includes(normalizeText(s.evidence)))
+      .map((s) => ({
+        ...s,
+        years: s.years == null ? null : Math.min(s.years, yearsCap(s.evidence, cvText)),
+      }));
     if (!verified.length) {
       flags.add(ScoreFlag.UnverifiedEvidence);
       return {

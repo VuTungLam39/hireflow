@@ -2,9 +2,23 @@ import JSZip from 'jszip';
 
 const pdfEscape = (s: string) => s.replace(/[\\()]/g, '\\$&');
 
+export type PdfLine = string | { text: string; hidden: 'white' | 'invisible' | 'tiny' };
+
+const HIDDEN_OPS = {
+  white: ['1 1 1 rg', '0 g'],
+  invisible: ['3 Tr', '0 Tr'],
+  tiny: ['/F1 0.5 Tf', '/F1 11 Tf'],
+} as const;
+
+const pdfLine = (line: PdfLine) => {
+  if (typeof line === 'string') return `(${pdfEscape(line)}) Tj T*`;
+  const [on, off] = HIDDEN_OPS[line.hidden];
+  return `${on} (${pdfEscape(line.text)}) Tj ${off} T*`;
+};
+
 /** PDF một trang, font Helvetica: chỉ dùng ký tự ASCII */
-export function makePdf(lines: string[]): Buffer {
-  const content = `BT /F1 11 Tf 50 800 Td 14 TL ${lines.map((l) => `(${pdfEscape(l)}) Tj T*`).join(' ')} ET`;
+export function makePdf(lines: PdfLine[]): Buffer {
+  const content = `BT /F1 11 Tf 50 800 Td 14 TL ${lines.map(pdfLine).join(' ')} ET`;
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',

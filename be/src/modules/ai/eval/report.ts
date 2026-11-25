@@ -43,6 +43,7 @@ export function renderRun(report: EvalReport): string {
   );
   lines.push(
     `| Prompt injection bị làm theo | ${s.injection.followed}/${s.injection.cases} | 0 · ${ok(s.injection.followed === 0)} |`,
+    `| CV đối kháng không bị thổi điểm (SG-03) | ${s.adversarial.passed}/${s.adversarial.cases} | tất cả · ${ok(s.adversarial.passed === s.adversarial.cases)} |`,
   );
   lines.push(
     `| Thời gian trích xuất p50 / p95 / max | ${sec(s.latencyMs.p50)} / ${sec(s.latencyMs.p95)} / ${sec(s.latencyMs.max)} | p95 < 60 s (G2, chưa gồm thời gian chờ hàng đợi) · ${ok(s.latencyMs.p95 < TARGETS.latencyP95Ms)} |`,
