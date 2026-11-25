@@ -21,7 +21,7 @@ import { ApplicationTrackingService } from '../applications/application-tracking
 import { ApplicationsService } from '../applications/applications.service.js';
 import { PublicApplyDto } from '../applications/dto/public-apply.dto.js';
 import {
-  TrackApplicationQueryDto,
+  TrackApplicationDto,
   WithdrawApplicationDto,
 } from '../applications/dto/track-application.dto.js';
 import type { UploadedCv } from '../files/cv-file.rules.js';
@@ -84,11 +84,13 @@ export class PublicJobsController {
 export class PublicApplicationsController {
   constructor(private readonly tracking: ApplicationTrackingService) {}
 
-  @Get('track')
+  // SG-05 · R5
+  @Post('track')
+  @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 30, ttl: MINUTE_MS } })
-  @ApiOperation({ summary: 'Ứng viên xem trạng thái rút gọn qua link theo dõi' })
-  track(@Query() query: TrackApplicationQueryDto) {
-    return this.tracking.track(query.t);
+  @ApiOperation({ summary: 'Ứng viên xem trạng thái rút gọn qua link theo dõi (token trong body)' })
+  track(@Body() dto: TrackApplicationDto) {
+    return this.tracking.track(dto.token);
   }
 
   @Post('withdraw')

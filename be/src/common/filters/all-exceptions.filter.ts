@@ -107,7 +107,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       code: code ?? codeForStatus(statusCode),
       message,
       ...(errors !== undefined && { errors }),
-      path: request.originalUrl,
+      // SG-05 · R5
+      path: request.originalUrl.split('?')[0],
       timestamp: new Date().toISOString(),
     };
     response.status(statusCode).json(body);

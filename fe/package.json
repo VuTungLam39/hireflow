@@ -19,7 +19,8 @@
     "check:design": "node scripts/check-design.mjs --strict",
     "tokens": "designmd export --format css-tailwind DESIGN.md > src/styles/tokens.generated.css && node scripts/tokens-namespace.mjs && prettier --write src/styles/tokens.generated.css",
     "check:tokens": "designmd lint DESIGN.md && npm run tokens && git diff --exit-code -- src/styles/tokens.generated.css",
-    "check:terms": "node scripts/check-terms.mjs"
+    "check:terms": "node scripts/check-terms.mjs",
+    "check:bundle": "node scripts/check-bundle.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^6.0.0",

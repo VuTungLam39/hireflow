@@ -11,7 +11,13 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => server.close())
 
 const routes = [{ path: paths.applicationTrack, element: <TrackApplicationPage /> }]
-const open = (token: string) => renderRoutes(routes, `${paths.applicationTrack}?t=${token}`)
+// SG-05 · R5
+const open = (token: string, legacy = false) => {
+  const url = `${paths.applicationTrack}${legacy ? '?' : '#'}t=${token}`
+  window.history.replaceState(null, '', url)
+  return renderRoutes(routes, paths.applicationTrack)
+}
+afterEach(() => window.history.replaceState(null, '', '/'))
 
 // MVP 3 · US-26, BR-APP-14
 describe('TrackApplicationPage', () => {
@@ -33,6 +39,13 @@ describe('TrackApplicationPage', () => {
     open(DECIDED_TRACK_TOKEN)
     expect(await screen.findByRole('heading', { name: 'Đã có kết quả' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Rút hồ sơ' })).not.toBeInTheDocument()
+  })
+
+  it('SG-05 · R5: an old ?t= link still works, and the token is removed from the address bar', async () => {
+    open(DECIDED_TRACK_TOKEN, true)
+    expect(await screen.findByRole('heading', { name: 'Đã có kết quả' })).toBeInTheDocument()
+    expect(window.location.search).toBe('')
+    expect(window.location.hash).toBe('')
   })
 
   it('an invalid link says so without giving a reason', async () => {

@@ -1,5 +1,6 @@
 // BR-DATA-01
-const SENSITIVE_PARAMS = new Set(['search', 'q', 'email', 'phone']);
+// SG-05
+const SENSITIVE_PARAMS = new Set(['search', 'q', 'email', 'phone', 't', 'token']);
 
 export function safeUrl(url: string): string {
   const index = url.indexOf('?');

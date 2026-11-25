@@ -58,13 +58,13 @@ describe('Application tracking (e2e)', { timeout: 30_000 }, () => {
       })
       .attach('cv', cv, { filename: 'cv.docx', contentType: DOCX });
   const track = (t: string) =>
-    request(server()).get('/api/v1/public/applications/track').query({ t });
+    request(server()).post('/api/v1/public/applications/track').send({ token: t });
   const withdraw = (token: string) =>
     request(server()).post('/api/v1/public/applications/withdraw').send({ token });
   const tokenFor = async (to: string) => {
     for (let i = 0; i < 100; i++) {
       const mail = sent.find((m) => m.to === to);
-      if (mail) return /applications\/track\?t=([\w-]+)/.exec(mail.text)![1];
+      if (mail) return /applications\/track#t=([\w-]+)/.exec(mail.text)![1];
       await new Promise((r) => setTimeout(r, 100));
     }
     throw new Error(`no email to ${to}`);
@@ -159,6 +159,13 @@ describe('Application tracking (e2e)', { timeout: 30_000 }, () => {
   it('an unknown or expired token gets TOKEN_INVALID without saying why', async () => {
     const unknown = await track('x'.repeat(43)).expect(400);
     expect(unknown.body.code).toBe('TOKEN_INVALID');
+    // SG-05 · R5: GET cũ (token trong query) đã gỡ; lỗi không echo query vào path
+    const legacy = await request(server())
+      .get('/api/v1/public/applications/track')
+      .query({ t: 'x'.repeat(43) })
+      .expect(404);
+    expect(legacy.body.path).toBe('/api/v1/public/applications/track');
+    expect(JSON.stringify(legacy.body)).not.toContain('xxxxxxxx');
 
     await apply(2).expect(201);
     const token = await tokenFor(emailOf(2));

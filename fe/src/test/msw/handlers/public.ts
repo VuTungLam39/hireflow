@@ -234,9 +234,11 @@ export const publicHandlers = [
   }),
 
   // US-26 · BR-APP-14
-  http.get(api('/public/applications/track'), async ({ request }) => {
+  // SG-05 · R5
+  http.post(api('/public/applications/track'), async ({ request }) => {
     await latency(200)
-    const tracked = trackedBy(searchParams(request).get('t'))
+    const { token } = (await request.json()) as { token?: string }
+    const tracked = trackedBy(token ?? null)
     return tracked ? ok(trackView(tracked)) : fail(400, 'TOKEN_INVALID', 'Tracking link is invalid')
   }),
 

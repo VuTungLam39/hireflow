@@ -7,8 +7,8 @@ Each slice is one mattpocock loop: issue → test first → smallest fix → PR.
 | R1 | **Tenant-scope bulk status + harden `transition()`**: filter bulk load by org/department scope; lock rows by `id + organization_id`; extend cross-tenant e2e to routes taking IDs in the body (bulk-status first, then a generic body-ID sweep) | SG-01 | S | **Gate re-check; real data; Phase 05 slices touching applications** | **Merged 25/11** — PR #139, merge `4218b5d`; Render deploy `hireflow-api` success |
 | R2 | **ADR-0002 on writes**: `findWritable` and bulk result return not-found for out-of-org and out-of-department; cross-tenant e2e requires 404 (drop 403 from the allowed set) | SG-02 | S | Phase 05 tenant-boundary slices | **Implemented 25/11** — PR #140 merged into the R1 branch by mistake (base not retargeted) → re-landed via **PR #141**; see R2 record |
 | R3 | **Evidence visibility + years check**: detect evidence that exists only in invisible text (PDF text render attributes) → flag, no credit; derive/cap `years` from quoted span or experience dates; add adversarial CVs (hidden text, injected instruction) to `ai/eval` with a pass threshold | SG-03 | M (spike first on PDF visibility detection) | **Phase 05 CV-pipeline/scoring slices; real data** | **Implemented 25/11** — PR (R3 branch `fix/sg03-r3-evidence-visibility`); see R3 record |
-| R4 | Drop demo-fill constant from production builds | SG-04 | XS | — | Non-blocking, ride-along |
-| R5 | Tracking token out of the query string (fragment or one-time exchange); stop echoing query in error `path` | SG-05 | S | — | Non-blocking, ride-along |
+| R4 | Drop demo-fill constant from production builds | SG-04 | XS | — | **Implemented 25/11** — branch `fix/r4-r5-demo-bundle-track-token`; see R4/R5 record |
+| R5 | Tracking token out of the query string (fragment or one-time exchange); stop echoing query in error `path` | SG-05 | S | — | **Implemented 25/11** — same PR as R4; see R4/R5 record |
 | R6 | Forgot/reset password (or documented platform recovery procedure) | SG-06 | M | before real companies onboard | **Implemented 25/11** — PR (branch `feat/r6-password-reset`); see R6 record |
 | — | SG-07 | accept as informational (900 s window, per-request revalidation) | — | — | Accepted informational (owner 24/11) |
 
@@ -59,4 +59,15 @@ Carry-forward (not security, logged so it is not lost): code still contains "Đ�
 - **FE:** "Quên mật khẩu?" on `/login`; `/forgot-password` (generic confirmation, 30-minute note); `/reset-password` reads `#t=`, **removes the fragment from the address bar/history immediately**, new password + confirm, success → `/login` with notice; invalid/used/expired → one "Link không còn hiệu lực" screen with "Gửi lại link".
 - **Tests:** BE e2e `password-reset.e2e-spec.ts` — unknown/inactive email: 202, same message, no email; link in fragment; weak password 400; reset → old password 401, new 200, old refresh session 401; token reuse `TOKEN_INVALID`; new link cancels old; expired refused; per-account cap 3 emails for 4 requests; 4th request from one IP 429. BE unit: template link in fragment, not query. FE: 4 tests (login link + generic answer, fragment read + stripped + reset → login notice, used token, missing token). BE unit 470, FE 344, lint/typecheck/build exit 0. **BE e2e not run locally** (Docker/Postgres not running on this machine) — CI runs `migration:run` + e2e.
 - **Not done:** production smoke (needs a real mailbox to receive the link; Mailjet in prod) — owner to decide which account to test with.
+
+## R4/R5 record (25/11/2026)
+- **Branch:** `fix/r4-r5-demo-bundle-track-token` off `main @ 4f6227f`.
+- **R4 (SG-04):** the demo-fill block on `/login` is now gated by `import.meta.env.DEV` directly (was `env.isDev`, an object property the minifier could not fold) → the seed password and the 6 demo emails are tree-shaken out. Before: present in `LoginPage-*.js`; after: 0 hits in `dist`. New `npm run check:bundle` (scans `dist/**/*.{js,html,map}` for `Admin@123` and `@hireflow.dev`) runs in the FE CI job after `build`.
+- **R5 (SG-05):**
+  - API: `GET /public/applications/track?t=` → **`POST /public/applications/track` with `{ token }`** (same throttle 30/min). The FE is the only caller; the old GET now answers 404. Contract change recorded here.
+  - Email: the tracking link is `/applications/track#t=…` (fragment — never sent to the server, not in access logs or `Referer`).
+  - FE `/applications/track`: reads `#t=` and, for links already emailed (token TTL 90 days), `?t=`; **removes both from the address bar/history** right after reading.
+  - Error envelope `path` = `originalUrl` **without the query string** (all routes). `safeUrl` (request log) also masks `t` and `token`.
+- **Tests:** BE e2e tracking uses POST + fragment link; old GET with `?t=` → 404 and the error body has `path` without query and no token text. BE unit `safeUrl` masks `t`/`token`. FE: tracking page tests read `#t=`; old `?t=` link still works and is stripped. FE 345, BE unit 471, lint/typecheck/build/check:bundle exit 0. BE e2e runs on CI (no local Postgres).
+- **Not done:** production check of an emailed tracking link (needs a real candidate mailbox).
 

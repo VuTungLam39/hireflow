@@ -135,7 +135,7 @@ export function renderEmail<T extends EmailTemplate>(
         ],
         action: {
           label: 'Theo dõi hồ sơ',
-          url: `${appUrl}/applications/track?t=${encodeURIComponent(p.token ?? '')}`,
+          url: `${appUrl}/applications/track#t=${encodeURIComponent(p.token ?? '')}`,
         },
         note: 'Link hết hạn sau 90 ngày kể từ ngày nộp. Đừng chuyển tiếp email này: ai có link đều xem được trạng thái và rút được hồ sơ.',
       });
