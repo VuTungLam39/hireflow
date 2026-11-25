@@ -356,6 +356,10 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
   - **Rút / Trả lại / Ứng viên từ chối:** ConfirmDialog → AlertDialog (nhãn xác nhận theo hành động, lý do bắt buộc trừ "Ứng viên từ chối", mô tả hệ quả, lỗi giữ lý do + "Thử lại" qua `mutateAsync`). **`components/shared/ConfirmDialog.tsx` đã xoá** (call site cuối).
   - **"Offer" viết hoa** ở mọi chuỗi giao diện: OfferPanel, use-offers (toast), audit-format, error-codes, DashboardPage → baseline `check:terms` 7 → 2 (còn CandidateSections "bằng chứng", FunnelReport "Đã nhận" — slice 12).
 - **Kiểm:** 337 test FE xanh — mới: Rút Offer lỗi giữ lý do + "Thử lại", thành công thì đóng và Offer `WITHDRAWN`; luồng soạn/duyệt có thêm kiểm badge "Bản nháp" + lịch sử duyệt "Soạn bởi"/"Duyệt bởi". Sửa theo nhãn viết hoa: 2 test luồng Offer. Typecheck, build, format, lint, check:design, check:terms xanh.
-- **Chưa kiểm trên trình duyệt thật:** khối Offer ở 390/1024/1440, axe → production smoke sau merge (không soạn/duyệt/rút Offer trên production).
+- **Production smoke (25/11, `main @ 85492d3`, Admin hireflow-demo; bundle có "Lịch sử duyệt Offer"):**
+  - Production **không có Offer nào** (API: 0 Offer ở mọi hồ sơ OFFER/HIRED/INTERVIEW) → badge, điều khoản, lịch sử duyệt, hộp Rút/Trả lại/Từ chối **chưa thấy trên dữ liệu thật** (chỉ có test).
+  - Hồ sơ bước Phỏng vấn × 390/1024/1440: khối "Offer" trống, chỉ nút "Soạn Offer", không tràn, axe 0. Hộp "Soạn Offer" (390×900 / 640×503), bấm "Tạo Offer nháp" khi trống — **không tạo**: 3 lỗi "Nhập mức lương lớn hơn 0" / "Chọn hạn trả lời" / "Chọn ngày bắt đầu", axe 0, Escape đóng. API sau đó vẫn 0 Offer.
+  - Dashboard không còn chữ "offer" viết thường.
+  - **Ghi nhận (không thuộc AC slice 11):** hộp Soạn Offer báo lỗi nhưng **không focus vào ô sai đầu tiên** (form tự viết, không qua RHF) — khác quy tắc P5 đã áp ở slice 10; xử lý ở slice 12 hoặc slice đệm nếu chủ dự án muốn.
 - **Bàn giao còn lại:** SidePanel ở ChatPage; thuật ngữ CandidateSections, FunnelReport — slice 12.
 
