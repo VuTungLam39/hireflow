@@ -446,8 +446,9 @@ describe('Applications (e2e)', () => {
         .expect(400);
       const write = await as('hmB', request(server()).post(`/api/v1/applications/${ids.a1}/notes`))
         .send({ content: 'x' })
-        .expect(403);
-      expect(write.body.code).toBe('SCOPE_FORBIDDEN');
+        .expect(404);
+      // SG-02 · R2, ADR-0002
+      expect(write.body.code).toBe('NOT_FOUND');
       await as('hmB', request(server()).get(`/api/v1/applications/${ids.a1}/notes`)).expect(404);
       expect(await ds.getRepository(ApplicationNote).countBy({ applicationId: ids.a1 })).toBe(2);
     });
