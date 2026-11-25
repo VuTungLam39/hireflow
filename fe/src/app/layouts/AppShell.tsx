@@ -6,19 +6,21 @@ import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
 import { DetailHost } from './DetailHost'
 import { QuickSearch } from './QuickSearch'
-import { Sidebar } from './Sidebar'
+import { Rail } from './Rail'
 import { Topbar } from './Topbar'
+import { useNavGroups } from './use-nav-groups'
 
 export interface RouteHandle {
   fullWidth?: boolean
 }
 
-export function MainLayout() {
+export function AppShell() {
   useMe()
   useRealtimeConnection()
   useFocusMainOnNavigate()
   const matches = useMatches()
   const fullWidth = matches.some((m) => (m.handle as RouteHandle | undefined)?.fullWidth)
+  const { groups, activeId } = useNavGroups()
   const pending = useAuthStore((s) => s.user?.organization?.status === 'PENDING')
 
   return (
@@ -29,7 +31,7 @@ export function MainLayout() {
       >
         Bỏ qua tới nội dung
       </a>
-      <Sidebar />
+      <Rail groups={groups} activeId={activeId} />
       <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
         <Topbar />
         <div className="bg-surface md:border-line md:rounded-sheet flex-1 md:mr-2 md:mb-2 md:border">

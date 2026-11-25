@@ -145,7 +145,7 @@ export const routes: RouteObject[] = [
           {
             // layout nội bộ tải lazy: route vào công khai không kéo code nội bộ (ngưỡng 40 KB, Phase 03)
             lazy: async () => ({
-              Component: (await import('@/app/layouts/MainLayout')).MainLayout,
+              Component: (await import('@/app/layouts/AppShell')).AppShell,
             }),
             children: [
               requires(
