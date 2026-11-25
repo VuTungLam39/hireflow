@@ -67,7 +67,7 @@ Carry-forward (not security, logged so it is not lost): code still contains "Đ�
   - API: `GET /public/applications/track?t=` → **`POST /public/applications/track` with `{ token }`** (same throttle 30/min). The FE is the only caller; the old GET now answers 404. Contract change recorded here.
   - Email: the tracking link is `/applications/track#t=…` (fragment — never sent to the server, not in access logs or `Referer`).
   - FE `/applications/track`: reads `#t=` and, for links already emailed (token TTL 90 days), `?t=`; **removes both from the address bar/history** right after reading.
-  - Error envelope `path` = `originalUrl` **without the query string** (all routes). `safeUrl` (request log) also masks `t` and `token`.
+  - Error envelope `path` = `originalUrl` **without the query string** (all routes); the router's default 404 message ("Cannot GET /x?t=…") is also cut at `?` — caught by the new e2e on CI. `safeUrl` (request log) also masks `t` and `token`.
 - **Tests:** BE e2e tracking uses POST + fragment link; old GET with `?t=` → 404 and the error body has `path` without query and no token text. BE unit `safeUrl` masks `t`/`token`. FE: tracking page tests read `#t=`; old `?t=` link still works and is stripped. FE 345, BE unit 471, lint/typecheck/build/check:bundle exit 0. BE e2e runs on CI (no local Postgres).
 - **Not done:** production check of an emailed tracking link (needs a real candidate mailbox).
 

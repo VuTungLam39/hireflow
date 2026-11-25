@@ -109,6 +109,14 @@ describe('AllExceptionsFilter + request-id (HTTP)', () => {
     expect((await request(server()).get('/t/forbidden').expect(403)).body.code).toBe('FORBIDDEN');
   });
 
+  // SG-05 · R5
+  it('never echoes the query string of an unknown route (token in ?t=)', async () => {
+    const res = await request(server()).get('/no-such-route?t=secret-token-123').expect(404);
+    expect(res.body.path).toBe('/no-such-route');
+    expect(res.body.message).toBe('Cannot GET /no-such-route');
+    expect(JSON.stringify(res.body)).not.toContain('secret-token-123');
+  });
+
   it('ignores a code that is not in ErrorCode', async () => {
     const res = await request(server()).get('/t/unknown-code').expect(403);
     expect(res.body.code).toBe('FORBIDDEN');

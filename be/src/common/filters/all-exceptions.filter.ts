@@ -94,6 +94,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
     }
 
+    // SG-05 · R5: 404 mặc định của router ("Cannot GET /x?t=…") echo cả query
+    if (/^Cannot [A-Z]+ /.test(message)) message = message.split('?')[0];
+
     if (statusCode >= 500) {
       this.logger.error(
         `[${request.headers[REQUEST_ID_HEADER] as string}] ${request.method} ${safeUrl(request.originalUrl)}`,
