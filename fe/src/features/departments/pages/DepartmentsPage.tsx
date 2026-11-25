@@ -32,22 +32,27 @@ export default function DepartmentsPage() {
     {
       key: 'name',
       header: 'Phòng ban',
+      priority: 1,
+      sticky: 'start',
       cell: (d) => <span className="text-ink font-medium">{d.name}</span>,
     },
     {
       key: 'code',
       header: 'Mã',
+      priority: 3,
       cell: (d) => <span className="type-code text-ink-2">{d.code}</span>,
     },
     {
       key: 'users',
       header: 'Số người',
+      priority: 2,
       align: 'right',
       cell: (d) => <span className="type-num">{d.userCount}</span>,
     },
     {
       key: 'jobs',
       header: 'Số tin',
+      priority: 2,
       align: 'right',
       cell: (d) => <span className="type-num">{d.jobCount}</span>,
     },
@@ -90,6 +95,8 @@ export default function DepartmentsPage() {
         onRowClick={(d) => setEditing(d)}
         isPending={query.isPending}
         isError={query.isError}
+        dataUpdatedAt={query.dataUpdatedAt}
+        layout="container"
         error={query.error}
         onRetry={query.refetch}
         isFetching={query.isFetching && !query.isPending}
