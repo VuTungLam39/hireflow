@@ -339,5 +339,10 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
   - **Không được giao → không tìm thấy (ADR-0002):** tách `ApplicationNotFound` dùng chung cho ApplicationDetailPage và ApplicationDialog (hộp hồ sơ mở từ lịch `?xem=application:…`); trước đây hộp hiện lỗi chung "Chưa mở được hồ sơ" + Thử lại.
   - Nút "Ẩn" câu hỏi gợi ý → `Button`. Trang Phỏng vấn lật v2.
 - **Kiểm:** 336 test FE xanh — mới: lỗi lưu giữ mọi lựa chọn + "Thử lại"; Interviewer mở hồ sơ không được giao → "Không tìm thấy hồ sơ này" (không có Thử lại). Sửa theo hành vi mới: 2 test phiếu (tên nút, lỗi theo nhóm + focus nhóm đầu, dòng báo 24 giờ, radio "4 · Tốt"). Typecheck, build, format, lint, check:design, check:terms xanh.
-- **Chưa kiểm trên trình duyệt thật:** trang Phỏng vấn + hộp phiếu ở 390/1024/1440, axe → production smoke sau merge (không gửi phiếu/đặt lịch/huỷ trên production).
+- **Production smoke (25/11, `main @ 92d6934`, Admin hireflow-demo).** Lưu ý: production FE đứng ở bản trước #153 tới khi chủ dự án promote trên Vercel; đã xác nhận CSS mới (có `md:max-lg:[--sticky-top:0px]`, `@min-[600px]:[--sticky-top:0px]`) trước khi đo.
+  - **#153 kiểm lại:** header bảng đè dòng đầu **0 px** ở 12/12 (Hồ sơ, Kho ứng viên, Tin tuyển dụng, Xếp hạng × 768/1024/1440; trước: 56 px ở 9 trường hợp DataTable).
+  - `/interviews` × 390/1024/1440: không tràn, 1 h1 "Lịch phỏng vấn", `data-theme="v2"`, **axe 0**.
+  - Hộp hồ sơ từ lịch (`?xem=application:<uuid không tồn tại>`): "Không tìm thấy hồ sơ này", không có "Thử lại" (ADR-0002).
+  - Đặt lịch (trang chi tiết hồ sơ ở bước Phỏng vấn, bấm "Đặt lịch" khi để trống — **không lưu**): 3 lỗi "Chọn ngày giờ phỏng vấn" / "Nhập phòng họp hoặc link họp" / "Chọn ít nhất một người phỏng vấn", focus vào ô đầu (`iv-at`), axe 0.
+  - **Chưa kiểm trên production:** Phiếu đánh giá (chỉ người phỏng vấn được giao mở được — không có tài khoản Interviewer); hộp Huỷ buổi (production không có buổi sắp tới; tạo buổi = ghi dữ liệu thật). Hai phần này chỉ có test.
 - **Bàn giao còn lại:** ConfirmDialog chỉ còn ở OfferPanel (slice 11) → xoá `ConfirmDialog.tsx` khi xong slice 11; SidePanel ở ChatPage (12).
