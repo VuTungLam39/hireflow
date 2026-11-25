@@ -54,4 +54,4 @@ New: `docs/redesign/security-gate/*` (9 files), `docs/ket-qua/2026-11-24-securit
 
 STOP — R1 not started (scheduling only).
 
-**Update 25/11/2026:** R1 implemented (PR #139) — see file 07 "R1 record". Gate verdict unchanged until the re-check after R1–R3.
+**Update 25/11/2026:** R1 implemented (PR #139) — see file 07 "R1 record". R2 implemented (PR #PRNUM2, stacked on R1). Gate verdict unchanged until the re-check after R1–R3.

@@ -676,8 +676,7 @@ describe('Cross-tenant isolation (e2e)', () => {
       const attack = await send(idsA());
       const refused = c.rejected
         ? attack.status === 200 && c.rejected(attack)
-        : [403, 404].includes(attack.status) ||
-          (attack.status === 400 && onIdField(attack, fields));
+        : attack.status === 404 || (attack.status === 400 && onIdField(attack, fields));
       if (!refused)
         leaks.push(`${key} → ${attack.status} ${JSON.stringify(attack.body).slice(0, 160)}`);
       const control = await send(idsB());
@@ -754,8 +753,10 @@ describe('Cross-tenant isolation (e2e)', () => {
       url = url.replace('APP1', a.app).replace('APP2', a.app2);
       if (!ok) continue;
       const res = await asB(request(server())[route.verb](url)).send({});
-      const allowed = route.verb === 'get' ? [403, 404] : [400, 403, 404];
-      if (!allowed.includes(res.status)) {
+      // SG-02 · R2, ADR-0002
+      const allowed = route.verb === 'get' ? [404] : [400, 404];
+      const permissionDenied = res.status === 403 && res.body?.code === 'FORBIDDEN';
+      if (!allowed.includes(res.status) && !permissionDenied) {
         leaks.push(`${route.verb.toUpperCase()} ${route.path} → ${res.status}`);
       }
     }
@@ -822,6 +823,25 @@ describe('Cross-tenant isolation (e2e)', () => {
         entityId: In([a.app, a.app2]),
       }),
     ).toBe(0);
+  });
+
+  // SG-02 · R2, ADR-0002
+  it('writes on an application of another organization look exactly like a missing id', async () => {
+    const calls: [string, string, object][] = [
+      ['patch', 'status', { status: 'SCREENING' }],
+      ['post', 'notes', { content: 'x' }],
+      ['post', 'rescore', {}],
+    ];
+    for (const [verb, action, body] of calls) {
+      const send = (id: string) =>
+        asB(
+          request(server())[verb as 'patch' | 'post'](`/api/v1/applications/${id}/${action}`),
+        ).send(body);
+      const foreign = await send(a.app);
+      const missing = await send(randomUUID());
+      expect([action, foreign.status, foreign.body.code]).toEqual([action, 404, 'NOT_FOUND']);
+      expect(foreign.body.message).toBe(missing.body.message);
+    }
   });
 
   it('the data of organization A is untouched after every call of organization B', async () => {

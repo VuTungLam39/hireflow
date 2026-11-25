@@ -563,7 +563,8 @@ export class ApplicationsService {
       if (!app) {
         result.failed.push({ id, code: ErrorCode.NotFound });
       } else if (dataScope(user.role) === 'department' && !inManagerScope(user, app.job!)) {
-        result.failed.push({ id, code: ErrorCode.ScopeForbidden });
+        // SG-02 · ADR-0002
+        result.failed.push({ id, code: ErrorCode.NotFound });
       } else if (app.status === dto.status) {
         result.unchanged.push(id);
       } else if (app.status === ApplicationStatus.Offer) {
@@ -1053,20 +1054,12 @@ export class ApplicationsService {
       .select(['app.id', 'app.organizationId', 'job.id', 'job.departmentId'])
       .where('app.id = :id', { id })
       .getOne();
-    if (!app) throw new NotFoundException('Application not found');
-    // BR-TEN-02
-    if (app.organizationId !== orgIdOf(user)) {
-      throw new ForbiddenException({
-        code: ErrorCode.ScopeForbidden,
-        message: 'Application is outside your organization',
-      });
-    }
-    if (dataScope(user.role) === 'department' && !inManagerScope(user, app.job!)) {
-      throw new ForbiddenException({
-        code: ErrorCode.ScopeForbidden,
-        message: 'Application is outside your department',
-      });
-    }
+    // BR-TEN-02 · SG-02, ADR-0002
+    const outOfScope =
+      !app ||
+      app.organizationId !== orgIdOf(user) ||
+      (dataScope(user.role) === 'department' && !inManagerScope(user, app.job!));
+    if (outOfScope) throw new NotFoundException('Application not found');
   }
 
   // BR-APP-03
