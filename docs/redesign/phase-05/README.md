@@ -226,4 +226,11 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - **Bundle (route vào, gzip):** **296.03 KB** (sau 4a ghi 295.47; cmdk đã có trong `vendor` từ 4a). Chunk `AppShell` 8.77 KB.
 - **Kiểm:** test mới — NavSheet (<600: không có nav khi đóng, mở bằng "Mở menu", Escape đóng + trả focus; chọn mục → điều hướng + đóng), breadcrumb "Đường dẫn" + `aria-current`, AuthLayout một h1, Command Menu nhóm "Tìm tin tuyển dụng" → `?xem=job:…`; test cũ quick-search (Interviewer/HR) xanh trên cmdk · 314 test xanh · format, lint, check:design, check:terms, typecheck, build xanh. `package.json` không đổi. Vùng khoá: 0 file.
 - **Chưa kiểm trên trình duyệt thật:** 3 chế độ Rail ở 320/390/600/768/1024/1100/1280/1440 và axe trang nội bộ — cần phiên đăng nhập (production smoke sau merge).
+- **PR:** #132 — CI xanh. **Merged:** `a2c2293`.
+- **Production smoke (Chrome, phiên đăng nhập HR/Admin của chủ dự án, 25/11/2026; đổi kích thước cửa sổ không có tác dụng → đo bằng iframe cùng origin có bề rộng cố định, chỉ đọc):**
+  - `/applications` × 1440/1280/1100/1024/768/600/390/320: Rail **full 232 px** ở 1440–1100, **icon 64 px** (nhãn ẩn) ở 1024–600, **không có rail + nút "Mở menu"** ở 390/320 ✔; mỗi bề rộng đúng 1 h1; skip link là phần tử bấm được đầu tiên; `aria-current` đúng một mục; không tràn ngang (8/8).
+  - NavSheet ở 390: mở bằng "Mở menu" → dialog tên "Menu", rộng 280 px, chứa nav "Điều hướng chính", focus vào trong, khoá cuộn; Escape đóng + trả focus về nút ✔.
+  - Command Menu (1536): Ctrl+K mở, focus vào ô tìm (combobox); gõ "Dev" → nhóm "Tìm ứng viên" (2) + **"Tìm tin tuyển dụng" (5)**; chọn tin → `?xem=job:…` mở chi tiết tin, Escape đóng ✔. Không thao tác đổi trạng thái nào.
+- **Chưa kiểm:** axe trên trình duyệt thật cho trang nội bộ (chỉ có axe trong test jsdom); bản đăng nhập Interviewer/HM (chỉ có test).
+- **Chờ chủ dự án quyết (Entry 10):** P5-D04 điều kiện 3 (DetailDialog → Radix Tabs) và nhãn nhóm tìm người.
 
