@@ -55,10 +55,10 @@ export default function DashboardPage() {
           {
             key: 'offers',
             count: t.offers,
-            // MVP 3.1 · BR-OFFER-02: hồ sơ OFFER là offer đã gửi; duyệt offer báo qua chuông
+            // MVP 3.1 · BR-OFFER-02
             text: (c: number) => `${n(c)} Offer đang chờ ứng viên trả lời`,
             to: links.applications({ status: 'OFFER' }),
-            action: 'Xem',
+            action: 'Theo dõi',
           },
         ]
       : []),
@@ -67,14 +67,14 @@ export default function DashboardPage() {
       count: t.highNew,
       text: (c) => `${n(c)} hồ sơ mới từ ${SCORE_GOOD} điểm chưa xem`,
       to: `${paths.applications}?status=NEW&scoreMin=${SCORE_GOOD}&sortBy=score&order=DESC`,
-      action: 'Xem',
+      action: 'Duyệt hồ sơ',
     },
     {
       key: 'decide',
       count: t.awaitingDecision,
       text: (c) => `${n(c)} buổi phỏng vấn đã có phiếu, chờ quyết định`,
       to: `${paths.interviews}?pending=decision`,
-      action: 'Xem',
+      action: 'Quyết định',
     },
     {
       key: 'missing',
@@ -82,7 +82,7 @@ export default function DashboardPage() {
       text: (c) => `${n(c)} hồ sơ mới thiếu tiêu chí bắt buộc`,
       hint: `Điểm dưới ${SCORE_GOOD} – nên xem nhanh để từ chối sớm hoặc giữ lại`,
       to: `${paths.applications}?status=NEW&scoreMax=${SCORE_GOOD - 1}&missingMust=true`,
-      action: 'Xem',
+      action: 'Xem nhanh',
     },
     {
       key: 'otherNew',
@@ -90,7 +90,7 @@ export default function DashboardPage() {
       text: (c) => `${n(c)} hồ sơ mới khác chờ xem`,
       hint: `Điểm dưới ${SCORE_GOOD} hoặc chưa chấm xong`,
       to: `${paths.applications}?status=NEW&bucket=other`,
-      action: 'Xem',
+      action: 'Sàng lọc',
     },
     // BR-JOB-10
     ...(canCloseJobs
@@ -103,7 +103,7 @@ export default function DashboardPage() {
             text: (c: number) => `${n(c)} tin đã hết hạn nộp nhưng chưa đóng`,
             hint: 'Tin đã ẩn khỏi trang tuyển dụng; đóng tin khi xử lý xong hồ sơ',
             to: `${paths.jobs}?status=OPEN`,
-            action: 'Xem',
+            action: 'Đóng tin',
           },
         ]
       : []),
@@ -126,7 +126,7 @@ export default function DashboardPage() {
               text: (c: number) => `${n(c)} CV không đọc được`,
               hint: 'Thường là ảnh scan – nhập nội dung CV để chấm',
               to: `${paths.applications}?aiStatus=FAILED`,
-              action: 'Xử lý',
+              action: 'Nhập nội dung CV',
             },
           ]
         : []),
@@ -140,6 +140,7 @@ export default function DashboardPage() {
     {
       label: 'Hồ sơ tuần này',
       value: t.thisWeek,
+      zero: 'Chưa có hồ sơ nộp trong tuần này',
       compare:
         delta === null
           ? undefined
@@ -152,13 +153,17 @@ export default function DashboardPage() {
     {
       label: 'Đang phỏng vấn',
       value: summary.data?.byStatus.INTERVIEW,
+      zero: 'Chưa có hồ sơ ở bước Phỏng vấn',
       compare: t.interviewsToday ? `${n(t.interviewsToday)} buổi hôm nay` : undefined,
       to: links.applications({ status: 'INTERVIEW' }),
     },
     {
       label: 'Đã nhận việc',
       value: summary.data?.byStatus.HIRED,
-      compare: summary.data ? `${n(summary.data.byStatus.OFFER)} đang ở bước đề nghị` : undefined,
+      compare: summary.data ? `${n(summary.data.byStatus.OFFER)} đang ở bước Offer` : undefined,
+      zero: summary.data?.byStatus.OFFER
+        ? `Chưa có ai nhận việc · ${n(summary.data.byStatus.OFFER)} đang ở bước Offer`
+        : 'Chưa có ai nhận việc',
       to: links.applications({ status: 'HIRED' }),
     },
     {
@@ -176,14 +181,17 @@ export default function DashboardPage() {
     .slice(0, JOB_LIMIT)
 
   return (
-    <div className="space-y-10">
+    <div data-theme="v2" className="space-y-10">
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
           {t.pending === undefined ? (
             <Skeleton className="h-10 w-80 max-w-full" />
           ) : (
             <h1 className="type-title">
-              {t.pending > 0 ? `${n(t.pending)} hồ sơ chờ bạn xem` : 'Không còn hồ sơ nào chờ xem'}
+              {/* RR-13 · F-12 */}
+              {t.pending > 0
+                ? `${n(t.pending)} hồ sơ mới chờ bạn xem`
+                : 'Không còn hồ sơ mới nào chờ xem'}
             </h1>
           )}
           <p className="type-body text-ink-muted mt-1.5">
@@ -207,7 +215,7 @@ export default function DashboardPage() {
           Cần làm
           {visibleTodos.length > 0 && (
             <span className="num text-ink-muted ml-2 text-sm font-medium">
-              {n(visibleTodos.length)}
+              {n(visibleTodos.length)} việc
             </span>
           )}
         </h2>

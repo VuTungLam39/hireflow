@@ -111,7 +111,7 @@ export function FunnelReport({ jobId, since, headingLevel: Heading = 'h2' }: Fun
                         Tới phỏng vấn
                       </th>
                       <th scope="col" className="pb-1 text-right font-medium">
-                        Đã nhận
+                        Đã nhận việc
                       </th>
                     </tr>
                   </thead>

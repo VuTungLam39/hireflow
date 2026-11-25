@@ -24,6 +24,12 @@ import { OfferStatusBadge } from './StatusBadges'
 const formatMoney = (o: Pick<Offer, 'salaryAmount' | 'salaryCurrency' | 'salaryPeriod'>) =>
   `${o.salaryAmount.toLocaleString('vi-VN')} ${o.salaryCurrency}/${o.salaryPeriod === 'MONTH' ? 'tháng' : 'năm'}`
 
+const FIELD_ID = {
+  salaryAmount: 'of-amount',
+  respondBy: 'of-respond',
+  startDate: 'of-start',
+} as const
+
 const todayIso = () => new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10)
 
 // MVP 3.1 · F-OFFER-01, BR-OFFER-01 → 05: Interviewer không thấy panel (BR-OFFER-04)
@@ -248,7 +254,12 @@ function OfferDialog({
     else if (form.respondBy && form.startDate < form.respondBy)
       next.startDate = 'Ngày bắt đầu không được trước hạn trả lời'
     setErrors(next)
-    if (Object.keys(next).length) return
+    // P5
+    const first = (['salaryAmount', 'respondBy', 'startDate'] as const).find((k) => next[k])
+    if (first) {
+      document.getElementById(FIELD_ID[first])?.focus()
+      return
+    }
     save.mutate(
       { id: offer?.id, input: { ...form, note: form.note?.trim() || undefined } },
       {

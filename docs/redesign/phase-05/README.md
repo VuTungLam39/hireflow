@@ -19,6 +19,7 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
 | P5-D11 | 25/11/2026 | Slice 8: (a) **hộp quyết định theo P1** — một nút "Chuyển trạng thái" mở AlertDialog có ô chọn trạng thái không chọn sẵn, lý do chỉ khi Từ chối, nút xác nhận theo lựa chọn; (b) **tab có panel chuyển Radix Tabs** (`@radix-ui/react-tabs` 1.2.1) cho cả ApplicationDetailPage và DetailDialog; `FilterTabs` giữ radiogroup tự viết | Phase 04 file 05 dòng 8, `p1-cv-review.html`; VF-01, VF-02, OP-1; P5-D04 điều kiện 3, P5-D07a | theo thiết kế đã kiểm chứng P1 (không giữ nút theo bước); hợp nhất engine tab-có-panel — **đóng P5-D04 điều kiện 3** |
 | P5-D12 | 25/11/2026 | Slice 9: (a) **giữ panel "Vì sao"** (không mở rộng dòng theo P2) — màn hẹp SidePanel → Sheet; (b) **thêm `scoredJdVersion` vào `GET /jobs/:id/ranking`** (chỉ cộng thêm) cho thông báo "đang chấm lại" | Phase 04 file 05 dòng 9, `p2-ranking.html`; DL-16; §05.2 (hợp đồng API giữ, chỉ cộng trường) | panel đã đạt 1 thao tác, giữ ảo hóa + hiệu ứng đổi hạng + khay so sánh; FE không có cách khác biết hồ sơ chấm theo tiêu chí cũ |
 | P5-D13 | 25/11/2026 | Slice 10: (a) **giữ cửa sổ sửa Phiếu đánh giá 24 giờ** (không khoá ngay như P5) — thông báo cạnh nút gửi báo trước khi phiếu bị khoá; (b) **giữ thang 1–5 có chữ** (không đổi sang 3 mức của P5) | Phase 04 file 05 dòng 10, `p5-evaluation.html`; §05.2 (giữ nghiệp vụ/BE); BR-PROC-01 | P5 lệch quy tắc đang chạy; đổi sẽ là thay đổi nghiệp vụ + BE + dữ liệu; ý "báo trước điều không hoàn tác" vẫn đạt |
+| P5-D14 | 25/11/2026 | Slice 12: (a) **chia 2 PR** — 12a Dashboard (RR-13, F-12, F-21) + thuật ngữ FunnelReport; 12b Kho ứng viên, admin/platform, ChatPage, lật v2 phần còn lại; (b) **sửa kèm focus ô lỗi đầu tiên ở hộp Soạn Offer** (smoke slice 11); (c) **lật khung AppShell sang v2 ở cuối 12b** | Phase 04 file 05 dòng 12; RR-13; P5 (focus lỗi); P5-D06b | slice rộng nhất — tách để review/smoke gọn; đồng bộ quy tắc lỗi form; mọi trang nội bộ chính đã v2 sau 12b |
 
 ## Entry 0 — Planning record merged into main (pre-Slice 0)
 - **Decision:** owner, 24/11/2026 — option (a): merge planning branch into main before Slice 0, via PR, with verification gate.
@@ -46,7 +47,7 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
   - [ ] applications/OfferPanel (10), hooks/use-offers (6), audit/audit-format (8), dashboard/DashboardPage (1), lib/error-codes (3) — "offer" viết thường (slice 11 / 12; error-codes theo slice chạm thông báo)
   - [x] applications/hooks/use-applications, pages/ApplicationsPage — "Đề nghị" trong thông báo bulk (slice 7)
   - [ ] candidates/CandidateSections — "bằng chứng" (slice 12)
-  - [ ] dashboard/FunnelReport — "Đã nhận" (slice 12)
+  - [x] dashboard/FunnelReport — "Đã nhận" (slice 12)
   - [x] ranking/RankingTable — "Xếp hạng ứng viên" (slice 9); jobs/JobsPage đã xử lý trước
   - [x] public-jobs/PrivacyPolicyPage — "bằng chứng", "nhận xét phỏng vấn": **miễn trừ** (quyết định chủ dự án 24/11/2026, bên dưới); giữ nguyên câu chữ, mục baseline gỡ khi slice 1 thu hẹp phạm vi quét
 - **Quyết định chủ dự án (24/11/2026):** văn bản pháp lý/chính sách nằm **ngoài phạm vi** guard thuật ngữ; guard chỉ áp cho UI copy và thuật ngữ tính năng. Hai chỗ trong trang chính sách bảo mật ("bằng chứng", "nhận xét phỏng vấn") được chấp nhận là ngôn ngữ pháp lý thông thường; không sửa câu chữ chính sách.
@@ -85,6 +86,7 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
 | `/applications/:id` (ApplicationDetailPage) | 8 | **v2** |
 | `/jobs/:id/ranking` (JobRankingPage, route riêng; bản nhúng trong hộp tin giữ v1) | 9 | **v2** |
 | `/interviews` (InterviewsPage) | 10 | **v2** |
+| `/` (DashboardPage) | 12a | **v2** |
 | AuthLayout (`/login`), các trang nội bộ còn lại | — | v1 |
 Quy tắc: lật cả trang trong slice dựng lại trang đó bằng `data-theme="v2"` trên gốc trang/layout; không lật từng component.
 
@@ -362,4 +364,16 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
   - Dashboard không còn chữ "offer" viết thường.
   - **Ghi nhận (không thuộc AC slice 11):** hộp Soạn Offer báo lỗi nhưng **không focus vào ô sai đầu tiên** (form tự viết, không qua RHF) — khác quy tắc P5 đã áp ở slice 10; xử lý ở slice 12 hoặc slice đệm nếu chủ dự án muốn.
 - **Bàn giao còn lại:** SidePanel ở ChatPage; thuật ngữ CandidateSections, FunnelReport — slice 12.
+
+## Entry 18 — Slice 12a: Dashboard (🟢)
+- **Spec + tickets:** issue #162 (cả slice 12; PR này = 12a theo P5-D14a). Base `feat/phase05-slice12a-dashboard` từ `main @ 97ea407`.
+- **Đã làm:**
+  - **F-12 (một định nghĩa mỗi đơn vị):** tiêu đề "N hồ sơ **mới** chờ bạn xem" = cùng nguồn với badge "Hồ sơ" trên Rail (hồ sơ trạng thái Mới; aria-label badge đổi thành "… hồ sơ mới chờ xem"); số cạnh "Cần làm" ghi rõ đơn vị **"N việc"** (đếm dòng việc, không phải hồ sơ). Ba dòng hồ sơ mới (từ 70 điểm / thiếu tiêu chí bắt buộc / khác) cộng lại đúng bằng số ở tiêu đề (test có sẵn giữ).
+  - **F-21 (động từ riêng):** mỗi dòng việc một động từ, không còn "Xem" chung: Theo dõi (Offer chờ ứng viên) · Duyệt hồ sơ · Quyết định · Xem nhanh · Sàng lọc · Đóng tin · Xử lý · Nhập nội dung CV.
+  - **Số 0 có giải thích:** `KpiStrip` thêm trường `zero` — giá trị 0 hiện màu nhạt + câu giải thích thay cho dòng so sánh ("Chưa có hồ sơ nộp trong tuần này", "Chưa có hồ sơ ở bước Phỏng vấn", "Chưa có ai nhận việc[ · N đang ở bước Offer]").
+  - Thuật ngữ: "đang ở bước đề nghị" → "đang ở bước Offer"; FunnelReport cột "Đã nhận" → "Đã nhận việc" (baseline `check:terms` 2 → 1, còn CandidateSections — 12b).
+  - **P5-D14b:** hộp Soạn Offer focus vào ô lỗi đầu tiên (Mức lương → Hạn trả lời → Ngày bắt đầu).
+  - Trang Dashboard lật v2.
+- **Kiểm:** 338 test FE xanh — mới: `KpiStrip` (0 → câu giải thích + chữ nhạt, giá trị khác giữ so sánh); Dashboard (đầu mục "N việc", động từ không trùng, không còn "Xem"); Soạn Offer focus "Ngày bắt đầu" khi sai. Sửa: tiêu đề Dashboard "hồ sơ mới chờ bạn xem". Typecheck, build, format, lint, check:design, check:terms đều **exit 0**.
+- **Chưa kiểm trên trình duyệt thật:** Dashboard HR/HM/Admin ở 390/1024/1440, axe → production smoke sau merge.
 

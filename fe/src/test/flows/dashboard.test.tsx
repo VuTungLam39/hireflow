@@ -38,7 +38,7 @@ describe('dashboard', () => {
     expect(
       await screen.findByRole(
         'heading',
-        { level: 1, name: `${fresh.length} hồ sơ chờ bạn xem` },
+        { level: 1, name: `${fresh.length} hồ sơ mới chờ bạn xem` },
         { timeout: 4000 },
       ),
     ).toBeInTheDocument()
@@ -71,6 +71,14 @@ describe('dashboard', () => {
       expect(decide.closest('a')!.getAttribute('href')).toBe('/interviews?pending=decision')
     }
     expect(screen.queryByText(/lỗi hoặc kẹt ở bước xử lý CV/)).not.toBeInTheDocument()
+
+    // RR-13 · F-12/F-21: số đầu mục có đơn vị "việc"; mỗi dòng việc một động từ riêng
+    const todo = screen.getByRole('region', { name: /Cần làm/ })
+    const rows = within(todo).getAllByRole('link')
+    expect(within(todo).getByRole('heading')).toHaveTextContent(`Cần làm${rows.length} việc`)
+    const verbs = rows.map((r) => r.lastElementChild!.textContent!.trim())
+    expect(new Set(verbs).size).toBe(verbs.length)
+    expect(verbs).not.toContain('Xem')
   })
 
   it('the weekly KPI opens only applications submitted since Monday (Vietnam time)', async () => {

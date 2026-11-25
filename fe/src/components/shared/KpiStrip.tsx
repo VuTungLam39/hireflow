@@ -10,6 +10,8 @@ export interface Kpi {
   compareTone?: 'good' | 'bad' | 'muted'
   to?: string
   suffix?: string
+  // RR-13
+  zero?: string
 }
 
 const toneClass = { good: 'text-good-ink', bad: 'text-bad', muted: 'text-ink-muted' } as const
@@ -55,7 +57,7 @@ export function KpiStrip({
               {loading ? (
                 <Skeleton className="h-9 w-20" />
               ) : (
-                <span className="type-figure">
+                <span className={cn('type-figure', kpi.value === 0 && 'text-ink-muted')}>
                   {kpi.value == null
                     ? '—'
                     : typeof kpi.value === 'number'
@@ -69,10 +71,15 @@ export function KpiStrip({
                 </span>
               )}
             </dd>
-            {kpi.compare && !loading && (
-              <dd className={cn('num mt-0.5 text-[13px]', toneClass[kpi.compareTone ?? 'muted'])}>
-                {kpi.compare}
-              </dd>
+            {!loading && kpi.value === 0 && kpi.zero ? (
+              <dd className="text-ink-muted mt-0.5 text-[13px]">{kpi.zero}</dd>
+            ) : (
+              kpi.compare &&
+              !loading && (
+                <dd className={cn('num mt-0.5 text-[13px]', toneClass[kpi.compareTone ?? 'muted'])}>
+                  {kpi.compare}
+                </dd>
+              )
             )}
           </div>
         )
