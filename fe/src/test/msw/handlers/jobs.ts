@@ -358,6 +358,7 @@ export const jobHandlers = [
           status: a.status,
           aiStatus: a.aiStatus,
           flags: a.flags,
+          scoredJdVersion: a.scoredJdVersion,
           matches: a.breakdown.map((b) => ({ requirementId: b.requirementId, match: b.match })),
         })),
     }

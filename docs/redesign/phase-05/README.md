@@ -17,6 +17,7 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
 | P5-D09 | 25/11/2026 | (a) **Giữ ngưỡng cột** (ưu tiên 4 ẩn <1024 container) — không hạ về ~960; là tham số đã biết, chỉnh một dòng (`priorityClass` trong DataTable) khi dùng thật có bằng chứng vướng. (b) **Làm Security Gate trước** (R1 → R2 → spike R3 → R3 → re-check), slice 12 là slice đệm | Phase 02 cơ chế ưu tiên cột; [D-02]; SG-01 (CRITICAL, cách ly tenant) | ở 1280 px cột ưu tiên 4 không mất mà xuống dòng phụ có nhãn (sau #137); ngưỡng toàn cục, đổi là mở lại kiểm 5×5; gate mở khoá slice 7–11, R1 là điều kiện cứng trước dữ liệu thật |
 | P5-D10 | 25/11/2026 | Slice 7: (a) **bulk theo prototype P3** — luôn hiện Chuyển sang Sàng lọc / Phỏng vấn / Từ chối… (lý do chung), backend xử lý từng hồ sơ, tóm tắt có lý do bỏ qua; (b) **xem nhanh chỉ đọc cho mọi vai** — Interviewer thấy lịch phỏng vấn chỉ đọc, điền phiếu ở trang chi tiết; (c) **lật trang Hồ sơ ứng tuyển sang v2**, khung giữ v1 | Phase 04 file 05 dòng 7, `p3-pipeline.html`; DL-16; P5-D06b | bỏ điều kiện "cùng trạng thái" khó hiểu, backend vốn trả kết quả từng hồ sơ; Sheet không chứa thao tác (DL-16), phiếu dựng lại ở slice 10 |
 | P5-D11 | 25/11/2026 | Slice 8: (a) **hộp quyết định theo P1** — một nút "Chuyển trạng thái" mở AlertDialog có ô chọn trạng thái không chọn sẵn, lý do chỉ khi Từ chối, nút xác nhận theo lựa chọn; (b) **tab có panel chuyển Radix Tabs** (`@radix-ui/react-tabs` 1.2.1) cho cả ApplicationDetailPage và DetailDialog; `FilterTabs` giữ radiogroup tự viết | Phase 04 file 05 dòng 8, `p1-cv-review.html`; VF-01, VF-02, OP-1; P5-D04 điều kiện 3, P5-D07a | theo thiết kế đã kiểm chứng P1 (không giữ nút theo bước); hợp nhất engine tab-có-panel — **đóng P5-D04 điều kiện 3** |
+| P5-D12 | 25/11/2026 | Slice 9: (a) **giữ panel "Vì sao"** (không mở rộng dòng theo P2) — màn hẹp SidePanel → Sheet; (b) **thêm `scoredJdVersion` vào `GET /jobs/:id/ranking`** (chỉ cộng thêm) cho thông báo "đang chấm lại" | Phase 04 file 05 dòng 9, `p2-ranking.html`; DL-16; §05.2 (hợp đồng API giữ, chỉ cộng trường) | panel đã đạt 1 thao tác, giữ ảo hóa + hiệu ứng đổi hạng + khay so sánh; FE không có cách khác biết hồ sơ chấm theo tiêu chí cũ |
 
 ## Entry 0 — Planning record merged into main (pre-Slice 0)
 - **Decision:** owner, 24/11/2026 — option (a): merge planning branch into main before Slice 0, via PR, with verification gate.
@@ -45,7 +46,7 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
   - [x] applications/hooks/use-applications, pages/ApplicationsPage — "Đề nghị" trong thông báo bulk (slice 7)
   - [ ] candidates/CandidateSections — "bằng chứng" (slice 12)
   - [ ] dashboard/FunnelReport — "Đã nhận" (slice 12)
-  - [ ] jobs/JobsPage, ranking/RankingTable — "Xếp hạng ứng viên" (slice 6/9)
+  - [x] ranking/RankingTable — "Xếp hạng ứng viên" (slice 9); jobs/JobsPage đã xử lý trước
   - [x] public-jobs/PrivacyPolicyPage — "bằng chứng", "nhận xét phỏng vấn": **miễn trừ** (quyết định chủ dự án 24/11/2026, bên dưới); giữ nguyên câu chữ, mục baseline gỡ khi slice 1 thu hẹp phạm vi quét
 - **Quyết định chủ dự án (24/11/2026):** văn bản pháp lý/chính sách nằm **ngoài phạm vi** guard thuật ngữ; guard chỉ áp cho UI copy và thuật ngữ tính năng. Hai chỗ trong trang chính sách bảo mật ("bằng chứng", "nhận xét phỏng vấn") được chấp nhận là ngôn ngữ pháp lý thông thường; không sửa câu chữ chính sách.
 - **Xếp hàng cho Slice 1:** (1) thu hẹp phạm vi quét của `check:terms` về UI copy (loại văn bản pháp lý/chính sách, gỡ 2 mục PrivacyPolicyPage khỏi baseline); (2) thêm file giấy phép OFL cho font tự host; (3) gỡ 6 token trùng tên.
@@ -81,6 +82,7 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
 | PublicLayout + mọi trang công khai: `/jobs`, `/jobs/:id`, `/jobs/:id/apply` (form trong trang chi tiết), `/companies`, `/companies/:slug`, `/track`, `/privacy`, `/employers/*`, 404 công khai cho khách | 4b | **v2** (PR 4b) |
 | `/applications` (ApplicationsPage, gồm Sheet xem nhanh) | 7 | **v2** (khung AppShell vẫn v1 – P5-D06b) |
 | `/applications/:id` (ApplicationDetailPage) | 8 | **v2** |
+| `/jobs/:id/ranking` (JobRankingPage, route riêng; bản nhúng trong hộp tin giữ v1) | 9 | **v2** |
 | AuthLayout (`/login`), các trang nội bộ còn lại | — | v1 |
 Quy tắc: lật cả trang trong slice dựng lại trang đó bằng `data-theme="v2"` trên gốc trang/layout; không lật từng component.
 
@@ -90,7 +92,7 @@ Quy tắc: lật cả trang trong slice dựng lại trang đó bằng `data-the
 - [x] `applications/components/StatusActions.tsx:83` — slice 8
 - [x] `applications/pages/ApplicationDetailPage.tsx:251`, `:276` — slice 8
 - [ ] `applications/pages/ApplicationsPage.tsx:562` — slice 7
-- [ ] `ranking/pages/JobRankingPage.tsx:262` — slice 9
+- [x] `ranking/pages/JobRankingPage.tsx:262` — slice 9
 - [ ] `interviews/components/FeedbackDialog.tsx:33`, `:149` — slice 10
 - [ ] `interviews/components/QuestionSuggestions.tsx:51` — slice 10
 - [ ] **VF-10:** `RatingScale` đã sẵn (`components/ui/RatingScale.tsx`, có test) — **chờ gắn** vào Phiếu đánh giá ở slice 10; slice 10 được chỉnh primitive nếu cần.
@@ -308,4 +310,17 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
   - Không tìm thấy: `/applications/<uuid không tồn tại>` → h1 "Không tìm thấy hồ sơ này" + "Về danh sách hồ sơ".
   - **Chưa thấy trên production:** mục "Có căn cứ bị loại" (hồ sơ được mở không có câu trích bị loại — chỉ có test); lưu thật/lỗi lưu/403 (không ghi dữ liệu production — chỉ có test).
 - **Bàn giao còn lại:** ConfirmDialog ở OfferPanel (11), InterviewPanel (10); SidePanel ở JobRankingPage (9), ChatPage (12).
+
+## Entry 15 — Slice 9: Ranking (🟢 sau gate)
+- **Spec + tickets:** issue #150. Base `feat/phase05-slice9-ranking` từ `main @ 2812e75`.
+- **Đã làm:**
+  - **BE (P5-D12b):** `GET /jobs/:id/ranking` → `items[].scoredJdVersion` (chỉ cộng thêm). e2e `jobs`: hồ sơ chấm theo phiên bản hiện hành, phiên bản cũ, chưa chấm (null).
+  - **Thông báo chấm lại:** "Tiêu chí của tin vừa đổi — N hồ sơ đang được chấm lại. Xếp hạng có thể chưa cập nhật · Tải lại" khi có hồ sơ `scoredJdVersion` khác `job.jdVersion`; `useRanking` tự làm mới mỗi 5 s tới khi hết.
+  - **Trọng số (VF-03):** thanh trượt → `WeightSelect` (ô chọn native) "1 · ít quan trọng / 2 · quan trọng / 3 · rất quan trọng"; nhãn gồm số thứ tự + "bắt buộc".
+  - **VF-04:** vùng `role="status"` đọc "Đã sắp xếp lại theo trọng số mới" khi đổi trọng số làm đổi thứ tự (không đọc khi thứ tự giữ nguyên).
+  - **Màn hẹp:** panel Vì sao → `Sheet` (DL-16: "Mở chi tiết" mang ngữ cảnh danh sách theo điểm; Trước/Sau = hạng trên/dưới; "Thêm vào so sánh" giữ — không phải đổi trạng thái); nút "Mở bàn duyệt CV" chỉ còn ở panel bên phải màn rộng. Bảng trọng số trên màn hẹp → `Dialog`. Nút bỏ khỏi khay so sánh → `IconButton`.
+  - Bàn phím J/K/↑/↓ giữa các dòng (Enter/Space mở Vì sao như cũ). Caption "Xếp hạng hồ sơ theo mức phù hợp" (baseline thuật ngữ 8 → 7). Route riêng lật v2; bản nhúng trong hộp tin giữ v1.
+- **Kiểm:** BE e2e jobs + query-count 42/42. FE 332 test xanh — mới: chữ trong ô trọng số, thông báo sắp xếp lại (chỉ khi thứ tự đổi), thông báo chấm lại; 2 test trọng số cũ đổi sang tìm ô chọn theo nhãn mới. Typecheck, build, format, lint, check:design, check:terms xanh.
+- **Chưa kiểm trên trình duyệt thật:** bố cục, Sheet ở 390, axe → production smoke sau merge (không lưu trọng số trên production).
+- **Bàn giao còn lại:** SidePanel ở ChatPage (12); ConfirmDialog ở OfferPanel (11), InterviewPanel (10).
 

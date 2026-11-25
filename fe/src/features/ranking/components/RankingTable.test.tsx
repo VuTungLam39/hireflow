@@ -23,6 +23,7 @@ const makeRows = (count: number): Ranked<RankingInput>[] =>
         status: 'NEW',
         aiStatus: 'DONE',
         flags: [],
+        scoredJdVersion: 1,
         matches: [{ requirementId: 'r1', match: 1 }],
       },
     },

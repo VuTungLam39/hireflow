@@ -5,6 +5,5 @@
   "features/candidates/components/CandidateSections.tsx :: bằng chứng": 2,
   "features/dashboard/components/FunnelReport.tsx :: Đã nhận (HIRED)": 1,
   "features/dashboard/pages/DashboardPage.tsx :: offer viết thường": 1,
-  "features/ranking/components/RankingTable.tsx :: Xếp hạng ứng viên": 1,
   "lib/error-codes.ts :: offer viết thường": 3
 }

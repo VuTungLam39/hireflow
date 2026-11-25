@@ -1,3 +1,4 @@
+import type { RankingData } from '../types'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { applicationKeys } from '@/features/applications'
@@ -11,8 +12,17 @@ export function useRanking(jobId: string) {
     queryKey: jobKeys.ranking(jobId),
     queryFn: () => rankingApi.get(jobId),
     staleTime: 30_000,
+    // P5-D12b: còn hồ sơ chấm theo tiêu chí cũ → tự làm mới tới khi chấm lại xong
+    refetchInterval: (query) =>
+      query.state.data && outdatedCount(query.state.data) > 0 ? RESCORE_POLL_MS : false,
   })
 }
+
+export const RESCORE_POLL_MS = 5_000
+
+export const outdatedCount = (data: RankingData) =>
+  data.items.filter((i) => i.scoredJdVersion !== null && i.scoredJdVersion !== data.job.jdVersion)
+    .length
 
 /** Lưu trọng số: PUT tiêu chí (202) → BE tính lại điểm hàng loạt → xoá nháp, làm mới dữ liệu */
 export function useSaveWeights(jobId: string) {

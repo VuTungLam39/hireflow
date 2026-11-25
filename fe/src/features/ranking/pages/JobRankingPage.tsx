@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, ArrowRight, SlidersHorizontal, X } from 'lucide-react'
-import { useCallback, useDeferredValue, useMemo, useState } from 'react'
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { EmptyState, ErrorState, PageHeader, SidePanel, Summary } from '@/components/shared'
-import { Button, Skeleton, buttonVariants } from '@/components/ui'
+import { EmptyState, ErrorState, PageHeader, Summary } from '@/components/shared'
+import { Button, Dialog, IconButton, Sheet, Skeleton, buttonVariants } from '@/components/ui'
 import {
   applicationQueries,
   CompareDialog,
@@ -17,8 +17,14 @@ import { Permission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import { links, paths } from '@/routes/paths'
 import { RankingTable } from '../components/RankingTable'
-import { WeightSlider } from '../components/WeightSlider'
-import { useMyWeights, useRanking, useSaveMyWeights, useSaveWeights } from '../hooks/use-ranking'
+import { WeightSelect } from '../components/WeightSelect'
+import {
+  outdatedCount,
+  useMyWeights,
+  useRanking,
+  useSaveMyWeights,
+  useSaveWeights,
+} from '../hooks/use-ranking'
 import { rankByWeights, type Ranked } from '../lib/score'
 import { useJobDraft, useRankingDraft } from '../store'
 import type { RankingData, RankingInput } from '../types'
@@ -37,7 +43,7 @@ interface WorkspaceProps {
 }
 
 export function RankingWorkspace({ jobId, embedded, onOpenApplications }: WorkspaceProps) {
-  const { data, isPending, isError, error, refetch } = useRanking(jobId)
+  const { data, isPending, isError, error, refetch, isFetching } = useRanking(jobId)
 
   if (isPending)
     return (
@@ -49,14 +55,27 @@ export function RankingWorkspace({ jobId, embedded, onOpenApplications }: Worksp
     )
   if (isError && !data)
     return <ErrorState title="Chưa tải được xếp hạng" error={error} onRetry={refetch} />
-  return <RankingView data={data} embedded={embedded} onOpenApplications={onOpenApplications} />
+  return (
+    <RankingView
+      data={data}
+      embedded={embedded}
+      onOpenApplications={onOpenApplications}
+      onReload={() => void refetch()}
+      reloading={isFetching}
+    />
+  )
 }
 
 function RankingView({
   data,
   embedded,
   onOpenApplications,
-}: { data: RankingData } & Omit<WorkspaceProps, 'jobId'>) {
+  onReload,
+  reloading,
+}: { data: RankingData; onReload: () => void; reloading: boolean } & Omit<
+  WorkspaceProps,
+  'jobId'
+>) {
   const jobId = data.job.id
   useCrumb(embedded ? undefined : `Xếp hạng · ${data.job.title}`)
   const draft = useJobDraft(jobId)
@@ -108,6 +127,18 @@ function RankingView({
   }, [inputs, savedWeights])
   const ranked = useMemo(() => rankByWeights(inputs, deferredWeights), [inputs, deferredWeights])
 
+  // VF-04: đổi trọng số làm đổi thứ tự → đọc lên cho trình đọc màn hình
+  const orderKey = ranked.map((r) => r.item.id).join('|')
+  const weightKey = JSON.stringify(deferredWeights)
+  const last = useRef({ orderKey, weightKey })
+  const [announcement, setAnnouncement] = useState('')
+  useEffect(() => {
+    if (last.current.weightKey !== weightKey && last.current.orderKey !== orderKey)
+      setAnnouncement('Đã sắp xếp lại theo trọng số mới')
+    last.current = { orderKey, weightKey }
+  }, [orderKey, weightKey])
+  const outdated = outdatedCount(data)
+
   const isDirty = data.requirements.some((r) => weights[r.id] !== savedWeights[r.id])
   const changedCount = data.requirements.filter((r) => weights[r.id] !== savedWeights[r.id]).length
   const onWeightChange = useCallback(
@@ -128,7 +159,8 @@ function RankingView({
       : saveMine.mutate({ jdVersion: data.job.jdVersion, weights })
 
   const notScored = data.items.length - scored.length
-  const selected = ranked.find((r) => r.item.id === selectedId) ?? null
+  const selectedIndex = ranked.findIndex((r) => r.item.id === selectedId)
+  const selected = ranked[selectedIndex] ?? null
 
   const weightBlock = (
     <WeightBlock
@@ -158,7 +190,10 @@ function RankingView({
   )
 
   return (
-    <div className="space-y-6">
+    <div data-theme={embedded ? undefined : 'v2'} className="space-y-6">
+      <p role="status" aria-live="polite" className="sr-only">
+        {announcement}
+      </p>
       {embedded ? (
         <p className="text-ink-muted num">{summary}</p>
       ) : (
@@ -180,6 +215,20 @@ function RankingView({
             </Link>
           }
         />
+      )}
+
+      {outdated > 0 && (
+        // P5-D12b
+        <p
+          role="status"
+          className="bg-warn-soft text-ink-2 flex flex-wrap items-center gap-x-1.5 rounded-sm px-4 py-3"
+        >
+          Tiêu chí của tin vừa đổi — {outdated.toLocaleString('vi-VN')} hồ sơ đang được chấm lại.
+          Xếp hạng có thể chưa cập nhật ·
+          <Button variant="link" loading={reloading} onClick={onReload}>
+            Tải lại
+          </Button>
+        </p>
       )}
 
       <div className="hidden md:block">{weightBlock}</div>
@@ -229,11 +278,29 @@ function RankingView({
       )}
 
       {!wide && (
-        <SidePanel
-          variant="sheet"
+        // DL-16: quick view chỉ đọc + "Mở chi tiết"
+        <Sheet
           open={!!selected}
-          onClose={() => setSelectedId(null)}
+          onOpenChange={(open) => !open && setSelectedId(null)}
           title={selected ? `Vì sao ${selected.item.name} #${selected.rank}` : ''}
+          detailHref={selected ? links.applicationDetail(selected.item.id) : ''}
+          detailState={{ listQuery: rankingListQuery(jobId) }}
+          prev={
+            selectedIndex > 0
+              ? {
+                  label: 'Hồ sơ hạng trên',
+                  onSelect: () => onSelect(ranked[selectedIndex - 1].item.id),
+                }
+              : undefined
+          }
+          next={
+            selectedIndex >= 0 && selectedIndex < ranked.length - 1
+              ? {
+                  label: 'Hồ sơ hạng dưới',
+                  onSelect: () => onSelect(ranked[selectedIndex + 1].item.id),
+                }
+              : undefined
+          }
         >
           <WhyPanel
             jobId={jobId}
@@ -242,7 +309,7 @@ function RankingView({
             compare={compare}
             bare
           />
-        </SidePanel>
+        </Sheet>
       )}
       {compareIds.length > 0 && (
         <div
@@ -259,14 +326,12 @@ function RankingView({
                 className="bg-sunken text-ink inline-flex items-center gap-1 rounded-sm py-0.5 pr-1 pl-2 text-[13px]"
               >
                 {name}
-                <button
-                  type="button"
-                  aria-label={`Bỏ ${name} khỏi so sánh`}
-                  className="hover:bg-line text-ink-muted inline-flex size-6 items-center justify-center rounded-sm"
+                <IconButton
+                  size="sm"
+                  label={`Bỏ ${name} khỏi so sánh`}
+                  icon={<X />}
                   onClick={() => toggleCompare(id)}
-                >
-                  <X className="size-3.5" />
-                </button>
+                />
               </span>
             )
           })}
@@ -284,17 +349,14 @@ function RankingView({
       {compareOpen && (
         <CompareDialog open jobId={jobId} ids={compareIds} onClose={() => setCompareOpen(false)} />
       )}
-      <SidePanel
-        variant="sheet"
-        open={weightsOpen}
-        onClose={() => setWeightsOpen(false)}
-        title="Trọng số tiêu chí"
-      >
+      <Dialog open={weightsOpen} onClose={() => setWeightsOpen(false)} title="Trọng số tiêu chí">
         {weightBlock}
-      </SidePanel>
+      </Dialog>
     </div>
   )
 }
+
+const rankingListQuery = (jobId: string) => `jobId=${jobId}&sortBy=score&order=DESC&limit=100`
 
 function WeightBlock({
   requirements,
@@ -343,7 +405,7 @@ function WeightBlock({
       </div>
       <div className="mt-3 grid gap-x-8 gap-y-3 sm:grid-cols-2 xl:grid-cols-4">
         {requirements.map((req, i) => (
-          <WeightSlider
+          <WeightSelect
             key={req.id}
             index={i}
             requirement={req}
@@ -423,14 +485,16 @@ function WhyPanel({
           )
         })}
       </ul>
-      <Link
-        to={links.applicationDetail(selected.item.id)}
-        state={{ listQuery: `jobId=${jobId}&sortBy=score&order=DESC&limit=100` }}
-        className={cn(buttonVariants(), 'mt-5 w-full')}
-      >
-        Mở bàn duyệt CV
-        <ArrowRight />
-      </Link>
+      {!bare && (
+        <Link
+          to={links.applicationDetail(selected.item.id)}
+          state={{ listQuery: rankingListQuery(jobId) }}
+          className={cn(buttonVariants(), 'mt-5 w-full')}
+        >
+          Mở bàn duyệt CV
+          <ArrowRight />
+        </Link>
+      )}
       <Button
         variant="secondary"
         className="mt-2 w-full"

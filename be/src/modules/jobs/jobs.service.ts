@@ -125,6 +125,8 @@ export interface RankingView {
     status: ApplicationStatus;
     aiStatus: AiStatus;
     flags: ScoreFlag[];
+    /** P5-D12b: khác job.jdVersion = đang chấm lại theo tiêu chí mới */
+    scoredJdVersion: number | null;
     matches: { requirementId: string; match: 0 | 0.5 | 1 }[];
   }[];
 }
@@ -681,6 +683,7 @@ export class JobsService {
           'app.flags',
           'app.scoreBreakdown',
           'app.score',
+          'app.scoredJdVersion',
           'candidate.id',
           'candidate.fullName',
         ])
@@ -699,6 +702,7 @@ export class JobsService {
         status: a.status,
         aiStatus: a.aiStatus,
         flags: a.flags,
+        scoredJdVersion: a.scoredJdVersion,
         matches:
           a.aiStatus === AiStatus.Done
             ? (a.scoreBreakdown ?? []).map(({ requirementId, match }) => ({ requirementId, match }))
