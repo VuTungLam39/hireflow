@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import {
   Can,
-  ConfirmDialog,
   DataTable,
   DensityToggle,
   FilterBar,
@@ -16,7 +15,7 @@ import {
   type ActiveFilter,
   type Column,
 } from '@/components/shared'
-import { Avatar, Button, Popover, Tabs, menuItemClass } from '@/components/ui'
+import { AlertDialog, Avatar, Button, FilterTabs, Popover, menuItemClass } from '@/components/ui'
 import { useJobOptions } from '@/features/jobs'
 import { useDensity } from '@/hooks/use-density'
 import { useListParams } from '@/hooks/use-list-params'
@@ -34,7 +33,6 @@ import {
   APPLICATION_STATUS,
   APPLICATION_STATUSES,
   APPLICATION_VIEWS,
-  NEXT_STATUS,
   REJECT_REASON_INPUT,
   type RejectReasonCode,
   SCORE_FAIR,
@@ -68,12 +66,13 @@ const FILTER_KEYS = [
   'createdTo',
 ] as const
 
-// US-06 · Design Spec 6.4
-const REJECTABLE_IN_BULK: readonly ApplicationStatus[] = ['NEW', 'SCREENING', 'INTERVIEW']
+// P5-D10a
+const BULK_MOVES: readonly ApplicationStatus[] = ['SCREENING', 'INTERVIEW']
+const PEEK = 'nhanh'
 
 export default function ApplicationsPage() {
   const [params, setParams] = useListParams(applicationListSchema)
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const query = useApplications(params)
   const jobs = useJobOptions()
@@ -81,7 +80,6 @@ export default function ApplicationsPage() {
   const isInterviewer = useAuthStore((s) => s.user?.role === Role.Interviewer)
   const myFeedback = useMyFeedback(isInterviewer)
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [peek, setPeek] = useState<string | null>(null)
   const [compare, setCompare] = useState<{ jobId: string; ids: string[] } | null>(null)
   const bulk = useBulkChangeStatus()
   const [rejectOpen, setRejectOpen] = useState(false)
@@ -91,7 +89,23 @@ export default function ApplicationsPage() {
     failed: useViewCount({ ...scope, aiStatus: 'FAILED' }, !isInterviewer),
   }
 
-  const listQuery = searchParams.toString()
+  // DL-16: xem nhanh theo URL; ?xem= thuộc DetailDialog nên dùng ?nhanh=
+  const peek = searchParams.get(PEEK)
+  const setPeek = (id: string | null, replace = !!peek) =>
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (id) next.set(PEEK, id)
+        else next.delete(PEEK)
+        return next
+      },
+      { replace },
+    )
+  const listQuery = (() => {
+    const q = new URLSearchParams(searchParams)
+    q.delete(PEEK)
+    return q.toString()
+  })()
   const clear = Object.fromEntries(FILTER_KEYS.map((k) => [k, null]))
 
   const activeView =
@@ -157,9 +171,6 @@ export default function ApplicationsPage() {
     () => (items ?? []).filter((a) => selected.has(a.id)),
     [items, selected],
   )
-  const commonStatus = selectedItems.every((a) => a.status === selectedItems[0]?.status)
-    ? selectedItems[0]?.status
-    : undefined
   // F3: so sánh 2–3 hồ sơ của cùng một tin
   const compareJobId =
     selectedItems.length >= 2 &&
@@ -167,21 +178,20 @@ export default function ApplicationsPage() {
     selectedItems.every((a) => a.job.id === selectedItems[0].job.id)
       ? selectedItems[0].job.id
       : null
-  const bulkTarget: ApplicationStatus | undefined =
-    commonStatus === 'NEW' ? 'SCREENING' : commonStatus === 'SCREENING' ? 'INTERVIEW' : undefined
-  // F2 · BR-APP-12: hồ sơ OFFER và đã kết thúc không từ chối theo lô
-  const rejectable = selectedItems.filter((a) => REJECTABLE_IN_BULK.includes(a.status))
   const runBulk = (status: ApplicationStatus, reason?: string, reasonCode?: RejectReasonCode) =>
-    bulk.mutate(
+    bulk.mutateAsync(
       { ids: selectedItems.map((a) => a.id), status, reason, reasonCode },
       { onSuccess: ({ failed }) => setSelected(new Set(failed.map((f) => f.id))) },
     )
+  const peekIndex = items?.findIndex((a) => a.id === peek) ?? -1
 
   const columns: Column<ApplicationListItem>[] = [
     {
       key: 'candidate',
       header: 'Ứng viên',
       className: 'w-[32%]',
+      priority: 1,
+      sticky: 'start',
       cell: (a) => (
         <div className="flex items-center gap-3">
           <Avatar name={a.candidate.fullName} size="sm" />
@@ -196,11 +206,13 @@ export default function ApplicationsPage() {
       key: 'job',
       header: 'Tin',
       hideOnMobile: true,
+      priority: 2,
       cell: (a) => <span className="text-ink-2 line-clamp-1">{a.job.title}</span>,
     },
     {
       key: 'status',
       header: 'Trạng thái',
+      priority: 1,
       cell: (a) => (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
           <StatusPill status={a.status} />
@@ -214,6 +226,7 @@ export default function ApplicationsPage() {
           {
             key: 'myFeedback',
             header: 'Phiếu của bạn',
+            priority: 1 as const,
             cell: (a: ApplicationListItem) => <MyFeedbackStatus value={myFeedback.get(a.id)} />,
           },
         ]
@@ -223,6 +236,7 @@ export default function ApplicationsPage() {
             header: 'Mức phù hợp',
             sortKey: 'score',
             align: 'right' as const,
+            priority: 1 as const,
             cell: (a: ApplicationListItem) => <ScoreBadge score={a.score} />,
           },
         ]),
@@ -230,6 +244,7 @@ export default function ApplicationsPage() {
       key: 'createdAt',
       header: 'Nộp lúc',
       sortKey: 'createdAt',
+      priority: 3,
       align: 'right',
       cell: (a) =>
         density === 'compact' ? (
@@ -272,7 +287,7 @@ export default function ApplicationsPage() {
   )
 
   return (
-    <div className="space-y-6">
+    <div data-theme="v2" className="space-y-6">
       <PageHeader
         title="Hồ sơ ứng tuyển"
         description={
@@ -297,7 +312,7 @@ export default function ApplicationsPage() {
       />
 
       {!isInterviewer && (
-        <Tabs
+        <FilterTabs
           label="Bộ lọc đã lưu"
           tabs={APPLICATION_VIEWS.map((v) => ({
             id: v.id,
@@ -363,6 +378,8 @@ export default function ApplicationsPage() {
 
       <DataTable
         caption="Danh sách hồ sơ ứng tuyển"
+        layout="container"
+        dataUpdatedAt={query.dataUpdatedAt}
         columns={columns}
         data={items}
         rowKey={(a) => a.id}
@@ -411,38 +428,28 @@ export default function ApplicationsPage() {
                   <span className="px-1 text-sm">
                     Đã chọn <strong className="text-white">{count}</strong> hồ sơ
                   </span>
-                  {bulkTarget && NEXT_STATUS[commonStatus!].includes(bulkTarget) ? (
-                    <Can permission={Permission.ApplicationUpdateStatus}>
+                  <Can permission={Permission.ApplicationUpdateStatus}>
+                    {BULK_MOVES.map((to) => (
                       <Button
+                        key={to}
                         size="sm"
                         variant="inverse"
-                        loading={bulk.isPending}
-                        onClick={() => runBulk(bulkTarget)}
-                      >
-                        Chuyển {selectedItems.length} hồ sơ sang{' '}
-                        {APPLICATION_STATUS[bulkTarget].label}
-                      </Button>
-                    </Can>
-                  ) : (
-                    <Can permission={Permission.ApplicationUpdateStatus}>
-                      <span className="text-[13px] text-white/70">
-                        Chọn hồ sơ cùng trạng thái Mới hoặc Sàng lọc để chuyển bước
-                      </span>
-                    </Can>
-                  )}
-                  {rejectable.length > 0 && (
-                    <Can permission={Permission.ApplicationUpdateStatus}>
-                      <Button
-                        size="sm"
-                        variant="quiet"
-                        className="text-white hover:bg-white/10"
                         disabled={bulk.isPending}
-                        onClick={() => setRejectOpen(true)}
+                        onClick={() => void runBulk(to).catch(() => undefined)}
                       >
-                        Từ chối {rejectable.length} hồ sơ
+                        Chuyển sang {APPLICATION_STATUS[to].label}
                       </Button>
-                    </Can>
-                  )}
+                    ))}
+                    <Button
+                      size="sm"
+                      variant="quiet"
+                      className="text-white hover:bg-white/10"
+                      disabled={bulk.isPending}
+                      onClick={() => setRejectOpen(true)}
+                    >
+                      Từ chối…
+                    </Button>
+                  </Can>
                   {compareJobId && (
                     <Button
                       size="sm"
@@ -468,21 +475,16 @@ export default function ApplicationsPage() {
         }
       />
 
-      <ConfirmDialog
+      <AlertDialog
         open={rejectOpen}
         onClose={() => setRejectOpen(false)}
-        title={`Từ chối ${rejectable.length} hồ sơ?`}
-        description={
-          rejectable.length < selectedItems.length
-            ? `Lý do dùng chung cho ${rejectable.length} hồ sơ. ${selectedItems.length - rejectable.length} hồ sơ ở bước Đề nghị hoặc đã kết thúc sẽ được bỏ qua.`
-            : `Lý do dùng chung cho ${rejectable.length} hồ sơ và được ghi vào lịch sử từng hồ sơ.`
-        }
-        confirmLabel={`Từ chối ${rejectable.length} hồ sơ`}
-        tone="danger"
+        title={`Từ chối ${selectedItems.length} hồ sơ đã chọn?`}
+        description="Lý do dùng chung cho cả lô và được ghi vào lịch sử từng hồ sơ. Hồ sơ ở bước Offer hoặc đã kết thúc sẽ được bỏ qua."
+        confirmLabel={`Từ chối ${selectedItems.length} hồ sơ`}
+        confirmVariant="danger"
         requireReason={REJECT_REASON_INPUT}
-        loading={bulk.isPending}
-        onConfirm={(reason, code) => {
-          runBulk('REJECTED', reason, code as RejectReasonCode | undefined)
+        onConfirm={async (reason, code) => {
+          await runBulk('REJECTED', reason, code as RejectReasonCode | undefined)
           setRejectOpen(false)
         }}
       />
@@ -501,6 +503,12 @@ export default function ApplicationsPage() {
         listQuery={listQuery}
         hideScore={isInterviewer}
         onClose={() => setPeek(null)}
+        onPrev={peekIndex > 0 ? () => setPeek(items![peekIndex - 1].id) : undefined}
+        onNext={
+          items && peekIndex >= 0 && peekIndex < items.length - 1
+            ? () => setPeek(items[peekIndex + 1].id)
+            : undefined
+        }
       />
     </div>
   )

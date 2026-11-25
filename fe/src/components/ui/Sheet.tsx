@@ -12,6 +12,8 @@ interface SheetProps {
   title: string
   /** bắt buộc – nơi duy nhất để thao tác đổi trạng thái */
   detailHref: string
+  /** router state đi kèm khi mở chi tiết (vd. ngữ cảnh danh sách cho Trước/Sau) */
+  detailState?: unknown
   /** nhãn do nơi gọi truyền theo GLOSSARY (vd. hồ sơ / ứng viên / tin) */
   prev?: { label: string; onSelect: () => void }
   next?: { label: string; onSelect: () => void }
@@ -20,7 +22,16 @@ interface SheetProps {
 }
 
 // Quick view – DL-16: không có hành động đổi trạng thái
-export function Sheet({ open, onOpenChange, title, detailHref, prev, next, children }: SheetProps) {
+export function Sheet({
+  open,
+  onOpenChange,
+  title,
+  detailHref,
+  detailState,
+  prev,
+  next,
+  children,
+}: SheetProps) {
   const focus = useReturnFocus()
   return (
     <RD.Root open={open} onOpenChange={onOpenChange}>
@@ -48,7 +59,11 @@ export function Sheet({ open, onOpenChange, title, detailHref, prev, next, child
           </div>
           <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
           <div className="border-line-soft border-t px-5 py-3">
-            <Link to={detailHref} className={buttonVariants({ variant: 'primary' })}>
+            <Link
+              to={detailHref}
+              state={detailState}
+              className={buttonVariants({ variant: 'primary' })}
+            >
               Mở chi tiết
             </Link>
           </div>

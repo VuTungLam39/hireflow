@@ -15,6 +15,7 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
 | P5-D07 | 25/11/2026 | (a) DetailDialog **giữ Tabs tự viết**, sửa `aria-controls` ↔ `id` panel; Radix Tabs xét ở slice 8 (hợp nhất engine). (b) Tab có panel: **kích hoạt tự động** cho panel nhẹ/đã nạp, thủ công cho panel nặng/tải lười (quy tắc file 05) — **sửa dòng Tabs ở Phase 03 file 06** cho khớp. (c) Contract Command Menu sửa theo thực tế phân vai: **"Tìm ứng viên"** (vai có `candidate:read`: HR, HM — kết quả là người) / **"Tìm hồ sơ"** (Interviewer); code giữ nguyên | P5-D04 điều kiện 3; Phase 03 file 05 (Tabs, Command Menu), file 06 (Tabs); DL-09; §05.2 | kiểm APG: bàn phím đạt trọn, chỉ thiếu nối một chiều (2 thuộc tính) → không thay engine; mâu thuẫn chế độ kích hoạt là giữa hai contract, không phải lỗi code; đổi nhãn sẽ phá luồng tìm theo người hợp lệ của HR (Entry 11) |
 | P5-D08 | 25/11/2026 | Slice 6: (a) hành vi DataTable có xung đột là **opt-in** `layout="container"` (thẻ <600 container, ô chọn 44 px VF-05, Space = chọn dòng) — ApplicationsPage (vùng khoá) giữ nguyên, slice 7 bật; phần thuần cộng (J/K, StaleNotice, `priority`, `sticky`) áp mọi nơi. (b) Ngưỡng cột **cố định bằng container query**: ưu tiên 4 ẩn <1024, 3 ẩn <840, 2 dời xuống dòng phụ <720, 1 không ẩn | [D-02], P5-D02b; Phase 03 file 05 (DataTable), file 07 T1–T5 | không đổi hành vi trang chủ lực của HR trước khi slice của nó kiểm chứng; CSS thuần, không đo JS → không nhảy bố cục |
 | P5-D09 | 25/11/2026 | (a) **Giữ ngưỡng cột** (ưu tiên 4 ẩn <1024 container) — không hạ về ~960; là tham số đã biết, chỉnh một dòng (`priorityClass` trong DataTable) khi dùng thật có bằng chứng vướng. (b) **Làm Security Gate trước** (R1 → R2 → spike R3 → R3 → re-check), slice 12 là slice đệm | Phase 02 cơ chế ưu tiên cột; [D-02]; SG-01 (CRITICAL, cách ly tenant) | ở 1280 px cột ưu tiên 4 không mất mà xuống dòng phụ có nhãn (sau #137); ngưỡng toàn cục, đổi là mở lại kiểm 5×5; gate mở khoá slice 7–11, R1 là điều kiện cứng trước dữ liệu thật |
+| P5-D10 | 25/11/2026 | Slice 7: (a) **bulk theo prototype P3** — luôn hiện Chuyển sang Sàng lọc / Phỏng vấn / Từ chối… (lý do chung), backend xử lý từng hồ sơ, tóm tắt có lý do bỏ qua; (b) **xem nhanh chỉ đọc cho mọi vai** — Interviewer thấy lịch phỏng vấn chỉ đọc, điền phiếu ở trang chi tiết; (c) **lật trang Hồ sơ ứng tuyển sang v2**, khung giữ v1 | Phase 04 file 05 dòng 7, `p3-pipeline.html`; DL-16; P5-D06b | bỏ điều kiện "cùng trạng thái" khó hiểu, backend vốn trả kết quả từng hồ sơ; Sheet không chứa thao tác (DL-16), phiếu dựng lại ở slice 10 |
 
 ## Entry 0 — Planning record merged into main (pre-Slice 0)
 - **Decision:** owner, 24/11/2026 — option (a): merge planning branch into main before Slice 0, via PR, with verification gate.
@@ -40,7 +41,7 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
 - **Checklist thuật ngữ còn lại (baseline `fe/scripts/check-terms.baseline.json`, 15 mục) — slice dựng lại màn hình đó xoá mục tương ứng:**
   - [ ] applications/CvSheet, CvTextDialog — "bằng chứng" (slice 8)
   - [ ] applications/OfferPanel (10), hooks/use-offers (6), audit/audit-format (8), dashboard/DashboardPage (1), lib/error-codes (3) — "offer" viết thường (slice 11 / 12; error-codes theo slice chạm thông báo)
-  - [ ] applications/hooks/use-applications, pages/ApplicationsPage — "Đề nghị" trong thông báo bulk (slice 7)
+  - [x] applications/hooks/use-applications, pages/ApplicationsPage — "Đề nghị" trong thông báo bulk (slice 7)
   - [ ] candidates/CandidateSections — "bằng chứng" (slice 12)
   - [ ] dashboard/FunnelReport — "Đã nhận" (slice 12)
   - [ ] jobs/JobsPage, ranking/RankingTable — "Xếp hạng ứng viên" (slice 6/9)
@@ -77,7 +78,8 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
 | Trang / route | Slice | Trạng thái |
 |---|---|---|
 | PublicLayout + mọi trang công khai: `/jobs`, `/jobs/:id`, `/jobs/:id/apply` (form trong trang chi tiết), `/companies`, `/companies/:slug`, `/track`, `/privacy`, `/employers/*`, 404 công khai cho khách | 4b | **v2** (PR 4b) |
-| AuthLayout (`/login`), mọi trang nội bộ | — | v1 |
+| `/applications` (ApplicationsPage, gồm Sheet xem nhanh) | 7 | **v2** (khung AppShell vẫn v1 – P5-D06b) |
+| AuthLayout (`/login`), các trang nội bộ còn lại | — | v1 |
 Quy tắc: lật cả trang trong slice dựng lại trang đó bằng `data-theme="v2"` trên gốc trang/layout; không lật từng component.
 
 ### Bàn giao cho slice khoá (không sửa ở slice 1)
@@ -168,7 +170,7 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - **Kiểm ARIA của Tabs tự viết (P5-D04 điều kiện 2):** **có lỗi** — Tabs gán `role="tablist"`/`role="tab"`/`aria-selected` cho cả nơi dùng làm thanh lọc không có panel (cùng lỗi Radix sẽ gây). Phân loại call site: tab có panel thật = `components/shared/DetailDialog` (`tabpanel` + `aria-labelledby`), `applications/pages/ApplicationDetailPage` (vùng khoá); thanh lọc = `jobs/pages/JobsPage`, `platform/pages/PlatformCompaniesPage`, `applications/pages/ApplicationsPage` (vùng khoá).
 - **Sửa:** `Tabs` thêm `semantics: 'tabs' | 'filter'`; export `FilterTabs` (radiogroup/radio, `aria-checked`, giữ roving focus + mũi tên + Home/End — chọn radiogroup vì hành vi thật là một lựa chọn, mũi tên vừa chuyển vừa chọn). JobsPage + PlatformCompaniesPage → `FilterTabs`; test platform chờ `radio`. Test mới: không còn tablist/tab, radiogroup có tên, End chọn + chuyển focus, axe 0.
 - **Còn lại (bàn giao):**
-  - [ ] `applications/pages/ApplicationsPage` (vùng khoá) → `FilterTabs` — slice 7.
+  - [x] `applications/pages/ApplicationsPage` (vùng khoá) → `FilterTabs` — slice 7.
   - [ ] DetailDialog → Radix Tabs (tab có panel) — slice 5; ApplicationDetailPage → Radix Tabs — slice 8. Khi đó `Tabs` chỉ còn nghĩa tab-có-panel.
   - [ ] **Đo bundle RichSelect** ở slice đầu tiên gắn nó vào trang thật (hiện bị tree-shake, chưa đo — Entry 5).
 - **PR:** #124 — CI xanh. **Merged:** `475e94d`.
@@ -259,7 +261,7 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - **Bật cho 6 trang ngoài vùng khoá** (`layout="container"`, `dataUpdatedAt`, priority/sticky từng cột): Kho ứng viên, Tin tuyển dụng, Người dùng, Phòng ban, Xử lý CV, Công ty (Quản trị sàn).
 - **Thuật ngữ:** menu dòng ở Tin tuyển dụng "Xếp hạng ứng viên" → **"Xếp hạng hồ sơ"** (GLOSSARY); gỡ mục baseline (13 → 12). RankingTable (vùng khoá, slice 9) giữ.
 - **Không làm ở slice 6 (bàn giao):**
-  - [ ] ApplicationsPage bật `layout="container"` + priority, kiểm **F-03/T4** (vừa khung ở 1024) và VF-05 — slice 7.
+  - [x] ApplicationsPage bật `layout="container"` + priority — slice 7 (kiểm F-03/T4, VF-05 trên trình duyệt: production smoke).
   - [ ] BulkActionBar, Search, Sort, Pagination: giữ bản đang có (đã đạt contract cơ bản: sort header là nút + `aria-sort`, phân trang có nhãn). `expandable`, `views`, `virtualize`, biến thể `ranking`/`compare` — slice 7/9 khi có call site.
 - **Bundle (route vào, gzip):** 296.03 → **296.61 KB** (+0.58).
 - **Kiểm:** 7 test mới (J/K/↑/↓ + Enter; Space chọn ở opt-in; Space cũ giữ ở nơi không opt-in; class priority/sticky + dòng phụ ưu tiên 2; VF-05 ô 44 px, bấm tên mở không chọn; StaleNotice + Tải lại; axe 0) · 323 test xanh (gồm test vùng khoá ApplicationsPage, bulk-status) · format, lint, check:design, check:terms, typecheck, build xanh. `package.json` không đổi. Vùng khoá: 0 file.
@@ -273,4 +275,17 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - **Hotfix:** PR #137 — **Merged:** `2b1c44c`. **Smoke (production, 768):** Phòng ban dòng phụ "Số người: 1 · Số tin: 1"; Người dùng "Vai trò: Interviewer · Trạng thái: Hoạt động"; không tràn ✔.
 - **Quan sát 1280 px (P5-D09a):** container ≈1000 px → cột ưu tiên 4 xuống dòng phụ có nhãn; giữ ngưỡng, ghi là tham số chỉnh được.
 - **Slice 6 đóng.** Tiếp theo theo P5-D09b: phiên Security Gate R1 (SG-01); slice 12 làm xen khi cần chờ.
+
+## Entry 13 — Slice 7: Applications pipeline (🟢 sau gate)
+- **Spec + tickets:** issue #144. Base `feat/phase05-slice7-pipeline` từ `main @ 047a74e` (Security Gate re-check PASSED, PR #143).
+- **Đã làm:**
+  - DataTable `layout="container"` + priority (Ứng viên 1 sticky, Trạng thái 1, Mức phù hợp/Phiếu của bạn 1, Tin 2, Nộp lúc 3), `dataUpdatedAt` → StaleNotice; J/K/Enter/Space theo DataTable opt-in. Thẻ giữ `mobileRow` hiện có (ô chọn 44 px góc phải VF-05 do DataTable lo).
+  - Bộ lọc đã lưu: `Tabs` → `FilterTabs` (radiogroup).
+  - Xem nhanh: `SidePanel` → `Sheet`, URL **`?nhanh=<id>`** (không dùng `?xem=` như ghi chú cũ vì `?xem=` đã thuộc DetailDialog/DetailHost toàn app — trùng sẽ mở cả hai). Trước/Sau theo trang danh sách đang lọc; chỉ "Mở chi tiết" (mang `listQuery` qua `detailState` mới của Sheet); câu "Để chuyển trạng thái, mở chi tiết hồ sơ."; Interviewer: lịch phỏng vấn chỉ đọc (P5-D10b).
+  - Bulk (P5-D10a): 3 hành động cố định; `ConfirmDialog` → `AlertDialog` (mã lý do không chọn sẵn, lỗi giữ nội dung + Thử lại qua `mutateAsync`); tóm tắt "N không đổi · K bỏ qua (lý do)" theo mã lỗi backend; hồ sơ bỏ qua vẫn được chọn. So sánh 2–3 hồ sơ giữ nguyên.
+  - Thuật ngữ: bỏ "Đề nghị" ở ApplicationsPage + use-applications (baseline `check:terms` 12 → 10).
+  - Trang lật v2 (`data-theme="v2"` ở gốc trang).
+- **Kiểm:** 325 test FE xanh (3 test bulk/saved view sửa theo hành vi mới: tên nút, `alertdialog`, radiogroup; 2 test mới `quick-view.test.tsx`: ?nhanh=, chỉ đọc, Trước/Sau, đóng; Interviewer không có InterviewPanel) · typecheck, build, format, lint, check:design, check:terms xanh.
+- **Chưa kiểm trên trình duyệt thật:** không tràn ở 390/768/1024/1280/1440, F-03/T4 vừa khung 1024, VF-05 trên thẻ, axe → production smoke sau merge.
+- **Bàn giao còn lại:** ConfirmDialog còn ở OfferPanel (11), StatusActions (8), InterviewPanel (10); SidePanel còn ở ApplicationDetailPage (8), JobRankingPage (9).
 
