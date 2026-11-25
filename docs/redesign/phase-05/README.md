@@ -391,6 +391,10 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
   - **Kho ứng viên / admin / platform:** 6 bảng đã dùng DataTable container + trạng thái rỗng có giải thích từ slice 6 — giữ. Trang chi tiết công ty (platform): số 0 có giải thích (RR-13) — "0 · chưa có tài khoản nào" / "chưa đăng tin nào" / "không có hồ sơ trong 30 ngày qua".
   - Thuật ngữ CandidateSections "bằng chứng" → "căn cứ" → **baseline `check:terms` = 0 mục**.
 - **Kiểm:** 340 test FE xanh — mới: `useDocumentTheme` (đặt/gỡ trên `<html>`), trích dẫn ChatPage mở Sheet có "Nguồn [n]" + "Mở chi tiết", số 0 có giải thích ở chi tiết công ty. Một lần chạy cả bộ có 1 test cũ (DetailDialog "opens a job with one click") timeout khi máy tải nặng; chạy riêng 3/3 và cả bộ 2/2 lần sau đều xanh. Typecheck, build, format, lint, check:design, check:terms đều **exit 0**.
-- **Chưa kiểm trên trình duyệt thật:** màu dialog/menu sau khi lật khung, Kho ứng viên, admin/platform, ChatPage Sheet ở 390/1024/1440, axe → production smoke sau merge.
+- **Production smoke (25/11, `main @ 9e86fc4`, Admin hireflow-demo):**
+  - `/login` (chưa đăng nhập): `<html>` không có `data-theme`, `--ui-primary` = `#1e5b4f` (v1) — đúng sổ lật theme.
+  - **Portal đã hết lệch màu:** ở `/applications` mở Sheet xem nhanh (Radix portal, không nằm trong phần tử có `data-theme` của trang) → `<html data-theme="v2">`, `--ui-primary` trong Sheet = `#1f4e79` = `--color-v2-primary`.
+  - Kho ứng viên, Người dùng, Phòng ban, Xử lý CV, Nhật ký hoạt động, Công ty × 390/1024/1440: không tràn; 1 h1; theme v2; header bảng đè dòng đầu **0 px** (trang có bảng, ≥1024; 390 = thẻ); **axe 0** (18/18).
+  - **Chưa kiểm trên production:** Sheet trích dẫn ở ChatPage (hỏi trợ lý tốn lượt AI trong ngày của công ty — chỉ có test); các trang Quản trị sàn (cần tài khoản platform admin — chỉ có test).
 - **Phase 05 slice 0–12 đóng sau PR này.** Còn mở: R4–R6 (bảo mật), ghi chú Entry 7 (mất cú bấm trước hydrate ở trang công khai prerender).
 
