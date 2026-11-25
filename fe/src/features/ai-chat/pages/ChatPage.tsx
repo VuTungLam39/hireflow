@@ -1,8 +1,7 @@
 import { ArrowRight, SendHorizontal, Square } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
-import { Link } from 'react-router'
-import { PageHeader, SidePanel } from '@/components/shared'
-import { Button, Textarea, buttonVariants } from '@/components/ui'
+import { PageHeader } from '@/components/shared'
+import { Button, Sheet, Textarea } from '@/components/ui'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { useStream } from '@/hooks/use-stream'
 import { ERROR_MESSAGES } from '@/lib/error-codes'
@@ -180,32 +179,23 @@ export default function ChatPage() {
       </form>
       {!touch && <p className="type-caption mt-1.5">Enter để gửi · Shift + Enter xuống dòng</p>}
 
-      <SidePanel
+      {/* DL-16 · P5-D14 */}
+      <Sheet
         open={!!cited}
-        onClose={() => setCited(null)}
+        onOpenChange={(open) => !open && setCited(null)}
         title={cited?.source.candidateName ?? ''}
-        subtitle={cited && `Nguồn [${cited.index}]`}
-        footer={
-          cited && (
-            <Link
-              to={links.applicationDetail(cited.source.applicationId)}
-              className={buttonVariants()}
-            >
-              Mở hồ sơ
-              <ArrowRight />
-            </Link>
-          )
-        }
+        detailHref={cited ? links.applicationDetail(cited.source.applicationId) : ''}
       >
         {cited && (
           <div className="border-line bg-surface rounded-md border px-5 py-6">
+            <p className="type-caption mb-3">Nguồn [{cited.index}]</p>
             <p className="type-overline mb-2">Đoạn trong CV</p>
             <p className="type-read">
               <span className="mark-evidence">{cited.source.excerpt}</span>
             </p>
           </div>
         )}
-      </SidePanel>
+      </Sheet>
     </div>
   )
 }

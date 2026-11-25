@@ -146,8 +146,8 @@ export function DangerZone({ candidate }: { candidate: CandidateDetail }) {
       </h2>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-4">
         <p className="type-body max-w-2xl">
-          Khi ứng viên yêu cầu xoá dữ liệu: xoá tệp CV, nội dung CV, bằng chứng và thông tin liên
-          hệ. Trạng thái và điểm của các hồ sơ được giữ để số liệu không lệch.
+          Khi ứng viên yêu cầu xoá dữ liệu: xoá tệp CV, nội dung CV, căn cứ và thông tin liên hệ.
+          Trạng thái và điểm của các hồ sơ được giữ để số liệu không lệch.
         </p>
         <Button variant="danger-quiet" onClick={() => setOpen(true)}>
           Ẩn danh ứng viên
@@ -159,8 +159,8 @@ export function DangerZone({ candidate }: { candidate: CandidateDetail }) {
         title={`Ẩn danh ${candidate.fullName}?`}
         description={
           <>
-            Thao tác này <strong>không hoàn tác được</strong>. Tệp CV, nội dung CV, bằng chứng và
-            thông tin liên hệ của {candidate.applications.length} lần nộp sẽ bị xoá vĩnh viễn.
+            Thao tác này <strong>không hoàn tác được</strong>. Tệp CV, nội dung CV, căn cứ và thông
+            tin liên hệ của {candidate.applications.length} lần nộp sẽ bị xoá vĩnh viễn.
           </>
         }
         confirmLabel="Ẩn danh vĩnh viễn"

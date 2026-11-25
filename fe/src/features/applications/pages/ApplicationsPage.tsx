@@ -287,7 +287,7 @@ export default function ApplicationsPage() {
   )
 
   return (
-    <div data-theme="v2" className="space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title="Hồ sơ ứng tuyển"
         description={

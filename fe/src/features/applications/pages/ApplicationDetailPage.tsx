@@ -77,15 +77,13 @@ export default function ApplicationDetailPage() {
   // ADR-0002: không tồn tại và ngoài phạm vi dùng chung một thiết kế
   if (isError && !app && getErrorCode(error) === 'NOT_FOUND')
     return (
-      <div data-theme="v2">
-        <ApplicationNotFound
-          action={
-            <Link to={nav.backTo} className={buttonVariants({ variant: 'secondary' })}>
-              Về danh sách hồ sơ
-            </Link>
-          }
-        />
-      </div>
+      <ApplicationNotFound
+        action={
+          <Link to={nav.backTo} className={buttonVariants({ variant: 'secondary' })}>
+            Về danh sách hồ sơ
+          </Link>
+        }
+      />
     )
   if (isError && !app)
     return <ErrorState title="Chưa mở được hồ sơ" error={error} onRetry={refetch} />
@@ -106,7 +104,7 @@ export default function ApplicationDetailPage() {
   )
 
   return (
-    <div data-theme="v2" className="pb-20 lg:pb-0">
+    <div className="pb-20 lg:pb-0">
       <header className="border-line relative -mx-4 -mt-6 border-b px-4 pt-4 pb-5 md:-mx-6 md:-mt-8 md:px-6 md:pt-5 lg:-mx-8 lg:px-8">
         <div className="flex items-center justify-between gap-3 md:absolute md:top-6 md:right-6 lg:right-8">
           <Link

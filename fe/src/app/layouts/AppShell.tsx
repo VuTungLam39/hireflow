@@ -1,5 +1,6 @@
 import { Outlet, useMatches } from 'react-router'
 import { useMe } from '@/features/auth'
+import { useDocumentTheme } from '@/hooks/use-document-theme'
 import { useFocusMainOnNavigate } from '@/hooks/use-focus-main'
 import { useRealtimeConnection } from '@/features/notifications'
 import { cn } from '@/lib/utils'
@@ -15,6 +16,7 @@ export interface RouteHandle {
 }
 
 export function AppShell() {
+  useDocumentTheme('v2')
   useMe()
   useRealtimeConnection()
   useFocusMainOnNavigate()
@@ -24,7 +26,7 @@ export function AppShell() {
   const pending = useAuthStore((s) => s.user?.organization?.status === 'PENDING')
 
   return (
-    <div className="bg-canvas min-h-dvh min-[600px]:flex">
+    <div data-theme="v2" className="bg-canvas min-h-dvh min-[600px]:flex">
       <a
         href="#main"
         className="bg-ink sr-only z-[70] rounded-sm px-3 py-2 text-white focus:not-sr-only focus:fixed focus:top-2 focus:left-2"

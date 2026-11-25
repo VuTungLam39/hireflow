@@ -78,7 +78,15 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-const count = (n: number) => <span className="num">{n.toLocaleString('vi-VN')}</span>
+// RR-13
+const count = (n: number, zero: string) =>
+  n === 0 ? (
+    <span className="text-ink-muted">
+      <span className="num">0</span> · {zero}
+    </span>
+  ) : (
+    <span className="num">{n.toLocaleString('vi-VN')}</span>
+  )
 
 // MVP 3 · US-20, F-PLAT-01, F-PLAT-03
 export default function PlatformCompanyDetailPage() {
@@ -171,9 +179,11 @@ export default function PlatformCompanyDetailPage() {
             Số liệu tổng
           </h2>
           <dl className="grid gap-4 sm:grid-cols-3">
-            <Fact label="Người dùng">{count(org.userCount)}</Fact>
-            <Fact label="Tin đang tuyển">{count(org.openJobs)}</Fact>
-            <Fact label="Hồ sơ 30 ngày">{count(org.applications30d)}</Fact>
+            <Fact label="Người dùng">{count(org.userCount, 'chưa có tài khoản nào')}</Fact>
+            <Fact label="Tin đang tuyển">{count(org.openJobs, 'chưa đăng tin nào')}</Fact>
+            <Fact label="Hồ sơ 30 ngày">
+              {count(org.applications30d, 'không có hồ sơ trong 30 ngày qua')}
+            </Fact>
           </dl>
           <p className="type-caption">
             Quản trị sàn chỉ thấy số đếm, không xem tin, hồ sơ hay CV của công ty.

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { createMemoryRouter, RouterProvider } from 'react-router'
@@ -38,6 +38,16 @@ describe('Hỏi kho CV', () => {
     expect(answer).toHaveTextContent(/Bấm vào số trích dẫn để mở hồ sơ và xem đoạn CV gốc\.Nguồn/)
     expect(screen.getAllByRole('button', { name: /^Nguồn \d+:/ }).length).toBeGreaterThan(0)
     expect(document.querySelector('[aria-live]')).toBeNull()
+
+    // DL-16 · slice 12b: trích dẫn mở Sheet chỉ đọc, có "Mở chi tiết"
+    fireEvent.click(screen.getAllByRole('button', { name: /^Nguồn \d+:/ })[0])
+    const sheet = await screen.findByRole('dialog')
+    expect(within(sheet).getByText('Đoạn trong CV')).toBeInTheDocument()
+    expect(within(sheet).getByText(/^Nguồn \[\d+\]$/)).toBeInTheDocument()
+    expect(within(sheet).getByRole('link', { name: 'Mở chi tiết' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^\/applications\//),
+    )
   }, 15000)
 
   // BR-AI-11: lỗi JSON trước khi stream bắt đầu hiện đúng câu tiếng Việt

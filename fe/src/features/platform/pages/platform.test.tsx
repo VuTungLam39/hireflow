@@ -105,3 +105,24 @@ describe('Platform companies', () => {
     expect(screen.getByRole('button', { name: 'Lưu hạn mức' })).toBeDisabled()
   })
 })
+
+// RR-13 · slice 12b
+describe('Platform company totals', () => {
+  it('explains a zero count instead of showing a bare 0', async () => {
+    const org = db.organizations.find((o) => o.name === 'Ví Mây')!
+    const saved = { userCount: org.userCount, openJobs: org.openJobs, apps: org.applications30d }
+    Object.assign(org, { openJobs: 0, applications30d: 0 })
+    try {
+      renderAsPlatform(`/platform/companies/${org.id}`)
+      expect(await screen.findByText(/chưa đăng tin nào/)).toBeInTheDocument()
+      expect(screen.getByText(/không có hồ sơ trong 30 ngày qua/)).toBeInTheDocument()
+      expect(screen.queryByText(/chưa có tài khoản nào/)).toBeNull()
+    } finally {
+      Object.assign(org, {
+        userCount: saved.userCount,
+        openJobs: saved.openJobs,
+        applications30d: saved.apps,
+      })
+    }
+  })
+})

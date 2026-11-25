@@ -190,7 +190,7 @@ function RankingView({
   )
 
   return (
-    <div data-theme={embedded ? undefined : 'v2'} className="space-y-6">
+    <div className="space-y-6">
       <p role="status" aria-live="polite" className="sr-only">
         {announcement}
       </p>

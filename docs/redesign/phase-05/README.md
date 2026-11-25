@@ -46,7 +46,7 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
   - [x] applications/CvSheet, CvTextDialog — "bằng chứng" (slice 8)
   - [ ] applications/OfferPanel (10), hooks/use-offers (6), audit/audit-format (8), dashboard/DashboardPage (1), lib/error-codes (3) — "offer" viết thường (slice 11 / 12; error-codes theo slice chạm thông báo)
   - [x] applications/hooks/use-applications, pages/ApplicationsPage — "Đề nghị" trong thông báo bulk (slice 7)
-  - [ ] candidates/CandidateSections — "bằng chứng" (slice 12)
+  - [x] candidates/CandidateSections — "bằng chứng" (slice 12)
   - [x] dashboard/FunnelReport — "Đã nhận" (slice 12)
   - [x] ranking/RankingTable — "Xếp hạng ứng viên" (slice 9); jobs/JobsPage đã xử lý trước
   - [x] public-jobs/PrivacyPolicyPage — "bằng chứng", "nhận xét phỏng vấn": **miễn trừ** (quyết định chủ dự án 24/11/2026, bên dưới); giữ nguyên câu chữ, mục baseline gỡ khi slice 1 thu hẹp phạm vi quét
@@ -87,7 +87,8 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
 | `/jobs/:id/ranking` (JobRankingPage, route riêng; bản nhúng trong hộp tin giữ v1) | 9 | **v2** |
 | `/interviews` (InterviewsPage) | 10 | **v2** |
 | `/` (DashboardPage) | 12a | **v2** |
-| AuthLayout (`/login`), các trang nội bộ còn lại | — | v1 |
+| **Khung AppShell (Rail, Topbar) + mọi trang nội bộ** — `data-theme="v2"` ở gốc AppShell và trên `<html>` khi khung đang mở (portal Radix cũng v2); gỡ `data-theme` từng trang | 12b | **v2** |
+| AuthLayout (`/login`) | — | v1 |
 Quy tắc: lật cả trang trong slice dựng lại trang đó bằng `data-theme="v2"` trên gốc trang/layout; không lật từng component.
 
 ### Bàn giao cho slice khoá (không sửa ở slice 1)
@@ -380,4 +381,16 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - **Kiểm:** 338 test FE xanh — mới: `KpiStrip` (0 → câu giải thích + chữ nhạt, giá trị khác giữ so sánh); Dashboard (đầu mục "N việc", động từ không trùng, không còn "Xem"); Soạn Offer focus "Ngày bắt đầu" khi sai. Sửa: tiêu đề Dashboard "hồ sơ mới chờ bạn xem". Typecheck, build, format, lint, check:design, check:terms đều **exit 0**.
 - **Production smoke (25/11, `main @ bb7b203`, Admin hireflow-demo) × 390/1024/1440:** không tràn; `data-theme="v2"`; h1 "5 hồ sơ mới chờ bạn xem" = badge Rail "Hôm nay, 5 hồ sơ mới chờ xem" (≥1024; 390 Rail nằm trong NavSheet); đầu mục "Cần làm · 5 việc" (5 dòng việc — trùng số với h1 nhưng khác đơn vị, đã ghi rõ); dòng hồ sơ mới 2 (từ 70) + 3 (khác) = 5 = h1; động từ Duyệt hồ sơ / Quyết định / Sàng lọc / Đóng tin / Xử lý — **không trùng, không còn "Xem"**; KPI "Hồ sơ tuần này 0 · Chưa có hồ sơ nộp trong tuần này"; "Đã nhận việc 4 · 2 đang ở bước Offer"; Funnel cột "Đã nhận việc"; **axe 0**.
   - **Chưa kiểm:** Dashboard bằng tài khoản HR và HM (F-12 vốn là lỗi riêng của HM) — chưa có tài khoản; HM có thêm dòng "Offer đang chờ ứng viên trả lời" (chỉ có test).
+
+## Entry 19 — Slice 12b: Kho ứng viên, admin/platform, khung v2 (🟢)
+- **Spec + tickets:** issue #162 (phần 12b, P5-D14). Base `feat/phase05-slice12b` từ nhánh smoke 12a (PR #164 gộp vào PR này theo yêu cầu chủ dự án; #164 đã đóng).
+- **Đã làm:**
+  - **Khung v2 (P5-D14c):** hook `useDocumentTheme('v2')` đặt `data-theme` lên `<html>` khi AppShell hoặc PublicLayout đang mở, gỡ khi rời (về `/login` = v1). Gốc AppShell cũng có `data-theme="v2"` để lần vẽ đầu không nháy. PublicLayout dùng chung hook (thay effect tự viết của 4b). **Gỡ `data-theme` ở 5 trang** (Hồ sơ, Chi tiết hồ sơ + not-found, Phỏng vấn, Dashboard, Xếp hạng).
+  - **Phát hiện kèm:** từ slice 7–12a, dialog/menu/tooltip Radix của các trang đã lật **vẫn mang màu v1** vì portal ra `body`, ngoài phần tử có `data-theme` của trang. Theme trên `<html>` sửa tận gốc cho mọi portal nội bộ.
+  - **ChatPage:** khung trích dẫn `SidePanel` → `Sheet` (DL-16: chỉ đọc, "Nguồn [n]", đoạn CV, "Mở chi tiết"). **`components/shared/SidePanel.tsx` đã xoá** (call site cuối).
+  - **Kho ứng viên / admin / platform:** 6 bảng đã dùng DataTable container + trạng thái rỗng có giải thích từ slice 6 — giữ. Trang chi tiết công ty (platform): số 0 có giải thích (RR-13) — "0 · chưa có tài khoản nào" / "chưa đăng tin nào" / "không có hồ sơ trong 30 ngày qua".
+  - Thuật ngữ CandidateSections "bằng chứng" → "căn cứ" → **baseline `check:terms` = 0 mục**.
+- **Kiểm:** 340 test FE xanh — mới: `useDocumentTheme` (đặt/gỡ trên `<html>`), trích dẫn ChatPage mở Sheet có "Nguồn [n]" + "Mở chi tiết", số 0 có giải thích ở chi tiết công ty. Một lần chạy cả bộ có 1 test cũ (DetailDialog "opens a job with one click") timeout khi máy tải nặng; chạy riêng 3/3 và cả bộ 2/2 lần sau đều xanh. Typecheck, build, format, lint, check:design, check:terms đều **exit 0**.
+- **Chưa kiểm trên trình duyệt thật:** màu dialog/menu sau khi lật khung, Kho ứng viên, admin/platform, ChatPage Sheet ở 390/1024/1440, axe → production smoke sau merge.
+- **Phase 05 slice 0–12 đóng sau PR này.** Còn mở: R4–R6 (bảo mật), ghi chú Entry 7 (mất cú bấm trước hydrate ở trang công khai prerender).
 
