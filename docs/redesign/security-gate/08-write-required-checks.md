@@ -1,4 +1,4 @@
- **PENDING owner** — B2 console: bucket type private + anonymous GET → 401/403 | # | Check | Status | How to run |
+ **Re-check 25/11 → PASS** — prod `hireflow-api` at `467b872` (Render deploy success). As Admin hireflow-demo: 9 own public jobs `GET /jobs/:id` → 200; 4 jobs of 2 other companies (cho-lanh, vi-may) → `404 NOT_FOUND "Job not found"`, identical to random UUID (also 404 on random `/applications`, `/candidates`), ~110 ms both. GET only + login | # | Check | Status | How to run |
 |---|---|---|---|
 | W1 | Org B bulk-status on org A application | **Executed locally 24/11 → FAIL (SG-01)** | temporary spec built from `test/cross-tenant.e2e-spec.ts` fixtures; `POST /applications/bulk-status` as B with `[A.app, randomUUID]` → assert A row unchanged (currently changes to REJECTED). Make it a permanent test in R1 |
 | W2 | Org B write calls on org A application (status, notes, rescore) vs random UUID | **Executed locally 24/11 → 403 vs 404 (SG-02)** | same harness; compare status + body |
@@ -14,5 +14,6 @@
 - Baseline `main @ 467b872` (R1 #139, R2 #141, R3 #142). Local stack, fake LLM.
 - BE e2e **353/353** (new: W3 case; W4 refresh assertion; W6 isolation assertion). BE unit 468/468.
 - An attempted W7 pipeline e2e in `ai-pipeline.e2e` was dropped: adding any 12th upload to that file leaves the last uploaded application in `PROCESSING` (independent of PDF/R3 — a DOCX upload does the same; first cause seen was the 100 req/min per-user throttle hit by 150 ms HTTP polling). Logged as a follow-up to diagnose; not a security finding.
-- **Verdict: local checks PASS; gate stays CONDITIONAL until W7 real-provider eval, W8, W9 are done.**
+- W7 real-provider eval and W8 production probes run later the same day (owner approved quota and supplied the test account in session) → both PASS.
+- **Verdict: W1–W8 PASS; gate stays CONDITIONAL only on W9 (B2 bucket ACL, owner console check).**
 
