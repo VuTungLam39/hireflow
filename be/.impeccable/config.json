@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "arial",
+        "createdAt": "2026-11-25T14:28:05.649Z",
+        "reason": "Claude: HTML email cần font an toàn cho mail client (không tải web font); dòng có từ trước R6, R6 không đổi font"
+      }
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 import { CircleX } from 'lucide-react'
-import { useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { useState, useLayoutEffect } from 'react'
+import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { ErrorState } from '@/components/shared'
 import { AlertDialog, Button, buttonVariants, Spinner } from '@/components/ui'
@@ -30,7 +30,17 @@ const STAGE_TEXT: Record<TrackStage, { label: string; hint: string }> = {
 // MVP 3 · US-26, BR-APP-14
 export default function TrackApplicationPage() {
   useDocumentTitle(`Theo dõi hồ sơ – ${SITE_NAME}`)
-  const token = useSearchParams()[0].get('t') ?? ''
+  // SG-05 · R5
+  const [token] = useState(
+    () =>
+      new URLSearchParams(window.location.hash.slice(1)).get('t') ??
+      new URLSearchParams(window.location.search).get('t') ??
+      '',
+  )
+  useLayoutEffect(() => {
+    if (window.location.hash || window.location.search)
+      window.history.replaceState(window.history.state, '', window.location.pathname)
+  }, [])
   const track = useApplicationTrack(token)
   const withdraw = useWithdrawApplication(token)
   const [confirming, setConfirming] = useState(false)

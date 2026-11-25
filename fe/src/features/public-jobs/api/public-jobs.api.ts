@@ -68,9 +68,10 @@ export const publicJobsApi = {
   },
 
   // US-26 · BR-APP-14
-  track: async (t: string) =>
-    (await api.get<ApiResponse<ApplicationTrack>>('/public/applications/track', { params: { t } }))
-      .data.data,
+  // SG-05 · R5
+  track: async (token: string) =>
+    (await api.post<ApiResponse<ApplicationTrack>>('/public/applications/track', { token })).data
+      .data,
 
   withdraw: async (token: string) =>
     (await api.post<ApiResponse<ApplicationTrack>>('/public/applications/withdraw', { token })).data

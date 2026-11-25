@@ -4,13 +4,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { Link, useLocation } from 'react-router'
 import { Button, FormField, Input } from '@/components/ui'
-import { env } from '@/config/env'
 import { applyServerErrors, getErrorCode, getErrorMessage } from '@/lib/errors'
 import { paths } from '@/routes/paths'
 import { useLogin } from '../hooks/use-auth'
 import { loginSchema, type LoginInput } from '../schemas/auth.schema'
 
-// be/src/database/seeds/demo/org.ts
+// be/src/database/seeds/demo/org.ts · SG-04 · R4
 const DEMO_PASSWORD = 'Admin@123'
 const DEMO_ACCOUNTS = [
   { label: 'Admin', email: 'admin@example.com' },
@@ -121,7 +120,7 @@ export default function LoginPage() {
         )}
       </form>
 
-      {env.isDev && (
+      {import.meta.env.DEV && (
         <div className="border-line mt-8 rounded-md border border-dashed p-4">
           <p className="type-label mb-3 flex items-center gap-2">
             <FlaskConical className="text-brand size-4" />
