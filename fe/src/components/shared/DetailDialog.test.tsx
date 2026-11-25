@@ -45,7 +45,9 @@ describe('DetailDialog tabs — APG contract', () => {
     expect(tabs.map((t) => t.getAttribute('aria-selected'))).toEqual(['true', 'false', 'false'])
     expect(panel).toHaveAttribute('aria-labelledby', tabs[0].id)
     expect(tabs[0]).toHaveAttribute('aria-controls', panel.id)
-    expect(tabs.map((t) => t.tabIndex)).toEqual([0, -1, -1])
+    // P5-D11b · Radix roving focus: Tab vào tablist rồi chuyển tới tab đang chọn
+    expect(list.tabIndex).toBe(0)
+    expect(tabs.map((t) => t.tabIndex)).toEqual([-1, -1, -1])
   })
 
   it('arrows, Home/End move focus and activate (automatic mode), wrapping', async () => {

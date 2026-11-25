@@ -56,7 +56,7 @@ export function CvTextDialog({ applicationId, open, onClose }: CvTextDialogProps
       open={open}
       onClose={close}
       title="Nhập nội dung CV"
-      description="File CV không đọc được chữ (thường là ảnh scan). Dán nội dung CV để hệ thống trích xuất và chấm điểm. Bằng chứng sẽ được kiểm trên đúng đoạn text này."
+      description="File CV không đọc được chữ (thường là ảnh scan). Dán nội dung CV để hệ thống trích xuất và chấm điểm. Căn cứ sẽ được kiểm trên đúng đoạn văn bản này."
       size="lg"
     >
       <form onSubmit={onSubmit} className="space-y-4" noValidate>

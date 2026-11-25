@@ -71,7 +71,7 @@ export function CvSheet({
                       data-mark={t.mark.id}
                       tabIndex={onMarkClick ? 0 : undefined}
                       role={onMarkClick ? 'button' : undefined}
-                      aria-label={onMarkClick ? `Bằng chứng cho tiêu chí ${t.mark.n}` : undefined}
+                      aria-label={onMarkClick ? `Căn cứ cho tiêu chí ${t.mark.n}` : undefined}
                       aria-pressed={onMarkClick ? t.mark.id === activeId : undefined}
                       onClick={() => onMarkClick?.(t.mark!.id)}
                       onKeyDown={(e) => {

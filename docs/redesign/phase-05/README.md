@@ -16,6 +16,7 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
 | P5-D08 | 25/11/2026 | Slice 6: (a) hành vi DataTable có xung đột là **opt-in** `layout="container"` (thẻ <600 container, ô chọn 44 px VF-05, Space = chọn dòng) — ApplicationsPage (vùng khoá) giữ nguyên, slice 7 bật; phần thuần cộng (J/K, StaleNotice, `priority`, `sticky`) áp mọi nơi. (b) Ngưỡng cột **cố định bằng container query**: ưu tiên 4 ẩn <1024, 3 ẩn <840, 2 dời xuống dòng phụ <720, 1 không ẩn | [D-02], P5-D02b; Phase 03 file 05 (DataTable), file 07 T1–T5 | không đổi hành vi trang chủ lực của HR trước khi slice của nó kiểm chứng; CSS thuần, không đo JS → không nhảy bố cục |
 | P5-D09 | 25/11/2026 | (a) **Giữ ngưỡng cột** (ưu tiên 4 ẩn <1024 container) — không hạ về ~960; là tham số đã biết, chỉnh một dòng (`priorityClass` trong DataTable) khi dùng thật có bằng chứng vướng. (b) **Làm Security Gate trước** (R1 → R2 → spike R3 → R3 → re-check), slice 12 là slice đệm | Phase 02 cơ chế ưu tiên cột; [D-02]; SG-01 (CRITICAL, cách ly tenant) | ở 1280 px cột ưu tiên 4 không mất mà xuống dòng phụ có nhãn (sau #137); ngưỡng toàn cục, đổi là mở lại kiểm 5×5; gate mở khoá slice 7–11, R1 là điều kiện cứng trước dữ liệu thật |
 | P5-D10 | 25/11/2026 | Slice 7: (a) **bulk theo prototype P3** — luôn hiện Chuyển sang Sàng lọc / Phỏng vấn / Từ chối… (lý do chung), backend xử lý từng hồ sơ, tóm tắt có lý do bỏ qua; (b) **xem nhanh chỉ đọc cho mọi vai** — Interviewer thấy lịch phỏng vấn chỉ đọc, điền phiếu ở trang chi tiết; (c) **lật trang Hồ sơ ứng tuyển sang v2**, khung giữ v1 | Phase 04 file 05 dòng 7, `p3-pipeline.html`; DL-16; P5-D06b | bỏ điều kiện "cùng trạng thái" khó hiểu, backend vốn trả kết quả từng hồ sơ; Sheet không chứa thao tác (DL-16), phiếu dựng lại ở slice 10 |
+| P5-D11 | 25/11/2026 | Slice 8: (a) **hộp quyết định theo P1** — một nút "Chuyển trạng thái" mở AlertDialog có ô chọn trạng thái không chọn sẵn, lý do chỉ khi Từ chối, nút xác nhận theo lựa chọn; (b) **tab có panel chuyển Radix Tabs** (`@radix-ui/react-tabs` 1.2.1) cho cả ApplicationDetailPage và DetailDialog; `FilterTabs` giữ radiogroup tự viết | Phase 04 file 05 dòng 8, `p1-cv-review.html`; VF-01, VF-02, OP-1; P5-D04 điều kiện 3, P5-D07a | theo thiết kế đã kiểm chứng P1 (không giữ nút theo bước); hợp nhất engine tab-có-panel — **đóng P5-D04 điều kiện 3** |
 
 ## Entry 0 — Planning record merged into main (pre-Slice 0)
 - **Decision:** owner, 24/11/2026 — option (a): merge planning branch into main before Slice 0, via PR, with verification gate.
@@ -39,7 +40,7 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
   - `prerender/entry.tsx` chưa bọc SurfaceProvider (chưa component nào đọc context); slice 4 phải bọc khi dùng `useJobNoun`.
   - `package.json`: thêm devDependency `@google/design.md` 0.4.0 (lockfile +~1.5k dòng) và 3 script (`tokens`, `check:tokens`, `check:terms`).
 - **Checklist thuật ngữ còn lại (baseline `fe/scripts/check-terms.baseline.json`, 15 mục) — slice dựng lại màn hình đó xoá mục tương ứng:**
-  - [ ] applications/CvSheet, CvTextDialog — "bằng chứng" (slice 8)
+  - [x] applications/CvSheet, CvTextDialog — "bằng chứng" (slice 8)
   - [ ] applications/OfferPanel (10), hooks/use-offers (6), audit/audit-format (8), dashboard/DashboardPage (1), lib/error-codes (3) — "offer" viết thường (slice 11 / 12; error-codes theo slice chạm thông báo)
   - [x] applications/hooks/use-applications, pages/ApplicationsPage — "Đề nghị" trong thông báo bulk (slice 7)
   - [ ] candidates/CandidateSections — "bằng chứng" (slice 12)
@@ -79,14 +80,15 @@ Gate split [D-02]: slices 0–6 and 12 free; slices 7–11 locked until R1–R3 
 |---|---|---|
 | PublicLayout + mọi trang công khai: `/jobs`, `/jobs/:id`, `/jobs/:id/apply` (form trong trang chi tiết), `/companies`, `/companies/:slug`, `/track`, `/privacy`, `/employers/*`, 404 công khai cho khách | 4b | **v2** (PR 4b) |
 | `/applications` (ApplicationsPage, gồm Sheet xem nhanh) | 7 | **v2** (khung AppShell vẫn v1 – P5-D06b) |
+| `/applications/:id` (ApplicationDetailPage) | 8 | **v2** |
 | AuthLayout (`/login`), các trang nội bộ còn lại | — | v1 |
 Quy tắc: lật cả trang trong slice dựng lại trang đó bằng `data-theme="v2"` trên gốc trang/layout; không lật từng component.
 
 ### Bàn giao cho slice khoá (không sửa ở slice 1)
-- [ ] `applications/components/JobApplicationHighlights.tsx:84` — slice 8
-- [ ] `applications/components/RequirementList.tsx:81` — slice 8
-- [ ] `applications/components/StatusActions.tsx:83` — slice 8
-- [ ] `applications/pages/ApplicationDetailPage.tsx:251`, `:276` — slice 8
+- [x] `applications/components/JobApplicationHighlights.tsx:84` — slice 8
+- [x] `applications/components/RequirementList.tsx:81` — slice 8
+- [x] `applications/components/StatusActions.tsx:83` — slice 8
+- [x] `applications/pages/ApplicationDetailPage.tsx:251`, `:276` — slice 8
 - [ ] `applications/pages/ApplicationsPage.tsx:562` — slice 7
 - [ ] `ranking/pages/JobRankingPage.tsx:262` — slice 9
 - [ ] `interviews/components/FeedbackDialog.tsx:33`, `:149` — slice 10
@@ -171,7 +173,7 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - **Sửa:** `Tabs` thêm `semantics: 'tabs' | 'filter'`; export `FilterTabs` (radiogroup/radio, `aria-checked`, giữ roving focus + mũi tên + Home/End — chọn radiogroup vì hành vi thật là một lựa chọn, mũi tên vừa chuyển vừa chọn). JobsPage + PlatformCompaniesPage → `FilterTabs`; test platform chờ `radio`. Test mới: không còn tablist/tab, radiogroup có tên, End chọn + chuyển focus, axe 0.
 - **Còn lại (bàn giao):**
   - [x] `applications/pages/ApplicationsPage` (vùng khoá) → `FilterTabs` — slice 7.
-  - [ ] DetailDialog → Radix Tabs (tab có panel) — slice 5; ApplicationDetailPage → Radix Tabs — slice 8. Khi đó `Tabs` chỉ còn nghĩa tab-có-panel.
+  - [x] DetailDialog + ApplicationDetailPage → Radix Tabs — slice 8 (P5-D11b). `Tabs` = tab có panel (Radix, `TabsPanel`), `FilterTabs` = thanh lọc.
   - [ ] **Đo bundle RichSelect** ở slice đầu tiên gắn nó vào trang thật (hiện bị tree-shake, chưa đo — Entry 5).
 - **PR:** #124 — CI xanh. **Merged:** `475e94d`.
 
@@ -288,4 +290,17 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
 - **Kiểm:** 325 test FE xanh (3 test bulk/saved view sửa theo hành vi mới: tên nút, `alertdialog`, radiogroup; 2 test mới `quick-view.test.tsx`: ?nhanh=, chỉ đọc, Trước/Sau, đóng; Interviewer không có InterviewPanel) · typecheck, build, format, lint, check:design, check:terms xanh.
 - **Production smoke (25/11, `main @ 8918ddf`, Admin hireflow-demo, Playwright, `/applications` × 390/768/1024/1280/1440):** trang không tràn ngang ở cả 5; 390 = thẻ (20 thẻ, ô chọn **44×44** VF-05); 768 hiện Ứng viên/Trạng thái/Mức phù hợp (Tin, Nộp lúc ẩn theo container 646 px); ≥1024 đủ 5 cột; `data-theme="v2"` có; **axe 0** cả 5. **Lỗi F-03/T4:** bảng cuộn ngang trong khung ở 768 (+34 px) và 1024 (+29 px) — cột Ứng viên giữ 328 px vì khối tên/email `max-w-64` (bảng auto layout cấp đủ max-width). Sửa: `max-w-48` (PR sửa sau slice 7); thử trên production bằng cách áp `12rem` vào DOM → tràn 0 ở 768/1024/1280.
 - **Bàn giao còn lại:** ConfirmDialog còn ở OfferPanel (11), StatusActions (8), InterviewPanel (10); SidePanel còn ở ApplicationDetailPage (8), JobRankingPage (9).
+
+## Entry 14 — Slice 8: CV Review / chi tiết hồ sơ (🟢 sau gate)
+- **Spec + tickets:** issue #147. Base `feat/phase05-slice8-cv-review` từ `main @ 8918ddf` (PR #146 sửa cột slice 7 chưa merge — không chạm file của slice 8).
+- **Đã làm:**
+  - **Hộp quyết định (P5-D11a):** `StatusActions` = một nút "Chuyển trạng thái" → `AlertDialog` "Chuyển trạng thái hồ sơ" (tên + trạng thái hiện tại), ô chọn không chọn sẵn (VF-01, lỗi "Chọn trạng thái mới."), lý do mã + ghi chú chỉ khi Từ chối, nút "Xác nhận"/"Xác nhận từ chối" đổi kiểu theo lựa chọn (VF-02), gợi ý "Offer chỉ tạo trong mục Offer của hồ sơ." ở bước Phỏng vấn; lỗi lưu giữ lựa chọn + "Thử lại" (OP-1); 403 → đóng hộp + banner "Bạn không có quyền thực hiện thao tác này…". Mở lại hồ sơ → `AlertDialog`.
+  - **Radix Tabs (P5-D11b):** `Tabs` dựng lại trên `@radix-ui/react-tabs` (giữ đếm số, mũi tên cuộn tràn, kiểu chữ); thêm `onClick` trên Trigger vì Radix đổi tab ở mousedown (trình đọc màn hình có thể chỉ gửi click). DetailDialog dùng `TabsPanel` (bỏ `tab-id.ts`, `panelId`); tab Hoạt động của trang chi tiết có `TabsPanel` thật → nối tab ↔ panel hai chiều. Roving focus của Radix: `tablist` tabIndex 0, các tab -1 (Tab vào danh sách → tới tab đang chọn).
+  - **Trạng thái:** không tìm thấy/ngoài phạm vi một thiết kế (ADR-0002) "Không tìm thấy hồ sơ này" + "Về danh sách hồ sơ"; Đang đọc CV / Không đọc được CV giữ bản có sẵn.
+  - **Căn cứ:** câu trích bị loại gom vào `<details>` "Có căn cứ bị loại (n)" dưới danh sách tiêu chí (bỏ khối gạch ngang xen giữa); câu trích được tính vẫn hiện sẵn (VF-11). Khung CV ghi "Nội dung CV đã trích xuất · đây là văn bản hệ thống dùng để kiểm căn cứ" (VF-12 / R3).
+  - Xem CV trên màn hẹp: `SidePanel` → `Dialog` (Sheet là quick view có "Mở chi tiết" nên không hợp ở trang chi tiết). Menu "Thao tác khác" → `DropdownMenu`. Nút `<button>` thô ở RequirementList/JobApplicationHighlights → `Button variant="link"`. Thuật ngữ "Bằng chứng" → "Căn cứ" (CvSheet, CvTextDialog; baseline 10 → 8). Trang lật v2.
+- **Bundle:** route vào không đổi (index 13.61 KB gzip); `vendor` +0.71 KB gzip (Radix Tabs).
+- **Kiểm:** 330 test FE xanh — mới: hộp quyết định (không chọn sẵn, nhãn theo lựa chọn, lý do khi Từ chối; lỗi lưu giữ lựa chọn + Thử lại; 403 → banner), không tìm thấy (ADR-0002), "Có căn cứ bị loại (1)" + chú thích văn bản trích xuất; Tabs có `aria-controls` ↔ panel. Sửa theo hành vi mới: DetailDialog roving focus, mở lại → `alertdialog` + nút "Chuyển trạng thái". Typecheck, build, format, lint, check:design, check:terms xanh.
+- **Chưa kiểm trên trình duyệt thật:** bố cục 2 cột/1 cột, hộp quyết định ở 390, axe → production smoke sau merge (không bấm Xác nhận trên production).
+- **Bàn giao còn lại:** ConfirmDialog ở OfferPanel (11), InterviewPanel (10); SidePanel ở JobRankingPage (9), ChatPage (12).
 

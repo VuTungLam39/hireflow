@@ -10,13 +10,24 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { ErrorState, SidePanel } from '@/components/shared'
-import { Button, Kbd, Popover, Skeleton, Tabs, Tooltip, menuItemClass } from '@/components/ui'
+import { ErrorState } from '@/components/shared'
+import {
+  Button,
+  Dialog,
+  DropdownMenu,
+  Kbd,
+  Skeleton,
+  Tabs,
+  TabsPanel,
+  Tooltip,
+  buttonVariants,
+} from '@/components/ui'
 import { InterviewPanel, useApplicationInterviews } from '@/features/interviews'
 import { useDetailLink } from '@/hooks/use-detail'
 import { useCrumb } from '@/hooks/use-crumb'
 import { useHotkeys } from '@/hooks/use-hotkeys'
 import { usePermission } from '@/hooks/use-permission'
+import { getErrorCode } from '@/lib/errors'
 import { Permission } from '@/lib/permissions'
 import { formatDate } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
@@ -50,6 +61,7 @@ export default function ApplicationDetailPage() {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>(isInterviewer ? 'interviews' : 'history')
   const [cvOpen, setCvOpen] = useState(false)
+  const [denied, setDenied] = useState(false)
 
   useHotkeys({
     j: () => nav.hasNext && nav.next(),
@@ -61,6 +73,17 @@ export default function ApplicationDetailPage() {
   useCrumb(app?.candidate.fullName, nav.backTo)
 
   if (isPending) return <ReviewSkeleton />
+  // ADR-0002: không tồn tại và ngoài phạm vi dùng chung một thiết kế
+  if (isError && !app && getErrorCode(error) === 'NOT_FOUND')
+    return (
+      <div data-theme="v2" className="border-line bg-surface rounded-md border p-8">
+        <h1 className="type-title">Không tìm thấy hồ sơ này</h1>
+        <p className="type-body mt-1">Hồ sơ không tồn tại hoặc bạn không có quyền xem.</p>
+        <Link to={nav.backTo} className={`${buttonVariants({ variant: 'secondary' })} mt-4`}>
+          Về danh sách hồ sơ
+        </Link>
+      </div>
+    )
   if (isError && !app)
     return <ErrorState title="Chưa mở được hồ sơ" error={error} onRetry={refetch} />
 
@@ -80,7 +103,7 @@ export default function ApplicationDetailPage() {
   )
 
   return (
-    <div className="pb-20 lg:pb-0">
+    <div data-theme="v2" className="pb-20 lg:pb-0">
       <header className="border-line relative -mx-4 -mt-6 border-b px-4 pt-4 pb-5 md:-mx-6 md:-mt-8 md:px-6 md:pt-5 lg:-mx-8 lg:px-8">
         <div className="flex items-center justify-between gap-3 md:absolute md:top-6 md:right-6 lg:right-8">
           <Link
@@ -155,11 +178,19 @@ export default function ApplicationDetailPage() {
           </div>
           <StatusActions
             applicationId={app.id}
+            candidateName={app.candidate.fullName}
             status={app.status}
+            onDenied={() => setDenied(true)}
             className="bg-surface border-line fixed inset-x-0 bottom-0 z-20 justify-end border-t px-4 py-3 md:left-[var(--rail-w)] lg:static lg:border-0 lg:bg-transparent lg:p-0 [&:empty]:hidden"
           />
         </div>
       </header>
+
+      {denied && (
+        <p role="status" className="bg-info-soft text-ink-2 mt-4 rounded-sm px-4 py-3">
+          Bạn không có quyền thực hiện thao tác này. Bạn vẫn xem được hồ sơ và Phiếu đánh giá.
+        </p>
+      )}
 
       {!isInterviewer && (
         <div className="pt-6">
@@ -208,86 +239,61 @@ export default function ApplicationDetailPage() {
         <ActivityTabs app={app} tab={tab} onTab={setTab} isInterviewer={isInterviewer} />
       </section>
 
-      <SidePanel
+      <Dialog
         open={cvOpen}
         onClose={() => setCvOpen(false)}
         title={app.candidate.fullName}
-        subtitle={app.cv?.fileName}
-        width={720}
+        description={app.cv?.fileName}
+        size="lg"
       >
-        <div className="-mx-5 -my-4">{sheet}</div>
-      </SidePanel>
+        {sheet}
+      </Dialog>
     </div>
   )
 }
 
 function MoreMenu({ app }: { app: ApplicationDetail }) {
-  const [open, setOpen] = useState(false)
   const rescore = useRescore(app.id)
   const cvUrl = useCvUrl()
   const canRescore = usePermission(Permission.AiRescore)
   const canCv = usePermission(Permission.CvRead)
   const canCandidate = usePermission(Permission.CandidateRead)
   const detailLink = useDetailLink()
+  const navigate = useNavigate()
   const busy = app.aiStatus === 'PENDING' || app.aiStatus === 'PROCESSING'
 
-  if (!canRescore && !canCv && !canCandidate) return null
+  const items = [
+    canCv &&
+      app.cv && {
+        label: 'Tải CV gốc',
+        icon: <Download />,
+        onSelect: () =>
+          cvUrl.mutate(app.cv!.fileId, { onSuccess: ({ url }) => window.open(url, '_blank') }),
+      },
+    canCandidate && {
+      label: 'Mọi lần nộp của ứng viên',
+      icon: <UserRound />,
+      onSelect: () => void navigate(detailLink('candidate', app.candidate.id)),
+    },
+    canRescore && {
+      label: 'Chấm lại theo tiêu chí hiện hành',
+      icon: <RotateCw />,
+      disabled: busy || rescore.isPending,
+      onSelect: () => rescore.mutate(),
+    },
+  ].filter((i) => !!i)
 
+  if (!items.length) return null
   return (
-    <Popover
-      open={open}
-      onOpenChange={setOpen}
+    <DropdownMenu
       align="end"
-      role="menu"
-      label="Thao tác khác"
-      className="w-60"
-      trigger={(props) => (
-        <Button variant="quiet" size="icon-sm" aria-label="Thao tác khác" {...props}>
+      items={items}
+      trigger={
+        <Button variant="ghost" size="icon-sm" aria-label="Thao tác khác">
           <MoreHorizontal />
         </Button>
-      )}
-    >
-      {canCv && app.cv && (
-        <button
-          type="button"
-          role="menuitem"
-          className={menuItemClass}
-          onClick={() => {
-            setOpen(false)
-            cvUrl.mutate(app.cv!.fileId, { onSuccess: ({ url }) => window.open(url, '_blank') })
-          }}
-        >
-          <Download />
-          Tải CV gốc
-        </button>
-      )}
-      {canCandidate && (
-        <Link
-          role="menuitem"
-          to={detailLink('candidate', app.candidate.id)}
-          className={menuItemClass}
-          onClick={() => setOpen(false)}
-        >
-          <UserRound />
-          Mọi lần nộp của ứng viên
-        </Link>
-      )}
-      {canRescore && (
-        <button
-          type="button"
-          role="menuitem"
-          disabled={busy || rescore.isPending}
-          className={menuItemClass}
-          onClick={() => {
-            setOpen(false)
-            rescore.mutate()
-          }}
-        >
-          <RotateCw />
-          Chấm lại theo tiêu chí hiện hành
-        </button>
-      )}
-    </Popover>
+      }
+    />
   )
 }
 
@@ -315,19 +321,24 @@ function ActivityTabs({
 
   return (
     <>
-      <Tabs tabs={tabs} value={current} onChange={onTab} label="Hoạt động của hồ sơ" />
-      <div role="tabpanel" className="pt-5">
-        {current === 'history' && <HistoryTimeline applicationId={app.id} />}
-        {current === 'notes' && <NotesPanel applicationId={app.id} />}
-        {current === 'interviews' && (
-          <InterviewPanel
-            applicationId={app.id}
-            applicationStatus={app.status}
-            requirements={app.requirements}
-            jobId={app.job.id}
-          />
+      <Tabs tabs={tabs} value={current} onChange={onTab} label="Hoạt động của hồ sơ">
+        <TabsPanel value="history" className="pt-5 focus-visible:outline-none">
+          <HistoryTimeline applicationId={app.id} />
+        </TabsPanel>
+        <TabsPanel value="notes" className="pt-5 focus-visible:outline-none">
+          <NotesPanel applicationId={app.id} />
+        </TabsPanel>
+        {!isInterviewer && (
+          <TabsPanel value="interviews" className="pt-5 focus-visible:outline-none">
+            <InterviewPanel
+              applicationId={app.id}
+              applicationStatus={app.status}
+              requirements={app.requirements}
+              jobId={app.job.id}
+            />
+          </TabsPanel>
         )}
-      </div>
+      </Tabs>
     </>
   )
 }

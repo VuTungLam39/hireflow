@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { Button } from './Button'
 import { Popover } from './Popover'
 import { RichSelect } from './RichSelect'
-import { FilterTabs, Tabs } from './Tabs'
+import { FilterTabs, Tabs, TabsPanel } from './Tabs'
 import { Tooltip } from './Tooltip'
 
 const axeClean = async () => {
@@ -30,7 +30,9 @@ describe('Tabs (F-18)', () => {
             { id: 'open', label: 'Đang tuyển' },
             { id: 'closed', label: 'Đã đóng' },
           ]}
-        />
+        >
+          <TabsPanel value={v}>Danh sách {v}</TabsPanel>
+        </Tabs>
       )
     }
     render(<Demo />)

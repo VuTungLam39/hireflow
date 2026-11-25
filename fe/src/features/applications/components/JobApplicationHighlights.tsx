@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ArrowRight } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
-import { Skeleton } from '@/components/ui'
+import { Button, Skeleton } from '@/components/ui'
 import { useDetailLink } from '@/hooks/use-detail'
 import { cn, formatDaysAgo } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
@@ -81,14 +81,10 @@ function HighlightList({
     <section aria-label={title} className="min-w-0">
       <div className="flex items-baseline justify-between gap-4">
         <h3 className="type-heading">{title}</h3>
-        <button
-          type="button"
-          onClick={onAction}
-          className="text-brand inline-flex items-center gap-1 text-sm font-medium hover:underline"
-        >
+        <Button variant="link" onClick={onAction}>
           {action}
-          <ArrowRight className="size-4" />
-        </button>
+          <ArrowRight />
+        </Button>
       </div>
       {pending ? (
         <div className="mt-3 space-y-2">
