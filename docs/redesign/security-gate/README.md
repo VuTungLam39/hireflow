@@ -55,3 +55,6 @@ New: `docs/redesign/security-gate/*` (9 files), `docs/ket-qua/2026-11-24-securit
 STOP — R1 not started (scheduling only).
 
 **Update 25/11/2026:** R1 implemented (PR #139) — see file 07 "R1 record". R2 implemented (PR #140, stacked on R1). R1 merged (#139), R2 merged (#141), R3 implemented (see file 07 "R3 record"). Gate verdict unchanged until the re-check after R1–R3.
+
+**Re-check 25/11/2026:** R1–R3 merged. W1–W7 pass locally (file 08 "Gate re-check run"). Open before the gate can pass: W7 real-provider `ai:eval` (adversarial ≤ expected), W8 production probes, W9 B2 bucket ACL — all need owner action. Real data and Phase 05 CV/scoring/tenant slices stay blocked until then.
+

@@ -27,6 +27,7 @@ describe('Jobs (e2e)', () => {
     hr: `j-hr-${run}@example.com`,
     hmA: `j-hma-${run}@example.com`,
     hmB: `j-hmb-${run}@example.com`,
+    iv: `j-iv-${run}@example.com`,
   };
   type Who = keyof typeof emails;
   const tokens = {} as Record<Who, string>;
@@ -91,6 +92,7 @@ describe('Jobs (e2e)', () => {
           departmentId: b.id,
           passwordHash,
         },
+        { email: emails.iv, fullName: 'J IV', role: Role.Interviewer, passwordHash },
       ]),
     );
     for (const who of Object.keys(emails) as Who[]) {
@@ -150,6 +152,14 @@ describe('Jobs (e2e)', () => {
       await as('hmA', request(server()).patch(`/api/v1/jobs/${jobA}`))
         .send({ location: 'X' })
         .expect(403);
+    });
+
+    it('W3: hiring managers in or out of the department and interviewers cannot edit a job', async () => {
+      for (const who of ['hmA', 'hmB', 'iv'] as const) {
+        await as(who, request(server()).patch(`/api/v1/jobs/${jobA}`))
+          .send({ location: 'X' })
+          .expect(403);
+      }
     });
 
     it('HR edits the JD', async () => {

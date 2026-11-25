@@ -190,6 +190,8 @@ describe('Application tracking (e2e)', { timeout: 30_000 }, () => {
     });
     expect(audit).toMatchObject({ actorId: null, organizationId: application.organizationId });
 
+    // W6
+    expect((await applicationOf(2)).status).not.toBe(ApplicationStatus.Withdrawn);
     expect((await withdraw(token).expect(409)).body.code).toBe('APPLICATION_NOT_WITHDRAWABLE');
     expect((await track(token).expect(200)).body.data.stage).toBe('WITHDRAWN');
   });
