@@ -372,13 +372,13 @@ export function JobInfoSection({
       </div>
 
       {split ? (
-        <aside
+        <section
           aria-label="Ứng viên sẽ thấy"
           className="border-line bg-canvas/50 rounded-md border px-5 py-5 lg:sticky lg:top-0"
         >
           <p className="type-caption mb-3">Ứng viên sẽ thấy</p>
           {preview}
-        </aside>
+        </section>
       ) : (
         <details className="border-line group rounded-md border">
           <summary className="type-subheading flex cursor-pointer items-center justify-between px-4 py-3">
