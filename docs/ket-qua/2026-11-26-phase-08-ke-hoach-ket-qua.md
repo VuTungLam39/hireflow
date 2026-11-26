@@ -13,3 +13,4 @@
 - #183 (bổ sung K-05 sau review) chờ merge.
 - K-04: đã xác minh 500 thay vì 404, tách #182.
 - Còn lại: smoke production khu nội bộ bằng phiên Interviewer, HR/Admin (Chrome chưa kết nối).
+- Cập nhật: #183, #184 đã merge; smoke production K-02 bằng phiên Interviewer và HR đạt. Phát hiện K-06 (ô "Phòng ban" trên trang sửa tin).
