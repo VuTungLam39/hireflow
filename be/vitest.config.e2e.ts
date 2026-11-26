@@ -1,6 +1,10 @@
 import { defineConfig } from 'vitest/config';
 import { coreCoverage } from './vitest.coverage.js';
 
+// K-05: E2E không ghi vào DB dev trong .env; đặt ở đây để cả globalSetup cũng nhận
+process.env.DB_DATABASE ??= 'hireflow_test';
+process.env.DATABASE_URL ??= '';
+
 export default defineConfig({
   resolve: { tsconfigPaths: true },
   test: {
