@@ -316,7 +316,8 @@ Radius 4 px (marks, small controls), 6 px (buttons, inputs), 8 px (cards, dialog
 - **Sheet (quick view):** 480 px right sheet, read and navigate only — no state-changing actions.
 - **Dialog:** 480 px, used for confirmations; Từ chối requires a reason.
 - **Stale notice:** sunken bar "Dữ liệu lúc {giờ} · Tải lại".
-- Motion uses CSS/WAAPI only: 150 ms highlight settle, 200 ms sheet ease-out, no motion on keyboard list navigation, opacity-only under prefers-reduced-motion.
+- Motion uses CSS/WAAPI only: 150 ms highlight settle, 200 ms sheet ease-out, no motion on keyboard list navigation or command menu, opacity-only (≤100 ms) under prefers-reduced-motion. The 200 ms ceiling stands.
+- **Named exception `marker-focus` (DD-12):** the evidence pulse after jumping to a quote lasts 300 ms, because the eye needs time to find the passage once the scroll lands. It is colour only (kept under reduced motion). The exception covers this animation alone.
 
 ## Do's and Don'ts
 

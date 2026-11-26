@@ -66,6 +66,15 @@ describe('AppShell', () => {
     expect(useUiStore.getState().commandOpen).toBe(true)
   })
 
+  // M-03
+  it('opens quick search without animation', async () => {
+    renderRouteAs('hr@hireflow.dev', routes, '/')
+    fireEvent.keyDown(document, { key: 'k', ctrlKey: true })
+    const palette = await screen.findByRole('dialog', { name: 'Tìm nhanh' })
+    expect(palette.className).not.toContain('animate-')
+    act(() => useUiStore.getState().setCommandOpen(false))
+  })
+
   describe('compact rail (<600 px)', () => {
     const original = window.matchMedia
     beforeEach(() => {

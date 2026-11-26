@@ -40,6 +40,28 @@ describe('PublicJobDetailPage', () => {
     expect(document.activeElement).toBe(screen.getByLabelText('Họ tên'))
   })
 
+  // M-01
+  it.each([
+    [true, 'auto'],
+    [false, 'smooth'],
+  ])('jumping to the form with reduced motion %s scrolls %s', async (reduce, behavior) => {
+    const scroll = vi.fn()
+    const original = { match: window.matchMedia, scroll: Element.prototype.scrollIntoView }
+    window.matchMedia = ((query: string) => ({
+      matches: reduce && query === '(prefers-reduced-motion: reduce)',
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    })) as unknown as typeof window.matchMedia
+    Element.prototype.scrollIntoView = scroll
+    onTestFinished(() => {
+      window.matchMedia = original.match
+      Element.prototype.scrollIntoView = original.scroll
+    })
+    open(db.jobs.find((j) => j.status === 'OPEN')!.id)
+    fireEvent.click(await screen.findByRole('link', { name: 'Ứng tuyển vị trí này' }))
+    expect(scroll).toHaveBeenCalledWith({ behavior, block: 'start' })
+  })
+
   const open = (id: string) => {
     const router = createMemoryRouter(
       [{ path: paths.publicJobDetail, element: <PublicJobDetailPage /> }],

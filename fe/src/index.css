@@ -246,7 +246,7 @@
     .animate-slide-in-left,
     .animate-slide-in-up,
     dialog[open] {
-      animation: fade-in 120ms linear both !important;
+      animation: fade-in 100ms linear both !important;
     }
     .animate-skeleton,
     .animate-progress,
