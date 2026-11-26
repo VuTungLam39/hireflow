@@ -1,10 +1,10 @@
-// K-05: tạo (nếu thiếu) và migrate DB riêng cho E2E
+// K-05
 import { execSync } from 'node:child_process';
 import pg from 'pg';
 
-// đặt trước khi nạp .env (dotenv không ghi đè): chỉ biến đặt ở shell mới đổi được DB test
+// đặt trước dotenv để .env không ghi đè
 const database = (process.env.DB_DATABASE ??= 'hireflow_test');
-if ((process.env.DATABASE_URL ??= '')) process.exit(0);
+process.env.DATABASE_URL = '';
 await import('dotenv/config');
 
 const client = new pg.Client({
