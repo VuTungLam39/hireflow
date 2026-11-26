@@ -68,3 +68,11 @@ Lưu ý 6b: lớp phủ Command Palette không nhận fade của M-05 (M-03).
 - Production smoke (khách, 390 px): `/jobs`, `/companies`, một trang chi tiết tin: 1 h1, không tràn ngang, console 0 lỗi; nút "Ứng tuyển" gọi `scrollIntoView` với `auto` khi reduced motion, `smooth` khi không; focus vào ô nhập. CSS production có fade `.1s` cho `::backdrop`.
 - Chưa kiểm trên production: Command Palette (cần đăng nhập) — chỉ có test.
 - Rollback: revert PR.
+
+### 6b — PR #173, merged `83e5c85` (26/11/2026)
+- Kiểm trước merge: FE 358 test; lint, typecheck, format, build, check:* exit 0; CI xanh. Code-review: không lỗi triển khai; bổ sung test thời lượng lớp phủ và Command Palette không fade.
+- Trình duyệt local (Dialog, DropdownMenu, Popover, Sheet, NavSheet; có/không reduced motion): đúng nhịp, focus vào ngay, đóng sạch, hộp thoại căn giữa.
+- Production smoke (khách, 390 px): `/jobs`, `/companies`, chi tiết tin: 1 h1, không tràn; hộp "Bộ lọc": lớp phủ `fade-in` 150 ms, panel `float-in` 150 ms (reduced: 100 ms), focus trong hộp, căn giữa, Escape đóng; console 0 lỗi.
+- Chưa kiểm trên production: overlay khu nội bộ (cần đăng nhập).
+- Lỗi có sẵn: `src/test/flows/detail-dialog.test.tsx` chập chờn khi chạy cả bộ ở máy local (cũng trượt trên `main`).
+- Rollback: revert PR.
