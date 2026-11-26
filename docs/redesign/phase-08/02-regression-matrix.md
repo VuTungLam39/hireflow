@@ -27,7 +27,7 @@ Nguồn: `fe/src/routes/router.tsx`, `be/src/common/permissions/role-permissions
 | R16 | `/users`, `/departments`, `/admin/ai-queue`, `/admin/audit-logs` | | ✖ | ✔ | ✖ | ✖ | ✖ | ✖ | — |
 | R17 | `/admin/company` | | ✖ | ✔ | ✔ | ✖ | ✖ | ✖ | — |
 | R18 | `/platform/companies`, `/:id`, `/platform/queues` | 12 | ✖ | ✖ | ✖ | ✖ | ✖ | ✔ | — |
-| R19 | đường dẫn lạ (404) | | → login | ✔ | ✔ | ✔ | ✔ | ✔ | — |
+| R19 | đường dẫn lạ (404) | | ✔ (404 công khai) | ✔ | ✔ | ✔ | ✔ | ✔ | — |
 
 ## B. Luồng nghiệp vụ theo vai (8c)
 
@@ -38,7 +38,7 @@ Nguồn: `fe/src/routes/router.tsx`, `be/src/common/permissions/role-permissions
 | F03 | Tạo, sửa, đăng, đóng, nhân bản tin | AD, HR | — |
 | F04 | Danh sách hồ sơ → duyệt CV → đổi trạng thái kèm lý do; hàng loạt | HR | — |
 | F05 | Xếp hạng, trọng số; ứng viên cũ phù hợp | HR | — |
-| F06 | Kho ứng viên, sửa liên hệ, xoá dữ liệu | HR, AD | — |
+| F06 | Kho ứng viên, sửa liên hệ; ẩn danh dữ liệu (chỉ AD) | HR, AD | — |
 | F07 | Xếp lịch phỏng vấn → phiếu đánh giá | HR, IV | — |
 | F08 | Offer: soạn → duyệt → kết quả | HR, HM | — |
 | F09 | Hỏi kho CV | HR, HM | — |
@@ -49,17 +49,30 @@ Nguồn: `fe/src/routes/router.tsx`, `be/src/common/permissions/role-permissions
 
 | Vùng | Mặc định | Đang tải | Rỗng | Lỗi + thử lại | Không quyền |
 |---|---|---|---|---|---|
-| Dashboard, tin, hồ sơ, ứng viên, duyệt CV, xếp hạng, phỏng vấn, phiếu, Offer, quản trị, trang công khai | — | — | — | — | — |
+| Đăng nhập / phân quyền | — | — | — | — | — |
+| Dashboard | — | — | — | — | — |
+| Tin tuyển dụng | — | — | — | — | — |
+| Hồ sơ ứng tuyển | — | — | — | — | — |
+| Hồ sơ ứng viên | — | — | — | — | — |
+| Duyệt CV | — | — | — | — | — |
+| Xếp hạng | — | — | — | — | — |
+| Phỏng vấn | — | — | — | — | — |
+| Phiếu đánh giá | — | — | — | — | — |
+| Offer | — | — | — | — | — |
+| Quản trị | — | — | — | — | — |
+| Trang công khai | — | — | — | — | — |
+| 401 / 403 / not-found | — | — | — | — | — |
+| Phục hồi lỗi | — | — | — | — | — |
 
-## D. Viewport × Browser
+## D. Viewport × Browser (kết quả 8b)
 
-| Phạm vi | 390 | 768 | 1024 | 1440 | Chromium | Firefox | WebKit |
-|---|---|---|---|---|---|---|---|
-| Trang công khai + `/login` + 404 | PASS (8b) | — | — | PASS (8b) | PASS (8b) | PASS (8b) | PASS (8b) |
-| Route trọng yếu nội bộ CR-06…12 | PASS (8b) | — | — | PASS (8b) | PASS (8b) | không phủ | không phủ |
-| Route còn lại | — | — | — | — | — | không phủ | không phủ |
+| Phạm vi | Chromium 390, 1440 | Firefox, WebKit 390, 1440 | 768, 1024 | Ảnh baseline |
+|---|---|---|---|---|
+| Trang công khai R01–R05 và 404 | PASS: 1 h1, không tràn, không lỗi JS | PASS: như cột trước | — | chỉ CR-01…05, CR-13 (Chromium) |
+| CR-06…11 (Admin công ty), CR-12 (quản trị sàn) | PASS: tải được, không tràn, khớp ảnh | không phủ | — | có (Chromium) |
+| Route còn lại | — | không phủ | — | không |
 
-`PASS (8b)` chỉ nghĩa là trang tải được, không tràn ngang và khớp ảnh baseline; trang công khai thêm 1 h1 và không lỗi JS.
+Chưa phủ: CR-13 **có token** (cần link trong email), các tab bên trong hộp thoại, vai HR, HM, IV.
 
 ## E. Production (chỉ đọc, phiên Chrome của chủ dự án)
 Khách: Claude tự chạy. AD, HR, HM, IV, PF: chủ dự án đăng nhập từng vai; vai không phủ được ghi `BLK`.

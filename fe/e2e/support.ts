@@ -16,7 +16,6 @@ export async function open(page: Page, path: string) {
 export const overflowX = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
 
-/** Đăng nhập qua API: cookie refresh nằm chung cookie jar nên app tự khôi phục phiên */
 export async function login(page: Page, email: string) {
   const res = await page.request.post('/api/v1/auth/login', {
     data: { email, password: process.env.E2E_PASSWORD ?? 'Admin@123' },
@@ -33,6 +32,14 @@ export async function login(page: Page, email: string) {
 }
 
 export async function publicIds(page: Page) {
-  const jobs = (await (await page.request.get('/api/v1/public/jobs?limit=1')).json()).data
-  return { jobId: jobs[0].id as string, slug: jobs[0].company.slug as string }
+  const res = await page.request.get('/api/v1/public/jobs?limit=1')
+  expect(res.ok(), `public/jobs: ${res.status()}`).toBe(true)
+  const [job] = (await res.json()).data
+  expect(job, 'seed không có tin đang mở').toBeTruthy()
+  return {
+    jobId: job.id as string,
+    jobTitle: job.title as string,
+    slug: job.company.slug as string,
+    company: job.company.name as string,
+  }
 }

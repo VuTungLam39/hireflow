@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { defineConfig, devices } from '@playwright/test'
 
-// Phase 08 · master plan §08.2: chạy với stack local (docker compose + seed demo), không chạm production
+// P8 · §08.2
 export default defineConfig({
   testDir: './e2e',
   workers: 1,
