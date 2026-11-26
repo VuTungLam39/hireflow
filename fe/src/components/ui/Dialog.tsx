@@ -37,7 +37,7 @@ export const overlayClass = 'bg-ink/40 fixed inset-0 z-50'
 
 // <600 px: toàn màn hình (contract Dialog)
 export const dialogPanelClass =
-  'border-line bg-surface text-ink-2 shadow-float fixed inset-0 z-50 overflow-y-auto p-5 focus:outline-none min-[600px]:inset-auto min-[600px]:top-1/2 min-[600px]:left-1/2 min-[600px]:max-h-[calc(100dvh-2rem)] min-[600px]:w-[calc(100%-2rem)] min-[600px]:-translate-x-1/2 min-[600px]:-translate-y-1/2 min-[600px]:rounded-md min-[600px]:border min-[600px]:p-6'
+  'border-line bg-surface text-ink-2 shadow-float animate-float-in fixed inset-0 z-50 overflow-y-auto p-5 focus:outline-none min-[600px]:inset-auto min-[600px]:top-1/2 min-[600px]:left-1/2 min-[600px]:max-h-[calc(100dvh-2rem)] min-[600px]:w-[calc(100%-2rem)] min-[600px]:-translate-x-1/2 min-[600px]:-translate-y-1/2 min-[600px]:rounded-md min-[600px]:border min-[600px]:p-6'
 
 export const dialogTitleClass =
   'text-ink font-display text-xl leading-7 font-semibold tracking-[-0.01em]'
@@ -61,7 +61,7 @@ export function Dialog({
       }}
     >
       <RD.Portal>
-        <RD.Overlay className={overlayClass} />
+        <RD.Overlay className={`${overlayClass} animate-overlay-in`} />
         <RD.Content
           {...focus}
           className={cn(dialogPanelClass, widths[size])}
