@@ -26,6 +26,14 @@ const weightSelect = () =>
 
 // US-05 · BR-AI-05
 describe('JobRankingPage', () => {
+  it('BR-INT-02: an Interviewer gets the 403 page', async () => {
+    renderAs('interviewer@hireflow.dev')
+
+    expect(
+      await screen.findByRole('heading', { name: 'Trang này không thuộc quyền của bạn' }),
+    ).toBeInTheDocument()
+  })
+
   it('lets HR save the new weights', async () => {
     renderAs('hr@hireflow.dev')
     const slider = await weightSelect()
