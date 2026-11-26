@@ -52,7 +52,7 @@ Cuộn tới form / căn cứ (M-01): trigger bấm nút; cuộn mượt; reduce
 
 DoD §06.6: motion có mục đích, nhất quán, không mất focus, bàn phím chạy, có reduced motion, không giật, không chậm đi.
 
-Ghi nhận từ review 6a: khi reduced motion, `transition` màu/opacity vẫn dài 150–200 ms (chỉ `transition-property` bị giới hạn). Ngoài M-02; chờ chủ dự án quyết có áp ≤100 ms cho transition không.
+Ghi nhận từ review 6a, chủ dự án duyệt áp trong 6c (26/11/2026): khi reduced motion, `transition` của phần tử có class transition dài ≤100 ms.
 
 Lưu ý 6b: lớp phủ Command Palette không nhận fade của M-05 (M-03).
 
