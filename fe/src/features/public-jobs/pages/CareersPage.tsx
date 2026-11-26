@@ -288,7 +288,7 @@ function Gallery({ images }: { images: CompanyMedia[] }) {
                 width={image.width}
                 height={image.height}
                 loading="lazy"
-                className="aspect-[3/2] size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                className="aspect-[3/2] size-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
               />
             </button>
           </li>
