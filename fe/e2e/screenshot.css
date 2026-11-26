@@ -1,0 +1,4 @@
+.tsqd-parent-container,
+[class*='tsqd-'] {
+  display: none !important;
+}
