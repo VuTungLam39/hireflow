@@ -38,3 +38,23 @@ describe('JobFormPage', () => {
     expect(select.value).toBe(job.departmentId)
   })
 })
+
+describe('JobFormPage — tạo tin', () => {
+  // K-03
+  it('shows the candidate preview as a named region, not a complementary landmark', async () => {
+    const row = db.users.find((u) => u.email === 'hr@hireflow.dev')!
+    useAuthStore.getState().setSession(toUser(row), tokenFor(row))
+    const router = createMemoryRouter([{ path: paths.jobNew, element: <JobFormPage /> }], {
+      initialEntries: [paths.jobNew],
+    })
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    )
+    expect(await screen.findByRole('region', { name: 'Ứng viên sẽ thấy' })).toBeInTheDocument()
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument()
+  })
+})
