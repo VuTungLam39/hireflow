@@ -6,10 +6,10 @@ Môi trường: production, `main` @ `b09def4`, chỉ đọc. Baseline: Phase 01
 | Ngưỡng §5 | Kết quả |
 |---|---|
 | Lighthouse a11y 100 (6 trang công khai) | **PASS** |
-| Lighthouse perf không thấp hơn baseline quá 5 | **FAIL** ở `/login` (−8); 5 trang còn lại PASS |
+| Lighthouse perf không thấp hơn baseline quá 5 | **FAIL** ở `/login` (−8), ngoại lệ được chấp nhận (K-07); 5 trang còn lại PASS |
 | T1: số thao tác không tăng, thời gian ≤ +20 % | **PASS** |
 | T2-proxy ≤ 3 thao tác | **PASS**; RR-08 (≤ 2) chưa đạt |
-| T3: số thao tác không tăng, thời gian ≤ +20 % | **FAIL** số thao tác (4 so với 3); thời gian PASS |
+| T3: số thao tác không tăng, thời gian ≤ +20 % | **FAIL** số thao tác (4 so với 3), lệch có chủ ý chờ xác nhận ở gate (K-08); thời gian PASS |
 
 ## 1. Lighthouse 12.8.2 (mobile giả lập, trung vị 3 lượt)
 | Route | Perf (các lượt) | Trung vị / baseline | A11y | BP | SEO | LCP / baseline | FCP | TBT | CLS |
