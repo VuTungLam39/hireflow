@@ -398,3 +398,10 @@ layouts Sidebar/Topbar/UserMenu (7) → slice 5 · ConfirmDialog/DetailDialog/Si
   - **Chưa kiểm trên production:** Sheet trích dẫn ở ChatPage (hỏi trợ lý tốn lượt AI trong ngày của công ty — chỉ có test); các trang Quản trị sàn (cần tài khoản platform admin — chỉ có test).
 - **Phase 05 slice 0–12 đóng sau PR này.** Còn mở: R4–R6 (bảo mật), ghi chú Entry 7 (mất cú bấm trước hydrate ở trang công khai prerender).
 
+
+## Entry 20 — #129: cửa sổ 30 ngày cho trang chi tiết tin hết hạn/đã đóng (DL-17)
+- **PR #169**, **merged:** `0fb4be8` (26/11/2026). Rollback: revert PR (không migration).
+- **Kiểm trước merge:** BE unit 472, e2e 366, FE 346; lint/typecheck/format/build/check:* exit 0; CI xanh; code-review hai trục không có lỗi chặn.
+- **Khác issue:** sửa tối thiểu FE (câu "Việc làm này đã hết hạn.", ẩn ô "Hạn nộp" khi đóng trước hạn) và prerender bỏ qua tin đã hết hạn.
+- **Production smoke (`0fb4be8`, khách):** Render deploy success, `/api/health` 200; `/jobs`, `/companies`, một trang chi tiết tin đang mở: 1 h1, không tràn ngang (viewport mặc định), console 0 lỗi, `expired: false`, có form ứng tuyển; id không tồn tại → 404 `NOT_FOUND`.
+- **Chưa kiểm trên production:** tin hết hạn/đã đóng trong cửa sổ và quá cửa sổ (API công khai không liệt kê tin đã hết hiệu lực; không đóng tin thật vì không mở lại được) — chỉ có e2e/test.
