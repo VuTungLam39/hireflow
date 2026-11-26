@@ -108,7 +108,7 @@ export function Popover({
               if (ref.current?.contains(e.target as Node)) e.preventDefault()
             }}
             className={cn(
-              'border-line bg-surface shadow-float animate-float-in z-50 min-w-48 rounded-md border p-1.5',
+              'border-line bg-surface shadow-float animate-float-in z-50 min-w-48 origin-(--radix-popover-content-transform-origin) rounded-md border p-1.5',
               className,
             )}
           >

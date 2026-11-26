@@ -94,7 +94,7 @@ export function AlertDialog({
   return (
     <RA.Root open={open} onOpenChange={(o) => !o && close()}>
       <RA.Portal>
-        <RA.Overlay className={overlayClass} />
+        <RA.Overlay className={`${overlayClass} animate-overlay-in`} />
         <RA.Content
           onCloseAutoFocus={focus.onCloseAutoFocus}
           onOpenAutoFocus={focus.onOpenAutoFocus}

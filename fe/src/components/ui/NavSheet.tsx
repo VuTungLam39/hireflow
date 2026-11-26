@@ -18,7 +18,7 @@ export function NavSheet({ open, onOpenChange, title, children }: NavSheetProps)
   return (
     <RD.Root open={open} onOpenChange={onOpenChange}>
       <RD.Portal>
-        <RD.Overlay className={overlayClass} />
+        <RD.Overlay className={`${overlayClass} animate-overlay-sheet`} />
         <RD.Content
           aria-describedby={undefined}
           {...focus}

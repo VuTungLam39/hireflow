@@ -42,7 +42,7 @@ export function DropdownMenu({
           align={align}
           sideOffset={4}
           className={cn(
-            'border-line bg-surface shadow-float animate-float-in z-50 min-w-48 rounded-md border p-1',
+            'border-line bg-surface shadow-float animate-float-in z-50 min-w-48 origin-(--radix-dropdown-menu-content-transform-origin) rounded-md border p-1',
             className,
           )}
         >
