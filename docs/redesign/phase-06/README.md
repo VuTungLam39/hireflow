@@ -60,3 +60,11 @@ Lưu ý 6b: lớp phủ Command Palette không nhận fade của M-05 (M-03).
 
 - **Q1:** giữ `marker-focus` 300 ms; ngoại lệ có tên trong DESIGN.md, ghi DD-12.
 - **Q2:** duyệt M-01…M-07 và thứ tự 6a → 6b → 6c.
+
+## 7. Implementation log
+
+### 6a — PR #171, merged `200ef40` (26/11/2026)
+- Kiểm trước merge: FE 350 test; lint, typecheck, format, build, check:* exit 0; CI xanh. Code-review: sửa thêm lớp phủ `<dialog>` còn fade 150 ms khi reduced motion.
+- Production smoke (khách, 390 px): `/jobs`, `/companies`, một trang chi tiết tin: 1 h1, không tràn ngang, console 0 lỗi; nút "Ứng tuyển" gọi `scrollIntoView` với `auto` khi reduced motion, `smooth` khi không; focus vào ô nhập. CSS production có fade `.1s` cho `::backdrop`.
+- Chưa kiểm trên production: Command Palette (cần đăng nhập) — chỉ có test.
+- Rollback: revert PR.
