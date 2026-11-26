@@ -51,6 +51,9 @@ export function JobInfoSection({
   // BR-JOB-11
   const departmentLocked = !!job && job.applicationCount > 0
   const departments = useDepartmentOptions()
+  // K-06: một danh sách theo key, để option đang chọn không bị gỡ khi dữ liệu về
+  const deptOptions: { id: string; name: string }[] = [...(departments.data ?? [])]
+  if (job && !deptOptions.some((d) => d.id === job.department.id)) deptOptions.push(job.department)
   const saveJob = useSaveJob()
   const {
     register,
@@ -166,10 +169,7 @@ export function JobInfoSection({
                 {...register('departmentId')}
               >
                 <option value="">Chọn phòng ban</option>
-                {job && !departments.data?.some((d) => d.id === job.department.id) && (
-                  <option value={job.department.id}>{job.department.name}</option>
-                )}
-                {departments.data?.map((d) => (
+                {deptOptions.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.name}
                   </option>
