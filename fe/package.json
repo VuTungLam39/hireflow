@@ -20,7 +20,9 @@
     "tokens": "designmd export --format css-tailwind DESIGN.md > src/styles/tokens.generated.css && node scripts/tokens-namespace.mjs && prettier --write src/styles/tokens.generated.css",
     "check:tokens": "designmd lint DESIGN.md && npm run tokens && git diff --exit-code -- src/styles/tokens.generated.css",
     "check:terms": "node scripts/check-terms.mjs",
-    "check:bundle": "node scripts/check-bundle.mjs"
+    "check:bundle": "node scripts/check-bundle.mjs",
+    "e2e": "playwright test",
+    "e2e:update": "playwright test --update-snapshots"
   },
   "dependencies": {
     "@hookform/resolvers": "^6.0.0",
@@ -48,6 +50,7 @@
   },
   "devDependencies": {
     "@google/design.md": "0.4.0",
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-query-devtools": "^5.104.4",
     "@testing-library/jest-dom": "^7.0.1",

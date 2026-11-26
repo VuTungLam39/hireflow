@@ -52,3 +52,6 @@ Lỗi tìm được: ghi vào 07 trước; sửa ở PR riêng sau khi chủ d�
 - **Q3:** không gửi mật khẩu. Smoke nội bộ production: chủ dự án tự đăng nhập từng vai trong Chrome, Claude lái phiên đó, chỉ đọc (kể cả Quản trị sàn nếu chủ dự án muốn). Vai không phủ được → BLK. Ma trận đầy đủ và thao tác ghi chạy ở local.
 - **Q4:** dùng LLM thật ở 8e, chỉ bộ eval/adversarial của gate, ghi số lượt gọi.
 - **Q5:** tự mở PR, merge, smoke cho **8a và 8b**. 8c–8e chỉ tạo kết quả; lỗi sửa ở PR riêng do chủ dự án chọn (P0 báo ngay). 8f: không revert gì trên `main` khi chủ dự án vắng; kết luận release gate chờ chủ dự án.
+
+## 7. Nhật ký phát hành (§05.5)
+- **8a** — PR #177, merge `33fc67f` (26/11/2026). Smoke production: `/jobs` 200, `/companies` 200, `/api/health` 200. Chỉ đổi cấu hình test; tự rà diff trước merge, code-review hai trục chạy sau cùng với 8b.

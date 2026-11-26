@@ -29,3 +29,7 @@ dist-profile
 .env.local
 .env.*.local
 coverage
+
+# Playwright
+test-results/
+playwright-report/
