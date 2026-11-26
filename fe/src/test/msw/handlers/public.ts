@@ -128,11 +128,11 @@ export const publicHandlers = [
 
   http.get(api('/public/jobs/:id'), async ({ params }) => {
     await delay()
-    const job = db.jobs.find((j) => j.id === params.id && j.status === 'OPEN')
+    const job = db.jobs.find((j) => j.id === params.id && j.status !== 'DRAFT')
     if (!job) return notFound('Job')
     const data: PublicJob = {
       ...toPublicSummary(job),
-      expired: isExpired(job),
+      expired: job.status === 'CLOSED' || isExpired(job),
       benefits: job.benefits,
       jdText: job.jdText,
       requirements: job.requirements.map((r) => ({ label: r.label, type: r.type })),

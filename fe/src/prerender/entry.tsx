@@ -195,6 +195,8 @@ export async function prerenderPublicPages(options: PrerenderOptions): Promise<P
 
   for (const summary of await fetchAllSummaries(apiUrl, timeoutMs)) {
     const job = (await getJson<PublicJob>(`${apiUrl}/public/jobs/${summary.id}`, timeoutMs)).data
+    // DL-17
+    if (job.expired) continue
     const path = links.publicJobDetail(job.id)
     // US-24: og:image lấy ảnh bìa hoặc logo của công ty đăng tin
     const image = coverOf(companies.get(job.company.slug))

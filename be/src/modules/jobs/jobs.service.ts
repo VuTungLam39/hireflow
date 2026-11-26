@@ -47,7 +47,7 @@ import {
   SalaryVisibility,
   WorkMode,
 } from './entities/job.entity.js';
-import { notExpiredSql, vnToday } from '../../common/utils/vn-date.js';
+import { notExpiredSql, VN_TIME_ZONE, vnToday } from '../../common/utils/vn-date.js';
 import { PrerenderHookService } from './prerender-hook.service.js';
 import { AppEvents } from '../../common/events/app-events.js';
 import { QueryPublicJobsDto } from './dto/query-public-jobs.dto.js';
@@ -148,6 +148,12 @@ export interface PublicJobSummaryView {
 }
 
 export const OTHER_JOBS_LIMIT = 4;
+export const PUBLIC_EXPIRED_WINDOW_DAYS = 30;
+
+// DL-17
+const ENDED_AT_SQL = `LEAST((job.deadline + 1)::timestamp AT TIME ZONE '${VN_TIME_ZONE}', CASE WHEN job.status = 'CLOSED' THEN job.closedAt END)`;
+const LIVE_SQL = `(job.status = 'OPEN' AND ${notExpiredSql('job')})`;
+const RECENTLY_ENDED_SQL = `(job.status IN ('OPEN', 'CLOSED') AND ${ENDED_AT_SQL} <= now() AND ${ENDED_AT_SQL} >= now() - interval '${PUBLIC_EXPIRED_WINDOW_DAYS} days')`;
 
 export interface PublicJobView extends PublicJobSummaryView {
   /** BR-JOB-10: quá hạn nộp thì vẫn xem được tin nhưng không nhận hồ sơ */
@@ -777,11 +783,13 @@ export class JobsService {
     });
   }
 
-  // BR-APP-02, BR-JOB-07
+  // BR-APP-02, BR-JOB-07, DL-17
   async findPublicOne(id: string): Promise<PublicJobView> {
     const job = await this.publicQuery()
       .addSelect(['job.jdText', 'job.benefits'])
-      .addSelect(`NOT ${notExpiredSql('job')}`, 'expired')
+      .addSelect(`NOT ${LIVE_SQL}`, 'expired')
+      // DL-17
+      .where(`(${LIVE_SQL} OR ${RECENTLY_ENDED_SQL})`)
       .andWhere('job.id = :id', { id })
       .getRawAndEntities()
       .then(({ entities, raw }) =>

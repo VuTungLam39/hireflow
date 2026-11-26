@@ -5,6 +5,7 @@ import request from 'supertest';
 import { DataSource, In } from 'typeorm';
 import { AppModule } from '../src/app.module.js';
 import { Role } from '../src/common/enums/role.enum.js';
+import { vnToday } from '../src/common/utils/vn-date.js';
 import { makeDocx, SAMPLE_CV } from '../src/modules/ai/testing/cv-fixtures.js';
 import { CompanyProfile } from '../src/modules/company/entities/company-profile.entity.js';
 import { MediaFile, MediaKind } from '../src/modules/company/entities/media-file.entity.js';
@@ -209,6 +210,81 @@ describe('Public marketplace (e2e)', () => {
     expect(others).toHaveLength(4);
     expect(others.map((o) => o.id)).not.toContain(jobsA[0]);
     expect(others.every((o) => o.company.slug === slugA)).toBe(true);
+  });
+
+  describe('DL-17: the detail page of an ended job stays 30 days', () => {
+    const daysAgo = (days: number) => new Date(Date.now() - days * 86_400_000);
+    const { Open, Closed, Draft } = JobStatus;
+    let id = '';
+
+    beforeAll(async () => {
+      const { createdBy } = await ds.getRepository(Job).findOneByOrFail({ id: jobsA[0] });
+      const saved = await ds.getRepository(Job).save(
+        withOrg(
+          {
+            title: `Tin DL17 ${run}`,
+            departmentId: deptA,
+            status: Draft,
+            location: 'Hà Nội',
+            jdText: 'Tin thử.',
+            createdBy,
+            publishedAt: new Date(),
+          },
+          orgA,
+        ),
+      );
+      id = saved.id;
+    });
+
+    afterAll(async () => {
+      await ds.getRepository(Job).delete({ id });
+    });
+
+    const set = (status: JobStatus, deadlineAgo: number | null, closedAgo: number | null) =>
+      ds.getRepository(Job).update(id, {
+        status,
+        deadline: deadlineAgo === null ? null : vnToday(daysAgo(deadlineAgo)),
+        closedAt: closedAgo === null ? null : daysAgo(closedAgo),
+      });
+
+    it.each([
+      ['OPEN, deadline yesterday', Open, 1, null, 200],
+      ['OPEN, deadline 31 days ago', Open, 31, null, 404],
+      ['CLOSED yesterday', Closed, null, 1, 200],
+      ['CLOSED 31 days ago', Closed, null, 31, 404],
+      ['CLOSED without closed_at or deadline', Closed, null, null, 404],
+      ['CLOSED without closed_at, deadline yesterday', Closed, 1, null, 200],
+      ['CLOSED yesterday, deadline 40 days ago', Closed, 40, 1, 404],
+      ['DRAFT, deadline yesterday', Draft, 1, null, 404],
+    ])('%s', async (_name, status, deadlineAgo, closedAgo, code) => {
+      await set(status, deadlineAgo, closedAgo);
+      const res = await get(`/public/jobs/${id}`).expect(code);
+      if (code === 200) expect(res.body.data.expired).toBe(true);
+      else expect(res.body.code).toBe('NOT_FOUND');
+      expect((await list(`company=${slugA}`)).map((j) => j.id)).not.toContain(id);
+    });
+
+    it('the window only widens reading: no apply, nothing once the company is suspended', async () => {
+      await set(Closed, null, 1);
+      await request(server())
+        .post(`/api/v1/public/jobs/${id}/apply`)
+        .field('fullName', 'Ứng viên Thử')
+        .field('email', `dl17-${run}@example.com`)
+        .field('phone', '0912345678')
+        .field('consent', 'true')
+        .attach('cv', await makeDocx(SAMPLE_CV), {
+          filename: 'cv.docx',
+          contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        })
+        .expect(404);
+      const orgs = ds.getRepository(Organization);
+      await orgs.update(orgA, { status: OrganizationStatus.Suspended });
+      try {
+        await get(`/public/jobs/${id}`).expect(404);
+      } finally {
+        await orgs.update(orgA, { status: OrganizationStatus.Active });
+      }
+    });
   });
 
   it('US-23: the directory lists ACTIVE companies with a complete page; a company page has its jobs', async () => {
