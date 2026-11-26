@@ -1,6 +1,6 @@
 # Phase 06 — Motion & Interaction Polish
 
-Trạng thái: **spec đã duyệt** (chủ dự án, 26/11/2026): M-01…M-07, thứ tự 6a → 6b → 6c, Q1 giữ 300 ms. Nhãn bằng chứng: SV (đọc source @ `dca07a8`); chưa kiểm runtime.
+Trạng thái: **đóng** (6a, 6b, 6c đã phát hành 26/11/2026); spec đã duyệt (chủ dự án, 26/11/2026): M-01…M-07, thứ tự 6a → 6b → 6c, Q1 giữ 300 ms. Nhãn bằng chứng: SV (đọc source @ `dca07a8`); chưa kiểm runtime.
 
 Chuẩn đối chiếu: master plan §06; DNA §9; token spec (100/150/200 ms, standard `cubic-bezier(.2,0,0,1)`); accessibility contract (reduced motion: chỉ opacity, ≤100 ms, không cuộn mượt).
 
@@ -76,3 +76,14 @@ Lưu ý 6b: lớp phủ Command Palette không nhận fade của M-05 (M-03).
 - Chưa kiểm trên production: overlay khu nội bộ (cần đăng nhập).
 - Lỗi có sẵn: `src/test/flows/detail-dialog.test.tsx` chập chờn khi chạy cả bộ ở máy local (cũng trượt trên `main`).
 - Rollback: revert PR.
+
+### 6c — PR #175, merged `14a411e` (26/11/2026)
+- Kiểm trước merge: FE 367 test; lint, typecheck, format, build, check:* exit 0; CI xanh. Code-review: siết test chặn (class `animate-*` lạ, `delay-*`, thuộc tính tuỳ ý, CSS viết cứng, ghim `marker-focus` 300 ms).
+- Production smoke (khách, 390 px): `/jobs`, `/companies`, chi tiết tin: 1 h1, không tràn; token `--duration-base` .15s; link 150 → 100 ms khi reduced motion, h1 không có transition (0 s); hộp "Bộ lọc" 150 ms / 100 ms; console 0 lỗi.
+- Giới hạn của test chặn: không quét CSS thư viện (Sonner), style inline, WAAPI.
+- Rollback: revert PR.
+
+## 8. Đóng phase (DoD §06.6)
+M-01…M-07 đã sửa. Motion có mục đích và dùng chung token; focus và bàn phím giữ nguyên (test + trình duyệt); reduced motion chỉ mờ ≤100 ms; không thêm thư viện. **Chưa đo:** hiệu năng (jank, bundle) bằng công cụ; overlay khu nội bộ chưa kiểm trên production.
+
+Còn mở ngoài phase: `src/test/flows/detail-dialog.test.tsx` chập chờn ở máy local.
