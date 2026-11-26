@@ -44,3 +44,39 @@ docker exec hireflow-postgres createdb -U postgres -T ncc_intern ncc_intern_p8
 DB_DATABASE=ncc_intern_p8 LLM_PROVIDERS=fake EMBEDDING_PROVIDER=fake EMAIL_PROVIDER=mailpit E2E_FLOWS=1 npx playwright test flows
 docker exec hireflow-postgres dropdb -U postgres --force ncc_intern_p8
 ```
+
+## 6. Security Gate chạy lại (8e, 26/11/2026)
+Baseline: `main` @ `4ac96a7`. Hồ sơ gate: `docs/redesign/security-gate/` (W1–W9 ở file 08). Bộ tự động local: BE unit 472/472, BE E2E 366/366 (DB `hireflow_test`, LLM giả).
+
+| # | Kiểm | Bằng chứng 26/11 | Kết quả |
+|---|---|---|---|
+| W1 | Cô lập công ty: bulk-status, id trong body (SG-01) | `cross-tenant.e2e` | **PASS** |
+| W2 | Ghi lên hồ sơ công ty khác giống id không tồn tại (SG-02) | `cross-tenant.e2e`, `applications.e2e` | **PASS** |
+| W3 | HM, Interviewer không sửa được tin | `jobs.e2e` | **PASS** |
+| W4 | Khoá công ty cắt phiên đang mở | `platform.e2e` | **PASS** |
+| W5 | Đăng xuất thu hồi refresh token | `app.e2e` | **PASS** |
+| W6 | Token theo dõi chỉ thấy đúng hồ sơ của nó | `application-tracking.e2e` | **PASS** |
+| W7 | Trung thực trích dẫn, chữ ẩn, số năm (SG-03) | unit `cv-parser`, `scoring`; e2e `BR-AI-03` | **PASS** |
+| W7 | Prompt injection với LLM thật | `ai:eval` (dưới) | **PASS** |
+| W8 | Production: HR công ty A mở tin công ty B | phiên HR trong Chrome, chỉ đọc: tin mình 200; tin `vi-may`, `cho-lanh` và id ngẫu nhiên đều 404, cùng thông báo | **PASS** |
+| W9 | Bucket B2 riêng tư | **Chưa chạy lại** (cần chủ dự án vào console B2). Lần 25/11 PASS; mã `modules/files` không đổi từ đó | **Chưa kiểm lại** |
+
+### Eval LLM thật
+- **Số lượt gọi: 11** (đếm ở tầng `fetch`; cả 11 HTTP 200, không retry, không dùng model dự phòng). Chỉ chạy bộ `ai:eval` một lần.
+- Model `gemini-3.5-flash-lite`, prompt `v4`, 11 CV × 2 JD. Báo cáo: `be/docs/ai-eval/20261126-0843-v4.md`.
+- Tiêu chí đúng 99/99; bằng chứng có thật 69/69; injection bị làm theo 0/2; CV đối kháng không bị thổi điểm 2/2.
+
+### Kiểm kèm (production, chỉ đọc)
+| Mục | Kết quả |
+|---|---|
+| 10 endpoint cần đăng nhập, không token | 401 |
+| Chữ ký tệp sai; truy cập vượt thư mục media | 404 |
+| SG-04: 78 chunk JS của bản production | không có mật khẩu seed, không có email `@hireflow.dev` |
+| SG-05: `GET /public/applications/track?t=…` | đã gỡ (404), lỗi không lặp lại token |
+| Header API (CSP, HSTS, `no-referrer`, nosniff, SAMEORIGIN) | có đủ |
+| Tìm khoá trong tệp được theo dõi | chỉ có chuỗi mẫu trong README và test |
+
+### Kết luận 8e
+Không thấy lỗi mới. W1–W8 PASS; W9 chưa kiểm lại. Kết luận gate cuối cùng thuộc 8f và chờ chủ dự án.
+
+**Giới hạn:** eval chỉ phủ bước trích xuất CV, một lần chạy, một model, theo `.env` local (chưa đối chiếu cấu hình model trên Render); injection qua `/ai-chat` với LLM thật không thuộc bộ eval của gate; W8 chỉ thử được id tin tuyển dụng. SG-06 vẫn chờ smoke quên mật khẩu bằng hộp thư thật.

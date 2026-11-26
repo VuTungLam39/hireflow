@@ -17,3 +17,6 @@
 
 ## 8d — hiệu năng (tối 26/11)
 - a11y 100; perf đạt 5/6, `/login` trượt (−8, K-07). T1, T2-proxy đạt; T3 trượt số thao tác (K-08). Chi tiết: `docs/redesign/phase-08/06-performance-results.md`.
+
+## 8e — Security Gate chạy lại (tối 26/11)
+- W1–W8 PASS, W9 (bucket B2) chưa kiểm lại. LLM thật: 11 lượt gọi. Chi tiết: `docs/redesign/phase-08/03-e2e-results.md` §6.
