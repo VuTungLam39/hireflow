@@ -245,8 +245,10 @@
     .animate-slide-in-right,
     .animate-slide-in-left,
     .animate-slide-in-up,
-    dialog[open] {
-      animation: fade-in 120ms linear both !important;
+    .animate-fade-in,
+    dialog[open],
+    dialog[open]::backdrop {
+      animation: fade-in 100ms linear both !important;
     }
     .animate-skeleton,
     .animate-progress,

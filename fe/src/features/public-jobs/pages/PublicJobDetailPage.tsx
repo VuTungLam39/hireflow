@@ -203,7 +203,12 @@ export default function PublicJobDetailPage() {
             className={cn(buttonVariants({ size: 'lg' }), 'w-full')}
             onClick={(e) => {
               e.preventDefault()
-              formRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+              // M-01
+              const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+              formRef.current?.scrollIntoView?.({
+                behavior: reduce ? 'auto' : 'smooth',
+                block: 'start',
+              })
               formRef.current
                 ?.querySelector<HTMLInputElement>('input')
                 ?.focus({ preventScroll: true })

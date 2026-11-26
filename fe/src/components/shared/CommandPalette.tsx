@@ -50,7 +50,7 @@ export function CommandPalette({
         <RD.Content
           aria-describedby={undefined}
           {...focus}
-          className="border-line bg-surface shadow-float animate-float-in fixed top-[12vh] left-1/2 z-50 w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 rounded-md border focus:outline-none"
+          className="border-line bg-surface shadow-float fixed top-[12vh] left-1/2 z-50 w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 rounded-md border focus:outline-none"
         >
           <RD.Title className="sr-only">Tìm nhanh</RD.Title>
           <Command shouldFilter={false} loop label="Tìm nhanh">
