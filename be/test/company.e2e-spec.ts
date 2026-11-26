@@ -10,6 +10,7 @@ import { AuditLog } from '../src/modules/audit/entities/audit-log.entity.js';
 import { CompanyProfile } from '../src/modules/company/entities/company-profile.entity.js';
 import { MediaFile } from '../src/modules/company/entities/media-file.entity.js';
 import { Department } from '../src/modules/departments/entities/department.entity.js';
+import { StorageService } from '../src/modules/files/storage/storage.service.js';
 import { User } from '../src/modules/users/entities/user.entity.js';
 import { setupApp } from '../src/setup-app.js';
 import { ORG, withOrg } from './fixtures.js';
@@ -61,11 +62,13 @@ describe('Company profile and public media (e2e)', () => {
 
     // Hồ sơ công ty là một dòng duy nhất: chụp lại để trả nguyên trạng sau khi test
     saved = {
-      profiles: await ds.getRepository(CompanyProfile).find(),
-      media: await ds.getRepository(MediaFile).find({ withDeleted: true }),
+      profiles: await ds.getRepository(CompanyProfile).findBy({ organizationId: ORG }),
+      media: await ds
+        .getRepository(MediaFile)
+        .find({ where: { organizationId: ORG }, withDeleted: true }),
     };
-    await ds.query('DELETE FROM media_files');
-    await ds.query('DELETE FROM company_profile');
+    await ds.query('DELETE FROM media_files WHERE organization_id = $1', [ORG]);
+    await ds.query('DELETE FROM company_profile WHERE organization_id = $1', [ORG]);
 
     const dep = await ds
       .getRepository(Department)
@@ -95,8 +98,8 @@ describe('Company profile and public media (e2e)', () => {
   });
 
   afterAll(async () => {
-    await ds.query('DELETE FROM media_files');
-    await ds.query('DELETE FROM company_profile');
+    await ds.query('DELETE FROM media_files WHERE organization_id = $1', [ORG]);
+    await ds.query('DELETE FROM company_profile WHERE organization_id = $1', [ORG]);
     if (saved.media.length) await ds.getRepository(MediaFile).save(withOrg(saved.media));
     if (saved.profiles.length) await ds.getRepository(CompanyProfile).save(saved.profiles);
     await ds.getRepository(User).delete({ email: In(Object.values(emails)) });
@@ -217,9 +220,28 @@ describe('Company profile and public media (e2e)', () => {
     }
   });
 
+  // K-04
+  it('answers 404, not cached, when the image is gone from storage', async () => {
+    const { storageKey } = await ds
+      .getRepository(MediaFile)
+      .findOneByOrFail({ organizationId: ORG, kind: 'LOGO' as never });
+    const storage = app.get(StorageService);
+    const body = await storage.get(storageKey);
+    await storage.remove(storageKey);
+    onTestFinished(() => storage.put(storageKey, body, 'image/png'));
+    const res = await request(server())
+      .get(`/api/v1/public/media/${storageKey.slice('media/'.length)}`)
+      .expect(404);
+    expect(res.body.message).toBe('Media not found');
+    expect(res.headers['cache-control']).toBeUndefined();
+  });
+
   it('replacing the logo retires the old image; removing it hides the public page again', async () => {
-    const first = (await ds.getRepository(MediaFile).findOneByOrFail({ kind: 'LOGO' as never }))
-      .storageKey;
+    const first = (
+      await ds
+        .getRepository(MediaFile)
+        .findOneByOrFail({ organizationId: ORG, kind: 'LOGO' as never })
+    ).storageKey;
     const second = await upload('LOGO', png(300, 300, 2)).expect(201);
     await request(server())
       .get(`/api/v1/public/media/${first.slice('media/'.length)}`)

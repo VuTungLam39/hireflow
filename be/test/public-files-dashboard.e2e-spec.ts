@@ -352,6 +352,18 @@ describe('Public jobs, CV files, dashboard (e2e)', () => {
       expect(Buffer.compare(file.body as Buffer, cvDocx)).toBe(0);
     });
 
+    // K-04
+    it('answers 404 when the CV is gone from storage', async () => {
+      const res = await as('hr', request(server()).get(`/api/v1/files/${fileId}/url`)).expect(200);
+      const { storageKey } = await ds.getRepository(CvFile).findOneByOrFail({ id: fileId });
+      const storage = app.get(StorageService);
+      const body = await storage.get(storageKey);
+      await storage.remove(storageKey);
+      onTestFinished(() => storage.put(storageKey, body, DOCX));
+      const missing = await request(server()).get(res.body.data.url).expect(404);
+      expect(missing.body.message).toBe('File not found');
+    });
+
     it('rejects a tampered signature', async () => {
       const res = await as('hr', request(server()).get(`/api/v1/files/${fileId}/url`)).expect(200);
       const url = new URL(res.body.data.url, 'http://local');

@@ -141,8 +141,10 @@ export class FilesService {
 
     const file = await this.dataSource.getRepository(CvFile).findOneBy({ id: fileId });
     if (!file) throw new NotFoundException('File not found');
+    const body = await this.storage.getIfPresent(file.storageKey);
+    if (!body) throw new NotFoundException('File not found');
     return {
-      body: await this.storage.get(file.storageKey),
+      body,
       contentType: file.mime,
       disposition: contentDisposition(file.originalName),
     };

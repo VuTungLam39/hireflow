@@ -296,7 +296,9 @@ export class CompanyService {
     if (!MEDIA_KEY.test(key)) throw new NotFoundException('Media not found');
     const row = await this.media.findOne({ select: ['mime'], where: { storageKey: key } });
     if (!row) throw new NotFoundException('Media not found');
-    return { body: await this.storage.get(key), mime: row.mime };
+    const body = await this.storage.getIfPresent(key);
+    if (!body) throw new NotFoundException('Media not found');
+    return { body, mime: row.mime };
   }
 
   /** Chỉ đọc: chưa có dòng thì trả hồ sơ trống, không ghi DB (route công khai gọi hàm này) */
