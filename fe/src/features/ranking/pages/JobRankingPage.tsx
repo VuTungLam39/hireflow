@@ -15,7 +15,10 @@ import { useMediaQuery } from '@/hooks/use-media-query'
 import { usePermission } from '@/hooks/use-permission'
 import { Permission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
+import ForbiddenPage from '@/pages/ForbiddenPage'
 import { links, paths } from '@/routes/paths'
+import { useAuthStore } from '@/stores/auth.store'
+import { Role } from '@/types/user'
 import { RankingTable } from '../components/RankingTable'
 import { WeightSelect } from '../components/WeightSelect'
 import {
@@ -33,6 +36,9 @@ import { useCrumb } from '@/hooks/use-crumb'
 // US-05 · Design Spec 6.2
 export default function JobRankingPage() {
   const { id = '' } = useParams()
+  // BR-INT-02
+  const isInterviewer = useAuthStore((s) => s.user?.role === Role.Interviewer)
+  if (isInterviewer) return <ForbiddenPage />
   return <RankingWorkspace jobId={id} />
 }
 

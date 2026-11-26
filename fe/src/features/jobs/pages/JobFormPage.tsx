@@ -8,6 +8,8 @@ import { usePermission } from '@/hooks/use-permission'
 import { Permission } from '@/lib/permissions'
 import { formatDate } from '@/lib/utils'
 import { links, paths } from '@/routes/paths'
+import { useAuthStore } from '@/stores/auth.store'
+import { Role } from '@/types/user'
 import { JobStatusBadge } from '../components/JobStatusBadge'
 import { JobInfoSection, JobRequirementsSection } from '../components/JobSections'
 import { JOB_CONFIRM } from '../constants'
@@ -44,6 +46,8 @@ function JobFormContent({ job }: { job: Job | undefined }) {
   const hasEditPermission = usePermission(job ? Permission.JobUpdate : Permission.JobCreate)
   const canPublish = usePermission(Permission.JobPublish)
   const canUpload = usePermission(Permission.ApplicationCreate)
+  // BR-INT-02
+  const isInterviewer = useAuthStore((s) => s.user?.role === Role.Interviewer)
   const closed = job?.status === 'CLOSED'
   const publish = usePublishJob()
   const close = useCloseJob()
@@ -96,12 +100,14 @@ function JobFormContent({ job }: { job: Job | undefined }) {
               >
                 {job.applicationCount.toLocaleString('vi-VN')} hồ sơ
               </Link>
-              <Link
-                to={links.jobRanking(job.id)}
-                className={buttonVariants({ variant: 'secondary' })}
-              >
-                Xếp hạng
-              </Link>
+              {!isInterviewer && (
+                <Link
+                  to={links.jobRanking(job.id)}
+                  className={buttonVariants({ variant: 'secondary' })}
+                >
+                  Xếp hạng
+                </Link>
+              )}
               {hasMenu && (
                 <DropdownMenu
                   align="end"
