@@ -72,6 +72,7 @@ describe('AppShell', () => {
     fireEvent.keyDown(document, { key: 'k', ctrlKey: true })
     const palette = await screen.findByRole('dialog', { name: 'Tìm nhanh' })
     expect(palette.className).not.toContain('animate-')
+    expect(palette.previousElementSibling!.className).not.toContain('animate-')
     act(() => useUiStore.getState().setCommandOpen(false))
   })
 
