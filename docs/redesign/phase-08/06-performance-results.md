@@ -22,7 +22,7 @@ Môi trường: production, `main` @ `b09def4`, chỉ đọc. Baseline: Phase 01
 | CR-13 `/applications/track` (không token) | 80/81/78 | 80 / 79 (+1) | 100 | 96 | 63 | 4,19 / 4,18 s | 3,12 s | 73 ms | 0 |
 
 - LCP của các trang prerender tăng 0,4–0,7 s nhưng điểm vẫn trong ngưỡng.
-- `/login` (K-07): FCP gần như không đổi (3,02 → 2,99 s), LCP chậm thêm ≈1 s. Phần tử LCP là đoạn chữ dưới biểu mẫu ("Nhân viên công ty: …"), chờ JS rồi mới vẽ. Lighthouse ước 70 % chunk `vendor` không dùng ở trang này. **Nguyên nhân chưa xác minh.**
+- `/login` (K-07): FCP gần như không đổi (3,02 → 2,99 s), LCP chậm thêm ≈1 s. Phần tử LCP là đoạn chữ dưới biểu mẫu ("Nhân viên công ty: …"), chờ JS rồi mới vẽ. Lighthouse ước 70 % chunk `vendor` không dùng ở trang này. Điều tra ở §5.
 - BP 96 ở CR-13: lỗi console khi không có token (baseline cũng 96). SEO 63 ở trang không lập chỉ mục, như baseline.
 
 ## 2. T1–T3 (3 lượt, trung bình)
@@ -48,3 +48,20 @@ Toàn bộ JS+CSS: 433,87 KB (79 tệp). §5 không đặt ngưỡng bundle; ghi
 
 ## 4. Chưa đo
 Thời gian nội bộ khác của Phase 01 (`/manage/jobs` tải nguội, thời gian tới thông báo lỗi), bảng xếp hạng, Render khởi động nguội, Lighthouse trang đăng nhập rồi.
+
+## 5. Điều tra K-07
+So sánh trên máy (vite preview, Lighthouse 12.8.2 `/login`) bản `581ee0a` (24/11, trước Phase 05) với `b09def4`; mỗi biến thể đổi một thứ trong bản build mới.
+
+| Bản | LCP mô phỏng (mặc định, trung vị 5 lượt) | LCP bóp mạng thật (`devtools`, 3 lượt) |
+|---|---|---|
+| 24/11 | 3,44 s (perf 85) | 5,79 s |
+| hiện tại | 4,64 s (perf 76–78) | 5,30 s |
+| hiện tại, bỏ phông tự host | 3,60 s (perf 84) | 4,85 s |
+| hiện tại, bỏ Google Fonts (Bricolage) | 4,65 s | — |
+| hiện tại, bỏ `preload` phông (đo 3 lượt, đợt trước) | 4,70 s | — |
+
+- **Trong thang đo của ngưỡng (mô phỏng):** phần lớn mức chậm (≈1,05 s) mất đi khi bỏ phông Be Vietnam Pro tự host (Phase 05 slice 0). Còn lại ≈0,16 s so với 24/11 (JS tải đầu +10 KB là ứng viên, chưa kiểm riêng).
+- **Không phải do:** `preload` phông, Google Fonts.
+- **Bóp mạng thật:** bản hiện tại **nhanh hơn** bản 24/11 ≈0,5 s; phông tự host tốn ≈0,45 s. Đo không bóp, LCP quan sát được của ba bản đều ≈0,27–0,31 s.
+- **Cơ chế (suy luận, chưa chứng minh):** `@font-face` nằm trong CSS chặn hiển thị nên mô hình giả lập tính các tệp phông vào đường tới LCP; trước đây phông đến qua CSS Google tải bất đồng bộ.
+- Giới hạn: máy local, HTTP/1.1, không phải Vercel. Chưa thử phương án sửa.
