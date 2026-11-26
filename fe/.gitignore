@@ -33,3 +33,4 @@ coverage
 # Playwright
 test-results/
 playwright-report/
+test-results-8c/
