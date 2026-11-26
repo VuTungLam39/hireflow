@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 
 // jsdom chưa có showModal/close cho <dialog>
 HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
@@ -24,7 +24,5 @@ afterEach(() => {
   localStorage.clear()
 })
 
-// Test flow render cả trang qua MSW; khi chạy song song cả bộ có thể vượt 5 s mặc định
-if (/[\\/]src[\\/]test[\\/]flows[\\/]/.test(expect.getState().testPath ?? '')) {
-  vi.setConfig({ testTimeout: 15_000 })
-}
+// P8-8a
+configure({ asyncUtilTimeout: 8000 })
