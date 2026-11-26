@@ -61,8 +61,11 @@ Chủ dự án quyết ngày 26/11/2026. Mục 9 vẫn ghi **FAIL theo ngưỡng
 | 2 | Screen reader chưa kiểm: chấp nhận cho bản demo |
 
 **Điều kiện phải làm trước khi đưa dữ liệu công ty thật vào** (chưa mục nào xong):
-- [ ] Xét lại monitoring (cách hiểu `/api/health` + log Render hết hạn).
-- [ ] Smoke quên mật khẩu (SG-06) bằng hộp thư thật.
-- [ ] SG-08: việc chấp nhận rủi ro hết hiệu lực, phải xử lý lại.
-- [ ] Kiểm screen reader bằng người thật.
-- [ ] Xét lại 3 lỗ hổng phụ thuộc moderate của backend.
+- [ ] Xét lại monitoring (cách hiểu `/api/health` + log Render hết hạn). #187
+- [ ] Smoke quên mật khẩu (SG-06) bằng hộp thư thật. #188
+- [ ] SG-08: việc chấp nhận rủi ro hết hiệu lực, phải xử lý lại. #189
+- [ ] Kiểm screen reader bằng người thật. #190
+- [ ] Xét lại 3 lỗ hổng phụ thuộc moderate của backend. #191
+
+## Sau merge hồ sơ gate (26/11/2026)
+PR #186, merge `b7e1e24`. CI trên `main` xanh; Render `hireflow-api` triển khai thành công; trạng thái commit (Vercel) success. Smoke production lúc 16:23, chỉ HTTP, không đăng nhập: `/jobs` 200, `/companies` 200, `/api/health` 200 (database, redis, storage up).
