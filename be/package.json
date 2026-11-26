@@ -20,6 +20,7 @@
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "pretest:e2e": "node scripts/test-db.mjs",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
+    "pretest:e2e:cov": "node scripts/test-db.mjs",
     "test:e2e:cov": "vitest run --config ./vitest.config.e2e.ts --coverage",
     "coverage:report": "node scripts/coverage-report.mjs",
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
