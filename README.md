@@ -527,7 +527,7 @@ Chạy trong từng thư mục `be/` và `fe/`:
 | `npm run typecheck` | Kiểm tra kiểu TypeScript |
 | `npm test` | Unit test (Vitest) |
 | `npm run format:check` / `npm run format` | Kiểm tra / tự sửa format (Prettier) |
-| `npm run test:e2e` | **Chỉ backend:** E2E với DB thật trong `be/.env` (cần chạy migration trước) |
+| `npm run test:e2e` | **Chỉ backend:** E2E trên DB `hireflow_test` (tự tạo và migrate), không đụng DB dev trong `be/.env` |
 | `npm run build` | Build bản production |
 
 Trước khi mở PR, cả bốn lệnh `lint`, `typecheck`, `test`, `build` phải chạy được ở cả hai thư mục.
