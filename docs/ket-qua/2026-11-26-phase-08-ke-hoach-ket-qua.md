@@ -24,3 +24,4 @@
 ## 8f — checklist, rollback, release notes (26/11)
 - W9 PASS (chủ dự án kiểm B2). Release gate: 11/12 điều kiện đạt hoặc đạt phần tự động; hiệu năng FAIL theo ngưỡng ở 2 mục (K-07 đã chấp nhận ngoại lệ, K-08 chờ xác nhận). Kết luận chờ chủ dự án.
 - Diễn tập revert local #180, #175; không đụng `main`.
+- Chủ dự án kết luận release gate: **PASS có điều kiện cho bản demo** (26/11); điều kiện ở `08-release-checklist.md`.

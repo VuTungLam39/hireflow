@@ -11,7 +11,7 @@ Bản đánh giá: `main` @ `4ac96a7` (CI xanh, `/api/health` 200). Vì merge v�
 | 4 | Không hồi quy phân quyền | truy cập 204/204 (6 vai × 34 đường dẫn); W1–W6, W8 | **PASS** |
 | 5 | Không hồi quy bảo mật (Security Gate chạy lại) | `03-e2e-results.md` §6: W1–W9 | **PASS** |
 | 6 | Không hồi quy toàn vẹn dữ liệu | BE E2E; luồng nộp, rút, đổi trạng thái; K-06 lưu tin giữ phòng ban | **PASS** |
-| 7 | Lỗi accessibility chặn phát hành đã xử lý hoặc được chấp nhận | axe 0 critical/serious (còn 1 loại moderate, K-03); bàn phím 6/6 (vai Admin). **Screen reader chưa kiểm** | **PASS phần tự động**; chủ dự án cần nhận phần screen reader |
+| 7 | Lỗi accessibility chặn phát hành đã xử lý hoặc được chấp nhận | axe 0 critical/serious (còn 1 loại moderate, K-03); bàn phím 6/6 (vai Admin). **Screen reader chưa kiểm** | **PASS phần tự động**; phần screen reader được chấp nhận cho demo |
 | 8 | Smoke responsive | 1440/1024/768/390: 0 tràn ngang trên 204 lượt | **PASS** |
 | 9 | Hiệu năng đạt ngưỡng đã chốt | xem bảng dưới | **FAIL theo ngưỡng ở 2 mục** |
 | 10 | Monitoring sẵn sàng | `/api/health` (database, redis, storage) + log Render, theo cách hiểu đã duyệt; hết hạn khi có dữ liệu công ty thật. Log Render chưa được Claude xem | **PASS** theo Q2 |
@@ -25,7 +25,7 @@ Bản đánh giá: `main` @ `4ac96a7` (CI xanh, `/api/health` 200). Vì merge v�
 | Lighthouse perf 5 trang công khai còn lại | PASS | |
 | Lighthouse perf `/login` | **FAIL** (giả lập: 80 so với 88) | **Ngoại lệ được chủ dự án chấp nhận** (26/11/2026). Số đo mạng thật (`devtools`, máy local): LCP hiện tại 5,30 s, bản 24/11 5,79 s. K-07 P3, giữ mở |
 | T1; T2-proxy ≤ 3 thao tác | PASS (RR-08 ≤ 2 chưa đạt) | |
-| T3 số thao tác | **FAIL** (4 so với 3) | Lệch có chủ ý (F-04); **chờ chủ dự án xác nhận** (K-08) |
+| T3 số thao tác | **FAIL** (4 so với 3) | Lệch có chủ ý (F-04), **chủ dự án xác nhận** 26/11/2026 (K-08) |
 
 T1/T2 không chậm hơn baseline (§08.2 Outcome Metrics).
 
@@ -48,14 +48,21 @@ T1/T2 không chậm hơn baseline (§08.2 Outcome Metrics).
 ## Chưa kiểm
 Screen reader; smoke production vai Admin công ty, Hiring Manager, Quản trị sàn cho các màn nội bộ; thao tác ghi trên production; quên mật khẩu bằng hộp thư thật (SG-06); phản hồi của phiếu đánh giá, Offer, hỏi kho CV trên trình duyệt.
 
-## Kết luận release gate — **CHỜ CHỦ DỰ ÁN**
-Cần chủ dự án quyết:
-1. T3 (K-08): xác nhận lệch có chủ ý?
-2. Screen reader chưa kiểm: chấp nhận cho bản demo?
-3. Kết luận chung: PASS / PASS có điều kiện / FAIL.
-
-Đề xuất của người đánh giá (không phải kết luận): **PASS có điều kiện cho bản demo** — chấp nhận mục 1 và 2; điều kiện: trước khi đưa dữ liệu công ty thật phải xét lại Monitoring, R6 (SG-06), SG-08 và screen reader.
+## Kết luận release gate — **PASS có điều kiện cho bản demo**
+Chủ dự án quyết ngày 26/11/2026. Mục 9 vẫn ghi **FAIL theo ngưỡng**; kết luận này không đổi kết quả đo.
 
 | Kết luận | Người quyết | Ngày |
 |---|---|---|
-| | | |
+| PASS có điều kiện cho bản demo | Chủ dự án | 26/11/2026 |
+
+| # | Quyết định |
+|---|---|
+| 1 | K-08/T3: xác nhận lệch có chủ ý (F-04) |
+| 2 | Screen reader chưa kiểm: chấp nhận cho bản demo |
+
+**Điều kiện phải làm trước khi đưa dữ liệu công ty thật vào** (chưa mục nào xong):
+- [ ] Xét lại monitoring (cách hiểu `/api/health` + log Render hết hạn).
+- [ ] Smoke quên mật khẩu (SG-06) bằng hộp thư thật.
+- [ ] SG-08: việc chấp nhận rủi ro hết hiệu lực, phải xử lý lại.
+- [ ] Kiểm screen reader bằng người thật.
+- [ ] Xét lại 3 lỗ hổng phụ thuộc moderate của backend.
