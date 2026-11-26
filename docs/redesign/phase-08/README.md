@@ -1,6 +1,6 @@
 # Phase 08 — QA, Regression & Release
 
-Trạng thái: **kế hoạch đã duyệt** (chủ dự án, 26/11/2026). Chuẩn: master plan §08.
+Trạng thái: **8a–8f đã làm; kết luận release gate chờ chủ dự án** (`08-release-checklist.md`). Kế hoạch duyệt 26/11/2026. Chuẩn: master plan §08.
 
 ## 1. Đã có sẵn
 - CI: BE format/lint/typecheck/unit/build/e2e/coverage/audit; FE format/lint/typecheck/test/build/check:design/tokens/terms/bundle/audit.
