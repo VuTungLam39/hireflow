@@ -92,6 +92,20 @@ describe('PublicJobDetailPage', () => {
     )
   })
 
+  it('DL-17: a job closed before its deadline says it is closed, not past the deadline', async () => {
+    const job = db.jobs.find((j) => j.status === 'OPEN')!
+    const saved = { status: job.status, deadline: job.deadline }
+    Object.assign(job, { status: 'CLOSED', deadline: shiftIsoDay(todayIsoDay(), 5) })
+    onTestFinished(() => {
+      Object.assign(job, saved)
+    })
+    open(job.id)
+    expect(await screen.findByText(/Vị trí này đã đóng\./)).toBeInTheDocument()
+    expect(screen.queryByText(/qua hạn nộp/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Hạn nộp')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Họ tên')).not.toBeInTheDocument()
+  })
+
   it('a closed or unknown job explains it and links to open positions instead of a retry', async () => {
     open('00000000-0000-4000-8000-000000000000')
     expect(await screen.findByText('Vị trí này đã đóng hoặc không còn')).toBeInTheDocument()

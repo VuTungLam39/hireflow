@@ -8,7 +8,7 @@ import { getErrorCode } from '@/lib/errors'
 import { cn, formatDate, formatDaysAgo } from '@/lib/utils'
 import { jobTitle } from '@/prerender/shared'
 import { links, paths } from '@/routes/paths'
-import { JobFacts } from '@/features/jobs'
+import { deadlineState, JobFacts } from '@/features/jobs'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { ApplyForm } from '../components/ApplyForm'
 import { CompanyAbout } from '../components/CompanyAbout'
@@ -50,6 +50,8 @@ export default function PublicJobDetailPage() {
 
   const must = job.requirements.filter((r) => r.type === 'MUST')
   const nice = job.requirements.filter((r) => r.type === 'NICE')
+  // DL-17: expired còn gồm tin đã đóng khi chưa tới (hoặc không có) hạn nộp
+  const pastDeadline = !!deadlineState(job.deadline)?.expired
 
   return (
     <div className="space-y-8 pb-20 lg:pb-0">
@@ -83,7 +85,11 @@ export default function PublicJobDetailPage() {
                 </time>
               </span>
             </p>
-            <JobFacts job={job} relativeDeadline={hydrated} className="mt-5" />
+            <JobFacts
+              job={job.expired && !pastDeadline ? { ...job, deadline: null } : job}
+              relativeDeadline={hydrated}
+              className="mt-5"
+            />
           </header>
 
           {job.requirements.length > 0 && (
@@ -146,8 +152,10 @@ export default function PublicJobDetailPage() {
               <div role="status" className="space-y-2">
                 <h2 className="type-heading text-xl">Đã hết hạn nhận hồ sơ</h2>
                 <p className="type-body">
-                  Vị trí này đã qua hạn nộp ngày {formatDate(job.deadline)}. Bạn có thể xem các vị
-                  trí khác đang tuyển.
+                  {pastDeadline
+                    ? `Vị trí này đã qua hạn nộp ngày ${formatDate(job.deadline)}.`
+                    : 'Vị trí này đã đóng.'}{' '}
+                  Bạn có thể xem các vị trí khác đang tuyển.
                 </p>
                 <Link to={paths.publicJobs} className={buttonVariants({ variant: 'secondary' })}>
                   Xem vị trí đang tuyển

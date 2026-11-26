@@ -227,8 +227,10 @@ describe('Public jobs, CV files, dashboard (e2e)', () => {
       expect(JSON.stringify(res.body.data)).not.toContain('bí mật nội bộ');
     });
 
-    it.each(['draft', 'closed'] as const)('BR-APP-02: %s job is 404', async (key) => {
-      await request(server()).get(`/api/v1/public/jobs/${ids[key]}`).expect(404);
+    it('BR-APP-02: draft job is 404; DL-17: a just closed job opens as expired', async () => {
+      await request(server()).get(`/api/v1/public/jobs/${ids.draft}`).expect(404);
+      const res = await request(server()).get(`/api/v1/public/jobs/${ids.closed}`).expect(200);
+      expect(res.body.data.expired).toBe(true);
     });
   });
 
