@@ -55,3 +55,4 @@ Lỗi tìm được: ghi vào 07 trước; sửa ở PR riêng sau khi chủ d�
 
 ## 7. Nhật ký phát hành (§05.5)
 - **8a** — PR #177, merge `33fc67f` (26/11/2026). Smoke production: `/jobs` 200, `/companies` 200, `/api/health` 200. Chỉ đổi cấu hình test; tự rà diff trước merge, code-review hai trục chạy sau cùng với 8b.
+- **8b** — PR #178, merge `23617d5` (26/11/2026). CI xanh; code-review hai trục, đã sửa phát hiện chính. Smoke production: `/jobs`, `/companies`, `/login` 200, `/api/health` 200 (không đổi mã sản phẩm). Rollback: revert PR.
