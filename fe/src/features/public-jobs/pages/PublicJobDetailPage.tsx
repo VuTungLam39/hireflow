@@ -50,7 +50,7 @@ export default function PublicJobDetailPage() {
 
   const must = job.requirements.filter((r) => r.type === 'MUST')
   const nice = job.requirements.filter((r) => r.type === 'NICE')
-  // DL-17: expired còn gồm tin đã đóng khi chưa tới (hoặc không có) hạn nộp
+  // DL-17
   const pastDeadline = !!deadlineState(job.deadline)?.expired
 
   return (
@@ -154,7 +154,7 @@ export default function PublicJobDetailPage() {
                 <p className="type-body">
                   {pastDeadline
                     ? `Vị trí này đã qua hạn nộp ngày ${formatDate(job.deadline)}.`
-                    : 'Vị trí này đã đóng.'}{' '}
+                    : 'Việc làm này đã hết hạn.'}{' '}
                   Bạn có thể xem các vị trí khác đang tuyển.
                 </p>
                 <Link to={paths.publicJobs} className={buttonVariants({ variant: 'secondary' })}>
