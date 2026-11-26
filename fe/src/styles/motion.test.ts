@@ -32,6 +32,11 @@ it.each([
   expect(animations[name]).toBe(`var(--duration-${token})`)
 })
 
+// DD-12
+it('keeps marker-focus at 300 ms', () => {
+  expect(animations['marker-focus']).toBe('300ms')
+})
+
 // M-07 · DD-12
 it('nothing lasts longer than 200 ms except the named exceptions', () => {
   const allowed = ['skeleton', 'progress', 'caret', 'marker-focus']
@@ -44,6 +49,20 @@ it('nothing lasts longer than 200 ms except the named exceptions', () => {
     const found = source.matchAll(/\bduration-(\d+)|\bduration-\[|\banimate-\[|\bMOVE_MS = (\d+)/g)
     for (const [match, utility, move] of found)
       if (!(Number(utility ?? move) <= 200)) slow.push(`${file}: ${match}`)
+    // DD-12
+    for (const [match, name] of source.matchAll(/\banimate-([a-z][a-z-]*)/g))
+      if (!['spin', 'none', ...Object.keys(animations)].includes(name))
+        slow.push(`${file}: ${match}`)
+    for (const [match] of source.matchAll(
+      /\[(transition|animation)[:-]|(duration|animate)-\(|\bdelay-[\d[(]|(transition|animation)Duration/g,
+    ))
+      slow.push(`${file}: ${match}`)
+  }
+  for (const file of sources('src').filter((f) => f.endsWith('.css'))) {
+    const raw = readFileSync(file, 'utf8').matchAll(
+      /^\s*(transition|animation)(-duration|-delay)?:.*\d(ms|s)\b.*$|@apply[^;]*\b(duration|delay)-.*$/gm,
+    )
+    for (const [line] of raw) slow.push(`${file}: ${line.trim()}`)
   }
   expect(slow).toEqual([])
 })
