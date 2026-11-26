@@ -20,3 +20,4 @@
 - Chỉ chạm local; không có bước nào ghi lên production.
 - E2E trình duyệt hiện phủ **tải trang** (1 h1, không tràn ngang, lỗi JS, ảnh). Luồng thao tác theo vai được kiểm ở 8c; nghiệp vụ ghi dữ liệu đã có ở E2E API.
 - Screen reader: chưa có người nghe thật → ghi "chưa kiểm".
+- `access.spec.ts`, `states.spec.ts` chỉ đọc; `flows.spec.ts` ghi dữ liệu, cách chạy ở 03 §5.
