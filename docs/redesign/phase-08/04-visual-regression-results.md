@@ -15,3 +15,6 @@
 - Cho phép lệch 1 % điểm ảnh; thay đổi rất nhỏ có thể lọt.
 - Chỉ có baseline `win32`; máy khác hệ điều hành phải chụp lại.
 - Công cụ debug TanStack Query được ẩn khi chụp (`fe/e2e/screenshot.css`).
+
+## Chạy lại ở 8f (26/11, `4ac96a7`)
+So với baseline trên bản sao DB: đạt (trong bộ Playwright 16/16).

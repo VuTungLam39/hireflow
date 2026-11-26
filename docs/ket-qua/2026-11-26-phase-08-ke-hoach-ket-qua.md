@@ -17,3 +17,11 @@
 
 ## 8d — hiệu năng (tối 26/11)
 - a11y 100; perf đạt 5/6, `/login` trượt (−8, K-07). T1, T2-proxy đạt; T3 trượt số thao tác (K-08). Chi tiết: `docs/redesign/phase-08/06-performance-results.md`.
+
+## 8e — Security Gate chạy lại (tối 26/11)
+- W1–W8 PASS, W9 (bucket B2) chưa kiểm lại. LLM thật: 11 lượt gọi. Chi tiết: `docs/redesign/phase-08/03-e2e-results.md` §6.
+
+## 8f — checklist, rollback, release notes (26/11)
+- W9 PASS (chủ dự án kiểm B2). Release gate: 11/12 điều kiện đạt hoặc đạt phần tự động; hiệu năng FAIL theo ngưỡng ở 2 mục (K-07 đã chấp nhận ngoại lệ, K-08 chờ xác nhận). Kết luận chờ chủ dự án.
+- Diễn tập revert local #180, #175; không đụng `main`.
+- Chủ dự án kết luận release gate: **PASS có điều kiện cho bản demo** (26/11); điều kiện ở `08-release-checklist.md`.

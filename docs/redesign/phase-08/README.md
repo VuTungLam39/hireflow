@@ -1,6 +1,6 @@
 # Phase 08 — QA, Regression & Release
 
-Trạng thái: **kế hoạch đã duyệt** (chủ dự án, 26/11/2026). Chuẩn: master plan §08.
+Trạng thái: **Đóng — release gate PASS có điều kiện cho bản demo (26/11/2026)** (`08-release-checklist.md`). Kế hoạch duyệt 26/11/2026. Chuẩn: master plan §08.
 
 ## 1. Đã có sẵn
 - CI: BE format/lint/typecheck/unit/build/e2e/coverage/audit; FE format/lint/typecheck/test/build/check:design/tokens/terms/bundle/audit.
@@ -64,4 +64,4 @@ Lỗi tìm được: ghi vào 07 trước; sửa ở PR riêng sau khi chủ d�
 | Ngưỡng §5 | Kết quả theo ngưỡng | Xử lý |
 |---|---|---|
 | Lighthouse perf `/login` | **FAIL** (giả lập: 80 so với 88) | **Ngoại lệ được chủ dự án chấp nhận** (26/11/2026). Số đo mạng thật (`devtools`, máy local): LCP hiện tại 5,30 s, bản 24/11 5,79 s. K-07 hạ P3, giữ mở; không sửa code. Chi tiết: file 06 §5 |
-| T3 số thao tác | **FAIL** (4 so với 3) | Lệch có chủ ý (F-04: bộ lọc công ty là ô chọn); **chờ chủ dự án xác nhận ở release gate** (K-08) |
+| T3 số thao tác | **FAIL** (4 so với 3) | Lệch có chủ ý (F-04: bộ lọc công ty là ô chọn); **chủ dự án xác nhận ở release gate 26/11/2026** (K-08) |
