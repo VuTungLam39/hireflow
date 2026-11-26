@@ -13,3 +13,7 @@
 - #183 (bổ sung K-05 sau review) chờ merge.
 - K-04: đã xác minh 500 thay vì 404, tách #182.
 - Còn lại: smoke production khu nội bộ bằng phiên Interviewer, HR/Admin (Chrome chưa kết nối).
+- Cập nhật: #183, #184 đã merge; smoke production K-02 bằng phiên Interviewer và HR đạt. Phát hiện K-06 (ô "Phòng ban" trên trang sửa tin).
+
+## 8d — hiệu năng (tối 26/11)
+- a11y 100; perf đạt 5/6, `/login` trượt (−8, K-07). T1, T2-proxy đạt; T3 trượt số thao tác (K-08). Chi tiết: `docs/redesign/phase-08/06-performance-results.md`.

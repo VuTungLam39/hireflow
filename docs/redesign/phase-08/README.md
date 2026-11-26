@@ -57,3 +57,11 @@ Lỗi tìm được: ghi vào 07 trước; sửa ở PR riêng sau khi chủ d�
 - **8a** — PR #177, merge `33fc67f` (26/11/2026). Smoke production: `/jobs` 200, `/companies` 200, `/api/health` 200. Chỉ đổi cấu hình test; tự rà diff trước merge, code-review hai trục chạy sau cùng với 8b.
 - **8b** — PR #178, merge `23617d5` (26/11/2026). CI xanh; code-review hai trục, đã sửa phát hiện chính. Smoke production: `/jobs`, `/companies`, `/login` 200, `/api/health` 200 (không đổi mã sản phẩm). Rollback: revert PR.
 - **K-02** — PR #180, merge `0d9254a` (26/11/2026, 13:48). **K-05** — PR #181, merge `7530d7b` (26/11/2026, 13:48). Cả hai được merge trên GitHub trước khi code-review chạy xong; review sau đó tìm một lỗi ở K-05, sửa ở PR #183 (chờ merge). Smoke production: `/jobs`, `/companies` 200, `/api/health` 200 (database, redis, storage up), Vercel và Render đã triển khai `7530d7b`. Khu nội bộ theo vai trên production: **BLK** (Chrome chưa kết nối). Rollback: revert PR.
+- **K-05 bổ sung** — PR #183, merge `0b75469`; **8c** — PR #184, merge `b09def4` (26/11/2026). `/api/health` 200, Vercel triển khai xong.
+- **Smoke production khu nội bộ cho K-02** (26/11/2026, phiên Chrome của chủ dự án, chỉ đọc). Interviewer: mở thẳng trang xếp hạng ra trang 403 có h1; trang sửa tin không còn "Xếp hạng"; `/` chuyển sang Lịch phỏng vấn; `/applications` vào được; `/candidates`, `/users` bị chặn. HR: trang xếp hạng có dữ liệu, trang sửa tin còn nút, tab "Xếp hạng" trong hộp thoại tin vẫn mở được. Admin, Hiring Manager, Quản trị sàn: chưa smoke production. Phát hiện thêm K-06.
+
+## 8. Mang vào release gate (8f ghi đúng như dưới đây)
+| Ngưỡng §5 | Kết quả theo ngưỡng | Xử lý |
+|---|---|---|
+| Lighthouse perf `/login` | **FAIL** (giả lập: 80 so với 88) | **Ngoại lệ được chủ dự án chấp nhận** (26/11/2026). Số đo mạng thật (`devtools`, máy local): LCP hiện tại 5,30 s, bản 24/11 5,79 s. K-07 hạ P3, giữ mở; không sửa code. Chi tiết: file 06 §5 |
+| T3 số thao tác | **FAIL** (4 so với 3) | Lệch có chủ ý (F-04: bộ lọc công ty là ô chọn); **chờ chủ dự án xác nhận ở release gate** (K-08) |
