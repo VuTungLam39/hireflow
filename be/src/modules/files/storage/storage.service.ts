@@ -1,3 +1,5 @@
+import { Logger } from '@nestjs/common';
+
 export interface SignedUrlOptions {
   expiresIn: number;
   fileName: string;
@@ -8,6 +10,18 @@ export abstract class StorageService {
   abstract readonly driver: string;
   abstract put(key: string, body: Buffer, contentType?: string): Promise<void>;
   abstract get(key: string): Promise<Buffer>;
+
+  // K-04
+  async getIfPresent(key: string): Promise<Buffer | null> {
+    try {
+      return await this.get(key);
+    } catch (error) {
+      if (!(error instanceof StorageNotFoundError)) throw error;
+      new Logger(StorageService.name).warn(error.message);
+      return null;
+    }
+  }
+
   abstract remove(key: string): Promise<void>;
   abstract ping(): Promise<void>;
   abstract signedUrl(key: string, options: SignedUrlOptions): Promise<string | null>;
