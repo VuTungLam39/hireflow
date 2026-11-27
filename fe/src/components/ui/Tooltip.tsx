@@ -1,6 +1,7 @@
 import * as RT from '@radix-ui/react-tooltip'
 import { useRef, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { usePortalContainer } from './portal-container'
 
 interface TooltipProps {
   label: ReactNode
@@ -15,6 +16,7 @@ export function Tooltip({ label, children, side = 'top', disabled, className }: 
   const [open, setOpen] = useState(false)
   // như bản cũ: focus chỉ mở tooltip khi là focus bàn phím (:focus-visible), không khi tự focus sau cú bấm chuột
   const quietFocus = useRef(false)
+  const container = usePortalContainer()
   return (
     <RT.Provider delayDuration={400} skipDelayDuration={200}>
       <RT.Root
@@ -34,7 +36,7 @@ export function Tooltip({ label, children, side = 'top', disabled, className }: 
             {children}
           </span>
         </RT.Trigger>
-        <RT.Portal>
+        <RT.Portal container={container}>
           <RT.Content
             side={side}
             sideOffset={6}

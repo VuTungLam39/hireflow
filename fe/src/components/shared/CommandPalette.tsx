@@ -1,7 +1,7 @@
 import * as RD from '@radix-ui/react-dialog'
 import { Command } from 'cmdk'
 import { CornerDownLeft, Search } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { Kbd, Spinner } from '@/components/ui'
 import { overlayClass, useReturnFocus } from '@/components/ui/Dialog'
 
@@ -41,11 +41,20 @@ export function CommandPalette({
   emptyText = 'Không thấy kết quả.',
 }: CommandPaletteProps) {
   const focus = useReturnFocus()
-  const empty = groups.every((g) => g.items.length === 0)
+  const ids = groups.flatMap((g) => g.items.map((i) => i.id))
+  const empty = ids.length === 0
+  // cmdk giữ dòng chọn cũ khi kết quả về muộn: chỉ giữ lựa chọn do người dùng tự di chuyển
+  const [picked, setPicked] = useState('')
+  const moved = useRef(false)
+  if (!open && picked) setPicked('')
+  // DD-15
+  const container = open
+    ? [...document.querySelectorAll<HTMLElement>('dialog[open] > [data-layer]')].at(-1)
+    : undefined
 
   return (
     <RD.Root open={open} onOpenChange={(o) => !o && onClose()}>
-      <RD.Portal>
+      <RD.Portal container={container}>
         <RD.Overlay className={overlayClass} />
         <RD.Content
           aria-describedby={undefined}
@@ -53,13 +62,25 @@ export function CommandPalette({
           className="border-line bg-surface shadow-float fixed top-[12vh] left-1/2 z-50 w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 rounded-md border focus:outline-none"
         >
           <RD.Title className="sr-only">Tìm nhanh</RD.Title>
-          <Command shouldFilter={false} loop label="Tìm nhanh">
+          <Command
+            shouldFilter={false}
+            loop
+            label="Tìm nhanh"
+            value={ids.includes(picked) ? picked : (ids[0] ?? '')}
+            onValueChange={(v) => moved.current && setPicked(v)}
+            onKeyDownCapture={() => (moved.current = true)}
+            onPointerMoveCapture={() => (moved.current = true)}
+          >
             <div className="border-line flex items-center gap-3 border-b px-4">
               <Search className="text-ink-muted size-[18px] shrink-0" />
               <Command.Input
                 autoFocus
                 value={query}
-                onValueChange={onQueryChange}
+                onValueChange={(next) => {
+                  moved.current = false
+                  setPicked('')
+                  onQueryChange(next)
+                }}
                 placeholder={placeholder}
                 className="text-ink placeholder:text-ink-muted h-12 min-w-0 flex-1 bg-transparent text-[15px] outline-none"
               />

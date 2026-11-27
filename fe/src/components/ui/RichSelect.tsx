@@ -3,6 +3,7 @@ import { Check, ChevronDown } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { fieldBase } from './field-styles'
+import { usePortalContainer } from './portal-container'
 
 export interface RichSelectOption {
   value: string
@@ -34,6 +35,7 @@ export function RichSelect({
   className,
   ...aria
 }: RichSelectProps) {
+  const container = usePortalContainer()
   return (
     <RS.Root value={value} onValueChange={onValueChange} disabled={disabled}>
       <RS.Trigger
@@ -49,7 +51,7 @@ export function RichSelect({
           <ChevronDown aria-hidden className="text-ui-muted size-4" />
         </RS.Icon>
       </RS.Trigger>
-      <RS.Portal>
+      <RS.Portal container={container}>
         <RS.Content
           position="popper"
           sideOffset={4}

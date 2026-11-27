@@ -13,6 +13,7 @@ import {
 import { chipClass } from './field-styles'
 import { FormField } from './FormField'
 import { Textarea } from './Textarea'
+import { usePortalContainer } from './portal-container'
 
 export interface AlertDialogProps {
   open: boolean
@@ -91,9 +92,10 @@ export function AlertDialog({
     }
   }
 
+  const container = usePortalContainer()
   return (
     <RA.Root open={open} onOpenChange={(o) => !o && close()}>
-      <RA.Portal>
+      <RA.Portal container={container}>
         <RA.Overlay className={`${overlayClass} animate-overlay-in`} />
         <RA.Content
           onCloseAutoFocus={focus.onCloseAutoFocus}

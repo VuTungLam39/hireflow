@@ -2,6 +2,7 @@ import { X } from 'lucide-react'
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Tabs, TabsPanel } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { PortalContainer } from '@/components/ui/portal-container'
 
 const bodyClass =
   'min-h-0 flex-1 overflow-y-auto px-5 py-5 [--sticky-top:0px] focus-visible:outline-none sm:px-6'
@@ -50,6 +51,7 @@ export function DetailDialog<T extends string>({
   const titleId = useId()
   const bodyRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLHeadingElement>(null)
+  const [layer, setLayer] = useState<HTMLDivElement | null>(null)
   const [replacing] = useState(() => shownDialogs > 0)
 
   useLayoutEffect(() => {
@@ -115,59 +117,63 @@ export function DetailDialog<T extends string>({
             : 'sm:h-[calc(100dvh-4rem)]',
       )}
     >
+      {/* DD-15 */}
+      <div ref={setLayer} data-layer />
       {open && (
-        <div className="flex min-h-0 flex-1 flex-col">
-          <header className="px-5 pt-5 sm:px-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <h2
-                    ref={titleRef}
-                    id={titleId}
-                    tabIndex={-1}
-                    className="type-heading truncate text-xl leading-7 outline-none"
-                  >
-                    {title}
-                  </h2>
-                  {badge}
+        <PortalContainer value={layer}>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <header className="px-5 pt-5 sm:px-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <h2
+                      ref={titleRef}
+                      id={titleId}
+                      tabIndex={-1}
+                      className="type-heading truncate text-xl leading-7 outline-none"
+                    >
+                      {title}
+                    </h2>
+                    {badge}
+                  </div>
+                  {subtitle && <div className="type-caption mt-1">{subtitle}</div>}
                 </div>
-                {subtitle && <div className="type-caption mt-1">{subtitle}</div>}
+                <button
+                  type="button"
+                  aria-label="Đóng"
+                  onClick={onClose}
+                  className="text-ink-muted hover:bg-sunken hover:text-ink -m-1.5 shrink-0 rounded-sm p-1.5 transition-colors"
+                >
+                  <X className="size-[18px]" />
+                </button>
               </div>
-              <button
-                type="button"
-                aria-label="Đóng"
-                onClick={onClose}
-                className="text-ink-muted hover:bg-sunken hover:text-ink -m-1.5 shrink-0 rounded-sm p-1.5 transition-colors"
+              {!(tabs && tab && onTab) && <div className="border-line mt-4 border-b" />}
+            </header>
+            {tabs && tab && onTab ? (
+              <Tabs
+                tabs={tabs}
+                value={tab}
+                onChange={onTab}
+                label={label}
+                className="flex min-h-0 flex-1 flex-col"
+                listClassName="mt-4 px-5 sm:px-6"
               >
-                <X className="size-[18px]" />
-              </button>
-            </div>
-            {!(tabs && tab && onTab) && <div className="border-line mt-4 border-b" />}
-          </header>
-          {tabs && tab && onTab ? (
-            <Tabs
-              tabs={tabs}
-              value={tab}
-              onChange={onTab}
-              label={label}
-              className="flex min-h-0 flex-1 flex-col"
-              listClassName="mt-4 px-5 sm:px-6"
-            >
-              <TabsPanel ref={bodyRef} value={tab} className={bodyClass}>
+                <TabsPanel ref={bodyRef} value={tab} className={bodyClass}>
+                  {children}
+                </TabsPanel>
+              </Tabs>
+            ) : (
+              <div ref={bodyRef} className={bodyClass}>
                 {children}
-              </TabsPanel>
-            </Tabs>
-          ) : (
-            <div ref={bodyRef} className={bodyClass}>
-              {children}
-            </div>
-          )}
-          {footer && (
-            <footer className="border-line flex flex-wrap items-center justify-between gap-2 border-t px-5 py-3 sm:px-6">
-              {footer}
-            </footer>
-          )}
-        </div>
+              </div>
+            )}
+            {footer && (
+              <footer className="border-line flex flex-wrap items-center justify-between gap-2 border-t px-5 py-3 sm:px-6">
+                {footer}
+              </footer>
+            )}
+          </div>
+        </PortalContainer>
       )}
     </dialog>
   )
