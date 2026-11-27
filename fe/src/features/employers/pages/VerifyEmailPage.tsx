@@ -4,11 +4,14 @@ import { useEffect, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { buttonVariants, Spinner } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { useDocumentTitle } from '@/hooks/use-document-title'
+import { SITE_NAME } from '@/prerender/shared'
 import { paths } from '@/routes/paths'
 import { employersApi } from '../api/employers.api'
 
 // MVP 3 · US-19, BR-ACC-09: link dùng một lần
 export default function VerifyEmailPage() {
+  useDocumentTitle(`Xác minh email – ${SITE_NAME}`)
   const token = useSearchParams()[0].get('t') ?? ''
   const verify = useMutation({ mutationFn: employersApi.verifyEmail })
   const sent = useRef(false)

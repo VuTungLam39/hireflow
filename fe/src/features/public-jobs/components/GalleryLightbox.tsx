@@ -42,7 +42,7 @@ export function GalleryLightbox({
         else return
         e.preventDefault()
       }}
-      className="backdrop:bg-ink/80 m-auto max-h-none w-full max-w-none bg-transparent p-0"
+      className="on-dark backdrop:bg-ink/80 m-auto max-h-none w-full max-w-none bg-transparent p-0"
     >
       {image && (
         <figure className="mx-auto flex max-h-dvh w-full max-w-[1100px] flex-col gap-3 p-4 sm:p-8">

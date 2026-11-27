@@ -99,3 +99,8 @@
   color: var(--color-v2-foreground);
   font-family: var(--font-v2-body-md), ui-sans-serif, system-ui, sans-serif;
 }
+
+/* WCAG 1.4.11 */
+.on-dark {
+  --ui-focus: var(--color-v2-marker-soft);
+}

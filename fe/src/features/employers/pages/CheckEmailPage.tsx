@@ -5,6 +5,8 @@ import { Link, useLocation } from 'react-router'
 import { toast } from 'sonner'
 import { Button, FormField, Input } from '@/components/ui'
 import { getErrorMessage } from '@/lib/errors'
+import { useDocumentTitle } from '@/hooks/use-document-title'
+import { SITE_NAME } from '@/prerender/shared'
 import { paths } from '@/routes/paths'
 import { employersApi } from '../api/employers.api'
 
@@ -12,6 +14,7 @@ const RESEND_WAIT_S = 60
 
 // MVP 3 · US-19, BR-ACC-09: gửi lại tối đa 3 lần/giờ, BE luôn trả 202
 export default function CheckEmailPage() {
+  useDocumentTitle(`Kiểm tra email – ${SITE_NAME}`)
   const sentTo = (useLocation().state as { email?: string } | null)?.email ?? ''
   const [email, setEmail] = useState(sentTo)
   const [wait, setWait] = useState(sentTo ? RESEND_WAIT_S : 0)

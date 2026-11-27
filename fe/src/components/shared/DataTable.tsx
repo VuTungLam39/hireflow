@@ -393,7 +393,7 @@ export function DataTable<T>({
           <div
             role="region"
             aria-label="Thao tác hàng loạt"
-            className="bg-ink shadow-float animate-float-in pointer-events-auto flex max-w-full flex-wrap items-center gap-2 rounded-md px-3 py-2 text-white"
+            className="on-dark bg-ink shadow-float animate-float-in pointer-events-auto flex max-w-full flex-wrap items-center gap-2 rounded-md px-3 py-2 text-white"
           >
             {bulkBar(selection.selected.size)}
           </div>

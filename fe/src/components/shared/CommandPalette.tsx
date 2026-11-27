@@ -1,7 +1,7 @@
 import * as RD from '@radix-ui/react-dialog'
 import { Command } from 'cmdk'
 import { CornerDownLeft, Search } from 'lucide-react'
-import { useRef, useState, type ReactNode } from 'react'
+import { useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { Kbd, Spinner } from '@/components/ui'
 import { overlayClass, useReturnFocus } from '@/components/ui/Dialog'
 
@@ -29,6 +29,17 @@ interface CommandPaletteProps {
   emptyText?: ReactNode
 }
 
+const topLayer = () =>
+  [...document.querySelectorAll<HTMLElement>('dialog[open] > [data-layer]')].at(-1)
+
+function watchLayers(onChange: () => void) {
+  const observer = new MutationObserver(onChange)
+  observer.observe(document.body, { subtree: true, childList: true, attributeFilter: ['open'] })
+  return () => observer.disconnect()
+}
+
+const noWatch = () => () => {}
+
 // Contract Command Menu (P5-D06: cmdk) — chỉ điều hướng/mở chi tiết, không đổi trạng thái
 export function CommandPalette({
   open,
@@ -48,9 +59,9 @@ export function CommandPalette({
   const moved = useRef(false)
   if (!open && picked) setPicked('')
   // DD-15
-  const container = open
-    ? [...document.querySelectorAll<HTMLElement>('dialog[open] > [data-layer]')].at(-1)
-    : undefined
+  const container = useSyncExternalStore(open ? watchLayers : noWatch, () =>
+    open ? topLayer() : undefined,
+  )
 
   return (
     <RD.Root open={open} onOpenChange={(o) => !o && onClose()}>

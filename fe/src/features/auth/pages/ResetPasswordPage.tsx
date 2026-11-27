@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router'
 import { Button, FormField, Input, buttonVariants } from '@/components/ui'
 import { applyServerErrors, getErrorCode, getErrorMessage } from '@/lib/errors'
+import { useDocumentTitle } from '@/hooks/use-document-title'
 import { paths } from '@/routes/paths'
 import { authApi } from '../api/auth.api'
 import { resetPasswordSchema, type ResetPasswordFormValues } from '../schemas/auth.schema'
@@ -16,6 +17,7 @@ const tokenFromHash = () => new URLSearchParams(window.location.hash.slice(1)).g
 
 // SG-06 · R6
 export default function ResetPasswordPage() {
+  useDocumentTitle('Đặt mật khẩu mới – HireFlow')
   const navigate = useNavigate()
   const [token] = useState(tokenFromHash)
   const reset = useMutation({ mutationFn: authApi.resetPassword })

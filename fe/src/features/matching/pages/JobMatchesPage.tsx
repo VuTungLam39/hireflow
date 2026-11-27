@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { EmptyState, ErrorState, PageHeader, Summary } from '@/components/shared'
 import { Button, Skeleton, Spinner, buttonVariants } from '@/components/ui'
-import { useDocumentTitle } from '@/hooks/use-document-title'
 import { formatDateTime } from '@/lib/utils'
 import { links, paths } from '@/routes/paths'
 import { MatchCard } from '../components/MatchCard'
@@ -64,9 +63,6 @@ export function JobMatchesView({ jobId, embedded }: { jobId: string; embedded?: 
   }
   const invite = useInviteMatch(jobId)
   useCrumb(embedded || !data ? undefined : `Ứng viên cũ · ${data.job.title}`)
-  useDocumentTitle(
-    embedded ? undefined : data ? `Ứng viên cũ phù hợp · ${data.job.title}` : 'Ứng viên cũ phù hợp',
-  )
 
   if (isPending)
     return (

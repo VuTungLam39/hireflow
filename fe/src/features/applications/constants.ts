@@ -59,7 +59,7 @@ export type ScoreFlag = keyof typeof SCORE_FLAGS
 /** Mức khớp của một tiêu chí (kickoff mục 8.4) */
 export const MATCH_LEVEL = {
   1: { label: 'Khớp', tone: 'success' },
-  0.5: { label: 'Một phần', tone: 'warning' },
+  0.5: { label: 'Khớp một phần', tone: 'warning' },
   0: { label: 'Không thấy trong CV', tone: 'neutral' },
 } as const satisfies Record<number, { label: string; tone: BadgeTone }>
 export type MatchLevel = keyof typeof MATCH_LEVEL

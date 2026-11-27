@@ -22,7 +22,7 @@ export function NavSheet({ open, onOpenChange, title, children }: NavSheetProps)
         <RD.Content
           aria-describedby={undefined}
           {...focus}
-          className="bg-rail shadow-float animate-slide-in-left fixed inset-y-0 left-0 z-50 flex w-[min(280px,85vw)] flex-col focus:outline-none"
+          className="on-dark bg-rail shadow-float animate-slide-in-left fixed inset-y-0 left-0 z-50 flex w-[min(280px,85vw)] flex-col focus:outline-none"
         >
           <div className="flex h-14 shrink-0 items-center justify-between px-4">
             <RD.Title className="text-rail-text text-sm font-semibold">{title}</RD.Title>

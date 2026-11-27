@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { CommandPalette, type CommandGroup } from './CommandPalette'
 
@@ -16,6 +16,26 @@ const selected = () =>
     .map((o) => o.textContent)
 
 describe('CommandPalette', () => {
+  // UI-23
+  it('moves with the dialog layer when the dialog under it is replaced', async () => {
+    const mount = (id: string) => {
+      const dialog = document.body.appendChild(document.createElement('dialog'))
+      dialog.setAttribute('open', '')
+      const layer = dialog.appendChild(document.createElement('div'))
+      layer.id = id
+      layer.setAttribute('data-layer', '')
+      return dialog
+    }
+    const loading = mount('loading')
+    onTestFinished(() => document.querySelectorAll('dialog').forEach((d) => d.remove()))
+    render(palette(group(item('a'))))
+    expect(input().closest('[data-layer]')?.id).toBe('loading')
+
+    loading.remove()
+    mount('ready')
+    await waitFor(() => expect(input().closest('[data-layer]')?.id).toBe('ready'))
+  })
+
   it('selects the first result that arrives after typing, so Enter opens it', () => {
     const first = vi.fn()
     const view = render(palette(group(item('Trang'))))
