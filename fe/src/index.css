@@ -205,7 +205,8 @@
   }
 
   ::selection {
-    @apply bg-marker text-ink;
+    background-color: var(--ui-focus-soft);
+    color: var(--color-ink);
   }
 
   :focus-visible {
@@ -213,7 +214,7 @@
     outline-offset: 2px;
   }
 
-  input:focus-visible,
+  input:not([type='checkbox'], [type='radio']):focus-visible,
   select:focus-visible,
   textarea:focus-visible {
     outline: none;

@@ -32,6 +32,14 @@ const navLabels = () =>
     .map((a) => a.textContent?.replace(/\d[\d.]*$/, '').trim())
 
 describe('AppShell', () => {
+  // WCAG 2.4.2
+  it('names the tab after the current page', async () => {
+    const { router } = renderRouteAs('admin@hireflow.dev', routes, '/')
+    await waitFor(() => expect(document.title).toBe('Hôm nay – HireFlow'))
+    await act(() => router.navigate('/applications'))
+    expect(document.title).toBe('Hồ sơ ứng tuyển – HireFlow')
+  })
+
   it('puts the skip link first, targeting <main id="main">', () => {
     renderRouteAs('admin@hireflow.dev', routes, '/')
     const skip = screen.getByRole('link', { name: 'Bỏ qua tới nội dung' })

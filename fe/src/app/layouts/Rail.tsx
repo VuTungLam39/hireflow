@@ -109,7 +109,7 @@ export function Rail({ groups, activeId }: RailProps) {
   if (compact)
     return (
       <NavSheet open={open} onOpenChange={setOpen} title="Menu">
-        <div className="bg-rail text-rail-text flex min-h-full flex-col">
+        <div className="on-dark bg-rail text-rail-text flex min-h-full flex-col">
           <RailNav groups={groups} activeId={activeId} iconMode={false} />
         </div>
       </NavSheet>
@@ -118,7 +118,7 @@ export function Rail({ groups, activeId }: RailProps) {
   return (
     <aside
       aria-label="Thanh điều hướng"
-      className="bg-rail text-rail-text sticky top-0 flex h-dvh w-16 shrink-0 flex-col min-[1100px]:w-[232px]"
+      className="on-dark bg-rail text-rail-text sticky top-0 flex h-dvh w-16 shrink-0 flex-col min-[1100px]:w-[232px]"
     >
       <div className="flex h-14 shrink-0 items-center justify-center px-0 min-[1100px]:justify-start min-[1100px]:px-4">
         <Link to={paths.home} aria-label="HireFlow – Hôm nay" className="rounded-sm">

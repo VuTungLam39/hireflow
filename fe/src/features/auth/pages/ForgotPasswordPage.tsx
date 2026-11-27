@@ -5,12 +5,14 @@ import { useForm } from 'react-hook-form'
 import { Link } from 'react-router'
 import { Button, FormField, Input, buttonVariants } from '@/components/ui'
 import { getErrorMessage } from '@/lib/errors'
+import { useDocumentTitle } from '@/hooks/use-document-title'
 import { paths } from '@/routes/paths'
 import { authApi } from '../api/auth.api'
 import { forgotPasswordSchema, type ForgotPasswordInput } from '../schemas/auth.schema'
 
 // SG-06 · R6 · BR-ACC-09
 export default function ForgotPasswordPage() {
+  useDocumentTitle('Quên mật khẩu – HireFlow')
   const send = useMutation({ mutationFn: authApi.forgotPassword })
   const {
     register,

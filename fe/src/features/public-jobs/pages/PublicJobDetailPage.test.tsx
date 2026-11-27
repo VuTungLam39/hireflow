@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { setupServer } from 'msw/node'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { formatSalary, salaryOf } from '@/features/jobs'
@@ -136,6 +136,26 @@ describe('PublicJobDetailPage', () => {
       'href',
       paths.publicJobs,
     )
+  })
+
+  // UI-22
+  it('hides the pinned bar once the form is in view, even when the job arrives after mount', async () => {
+    let report: IntersectionObserverCallback = () => {}
+    const original = window.IntersectionObserver
+    window.IntersectionObserver = class {
+      constructor(cb: IntersectionObserverCallback) {
+        report = cb
+      }
+      observe() {}
+      disconnect() {}
+    } as unknown as typeof IntersectionObserver
+    onTestFinished(() => {
+      window.IntersectionObserver = original
+    })
+    open(db.jobs.find((j) => j.status === 'OPEN')!.id)
+    const bar = (await screen.findByRole('link', { name: 'Ứng tuyển vị trí này' })).parentElement!
+    act(() => report([{ isIntersecting: true } as IntersectionObserverEntry], {} as never))
+    expect(bar).toHaveClass('translate-y-full')
   })
 
   it('an empty form asks for each field instead of calling it invalid', async () => {

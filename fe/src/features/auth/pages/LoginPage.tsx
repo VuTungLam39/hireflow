@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { Link, useLocation } from 'react-router'
 import { Button, FormField, Input } from '@/components/ui'
 import { applyServerErrors, getErrorCode, getErrorMessage } from '@/lib/errors'
+import { useDocumentTitle } from '@/hooks/use-document-title'
 import { paths } from '@/routes/paths'
 import { useLogin } from '../hooks/use-auth'
 import { loginSchema, type LoginInput } from '../schemas/auth.schema'
@@ -21,6 +22,7 @@ const DEMO_ACCOUNTS = [
 ]
 
 export default function LoginPage() {
+  useDocumentTitle('Đăng nhập – HireFlow')
   const login = useLogin()
   const [showPassword, setShowPassword] = useState(false)
   const [unverified, setUnverified] = useState<string | null>(null)

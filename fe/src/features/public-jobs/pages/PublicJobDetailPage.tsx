@@ -1,5 +1,5 @@
 import { ArrowLeft, Check } from 'lucide-react'
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { EmptyState, ErrorState, StaleNotice } from '@/components/shared'
 import { Skeleton, buttonVariants } from '@/components/ui'
@@ -20,8 +20,8 @@ export default function PublicJobDetailPage() {
   const { id = '' } = useParams()
   const { data: job, isPending, isError, error, refetch, dataUpdatedAt } = usePublicJob(id)
   const [submitted, setSubmitted] = useState(false)
-  const formRef = useRef<HTMLElement>(null)
-  const formInView = useInView(formRef)
+  const [form, setForm] = useState<HTMLElement | null>(null)
+  const formInView = useInView(form)
   const hydrated = useHydrated()
   useDocumentTitle(job ? jobTitle(job.title) : undefined)
 
@@ -142,7 +142,7 @@ export default function PublicJobDetailPage() {
         </article>
 
         <aside
-          ref={formRef}
+          ref={setForm}
           id="ung-tuyen"
           aria-label="Ứng tuyển"
           className="scroll-mt-20 lg:sticky lg:top-24 lg:self-start"
@@ -205,13 +205,11 @@ export default function PublicJobDetailPage() {
               e.preventDefault()
               // M-01
               const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-              formRef.current?.scrollIntoView?.({
+              form?.scrollIntoView?.({
                 behavior: reduce ? 'auto' : 'smooth',
                 block: 'start',
               })
-              formRef.current
-                ?.querySelector<HTMLInputElement>('input')
-                ?.focus({ preventScroll: true })
+              form?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true })
             }}
           >
             Ứng tuyển vị trí này
@@ -223,16 +221,15 @@ export default function PublicJobDetailPage() {
 }
 
 // F-PUB-03
-function useInView(ref: RefObject<HTMLElement | null>) {
+function useInView(el: HTMLElement | null) {
   const [inView, setInView] = useState(false)
   useEffect(() => {
-    const el = ref.current
     if (!el || typeof IntersectionObserver === 'undefined') return
     const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), {
       threshold: 0.15,
     })
     observer.observe(el)
     return () => observer.disconnect()
-  }, [ref])
+  }, [el])
   return inView
 }

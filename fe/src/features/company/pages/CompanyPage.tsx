@@ -2,7 +2,6 @@ import { CircleCheck, CircleDashed } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { ErrorState, PageHeader } from '@/components/shared'
 import { Skeleton } from '@/components/ui'
-import { useDocumentTitle } from '@/hooks/use-document-title'
 import { formatDateTime } from '@/lib/utils'
 import { BrandImages } from '../components/BrandImages'
 import { CompanyInfoForm } from '../components/CompanyInfoForm'
@@ -71,7 +70,6 @@ function Readiness({ company }: { company: Company }) {
 
 // F-ORG-01 · Design Spec 11.1: một trang nhiều khối, lưu từng khối
 export default function CompanyPage() {
-  useDocumentTitle('Hồ sơ công ty')
   const { data: company, isPending, isError, error, refetch } = useCompany()
 
   return (

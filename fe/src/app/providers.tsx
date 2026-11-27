@@ -18,7 +18,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
           unstyled: true,
           classNames: {
             toast:
-              'bg-ink text-white shadow-float flex w-full items-center gap-3 rounded-sm px-4 py-3 text-sm sm:w-[380px]',
+              'on-dark bg-ink text-white shadow-float flex w-full items-center gap-3 rounded-sm px-4 py-3 text-sm sm:w-[380px]',
             title: 'font-normal leading-5',
             description: 'text-white/70 text-[13px]',
             actionButton:

@@ -4,12 +4,15 @@ import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router'
 import { Button, Checkbox, FormField, Input } from '@/components/ui'
 import { applyServerErrors, getErrorMessage } from '@/lib/errors'
+import { useDocumentTitle } from '@/hooks/use-document-title'
+import { SITE_NAME } from '@/prerender/shared'
 import { paths } from '@/routes/paths'
 import { employersApi } from '../api/employers.api'
 import { registerEmployerSchema, type RegisterEmployerForm } from '../schemas/register.schema'
 
 // MVP 3 · US-19, F-ORG-02
 export default function EmployerRegisterPage() {
+  useDocumentTitle(`Đăng ký nhà tuyển dụng – ${SITE_NAME}`)
   const navigate = useNavigate()
   const {
     register,
