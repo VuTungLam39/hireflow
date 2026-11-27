@@ -2,6 +2,7 @@ import * as RD from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { useRef, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { usePortalContainer } from './portal-container'
 
 interface DialogProps {
   open: boolean
@@ -52,6 +53,7 @@ export function Dialog({
   size = 'md',
 }: DialogProps) {
   const focus = useReturnFocus()
+  const container = usePortalContainer()
   return (
     <RD.Root
       open={open}
@@ -60,7 +62,7 @@ export function Dialog({
         if (!o) onClose?.()
       }}
     >
-      <RD.Portal>
+      <RD.Portal container={container}>
         <RD.Overlay className={`${overlayClass} animate-overlay-in`} />
         <RD.Content
           {...focus}

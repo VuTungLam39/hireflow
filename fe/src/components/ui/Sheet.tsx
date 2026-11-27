@@ -5,6 +5,7 @@ import { Link } from 'react-router'
 import { buttonVariants } from './button-variants'
 import { dialogTitleClass, overlayClass, useReturnFocus } from './Dialog'
 import { IconButton } from './IconButton'
+import { usePortalContainer } from './portal-container'
 
 interface SheetProps {
   open: boolean
@@ -33,9 +34,10 @@ export function Sheet({
   children,
 }: SheetProps) {
   const focus = useReturnFocus()
+  const container = usePortalContainer()
   return (
     <RD.Root open={open} onOpenChange={onOpenChange}>
-      <RD.Portal>
+      <RD.Portal container={container}>
         <RD.Overlay className={`${overlayClass} animate-overlay-sheet`} />
         <RD.Content
           aria-describedby={undefined}

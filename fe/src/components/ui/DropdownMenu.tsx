@@ -1,6 +1,7 @@
 import * as RM from '@radix-ui/react-dropdown-menu'
 import { Fragment, useRef, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { usePortalContainer } from './portal-container'
 
 export interface DropdownMenuItem {
   label: string
@@ -32,12 +33,13 @@ export function DropdownMenu({
   className,
 }: DropdownMenuProps) {
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const container = usePortalContainer()
   return (
     <RM.Root modal={false}>
       <RM.Trigger asChild ref={triggerRef}>
         {trigger}
       </RM.Trigger>
-      <RM.Portal>
+      <RM.Portal container={container}>
         <RM.Content
           align={align}
           sideOffset={4}
