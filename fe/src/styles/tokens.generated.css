@@ -31,6 +31,11 @@
   --font-v2-table-header: 'Be Vietnam Pro';
   --font-v2-document-body: 'Source Serif 4';
   --font-v2-evidence-quote: 'Source Serif 4';
+  --font-v2-hero: 'Be Vietnam Pro';
+  --font-v2-hero-sm: 'Be Vietnam Pro';
+  --font-v2-wordmark-sm: 'Be Vietnam Pro';
+  --font-v2-wordmark-md: 'Be Vietnam Pro';
+  --font-v2-wordmark-lg: 'Be Vietnam Pro';
   --text-v2-display: 3rem;
   --text-v2-h1: 1.5rem;
   --text-v2-h2: 1.25rem;
@@ -45,6 +50,11 @@
   --text-v2-table-header: 0.75rem;
   --text-v2-document-body: 1rem;
   --text-v2-evidence-quote: 0.9375rem;
+  --text-v2-hero: 2.75rem;
+  --text-v2-hero-sm: 2rem;
+  --text-v2-wordmark-sm: 1.0625rem;
+  --text-v2-wordmark-md: 1.125rem;
+  --text-v2-wordmark-lg: 1.625rem;
   --tracking-v2-display: -0.01em;
   --tracking-v2-overline: 0.04em;
   --font-weight-v2-display: 600;
@@ -61,6 +71,11 @@
   --font-weight-v2-table-header: 600;
   --font-weight-v2-document-body: 400;
   --font-weight-v2-evidence-quote: 400;
+  --font-weight-v2-hero: 700;
+  --font-weight-v2-hero-sm: 700;
+  --font-weight-v2-wordmark-sm: 600;
+  --font-weight-v2-wordmark-md: 600;
+  --font-weight-v2-wordmark-lg: 600;
   --radius-v2-sm: 4px;
   --radius-v2-md: 6px;
   --radius-v2-lg: 8px;

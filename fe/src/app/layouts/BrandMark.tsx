@@ -41,9 +41,9 @@ interface BrandMarkProps {
 }
 
 const sizes = {
-  sm: { mark: 'size-7', word: 'text-[17px]' },
-  md: { mark: 'size-8', word: 'text-lg' },
-  lg: { mark: 'size-11', word: 'text-[26px]' },
+  sm: { mark: 'size-7', word: 'text-(length:--text-v2-wordmark-sm)' },
+  md: { mark: 'size-8', word: 'text-(length:--text-v2-wordmark-md) leading-7' },
+  lg: { mark: 'size-11', word: 'text-(length:--text-v2-wordmark-lg)' },
 } as const
 
 export function BrandMark({

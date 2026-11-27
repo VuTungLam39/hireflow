@@ -96,6 +96,31 @@ typography:
     fontSize: 0.9375rem
     fontWeight: 400
     lineHeight: 1.6
+  hero:
+    fontFamily: Be Vietnam Pro
+    fontSize: 2.75rem
+    fontWeight: 700
+    lineHeight: 1.18
+  hero-sm:
+    fontFamily: Be Vietnam Pro
+    fontSize: 2rem
+    fontWeight: 700
+    lineHeight: 1.19
+  wordmark-sm:
+    fontFamily: Be Vietnam Pro
+    fontSize: 1.0625rem
+    fontWeight: 600
+    lineHeight: 1
+  wordmark-md:
+    fontFamily: Be Vietnam Pro
+    fontSize: 1.125rem
+    fontWeight: 600
+    lineHeight: 1
+  wordmark-lg:
+    fontFamily: Be Vietnam Pro
+    fontSize: 1.625rem
+    fontWeight: 600
+    lineHeight: 1
 rounded:
   sm: 4px
   md: 6px
@@ -288,6 +313,7 @@ Light theme only. Dark mode is out of scope for this redesign (D-09); tokens are
 - Numbers in scores, counts and tables use tabular figures (`metric`, `table-cell`).
 - `overline` is for small section labels in documents; use sentence case in Vietnamese UI, uppercase only for these overlines.
 - Self-host both families with the Vietnamese subset.
+- Off-ramp sizes exist only as named tokens (DD-14): `hero` / `hero-sm` for page-level display headings, `wordmark-sm/md/lg` for the HireFlow logo only.
 
 ## Layout
 
