@@ -1,5 +1,7 @@
 # 04 — Visual regression (D-11)
 
+**Chụp lại 27/11/2026** (K-09, DD-14): 26/34 ảnh đổi; trước khi sửa mã, 34 ảnh cũ đạt trên `main`.
+
 **Baseline 26/11/2026:** 34 ảnh: 13 route trọng yếu và biến thể (hộp thoại tin, tin mới, hộp thoại hồ sơ, chi tiết công ty) × 390 và 1440; CR-13 chỉ ở trạng thái không có token, Chromium trên Windows, dữ liệu seed demo local. Ảnh ở `visual-baseline/`.
 
 | Kiểm | Kết quả |

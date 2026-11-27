@@ -273,13 +273,13 @@
 /* Thang chữ – 2 họ chữ: Bricolage Grotesque cho tiêu đề và con số, Be Vietnam Pro cho phần còn lại */
 @utility type-display {
   font-family: var(--font-display);
-  font-size: 32px;
+  font-size: var(--text-v2-hero-sm);
   line-height: 38px;
   font-weight: 700;
   letter-spacing: -0.025em;
   color: var(--color-ink);
   @media (width >= 64rem) {
-    font-size: 44px;
+    font-size: var(--text-v2-hero);
     line-height: 52px;
   }
 }
@@ -291,14 +291,14 @@
   letter-spacing: -0.02em;
   color: var(--color-ink);
   @media (width >= 40rem) {
-    font-size: 30px;
+    font-size: 28px;
     line-height: 36px;
   }
 }
 @utility type-heading {
   font-family: var(--font-display);
-  font-size: 18px;
-  line-height: 24px;
+  font-size: 20px;
+  line-height: 28px;
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--color-ink);
@@ -356,7 +356,7 @@
 }
 @utility type-figure {
   font-family: var(--font-display);
-  font-size: 30px;
+  font-size: 28px;
   line-height: 36px;
   font-weight: 600;
   letter-spacing: -0.01em;
