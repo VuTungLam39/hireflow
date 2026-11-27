@@ -60,12 +60,12 @@ Chủ dự án quyết ngày 26/11/2026. Mục 9 vẫn ghi **FAIL theo ngưỡng
 | 1 | K-08/T3: xác nhận lệch có chủ ý (F-04) |
 | 2 | Screen reader chưa kiểm: chấp nhận cho bản demo |
 
-**Điều kiện phải làm trước khi đưa dữ liệu công ty thật vào** (chưa mục nào xong):
+**Điều kiện phải làm trước khi đưa dữ liệu công ty thật vào** (xong 1/5: #191; còn #187–#190):
 - [ ] Xét lại monitoring (cách hiểu `/api/health` + log Render hết hạn). #187
 - [ ] Smoke quên mật khẩu (SG-06) bằng hộp thư thật. #188
 - [ ] SG-08: việc chấp nhận rủi ro hết hiệu lực, phải xử lý lại. #189
 - [ ] Kiểm screen reader bằng người thật. #190
-- [ ] Xét lại 3 lỗ hổng phụ thuộc moderate của backend. #191
+- [x] Xét lại 3 lỗ hổng phụ thuộc moderate của backend. #191 — PR #196 (26/11): ép `glob ^14.0.2` dưới `typeorm`, `npm audit --omit=dev` của BE còn 0. Số liệu ở mục "Phụ thuộc" là tại thời điểm gate.
 
 ## Sau merge hồ sơ gate (26/11/2026)
 PR #186, merge `b7e1e24`. CI trên `main` xanh; Render `hireflow-api` triển khai thành công; trạng thái commit (Vercel) success. Smoke production lúc 16:23, chỉ HTTP, không đăng nhập: `/jobs` 200, `/companies` 200, `/api/health` 200 (database, redis, storage up).
